@@ -14,7 +14,7 @@ export default async function Page() {
   // 로그인된 경우
   return (
     <div>
-      <h1>Welcome, {session.user.name} <LogOutBtn/></h1>
+      <h1 className="">Welcome, {session.user.name} <LogOutBtn/></h1>
       {/* 메인 페이지 내용 */}
     </div>
   );
