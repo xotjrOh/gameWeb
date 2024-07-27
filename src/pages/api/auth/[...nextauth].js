@@ -16,6 +16,7 @@ export const authOptions = {
     secret: process.env.NEXTAUTH_SECRET,
     pages: {
       signIn: '/auth/signin',  // Default 경로임
+      error: '/auth/error',
     },
     callbacks: {
         async jwt({ token, user }) {

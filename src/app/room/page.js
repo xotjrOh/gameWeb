@@ -1,11 +1,13 @@
-// import { useEffect, useState } from 'react';
-// import io from 'socket.io-client';
+'use client';
+
+import { useEffect, useState } from 'react';
+import io from 'socket.io-client';
 import Header from "@/components/Header";
 
 // const socket = io(); // 클라이언트에서 서버 URL을 자동으로 감지하도록 설정
 
 export default function Page() {
-  console.log("hi")
+
   // const [roomName, setRoomName] = useState('');
   // const [rooms, setRooms] = useState([]);
 
@@ -39,7 +41,6 @@ export default function Page() {
 
   return (
     <div>
-      hi
       <Header/>
       {/*<div className="flex flex-col items-center p-4">
         <h1 className="text-2xl font-bold mb-4">티츄 비</h1>
