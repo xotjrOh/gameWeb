@@ -4,8 +4,8 @@ import { getToken } from 'next-auth/jwt';
 export async function middleware(request) {
   // 토큰을 가져옵니다.
   const session = await getToken({ req: request });
-  console.log('Session:', session);
-  console.log(request.nextUrl);
+  // console.log('Session:', session);
+  console.log(request.nextUrl.pathname);
 
   // 요청된 경로가 '/auth/signin'으로 시작하는 경우
   if (request.nextUrl.pathname.startsWith('/auth/signin')) {
@@ -25,6 +25,6 @@ export async function middleware(request) {
 // 모든 경로에 대해 미들웨어를 적용하지만, 로그인 경로는 예외로 설정합니다.
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|public|images|auth|api).*)',
+    '/((?!_next/static|_next/image|favicon.ico|public|images|auth|api|socket).*)',
   ],
 };
