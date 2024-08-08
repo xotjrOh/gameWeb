@@ -5,13 +5,13 @@ import AsyncLock from 'async-lock';
 // import handleHorseRacingGame from './games/horseRacing';
 
 const rooms = {};
-const AUTHORIZED_SESSION_IDS = ['3624891095', 'another-session-id'];
+export { rooms };
+
+const AUTHORIZED_SESSION_IDS = ['3624891095', '116463162791834863252'];
 const lock = new AsyncLock();
 
 const ioHandler = (req, res) => {
-  console.log("1");
   if (!res.socket.server.io) {
-    console.log("2");
     const io = new Server(res.socket.server);
     res.socket.server.io = io;
 
