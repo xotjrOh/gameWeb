@@ -13,13 +13,13 @@ export default function GameRooms({ session }) {
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
-    const fetchRooms = async () => {
-      const response = await fetch('/api/rooms');
-      const data = await response.json();
-      setRooms(data);
-    };
+    // const fetchRooms = async () => {
+    //   const response = await fetch('/api/rooms');
+    //   const data = await response.json();
+    //   setRooms(data);
+    // };
 
-    fetchRooms();
+    // fetchRooms();
     
     console.log("useEffect start");
     fetch('/api/socket');
@@ -29,7 +29,7 @@ export default function GameRooms({ session }) {
     });
 
     return () => {
-      console.log("??")
+      console.log("한번만")
       socket.off('room-updated');
     };
   }, []);

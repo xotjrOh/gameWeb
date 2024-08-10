@@ -101,5 +101,4 @@ const ioHandler = (req, res) => {
   res.end();
 };
 
-export default ioHandler;
-
+export { ioHandler as GET, ioHandler as POST };
