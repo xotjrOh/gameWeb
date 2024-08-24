@@ -21,19 +21,19 @@ export default function RoomModal({ createRoom }) {
           type="text"
           value={roomName}
           onChange={(e) => setRoomName(e.target.value)}
-          placeholder="Room Name"
+          placeholder="방제목"
         />
         <select value={gameType} onChange={(e) => setGameType(e.target.value)}>
-          <option value="rock-paper-scissors">Rock Paper Scissors</option>
-          <option value="horse-racing">Horse Racing</option>
+          <option value="rock-paper-scissors">가위바위보</option>
+          <option value="horse-racing">경마게임</option>
         </select>
         <input
           type="number"
           value={maxPlayers}
           onChange={(e) => setMaxPlayers(parseInt(e.target.value))}
-          placeholder="Max Players"
+          placeholder="방 최대인원"
         />
-        <button type="submit">Create</button>
+        <button type="submit">생성</button>
       </form>
     </div>
   );

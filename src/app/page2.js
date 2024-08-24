@@ -1,8 +1,8 @@
 'use client';
-
+// todo : 지울예정, 참고용
 import { useEffect, useState } from 'react';
 import io from 'socket.io-client';
-import Header from '@/app/components/Header';
+import Header from '@/components/Header';
 
 const socket = io();
 

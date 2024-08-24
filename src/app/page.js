@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import Header from '@/app/components/Header';
-import GameRooms from '@/app/components/GameRooms';
+import Header from '@/components/Header';
+import GameRooms from '@/components/GameRooms';
 
 export default async function HomePage() {
   const session = await getServerSession(authOptions);

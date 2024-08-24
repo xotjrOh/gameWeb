@@ -1,22 +1,27 @@
 import { Server } from 'socket.io';
 import AsyncLock from 'async-lock';
-// import handleMafiaGame from './games/mafia';
-// import handleRockPaperScissorsGame from './games/rockPaperScissors';
-// import handleHorseRacingGame from './games/horseRacing';
 
 const rooms = {};
-export { rooms };
 
 const AUTHORIZED_SESSION_IDS = ['3624891095', '116463162791834863252'];
 const lock = new AsyncLock();
 
 const ioHandler = (req, res) => {
   if (!res.socket.server.io) {
-    const io = new Server(res.socket.server);
+    const io = new Server(res.socket.server, {
+      path : "/api/socket/io",
+      addTrailingSlash: false,
+    });
+    
     res.socket.server.io = io;
 
     io.on('connection', (socket) => {
-      console.log('A user connected');
+      console.log('server : A user connected');
+
+      socket.on('get-room-list', () => {
+        console.log("get rooms", rooms);
+        socket.emit('room-updated', rooms);
+      });
 
       socket.on('create-room', ({ roomName, userName, gameType, sessionId, maxPlayers }, callback) => {
         if (!AUTHORIZED_SESSION_IDS.includes(sessionId)) {
@@ -34,12 +39,12 @@ const ioHandler = (req, res) => {
               host: userName,
               players: [userName],
               gameData: {},
-              status: '대기 중',
+              status: 'pending',
               maxPlayers,
             };
             socket.join(roomName);
             callback({ success: true });
-            io.emit('room-updated', Object.values(rooms));
+            io.emit('room-updated', rooms);
           }
           done();
         }, (err) => {
@@ -49,51 +54,39 @@ const ioHandler = (req, res) => {
         });
       });
 
-      socket.on('join-room', ({ roomName, userName }) => {
+      socket.on('join-room', ({ roomName, userName }, callback) => {
         const room = rooms[roomName];
-        if (room && room.players.length < room.maxPlayers) {
+        if (room && room.players.length < room.maxPlayers && room.status == 'pending') {
           room.players.push(userName);
           socket.join(roomName);
-          io.to(roomName).emit('room-updated', room);
+          io.emit('room-updated', rooms);
+          callback({ success: true });
+        } else if (room.players.length == room.maxPlayers) {
+          callback({ success: false, message: '방이 가득찼습니다' });
+        } else if (room.status == 'in progress') {
+          callback({ success: false, message: '이미 게임이 시작되었습니다' });
         }
       });
 
       socket.on('leave-room', ({ roomName, userName }) => {
         const room = rooms[roomName];
         if (room) {
-          room.players = room.players.filter(player => player !== userName);
+          const index = room.players.indexOf(userName);
+          if (index !== -1) {
+            room.players.splice(index, 1);
+          }
           socket.leave(roomName);
           io.to(roomName).emit('room-updated', room);
 
-          if (room.host === userName || room.players.length === 0) {
+          if (index == 0 || room.players.length === 0) { // 방장일경우 방폭
             delete rooms[roomName];
-            io.emit('room-updated', Object.values(rooms));
+            io.emit('room-updated', rooms);
           }
         }
       });
 
-      // 게임별 로직 처리
-      socket.on('game-action', (data) => {
-        const room = rooms[data.roomName];
-        if (!room) return;
-
-        switch (room.gameType) {
-          case 'mafia':
-            handleMafiaGame(io, socket, data, room);
-            break;
-          case 'rock-paper-scissors':
-            handleRockPaperScissorsGame(io, socket, data, room);
-            break;
-          case 'horse-racing':
-            handleHorseRacingGame(io, socket, data, room);
-            break;
-          default:
-            console.error('Unknown game type:', room.gameType);
-        }
-      });
-
       socket.on('disconnect', () => {
-        console.log('A user disconnected');
+        console.log('server : A user disconnected');
         // TODO: 방에서 유저 제거 로직 추가 필요
       });
     });

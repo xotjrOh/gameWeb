@@ -1,4 +1,4 @@
-import LogOutBtn from "@/app/components/LogOutBtn";
+import LogOutBtn from "@/components/LogOutBtn";
 
 export default function Header({session}) {
 
