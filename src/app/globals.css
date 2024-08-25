@@ -1,3 +1,29 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.yanolza-font {
+    font-family: "yanolza", sans-serif;
+}
+.baemin-font {
+    font-family: "baemin", sans-serif;
+}
+.yeogieottae-font {
+    font-family: "yeogieottae", sans-serif;
+}
+
+@font-face {
+    font-family: "yanolza";
+    font-weight: 200;
+    src: url("/fonts/yanolza.ttf") format("truetype");
+}
+@font-face {
+    font-family: "baemin";
+    font-weight: 200;
+    src: url("/fonts/baemin.ttf") format("truetype");
+}
+@font-face {
+    font-family: "yeogieottae";
+    font-weight: 200;
+    src: url("/fonts/yeogieottae.ttf") format("truetype");
+}

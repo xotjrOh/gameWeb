@@ -39,7 +39,7 @@ const ioHandler = (req, res) => {
               host: userName,
               players: [userName],
               gameData: {},
-              status: 'pending',
+              status: '대기중',
               maxPlayers,
             };
             socket.join(roomName);
@@ -56,14 +56,14 @@ const ioHandler = (req, res) => {
 
       socket.on('join-room', ({ roomName, userName }, callback) => {
         const room = rooms[roomName];
-        if (room && room.players.length < room.maxPlayers && room.status == 'pending') {
+        if (room && room.players.length < room.maxPlayers && room.status == '대기중') {
           room.players.push(userName);
           socket.join(roomName);
           io.emit('room-updated', rooms);
           callback({ success: true });
         } else if (room.players.length == room.maxPlayers) {
           callback({ success: false, message: '방이 가득찼습니다' });
-        } else if (room.status == 'in progress') {
+        } else if (room.status == '게임중') {
           callback({ success: false, message: '이미 게임이 시작되었습니다' });
         }
       });

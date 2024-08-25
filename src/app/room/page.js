@@ -2,7 +2,7 @@
 // todo : 지울예정. 참고용
 import { useEffect, useState } from 'react';
 import io from 'socket.io-client';
-import Header from "@/components/Header";
+import Header from "@/components/header/Header";
 
 // const socket = io(); // 클라이언트에서 서버 URL을 자동으로 감지하도록 설정
 
