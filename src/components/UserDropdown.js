@@ -25,12 +25,12 @@ export default function UserDropdown({ session }) {
           {session.user.name}
         </button>
         {userDropdown && (
-          <div className="absolute right-0 w-48 bg-white border rounded shadow-lg z-10">
-            <ul>
-              <li className="px-4 py-2 hover:bg-gray-200 cursor-pointer">프로필</li>
-              <li className="px-4 py-2 hover:bg-gray-200 cursor-pointer">설정</li>
-              <li className="px-4 py-2 cursor-pointer hover:bg-red-500 hover:text-white">
-                <LogOutBtn/>
+          <div className="absolute right-0 bg-white border rounded shadow-lg z-10">
+            <ul className="text-left">
+              <li className="px-4 py-2 hover:bg-gray-200 cursor-pointer whitespace-nowrap">프로필</li>
+              <li className="px-4 py-2 hover:bg-gray-200 cursor-pointer whitespace-nowrap">설정</li>
+              <li className="cursor-pointer hover:bg-red-500 hover:text-white whitespace-nowrap">
+                <LogOutBtn className="px-4 py-2 w-full h-full" />
               </li>
             </ul>
           </div>

@@ -20,6 +20,17 @@ export default function GameRooms({ session }) {
       }
     });
   };
+  const joinRoom = (roomName) => {
+    socket.emit('join-room', { roomName, userName: session.user.name, sessionId: session.user.id }, (response) => {
+      if (!response.success) {
+        alert(response.message);
+      } else {
+        // 성공적으로 방에 참여한 경우의 로직 (예: 페이지 이동, UI 업데이트 등)
+        console.log(`Successfully joined room: ${roomName}`);
+        // 페이지를 이동하거나, UI를 업데이트할 수 있습니다.
+      }
+    });
+  };
 
   return (
     <div className="flex flex-col items-center p-4 bg-[#eff9ff] yanolza-font min-h-screen">
@@ -40,8 +51,8 @@ export default function GameRooms({ session }) {
         </thead>
         <tbody>
           {Object.values(rooms).map((room, index) => (
-            <tr key={index} className="border-b border-gray-300 hover:bg-gray-200 cursor-pointer" 
-                onClick={() => socket.emit('join-room', { roomName: room.roomName, userName: session.user.name })}>
+            <tr key={index} className="border-b border-gray-300 hover:bg-[#cde8ff] cursor-pointer" 
+                onClick={() => joinRoom(room.roomName)}>
               <td className="px-4 py-2">{index + 1}</td>
               <td className="px-4 py-2">{room.roomName}</td>
               <td className="px-4 py-2">{room.gameType}</td>
