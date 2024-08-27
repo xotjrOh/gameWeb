@@ -2,6 +2,7 @@ import { Server } from 'socket.io';
 import AsyncLock from 'async-lock';
 
 const rooms = {};
+let currentRoomId = 0;
 
 const AUTHORIZED_SESSION_IDS = ['3624891095', '116463162791834863252'];
 const lock = new AsyncLock();
@@ -32,8 +33,10 @@ const ioHandler = (req, res) => {
           if (rooms[roomName]) {
             return callback({ success: false, message: '방 제목은 중복될 수 없습니다.' });
           }
-          
+
+          const roomId = ++currentRoomId;
           rooms[roomName] = {
+            roomId,
             roomName,
             gameType,
             host: {
@@ -46,7 +49,7 @@ const ioHandler = (req, res) => {
             maxPlayers,
           };
           socket.join(roomName);
-          callback({ success: true });
+          callback({ success: true, roomId });
           io.emit('room-updated', rooms);
           done();
         }, (err) => {
