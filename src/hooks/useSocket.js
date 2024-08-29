@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { initializeSocket } from '@/store/socketSlice';
 import { setRooms } from '@/store/roomSlice';
 
-const useSocket = (session) => {
+const useSocket = () => {
   const dispatch = useDispatch();
   const { socket, isConnected } = useSelector((state) => state.socket);
 

@@ -2,7 +2,7 @@ import { Server } from 'socket.io';
 import AsyncLock from 'async-lock';
 
 const rooms = {};
-let currentRoomId = 0;
+let currentRoomId = 100;
 
 const AUTHORIZED_SESSION_IDS = ['3624891095', '116463162791834863252'];
 const lock = new AsyncLock();
@@ -24,18 +24,20 @@ const ioHandler = (req, res) => {
         socket.emit('room-updated', rooms);
       });
 
+      socket.on('check-room', ({ roomId, sessionId }, callback) => {
+        const room = rooms[roomId];
+        const isInRoom = room && room.players.some(player => player.id === sessionId);
+        callback({ isInRoom });
+      });
+
       socket.on('create-room', ({ roomName, userName, gameType, sessionId, maxPlayers }, callback) => {
         if (!AUTHORIZED_SESSION_IDS.includes(sessionId)) {
           return callback({ success: false, message: '방을 만들기 위해서는 오태석에게 문의하세요' });
         }
 
         lock.acquire('rooms', (done) => {
-          if (rooms[roomName]) {
-            return callback({ success: false, message: '방 제목은 중복될 수 없습니다.' });
-          }
-
           const roomId = ++currentRoomId;
-          rooms[roomName] = {
+          rooms[roomId] = {
             roomId,
             roomName,
             gameType,
@@ -48,7 +50,7 @@ const ioHandler = (req, res) => {
             status: '대기중',
             maxPlayers,
           };
-          socket.join(roomName);
+          socket.join(roomId);
           callback({ success: true, roomId });
           io.emit('room-updated', rooms);
           done();
@@ -59,8 +61,8 @@ const ioHandler = (req, res) => {
         });
       });
 
-      socket.on('join-room', ({ roomName, userName, sessionId }, callback) => {
-        const room = rooms[roomName];
+      socket.on('join-room', ({ roomId, userName, sessionId }, callback) => {
+        const room = rooms[roomId];
         if (!room) {
           return callback({ success: false, message: '방이 존재하지 않습니다' });
         }
@@ -74,18 +76,18 @@ const ioHandler = (req, res) => {
         const playerExists = room.players.some(player => player.id === sessionId);
         // 튕겼다가 온 사람은 재연결 해줌
         if (playerExists) {
-          socket.join(roomName);
+          socket.join(roomId);
           return callback({ success: true });
         }
 
         room.players.push({ id: sessionId, name: userName });
-        socket.join(roomName);
+        socket.join(roomId);
         io.emit('room-updated', rooms);
         return callback({ success: true });
       });
 
-      socket.on('leave-room', ({ roomName, userName }) => {
-        const room = rooms[roomName];
+      socket.on('leave-room', ({ roomId, sessionId }) => {
+        const room = rooms[roomId];
         if (!room) return;
 
         const playerIndex = room.players.findIndex(player => player.id === sessionId);
@@ -97,11 +99,11 @@ const ioHandler = (req, res) => {
         }
 
         room.players.splice(playerIndex, 1);
-        socket.leave(roomName);
+        socket.leave(roomId);
         io.emit('room-updated', rooms);
 
         if (room.host.id === sessionId) {
-          delete rooms[roomName];
+          delete rooms[roomId];
           io.emit('room-updated', rooms);
         }
         return callback({ success: true });

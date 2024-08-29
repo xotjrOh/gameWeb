@@ -1,4 +1,5 @@
 import "./globals.css";
+import SessionProviderWrapper from '@/components/provider/SessionProviderWrapper';
 import ReduxProvider from "@/components/provider/ReduxProvider";
 
 export const metadata = {
@@ -10,9 +11,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <ReduxProvider>
-          {children}
-        </ReduxProvider>
+        <SessionProviderWrapper>
+          <ReduxProvider>
+            {children}
+          </ReduxProvider>
+        </SessionProviderWrapper>
       </body>
     </html>
   );
