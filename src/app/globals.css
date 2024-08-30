@@ -2,6 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 글로벌 CSS 파일에 추가 또는 컴포넌트 내부에 스타일 정의 */
+.spinner-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* 화면 전체 높이 */
+}
+
+.spinner {
+    border: 8px solid rgba(0, 0, 0, 0.1); /* 테두리 두께 증가 */
+    border-left-color: #09f; /* 파란색 테두리 */
+    border-radius: 50%;
+    width: 64px; /* 스피너 크기 증가 */
+    height: 64px; /* 스피너 크기 증가 */
+    animation: spin 1s linear infinite; /* 스핀 애니메이션 */
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+  
+
 .yanolza-font {
     font-family: "yanolza", sans-serif;
 }

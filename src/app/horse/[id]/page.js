@@ -11,6 +11,7 @@ import TabPanel from '@/components/tab/TabPanel';
 import BettingTab from './Horse.BettingTab';
 import ChipsTab from './Horse.ChipsTab';
 import HorsesTab from './Horse.HorsesTab';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function HorseGamePage({ params }) {
   const { id } = params;
@@ -36,7 +37,7 @@ export default function HorseGamePage({ params }) {
   };
 
   if (status === 'loading') {
-    return <div>Loading...</div>; // 세션 로딩 중 로딩 표시
+    return <LoadingSpinner />;
   }
 
   return (
