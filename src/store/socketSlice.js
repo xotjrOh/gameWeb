@@ -20,10 +20,10 @@ const socketSlice = createSlice({
 export const { setSocket, setIsConnected } = socketSlice.actions;
 
 export const initializeSocket = () => (dispatch, getState) => {
-	const { socket } = getState().socket;
+	const { socket, isConnected } = getState().socket;
 
 	// socket이 이미 초기화되어 있는지 확인
-	if (socket === null) {
+	if (!isConnected) {
 	    const newSocket = io(process.env.NEXT_PUBLIC_SITE_URL, {
 			path : "/api/socket/io",
 			addTrailingSlash: false,

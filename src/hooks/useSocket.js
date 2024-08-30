@@ -24,7 +24,7 @@ const useSocket = () => {
 
       return () => {
         socket.off('room-updated', handleRoomUpdated);
-        socket.disconnect();
+        // socket.disconnect();
       };
     }
   }, [socket, dispatch]);

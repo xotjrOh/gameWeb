@@ -12,8 +12,8 @@ import useRedirectIfInvalidRoom from '@/hooks/useRedirectIfInvalidRoom';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function HorseGamePage({ params }) {
-  const { id } = params;
-  const status = useRedirectIfInvalidRoom(id);
+  const { roomId } = params;
+  const status = useRedirectIfInvalidRoom(roomId);
   const [activeTab, setActiveTab] = useState('betting'); // 기본 탭을 'betting'으로 설정
 
   const handleTabChange = (newValue) => {
@@ -38,13 +38,13 @@ export default function HorseGamePage({ params }) {
         <Tab label="경주마"  value="horses" />
 
         <TabPanel value="betting">
-          <BettingTab />
+          <BettingTab roomId={roomId}/>
         </TabPanel>
         <TabPanel value="chips">
-          <ChipsTab />
+          <ChipsTab roomId={roomId}/>
         </TabPanel>
         <TabPanel value="horses">
-          <HorsesTab />
+          <HorsesTab roomId={roomId}/>
         </TabPanel>
       </Tabs>
     </div>

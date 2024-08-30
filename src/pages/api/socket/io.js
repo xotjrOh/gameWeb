@@ -2,6 +2,8 @@ import { Server } from 'socket.io';
 import AsyncLock from 'async-lock';
 
 const rooms = {};
+// roomId별 setInteval 저장할 객체
+const timers = {};
 let currentRoomId = 100;
 
 const AUTHORIZED_SESSION_IDS = ['3624891095', '116463162791834863252'];
@@ -31,6 +33,7 @@ const ioHandler = (req, res) => {
       });
 
       socket.on('create-room', ({ roomName, userName, gameType, sessionId, maxPlayers }, callback) => {
+        console.log("create room 방문 server")
         if (!AUTHORIZED_SESSION_IDS.includes(sessionId)) {
           return callback({ success: false, message: '방을 만들기 위해서는 오태석에게 문의하세요' });
         }
@@ -88,7 +91,9 @@ const ioHandler = (req, res) => {
 
       socket.on('leave-room', ({ roomId, sessionId }) => {
         const room = rooms[roomId];
-        if (!room) return;
+        if (!room) {
+          return callback({ success: false, message: '존재하지 않는 게임방입니다.' });
+        }
 
         const playerIndex = room.players.findIndex(player => player.id === sessionId);
         if (playerIndex == -1) {
@@ -111,8 +116,39 @@ const ioHandler = (req, res) => {
 
       socket.on('disconnect', () => {
         console.log('server : A user disconnected');
-        // TODO: 방에서 유저 제거 로직 추가 필요
       });
+
+      // -------------------- HORSE GAME --------------------------
+      // todo : 다른게임에서 로직이 다를 경우 게임타입 나누는 로직 필요
+      // host만 호출할 이벤트
+      socket.on('start-round', ({ roomId, duration }) => {
+        console.log("asdf");
+        const room = rooms[roomId];
+
+        room.gameData.timeLeft = duration;
+        clearInterval(timers[roomId]);
+  
+        timers[roomId] = setInterval(() => {
+          if (room.gameData.timeLeft > 0) {
+            room.gameData.timeLeft -= 1;
+            io.to(roomId).emit('update-timer', room.gameData.timeLeft); // 타이머 업데이트 전송
+          } else {
+            clearInterval(timers[roomId]);
+            delete timers[roomId]; // 타이머 종료 시 삭제
+            io.to(roomId).emit('round-ended'); // 라운드 종료 알림
+          }
+        }, 1000);
+      });
+
+      // todo : 필요없을지도. 추후에 지워보고 테스트.
+      socket.on('get-current-timer', (roomId, callback) => {
+        const room = rooms[roomId];
+        if (!room) {
+          return callback({ success: false, message: '존재하지 않는 게임방에서 요청되었습니다.' });
+        }
+        callback({ success: true, timeLeft: room.gameData.timeLeft }); // 현재 남은 시간 전송
+      });
+
     });
   }
   res.end();

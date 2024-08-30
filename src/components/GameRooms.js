@@ -16,7 +16,9 @@ export default function GameRooms({ session }) {
 
   const closeModal = () => setShowModal(false);
   const createRoom = (roomName, gameType, maxPlayers) => {
+    console.log("create room", session);
     socket.emit('create-room', { roomName, userName: session.user.name, gameType, sessionId: session.user.id, maxPlayers }, (response) => {
+      console.log("create room 요청 이후")
       if (!response.success) {
         alert(response.message);
       } else {
