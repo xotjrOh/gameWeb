@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-export function useBrowserWarning() {
+const useBrowserWarning = () => {
   useEffect(() => {
     const userAgent = navigator.userAgent.toLowerCase();
     const isWhale = userAgent.includes('whale');
@@ -10,3 +10,5 @@ export function useBrowserWarning() {
     }
   }, []);
 }
+
+export default useBrowserWarning;

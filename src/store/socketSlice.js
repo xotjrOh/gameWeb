@@ -21,7 +21,6 @@ export const { setSocket, setIsConnected } = socketSlice.actions;
 
 export const initializeSocket = () => (dispatch, getState) => {
 	const { socket } = getState().socket;
-	console.log("socket : ", socket);
 
 	// socket이 이미 초기화되어 있는지 확인
 	if (socket === null) {

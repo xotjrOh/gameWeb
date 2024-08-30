@@ -1,9 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
-import useSocket from '@/hooks/useSocket';
+import { useState } from 'react';
 
 import Tabs from '@/components/tab/Tabs';
 import Tab from '@/components/tab/Tab';
@@ -11,26 +8,13 @@ import TabPanel from '@/components/tab/TabPanel';
 import BettingTab from './Horse.BettingTab';
 import ChipsTab from './Horse.ChipsTab';
 import HorsesTab from './Horse.HorsesTab';
+import useRedirectIfInvalidRoom from '@/hooks/useRedirectIfInvalidRoom';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function HorseGamePage({ params }) {
   const { id } = params;
-  const socket = useSocket();
-  const router = useRouter();
-  const { data: session, status } = useSession();
+  const status = useRedirectIfInvalidRoom(id);
   const [activeTab, setActiveTab] = useState('betting'); // 기본 탭을 'betting'으로 설정
-
-  useEffect(() => {
-    if (status === 'authenticated' && socket) {
-        console.log(session);
-        socket.emit('check-room', { roomId: id, sessionId: session.user.id }, (response) => {
-            if (!response.isInRoom) {
-                alert('잘못된 접근입니다. 대기방으로 이동합니다.');
-                router.push('/');
-            }
-        });
-    }
-  }, [socket, status]);
 
   const handleTabChange = (newValue) => {
     setActiveTab(newValue);
