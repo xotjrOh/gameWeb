@@ -5,7 +5,7 @@ import { useState } from 'react';
 
 export default function RoomModal({ createRoom, closeModal }) {
   const [roomName, setRoomName] = useState('');
-  const [gameType, setGameType] = useState('rock-paper-scissors');
+  const [gameType, setGameType] = useState('horse');
   const [maxPlayers, setMaxPlayers] = useState(null);
 
   const handleSubmit = (e) => {
@@ -29,7 +29,7 @@ export default function RoomModal({ createRoom, closeModal }) {
           className="border p-2 rounded mb-2 w-full"
         />
         <select value={gameType} onChange={(e) => setGameType(e.target.value)} className="border p-2 rounded mb-4 w-full">
-          <option value="rps">가위바위보</option>
+          {/* <option value="rps">가위바위보</option> */}
           <option value="horse">경마게임</option>
         </select>
         <input

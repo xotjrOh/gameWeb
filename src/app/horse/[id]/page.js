@@ -16,12 +16,11 @@ export default function HorseGamePage({ params }) {
   const { id } = params;
   const socket = useSocket();
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [activeTab, setActiveTab] = useState('betting'); // 기본 탭을 'betting'으로 설정
 
   useEffect(() => {
-    if (session) {
-        console.log("session");
+    if (status === 'authenticated' && socket) {
         console.log(session);
         socket.emit('check-room', { roomId: id, sessionId: session.user.id }, (response) => {
             if (!response.isInRoom) {
@@ -30,11 +29,15 @@ export default function HorseGamePage({ params }) {
             }
         });
     }
-  }, [session]);
+  }, [socket, status]);
 
   const handleTabChange = (newValue) => {
     setActiveTab(newValue);
   };
+
+  if (status === 'loading') {
+    return <div>Loading...</div>; // 세션 로딩 중 로딩 표시
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">

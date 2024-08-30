@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation';
 import { useSelector } from 'react-redux';
 import useSocket from '@/hooks/useSocket';
 import RoomModal from './RoomModal';
+// import { useBrowserWarning } from '@/hooks/useBrowserWarning';
 
 export default function GameRooms({ session }) {
   const socket = useSocket();
   const router = useRouter();
   const [showModal, setShowModal] = useState(false);
   const { rooms } = useSelector((state) => state.room);
+  // useBrowserWarning();
 
   const closeModal = () => setShowModal(false);
   const createRoom = (roomName, gameType, maxPlayers) => {
@@ -18,7 +20,7 @@ export default function GameRooms({ session }) {
       if (!response.success) {
         alert(response.message);
       } else {
-        window.location.href = `/${gameType}/${response.roomId}`;
+        router.push(`/${gameType}/${response.roomId}`);
         console.log(`/${gameType}/${response.roomId}`)
         // closeModal();
       }
