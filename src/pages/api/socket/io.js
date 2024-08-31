@@ -147,15 +147,6 @@ const ioHandler = (req, res) => {
         }, 1000);
       });
 
-      // todo : 필요없을지도. 추후에 지워보고 테스트.
-      // socket.on('get-current-timer', (roomId, callback) => {
-      //   const room = rooms[roomId];
-      //   if (!room) {
-      //     return callback({ success: false, message: '존재하지 않는 게임방에서 요청되었습니다.' });
-      //   }
-      //   callback({ success: true, timeLeft: room.gameData.timeLeft }); // 현재 남은 시간 전송
-      // });
-
     });
   }
   res.end();

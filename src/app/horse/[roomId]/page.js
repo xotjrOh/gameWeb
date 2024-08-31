@@ -8,6 +8,7 @@ import TabPanel from '@/components/tab/TabPanel';
 import BettingTab from './Horse.BettingTab';
 import ChipsTab from './Horse.ChipsTab';
 import HorsesTab from './Horse.HorsesTab';
+import MyStatusButton from './Horse.MyStatusButton';
 import useRedirectIfInvalidRoom from '@/hooks/useRedirectIfInvalidRoom';
 
 export default function HorseGamePage({ params }) {
@@ -24,7 +25,10 @@ export default function HorseGamePage({ params }) {
     <div className="min-h-screen bg-gray-100 flex flex-col">
       {/* 상단 네비게이션 바 */}
       <header className="bg-white shadow p-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold">경마게임</h1>
+        <h1 className="text-xl font-bold text-center">
+          🐎 경마게임 🐎
+        </h1>
+        <MyStatusButton />
       </header>
 
       {/* 탭 네비게이션과 컨텐츠 영역 */}

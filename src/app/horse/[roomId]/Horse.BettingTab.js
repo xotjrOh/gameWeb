@@ -2,26 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import useSocket from '@/hooks/useSocket';
+import MyStatusButton from './Horse.MyStatusButton';
 
 export default function BettingTab({ roomId }) {
   const socket = useSocket();
   const [timeLeft, setTimeLeft] = useState(0);
   const [selectedHorses, setSelectedHorses] = useState([]);
-  const [showStatus, setShowStatus] = useState(false);
 
   useEffect(() => {
     // 서버에서 현재 타이머 값을 가져옴
     // todo : if socket 필요할지도
     if (socket) {
-      // socket.emit('get-current-timer', roomId, (response) => {
-      //   if (!response.success) {
-      //     alert(response.message);
-      //   } else {
-      //     setTimeLeft(response.timeLeft);
-      //   }
-      // });
-
-      console.log("진입")
       // 서버에서 1초마다 보내는 타이머 업데이트를 수신
       socket.on('update-timer', (newTimeLeft) => {
         setTimeLeft(newTimeLeft);
@@ -66,14 +57,6 @@ export default function BettingTab({ roomId }) {
         라운드 시작
       </button>
 
-      {/* 내 상태 보기 버튼 */}
-      <button
-        onClick={() => setShowStatus(true)}
-        className="bg-blue-500 text-white py-2 px-4 rounded"
-      >
-        내 상태 보기
-      </button>
-
       {/* 타이머 및 베팅 */}
       <div className="text-center">
         <h2 className="text-2xl font-bold">베팅</h2>
@@ -100,23 +83,6 @@ export default function BettingTab({ roomId }) {
         </button>
       </div>
 
-      {/* 팝업 */}
-      {showStatus && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white p-6 rounded shadow-lg text-center">
-            <h3 className="text-lg font-bold">내 상태</h3>
-            <p>익명 이름: player3</p>
-            <p>내 경주마: F</p>
-            <p>남은 칩 개수: 17</p>
-            <button
-              onClick={() => setShowStatus(false)}
-              className="mt-4 bg-blue-500 text-white py-2 px-4 rounded"
-            >
-              닫기
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
