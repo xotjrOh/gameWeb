@@ -18,19 +18,7 @@ export default function GameRooms({ session }) {
   // useBrowserWarning();
 
   const closeModal = () => setShowModal(false);
-  const createRoom = (roomName, gameType, maxPlayers) => {
-    dispatch(setIsLoading(true));
-    socket.emit('create-room', { roomName, userName: session.user.name, gameType, sessionId: session.user.id, maxPlayers }, (response) => {
-      dispatch(setIsLoading(false));
-      if (!response.success) {
-        alert(response.message);
-      } else {
-        router.push(`/${gameType}/${response.roomId}`);
-        console.log(`/${gameType}/${response.roomId}`)
-        // closeModal();
-      }
-    });
-  };
+
   const joinRoom = (roomId, gameType) => {
     dispatch(setIsLoading(true));
     socket.emit('join-room', { roomId, userName: session.user.name, sessionId: session.user.id }, (response) => {
@@ -80,7 +68,7 @@ export default function GameRooms({ session }) {
           ))}
         </tbody>
       </table>
-      {showModal && <RoomModal createRoom={createRoom} closeModal={closeModal} />}
+      {showModal && <RoomModal closeModal={closeModal} socket={socket} router={router} dispatch={dispatch} session={session} />}
     </div>
   );
 }

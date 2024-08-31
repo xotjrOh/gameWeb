@@ -2,15 +2,25 @@
 'use client';
 
 import { useState } from 'react';
+import { setIsLoading } from '@/store/loadingSlice';
 
-export default function RoomModal({ createRoom, closeModal }) {
+export default function RoomModal({ closeModal, socket, router, dispatch, session }) {
   const [roomName, setRoomName] = useState('');
   const [gameType, setGameType] = useState('horse');
   const [maxPlayers, setMaxPlayers] = useState(null);
 
-  const handleSubmit = (e) => {
+  const createRoom = (e) => {
     e.preventDefault();
-    createRoom(roomName, gameType, maxPlayers);
+    dispatch(setIsLoading(true));
+    socket.emit('create-room', { roomName, userName: session.user.name, gameType, sessionId: session.user.id, maxPlayers }, (response) => {
+      dispatch(setIsLoading(false));
+      if (!response.success) {
+        alert(response.message);
+      } else {
+        router.push(`/${gameType}/${response.roomId}`);
+        console.log(`/${gameType}/${response.roomId}`)
+      }
+    });
   };
 
   return (
@@ -41,10 +51,9 @@ export default function RoomModal({ createRoom, closeModal }) {
           placeholder="최대 인원"
           className="border p-2 rounded mb-2 w-full"
         />
-        <button onClick={handleSubmit} className="bg-blue-500 text-white px-4 py-2 rounded w-full">
+        <button onClick={createRoom} className="bg-blue-500 text-white px-4 py-2 rounded w-full">
           방 만들기
         </button>
-        {/* {errorMessage && <p className="text-red-500 mt-2">{errorMessage}</p>} */}
       </div>
     </div>
   );
