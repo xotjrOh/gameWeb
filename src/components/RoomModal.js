@@ -23,17 +23,19 @@ export default function RoomModal({ createRoom, closeModal }) {
         <h2 className="text-xl font-bold mb-4">방 만들기</h2>
         <input
           type="text"
+          id="room-name"
           value={roomName}
           onChange={(e) => setRoomName(e.target.value)}
           placeholder="방 이름"
           className="border p-2 rounded mb-2 w-full"
         />
-        <select value={gameType} onChange={(e) => setGameType(e.target.value)} className="border p-2 rounded mb-4 w-full">
+        <select id="room-type" value={gameType} onChange={(e) => setGameType(e.target.value)} className="border p-2 rounded mb-4 w-full">
           {/* <option value="rps">가위바위보</option> */}
           <option value="horse">경마게임</option>
         </select>
         <input
           type="number"
+          id="room-max"
           value={maxPlayers}
           onChange={(e) => setMaxPlayers(parseInt(e.target.value))}
           placeholder="최대 인원"

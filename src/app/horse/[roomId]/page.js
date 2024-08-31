@@ -9,21 +9,17 @@ import BettingTab from './Horse.BettingTab';
 import ChipsTab from './Horse.ChipsTab';
 import HorsesTab from './Horse.HorsesTab';
 import useRedirectIfInvalidRoom from '@/hooks/useRedirectIfInvalidRoom';
-import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function HorseGamePage({ params }) {
   const { roomId } = params;
-  const status = useRedirectIfInvalidRoom(roomId);
   const [activeTab, setActiveTab] = useState('betting'); // 기본 탭을 'betting'으로 설정
-
+  
   const handleTabChange = (newValue) => {
     setActiveTab(newValue);
   };
 
-  if (status === 'loading') {
-    return <LoadingSpinner />;
-  }
-
+  useRedirectIfInvalidRoom(roomId);
+  
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       {/* 상단 네비게이션 바 */}

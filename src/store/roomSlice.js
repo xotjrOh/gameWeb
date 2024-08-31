@@ -9,7 +9,7 @@ import { createSlice } from '@reduxjs/toolkit'
 // 	maxPlayers,
 //   };
 
-let roomSlice = createSlice({
+const roomSlice = createSlice({
 	name : 'room',
 	initialState: {
 		rooms: {},
@@ -21,5 +21,5 @@ let roomSlice = createSlice({
 	}
 })
 
-export let { setRooms } = roomSlice.actions // state 변경함수들 남음
+export const { setRooms } = roomSlice.actions // state 변경함수들 남음
 export default roomSlice

@@ -35,7 +35,16 @@ const ioHandler = (req, res) => {
       socket.on('create-room', ({ roomName, userName, gameType, sessionId, maxPlayers }, callback) => {
         console.log("create room 방문 server")
         if (!AUTHORIZED_SESSION_IDS.includes(sessionId)) {
-          return callback({ success: false, message: '방을 만들기 위해서는 오태석에게 문의하세요' });
+          return callback({ success: false, message: '방을 만들기 위해서는 오태석에게 문의하세요.' });
+        }
+        if (!roomName) {
+          return callback({ success: false, message: '방이름을 정해주세요.', field:"room-name" });
+        }
+        if (!gameType) {
+          return callback({ success: false, message: '게임종류를 정해주세요.', field:"room-type" });
+        }
+        if (!Number.isInteger(maxPlayers) || maxPlayers < 1) {
+          return callback({ success: false, message: '최대 플레이어 수는 1 이상의 정수여야 합니다.', field:"room-max" });
         }
 
         lock.acquire('rooms', (done) => {

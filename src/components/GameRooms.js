@@ -3,26 +3,25 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
+import { setIsLoading } from '@/store/loadingSlice';
 import useSocket from '@/hooks/useSocket';
 import RoomModal from './RoomModal';
 // import { useBrowserWarning } from '@/hooks/useBrowserWarning';
-import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function GameRooms({ session }) {
   const socket = useSocket();
   const router = useRouter();
+  const dispatch = useDispatch();
   const [showModal, setShowModal] = useState(false);
   const { rooms } = useSelector((state) => state.room);
   // useBrowserWarning();
-  const [loading, setLoading] = useState(false);
 
   const closeModal = () => setShowModal(false);
   const createRoom = (roomName, gameType, maxPlayers) => {
-    setLoading(true);
-    console.log("create room", session);
+    dispatch(setIsLoading(true));
     socket.emit('create-room', { roomName, userName: session.user.name, gameType, sessionId: session.user.id, maxPlayers }, (response) => {
-      setLoading(false);
-      console.log("create room 요청 이후")
+      dispatch(setIsLoading(false));
       if (!response.success) {
         alert(response.message);
       } else {
@@ -33,11 +32,14 @@ export default function GameRooms({ session }) {
     });
   };
   const joinRoom = (roomId, gameType) => {
-    setLoading(true);
+    dispatch(setIsLoading(true));
     socket.emit('join-room', { roomId, userName: session.user.name, sessionId: session.user.id }, (response) => {
-      setLoading(false);
+      dispatch(setIsLoading(false));
       if (!response.success) {
         alert(response.message);
+        if (!response.field) return;
+
+        document.getElementById(response.field).focus();
       } else {
         // 페이지를 이동하거나, UI를 업데이트할 수 있습니다.
         router.push(`/${gameType}/${roomId}`);
@@ -48,7 +50,6 @@ export default function GameRooms({ session }) {
 
   return (
     <div className="flex flex-col items-center p-4 bg-[#eff9ff] yanolza-font min-h-screen">
-      {loading && <LoadingSpinner />}
 
       {session.user.id == '3624891095' && (
         <button onClick={() => setShowModal(true)} className="bg-blue-500 text-white px-4 py-2 rounded mb-4">
