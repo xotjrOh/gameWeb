@@ -1,13 +1,18 @@
 // components/RoomModal.js
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { setIsLoading } from '@/store/loadingSlice';
 
 export default function RoomModal({ closeModal, socket, router, dispatch, session }) {
   const [roomName, setRoomName] = useState('');
   const [gameType, setGameType] = useState('horse');
   const [maxPlayers, setMaxPlayers] = useState(null);
+  const inputRefs = useRef({
+    roomName: null,
+    gameType: null,
+    maxPlayers: null,
+  });
 
   const createRoom = (e) => {
     e.preventDefault();
@@ -16,6 +21,7 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
       dispatch(setIsLoading(false));
       if (!response.success) {
         alert(response.message);
+        inputRefs.current[response.field]?.focus();
       } else {
         router.push(`/${gameType}/${response.roomId}`);
         console.log(`/${gameType}/${response.roomId}`)
@@ -33,19 +39,19 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
         <h2 className="text-xl font-bold mb-4">방 만들기</h2>
         <input
           type="text"
-          id="room-name"
+          ref={(el) => (inputRefs.current.roomName = el)}
           value={roomName}
           onChange={(e) => setRoomName(e.target.value)}
           placeholder="방 이름"
           className="border p-2 rounded mb-2 w-full"
         />
-        <select id="room-type" value={gameType} onChange={(e) => setGameType(e.target.value)} className="border p-2 rounded mb-4 w-full">
+        <select ref={(el) => (inputRefs.current.gameType = el)} value={gameType} onChange={(e) => setGameType(e.target.value)} className="border p-2 rounded mb-4 w-full">
           {/* <option value="rps">가위바위보</option> */}
           <option value="horse">경마게임</option>
         </select>
         <input
           type="number"
-          id="room-max"
+          ref={(el) => (inputRefs.current.maxPlayers = el)}
           value={maxPlayers}
           onChange={(e) => setMaxPlayers(parseInt(e.target.value))}
           placeholder="최대 인원"

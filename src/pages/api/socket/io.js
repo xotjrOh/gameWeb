@@ -38,13 +38,13 @@ const ioHandler = (req, res) => {
           return callback({ success: false, message: '방을 만들기 위해서는 오태석에게 문의하세요.' });
         }
         if (!roomName) {
-          return callback({ success: false, message: '방이름을 정해주세요.', field:"room-name" });
+          return callback({ success: false, message: '방이름을 정해주세요.', field:"roomName" });
         }
         if (!gameType) {
-          return callback({ success: false, message: '게임종류를 정해주세요.', field:"room-type" });
+          return callback({ success: false, message: '게임종류를 정해주세요.', field:"gameType" });
         }
         if (!Number.isInteger(maxPlayers) || maxPlayers < 1) {
-          return callback({ success: false, message: '최대 플레이어 수는 1 이상의 정수여야 합니다.', field:"room-max" });
+          return callback({ success: false, message: '최대 플레이어 수는 1 이상의 정수여야 합니다.', field:"maxPlayers" });
         }
 
         lock.acquire('rooms', (done) => {
