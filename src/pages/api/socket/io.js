@@ -53,7 +53,7 @@ const ioHandler = (req, res) => {
             status: '대기중',
             maxPlayers,
           };
-          socket.join(roomId);
+          socket.join(roomId.toString());
           callback({ success: true, roomId });
           io.emit('room-updated', rooms);
           done();
@@ -79,12 +79,12 @@ const ioHandler = (req, res) => {
         const playerExists = room.players.some(player => player.id === sessionId);
         // 튕겼다가 온 사람은 재연결 해줌
         if (playerExists) {
-          socket.join(roomId);
+          socket.join(roomId.toString());
           return callback({ success: true });
         }
 
         room.players.push({ id: sessionId, name: userName });
-        socket.join(roomId);
+        socket.join(roomId.toString());
         io.emit('room-updated', rooms);
         return callback({ success: true });
       });
@@ -122,14 +122,11 @@ const ioHandler = (req, res) => {
       // todo : 다른게임에서 로직이 다를 경우 게임타입 나누는 로직 필요
       // host만 호출할 이벤트
       socket.on('start-round', ({ roomId, duration }) => {
-        console.log("asdf");
         const room = rooms[roomId];
-
         room.gameData.timeLeft = duration;
         clearInterval(timers[roomId]);
   
         timers[roomId] = setInterval(() => {
-          console.log(roomId, room.gameData.timeLeft);
           if (room.gameData.timeLeft > 0) {
             room.gameData.timeLeft -= 1;
             io.to(roomId).emit('update-timer', room.gameData.timeLeft); // 타이머 업데이트 전송

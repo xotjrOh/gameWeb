@@ -21,6 +21,7 @@ export default function BettingTab({ roomId }) {
       //   }
       // });
 
+      console.log("진입")
       // 서버에서 1초마다 보내는 타이머 업데이트를 수신
       socket.on('update-timer', (newTimeLeft) => {
         setTimeLeft(newTimeLeft);
@@ -52,7 +53,6 @@ export default function BettingTab({ roomId }) {
   // todo : 지울예정. 호스트에서만 필요
   // 테스트용 라운드 시작 버튼
   const startRound = () => {
-    console.log("호출은 됨")
     socket.emit('start-round', { roomId, duration: 300 }); // 5분(300초) 타이머 시작
   };
 
