@@ -6,6 +6,7 @@ import { useSelector } from 'react-redux';
 import useSocket from '@/hooks/useSocket';
 import RoomModal from './RoomModal';
 // import { useBrowserWarning } from '@/hooks/useBrowserWarning';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function GameRooms({ session }) {
   const socket = useSocket();
@@ -13,11 +14,14 @@ export default function GameRooms({ session }) {
   const [showModal, setShowModal] = useState(false);
   const { rooms } = useSelector((state) => state.room);
   // useBrowserWarning();
+  const [loading, setLoading] = useState(false);
 
   const closeModal = () => setShowModal(false);
   const createRoom = (roomName, gameType, maxPlayers) => {
+    setLoading(true);
     console.log("create room", session);
     socket.emit('create-room', { roomName, userName: session.user.name, gameType, sessionId: session.user.id, maxPlayers }, (response) => {
+      setLoading(false);
       console.log("create room 요청 이후")
       if (!response.success) {
         alert(response.message);
@@ -42,11 +46,14 @@ export default function GameRooms({ session }) {
 
   return (
     <div className="flex flex-col items-center p-4 bg-[#eff9ff] yanolza-font min-h-screen">
+      {loading && <LoadingSpinner />}
+
       {session.user.id == '3624891095' && (
         <button onClick={() => setShowModal(true)} className="bg-blue-500 text-white px-4 py-2 rounded mb-4">
           방 만들기
         </button>
       )}
+      
       <table className="min-w-full text-center">
         <thead>
           <tr className="border-b border-gray-300 bg-[#dff2fd]">

@@ -129,6 +129,7 @@ const ioHandler = (req, res) => {
         clearInterval(timers[roomId]);
   
         timers[roomId] = setInterval(() => {
+          console.log(roomId, room.gameData.timeLeft);
           if (room.gameData.timeLeft > 0) {
             room.gameData.timeLeft -= 1;
             io.to(roomId).emit('update-timer', room.gameData.timeLeft); // 타이머 업데이트 전송
