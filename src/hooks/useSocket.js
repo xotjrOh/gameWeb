@@ -5,13 +5,13 @@ import { setRooms } from '@/store/roomSlice';
 
 const useSocket = () => {
   const dispatch = useDispatch();
-  const { socket, isConnected } = useSelector((state) => state.socket);
+  const { socket } = useSelector((state) => state.socket);
 
   useEffect(() => {
-    if (!isConnected) {
+    if (!socket || !socket.connected) {
       dispatch(initializeSocket());
     }
-  }, [isConnected, dispatch]);
+  }, [socket, dispatch]);
 
   useEffect(() => {
     if (socket) {
@@ -24,7 +24,7 @@ const useSocket = () => {
 
       return () => {
         socket.off('room-updated', handleRoomUpdated);
-        // socket.disconnect();
+        // setTimeout(socket.disconnect(), 4000);
       };
     }
   }, [socket, dispatch]);

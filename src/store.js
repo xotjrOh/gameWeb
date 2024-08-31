@@ -8,5 +8,6 @@ export default configureStore({
   reducer: { 
 	  room : roomSlice.reducer,
 	  socket: socketSlice.reducer,
-  }
+  },
+  devTools : true,
 }) 
