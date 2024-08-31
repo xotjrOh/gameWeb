@@ -13,13 +13,13 @@ export default function BettingTab({ roomId }) {
     // 서버에서 현재 타이머 값을 가져옴
     // todo : if socket 필요할지도
     if (socket) {
-      socket.emit('get-current-timer', roomId, (response) => {
-        if (!response.success) {
-          alert(response.message);
-        } else {
-          setTimeLeft(response.timeLeft);
-        }
-      });
+      // socket.emit('get-current-timer', roomId, (response) => {
+      //   if (!response.success) {
+      //     alert(response.message);
+      //   } else {
+      //     setTimeLeft(response.timeLeft);
+      //   }
+      // });
 
       // 서버에서 1초마다 보내는 타이머 업데이트를 수신
       socket.on('update-timer', (newTimeLeft) => {

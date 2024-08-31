@@ -33,7 +33,9 @@ export default function GameRooms({ session }) {
     });
   };
   const joinRoom = (roomId, gameType) => {
+    setLoading(true);
     socket.emit('join-room', { roomId, userName: session.user.name, sessionId: session.user.id }, (response) => {
+      setLoading(false);
       if (!response.success) {
         alert(response.message);
       } else {
@@ -53,7 +55,7 @@ export default function GameRooms({ session }) {
           방 만들기
         </button>
       )}
-      
+
       <table className="min-w-full text-center">
         <thead>
           <tr className="border-b border-gray-300 bg-[#dff2fd]">
