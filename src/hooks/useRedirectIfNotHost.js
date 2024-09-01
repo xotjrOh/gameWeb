@@ -3,10 +3,10 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useDispatch } from 'react-redux';
 import { setIsLoading } from '@/store/loadingSlice';
-import useSocket from '@/hooks/useSocket';
+import { useSocket } from '@/components/provider/SocketProvider';
 
 const useRedirectIfInvalidRoom = (roomId) => {
-  const socket = useSocket();
+  const { socket } = useSocket();
   const router = useRouter();
   const dispatch = useDispatch();
   const { data: session, status } = useSession();

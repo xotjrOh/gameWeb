@@ -5,12 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
 import { setIsLoading } from '@/store/loadingSlice';
-import useSocket from '@/hooks/useSocket';
+import { useSocket } from '@/components/provider/SocketProvider';
 import RoomModal from './RoomModal';
 // import { useBrowserWarning } from '@/hooks/useBrowserWarning';
 
 export default function GameRooms({ session }) {
-  const socket = useSocket();
+  const { socket } = useSocket();
   const router = useRouter();
   const dispatch = useDispatch();
   const [showModal, setShowModal] = useState(false);
@@ -20,17 +20,22 @@ export default function GameRooms({ session }) {
   const closeModal = () => setShowModal(false);
 
   const joinRoom = (roomId, gameType) => {
+    if (!socket || !socket.connected) {
+      alert('서버와 연결이 되어 있지 않습니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
+
     dispatch(setIsLoading(true));
     socket.emit('join-room', { roomId, userName: session.user.name, sessionId: session.user.id }, (response) => {
-      dispatch(setIsLoading(false));
       if (!response.success) {
-        if (response.host) return router.push(`/${gameType}/${roomId}/host`);
-        alert(response.message);
+        if (response.host) router.push(`/${gameType}/${roomId}/host`);
+        if (response.message) alert(response.message);
       } else {
         // 페이지를 이동하거나, UI를 업데이트할 수 있습니다.
         router.push(`/${gameType}/${roomId}`);
         // window.location.href = `/${gameType}/${roomId}`;
       }
+      dispatch(setIsLoading(false));
     });
   };
 

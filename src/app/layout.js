@@ -1,6 +1,7 @@
 import "./globals.css";
 import SessionProviderWrapper from '@/components/provider/SessionProviderWrapper';
 import ReduxProvider from "@/components/provider/ReduxProvider";
+import { SocketProvider } from '@/components/provider/SocketProvider';
 
 import LoadingSpinner from "@/components/LoadingSpinner";
 
@@ -15,8 +16,10 @@ export default function RootLayout({ children }) {
       <body>
         <SessionProviderWrapper>
           <ReduxProvider>
-            <LoadingSpinner />
-            {children}
+            <SocketProvider>
+              <LoadingSpinner />
+              {children}
+            </SocketProvider>
           </ReduxProvider>
         </SessionProviderWrapper>
       </body>

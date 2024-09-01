@@ -1,11 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import useSocket from '@/hooks/useSocket';
-import MyStatusButton from './Horse.MyStatusButton';
+import { useSocket } from '@/components/provider/SocketProvider';
 
 export default function BettingTab({ roomId }) {
-  const socket = useSocket();
+  const { socket } = useSocket();
   const [timeLeft, setTimeLeft] = useState(0);
   const [selectedHorses, setSelectedHorses] = useState([]);
 

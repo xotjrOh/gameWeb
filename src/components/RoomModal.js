@@ -18,13 +18,13 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
     e.preventDefault();
     dispatch(setIsLoading(true));
     socket.emit('create-room', { roomName, userName: session.user.name, gameType, sessionId: session.user.id, maxPlayers }, (response) => {
-      dispatch(setIsLoading(false));
       if (!response.success) {
         alert(response.message);
         inputRefs.current[response.field]?.focus();
       } else {
         router.push(`/${gameType}/${response.roomId}/host`);
       }
+      dispatch(setIsLoading(false));
     });
   };
 
