@@ -24,10 +24,8 @@ export default function GameRooms({ session }) {
     socket.emit('join-room', { roomId, userName: session.user.name, sessionId: session.user.id }, (response) => {
       dispatch(setIsLoading(false));
       if (!response.success) {
+        if (response.host) return router.push(`/${gameType}/${roomId}/host`);
         alert(response.message);
-        if (!response.field) return;
-
-        document.getElementById(response.field).focus();
       } else {
         // 페이지를 이동하거나, UI를 업데이트할 수 있습니다.
         router.push(`/${gameType}/${roomId}`);

@@ -23,8 +23,7 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
         alert(response.message);
         inputRefs.current[response.field]?.focus();
       } else {
-        router.push(`/${gameType}/${response.roomId}`);
-        console.log(`/${gameType}/${response.roomId}`)
+        router.push(`/${gameType}/${response.roomId}/host`);
       }
     });
   };

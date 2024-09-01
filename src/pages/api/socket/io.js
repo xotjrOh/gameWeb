@@ -31,6 +31,11 @@ const ioHandler = (req, res) => {
         const isInRoom = room && room.players.some(player => player.id === sessionId);
         callback({ isInRoom });
       });
+      socket.on('check-room-host', ({ roomId, sessionId }, callback) => {
+        const room = rooms[roomId];
+        const isInRoom = room && room.host.id === sessionId;
+        callback({ isInRoom });
+      });
 
       socket.on('create-room', ({ roomName, userName, gameType, sessionId, maxPlayers }, callback) => {
         console.log("create room 방문 server")
@@ -76,13 +81,16 @@ const ioHandler = (req, res) => {
       socket.on('join-room', ({ roomId, userName, sessionId }, callback) => {
         const room = rooms[roomId];
         if (!room) {
-          return callback({ success: false, message: '방이 존재하지 않습니다' });
+          return callback({ success: false, host: false, message: '방이 존재하지 않습니다' });
         }
         if (room.players.length >= room.maxPlayers) {
-          return callback({ success: false, message: '방이 가득찼습니다' });
+          return callback({ success: false, host: false, message: '방이 가득찼습니다' });
         }
         if (room.status === '게임중') {
-          return callback({ success: false, message: '이미 게임이 시작되었습니다' });
+          return callback({ success: false, host: false, message: '이미 게임이 시작되었습니다' });
+        }
+        if (room.host.id === sessionId) {
+          return callback({ success: false, host: true });
         }
 
         const playerExists = room.players.some(player => player.id === sessionId);
