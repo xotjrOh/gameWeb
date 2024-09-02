@@ -1,6 +1,6 @@
 'use client';
 
-export default function ChipsTab({ roomId }) {
+export default function ChipsTab({ roomId, socket }) {
   const players = [
     { name: 'player1', chips: 10 },
     { name: 'player2', chips: 8 },

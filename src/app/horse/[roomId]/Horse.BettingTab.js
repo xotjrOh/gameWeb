@@ -1,10 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { useSocket } from '@/components/provider/SocketProvider';
 
-export default function BettingTab({ roomId }) {
-  const { socket } = useSocket();
+export default function BettingTab({ roomId, socket }) {
   const [timeLeft, setTimeLeft] = useState(0);
   const [selectedHorses, setSelectedHorses] = useState([]);
 
@@ -40,21 +38,8 @@ export default function BettingTab({ roomId }) {
     }
   };
 
-  // todo : 지울예정. 호스트에서만 필요
-  // 테스트용 라운드 시작 버튼
-  const startRound = () => {
-    socket.emit('start-round', { roomId, duration: 300 }); // 5분(300초) 타이머 시작
-  };
-
   return (
     <div className="space-y-4">
-      {/* 테스트용 라운드 시작 버튼 */}
-      <button
-        onClick={startRound}
-        className="bg-red-500 text-white py-2 px-4 rounded"
-      >
-        라운드 시작
-      </button>
 
       {/* 타이머 및 베팅 */}
       <div className="text-center">

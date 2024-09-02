@@ -1,6 +1,6 @@
 'use client';
 
-export default function HorsesTab({ roomId }) {
+export default function HorsesTab({ roomId, socket }) {
   const horses = [
     { name: 'A', position: 3 },
     { name: 'B', position: 5 },

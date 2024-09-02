@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import useOutsideClick from '@/hooks/useOutsideClick';
 
-export default function MyStatusButton() {
+export default function MyStatusButton({ socket }) {
   const [showStatus, setShowStatus] = useState(false);
   const popupRef = useRef(null);
 
