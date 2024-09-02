@@ -3,11 +3,24 @@
 import { useState, useRef } from 'react';
 import useOutsideClick from '@/hooks/useOutsideClick';
 
-export default function MyStatusButton({ socket }) {
+export default function MyStatusButton({ roomId, socket, session }) {
   const [showStatus, setShowStatus] = useState(false);
+  const [statusInfo, setStatusInfo] = useState({ playerName: '', horse: '', chips: 0 });
   const popupRef = useRef(null);
 
   useOutsideClick(popupRef, () => setShowStatus(false));
+
+  useEffect(() => {
+    socket.on('status-update', (data) => {
+    setStatusInfo(data);
+    });
+
+    socket.emit('get-status', { roomId, sessionId: session.user.id });
+
+    return () => {
+    socket.off('status-update');
+    };
+  }, [socket, roomId, session]);
 
   return (
     <div className="relative">

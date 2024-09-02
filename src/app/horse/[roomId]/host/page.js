@@ -11,11 +11,13 @@ import HorsesTab from './Horse.HorsesTab';
 import MyStatusButton from './Horse.MyStatusButton';
 import useRedirectIfNotHost from '@/hooks/useRedirectIfNotHost';
 import { useSocket } from '@/components/provider/SocketProvider';
+import { useSession } from 'next-auth/react';
 
 export default function HorseGamePage({ params }) {
   const { roomId } = params;
   const { socket } = useSocket();
   const [activeTab, setActiveTab] = useState('betting'); // 기본 탭을 'betting'으로 설정
+  const { data: session, status } = useSession();
   
   const handleTabChange = (newValue) => {
     setActiveTab(newValue);
@@ -30,7 +32,7 @@ export default function HorseGamePage({ params }) {
         <h1 className="text-xl font-bold text-center">
           🐎 경마게임 🐎 호스트방
         </h1>
-        <MyStatusButton socket={socket} />
+        <MyStatusButton roomId={roomId} socket={socket} session={session} />
       </header>
 
       {/* 탭 네비게이션과 컨텐츠 영역 */}
@@ -40,13 +42,13 @@ export default function HorseGamePage({ params }) {
         <Tab label="경주마"  value="horses" />
 
         <TabPanel value="betting">
-          <BettingTab roomId={roomId} socket={socket} />
+          <BettingTab roomId={roomId} socket={socket} session={session} />
         </TabPanel>
         <TabPanel value="chips">
-          <ChipsTab roomId={roomId} socket={socket} />
+          <ChipsTab roomId={roomId} socket={socket} session={session} />
         </TabPanel>
         <TabPanel value="horses">
-          <HorsesTab roomId={roomId} socket={socket} />
+          <HorsesTab roomId={roomId} socket={socket} session={session} />
         </TabPanel>
       </Tabs>
     </div>

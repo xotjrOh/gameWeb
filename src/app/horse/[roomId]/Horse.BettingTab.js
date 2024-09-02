@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 
-export default function BettingTab({ roomId, socket }) {
+export default function BettingTab({ roomId, socket, session }) {
   const [timeLeft, setTimeLeft] = useState(0);
   const [selectedHorses, setSelectedHorses] = useState([]);
 
