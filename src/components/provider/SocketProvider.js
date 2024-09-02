@@ -4,7 +4,6 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { io } from 'socket.io-client';
 import { setRooms } from '@/store/roomSlice';
-import LoadingSpinner from "@/components/LoadingSpinner";
 
 const SocketContext = createContext({
     socket: null,

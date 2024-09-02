@@ -100,7 +100,7 @@ const ioHandler = (req, res) => {
           return callback({ success: true });
         }
 
-        room.players.push({ id: sessionId, name: userName });
+        room.players.push({ id: sessionId, name: userName, socketId: socket.id });
         socket.join(roomId.toString());
         io.emit('room-updated', rooms);
         return callback({ success: true });
@@ -138,9 +138,15 @@ const ioHandler = (req, res) => {
       // -------------------- HORSE GAME --------------------------
       // todo : 다른게임에서 로직이 다를 경우 게임타입 나누는 로직 필요
       // host만 호출할 이벤트
-      socket.on('start-round', ({ roomId, duration }) => {
+      socket.on('horse-start-round', ({ roomId, duration }, callback) => {
         const room = rooms[roomId];
+        if (!room) {
+          return callback({ success: false, message: '존재하지 않는 게임방입니다.' });
+        }
+
         room.gameData.timeLeft = duration;
+        room.gameData.rounds = room.gameData.rounds || [];
+        room.gameData.bets = {}; // 라운드마다 베팅 초기화
         clearInterval(timers[roomId]);
   
         timers[roomId] = setInterval(() => {
@@ -150,11 +156,106 @@ const ioHandler = (req, res) => {
           } else {
             clearInterval(timers[roomId]);
             delete timers[roomId]; // 타이머 종료 시 삭제
+
+            // 베팅 결과 집계 및 전진 로직 (최다 득표 말이 여러 개일 때 처리)
+            const sortedHorses = Object.entries(room.gameData.bets)
+              .sort(([, chipsA], [, chipsB]) => chipsB - chipsA);
+
+            const maxChips = sortedHorses[0][1];
+            const secondMaxChips = sortedHorses.find(([, chips]) => chips < maxChips)?.[1] || 0;
+
+            const roundResult = sortedHorses.map(([horse, chips]) => ({
+              horse,
+              chips,
+              progress: chips === maxChips ? 2 : chips === secondMaxChips ? 1 : 0,
+            }));
+
+            room.gameData.rounds.push(roundResult);
+
             io.to(roomId).emit('round-ended'); // 라운드 종료 알림
           }
         }, 1000);
+
+        return callback({ success: true });
       });
 
+      // **추가된 역할 할당 이벤트**
+      socket.on('horse-assign-roles', ({ roomId }, callback) => {
+        const room = rooms[roomId];
+        if (!room) {
+          return callback({ success: false, message: '존재하지 않는 게임방입니다.' });
+        }
+
+        // 플레이어와 경주마 할당 로직
+        const players = room.players;
+        const numPlayers = players.length;
+        const horses = [];
+
+        const numHorses = Math.ceil(numPlayers / 2);
+        for (let i = 0; i < numHorses; i++) {
+          horses.push(String.fromCharCode(65 + i)); // 'A', 'B', 'C', ...
+        }
+        const randomHorses = [...horses];
+
+        // 플레이어를 랜덤하게 섞음
+        players.sort(() => Math.random() - 0.5);
+        randomHorses.sort(() => Math.random() - 0.5);
+
+        // 역할 할당
+        players.forEach((player, index) => {
+          player.dummyName = `player${index + 1}`;
+          player.horse = randomHorses[index % numHorses];
+          player.chips = 20;
+          player.isSolo = numPlayers % 2 !== 0 && index === Math.floor(numPlayers / 2);
+        });
+
+        // 말 목록을 gameData에 저장
+        room.gameData.horses = horses;
+        
+        // 플레이어 상태 업데이트 전송
+        players.forEach((player) => {
+          const data = {
+            dummyName: player.dummyName,
+            horse: player.horse,
+            chips: player.chips,
+            isSolo: player.isSolo,
+          };
+          io.to(player.socketId).emit('status-update', data);
+        });
+
+        io.to(roomId).emit('roles-assigned', { success: true, horses });
+        return callback({ success: true });
+      });
+      
+      // 베팅 로직 추가
+      // bets 는 { A : 3, B : 4 } 같은 객체
+      socket.on('horse-bet', ({ roomId, bets }, callback) => {
+        const room = rooms[roomId];
+        if (!room) {
+          return callback({ success: false, message: '존재하지 않는 게임방입니다.' });
+        }
+
+        const player = room.players.find(p => p.id === socket.id);
+        if (!player) {
+          return callback({ success: false, message: '본인이 참여하고 있지 않은 게임방입니다.' });
+        }
+
+        // 플레이어가 가진 칩이 충분한지 체크
+        const totalBets = Object.values(bets).reduce((sum, chips) => sum + chips, 0);
+        if (player.chips < totalBets) {
+          return callback({ success: false, message: '칩이 부족합니다.' });
+        }
+
+        // 베팅한 칩 기록
+        room.gameData.bets = room.gameData.bets || {};
+        Object.entries(bets).forEach(([horse, chips]) => {
+          room.gameData.bets[horse] = (room.gameData.bets[horse] || 0) + chips;
+        });
+
+        player.chips -= totalBets;
+
+        callback({ success: true, remainChips: player.chips });
+      });
     });
   }
   res.end();

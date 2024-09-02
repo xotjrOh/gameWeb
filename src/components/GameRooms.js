@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSelector } from 'react-redux';
-import { useDispatch } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { setIsLoading } from '@/store/loadingSlice';
 import { useSocket } from '@/components/provider/SocketProvider';
 import RoomModal from './RoomModal';
