@@ -172,7 +172,7 @@ const ioHandler = (req, res) => {
 
             room.gameData.rounds.push(roundResult);
 
-            io.to(roomId).emit('round-ended'); // 라운드 종료 알림
+            io.to(roomId).emit('round-ended', room.players); // 라운드 종료 알림
           }
         }, 1000);
 
