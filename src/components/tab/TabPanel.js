@@ -1,3 +1,7 @@
-export default function TabPanel({ children }) {
-    return <div>{children}</div>;
+export default function TabPanel({ children, hidden }) {
+    return (
+        <div hidden={hidden}>
+            {children}
+        </div>
+    );
 }

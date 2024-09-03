@@ -29,7 +29,7 @@ export default function BettingTab({ roomId, socket, session }) {
         socket.off('roles-assigned');
       };
     }
-  }, [socket, roomId]);
+  }, [roomId, socket]);
 
   // **베팅 시 총 칩 수가 초과하지 않도록 제한**
   const handleBetChange = (horse, amount) => {

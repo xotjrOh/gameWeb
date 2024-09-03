@@ -12,8 +12,10 @@ import MyStatusButton from './Horse.MyStatusButton';
 import useRedirectIfNotHost from '@/hooks/useRedirectIfNotHost';
 import { useSocket } from '@/components/provider/SocketProvider';
 import { useSession } from 'next-auth/react';
+import useUpdateSocketId from '@/hooks/useUpdateSocketId';
 
 export default function HorseGamePage({ params }) {
+  console.log("메인 root 페이지");
   const { roomId } = params;
   const { socket } = useSocket();
   const [activeTab, setActiveTab] = useState('betting'); // 기본 탭을 'betting'으로 설정
@@ -24,6 +26,7 @@ export default function HorseGamePage({ params }) {
   };
 
   useRedirectIfNotHost(roomId);
+  useUpdateSocketId(socket, session, roomId);
   
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">

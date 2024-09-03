@@ -12,6 +12,7 @@ import MyStatusButton from './Horse.MyStatusButton';
 import useRedirectIfInvalidRoom from '@/hooks/useRedirectIfInvalidRoom';
 import { useSocket } from '@/components/provider/SocketProvider';
 import { useSession } from 'next-auth/react';
+import useUpdateSocketId from '@/hooks/useUpdateSocketId';
 
 export default function HorseGamePage({ params }) {
   const { roomId } = params;
@@ -24,6 +25,7 @@ export default function HorseGamePage({ params }) {
   };
 
   useRedirectIfInvalidRoom(roomId);
+  useUpdateSocketId(socket, session, roomId);
   
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">

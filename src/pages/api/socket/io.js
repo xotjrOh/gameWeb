@@ -21,6 +21,25 @@ const ioHandler = (req, res) => {
     io.on('connection', (socket) => {
       console.log('server : A user connected');
 
+      socket.on('update-socket-id', ({ roomId, sessionId, newSocketId }) => {
+        // roomId와 sessionId를 기반으로 해당 플레이어를 찾아서 socketId를 업데이트
+        console.log(roomId, sessionId, newSocketId);
+        if (rooms[roomId]) {
+          const player = rooms[roomId].players.find(p => p.id === sessionId);
+          if (player) {
+            player.socketId = newSocketId;
+            socket.join(roomId.toString());
+            console.log(`Updated player socketId for player ${sessionId} in room ${roomId}`);
+          }
+
+          if (rooms[roomId].host.id == sessionId) {
+            socket.join(roomId.toString());
+            console.log(`Updated host socketId for player ${sessionId} in room ${roomId}`);
+          }
+          console.log(socket.rooms);
+        }
+      });
+
       socket.on('get-room-list', () => {
         console.log("get rooms", rooms);
         socket.emit('room-updated', rooms);
@@ -71,6 +90,9 @@ const ioHandler = (req, res) => {
             status: '대기중',
             maxPlayers,
           };
+          if (gameType == "horse") {
+            rooms[roomId].gameData.finishLine = 9;
+          }
           socket.join(roomId.toString());
           callback({ success: true, roomId });
           io.emit('room-updated', rooms);
@@ -182,6 +204,11 @@ const ioHandler = (req, res) => {
 
             room.gameData.rounds.push(roundResult);
 
+            io.to(roomId).emit('game-data-update', {
+              positions: room.gameData.positions,
+              finishLine: room.gameData.finishLine,
+            });
+
             // **게임 종료 체크**
             const horsesPositions = Object.entries(room.gameData.positions);
 
@@ -267,6 +294,7 @@ const ioHandler = (req, res) => {
           return callback({ success: false, message: '존재하지 않는 게임방입니다.' });
         }
 
+        // todo : session 비교로 바꾸고 인자로 받을것. socket은 변수가 많음
         const player = room.players.find(p => p.socketId === socket.id);
         if (!player) {
           return callback({ success: false, message: '본인이 참여하고 있지 않은 게임방입니다.' });
@@ -288,20 +316,29 @@ const ioHandler = (req, res) => {
 
         callback({ success: true, remainChips: player.chips });
       });
+
+      // **설정 업데이트 이벤트**
+      socket.on('horse-update-settings', ({ roomId, finishLine }, callback) => {
+        const room = rooms[roomId];
+        if (!room) {
+          return callback({ success: false, message: '존재하지 않는 게임방입니다.' });
+        }
+    
+        // finishLine 설정 업데이트
+        room.gameData.finishLine = finishLine;
+        io.to(roomId).emit('game-data-update', {
+          positions: room.gameData.positions || [],
+          finishLine: room.gameData.finishLine,
+        });
+        console.log(`Emitted game-data-update to room ${roomId}`, room.gameData.positions || [], room.gameData.finishLine);
+
+        callback({ success: true });
+      });
+
+
     });
   }
 
-  // **설정 업데이트 이벤트**
-  socket.on('horse-update-settings', ({ roomId, finishLine }, callback) => {
-    const room = rooms[roomId];
-    if (!room) {
-      return callback({ success: false, message: '존재하지 않는 게임방입니다.' });
-    }
-
-    // finishLine 설정 업데이트
-    room.gameData.finishLine = finishLine;
-    callback({ success: true });
-  });
   
   res.end();
 };

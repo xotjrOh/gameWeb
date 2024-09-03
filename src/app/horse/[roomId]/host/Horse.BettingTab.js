@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { setChip } from '@/store/chipSlice';
+import useOutsideClick from '@/hooks/useOutsideClick';
 
 export default function BettingTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
@@ -13,9 +14,14 @@ export default function BettingTab({ roomId, socket, session }) {
   const [showDurationModal, setShowDurationModal] = useState(false);  // **모달 창을 관리하는 상태**
   const [duration, setDuration] = useState(300);  // **사용자가 설정할 라운드 지속 시간**
   const [isRoundStarted, setIsRoundStarted] = useState(false);  // **라운드 시작 여부**
-  const [finishLine, setFinishLine] = useState(10);  // **골인지점 설정 상태**
+  const [finishLine, setFinishLine] = useState(9);  // **골인지점 설정 상태**
   const [showSettingsModal, setShowSettingsModal] = useState(false);  // **설정을 위한 모달 창 상태**
+  const roundPopupRef = useRef(null);
+  const settingPopupRef = useRef(null);
   const { chip } = useSelector((state) => state.chip);
+
+  useOutsideClick(roundPopupRef, () => setShowDurationModal(false));
+  useOutsideClick(settingPopupRef, () => setShowSettingsModal(false));
 
   useEffect(() => {
     if (socket) {
@@ -32,7 +38,7 @@ export default function BettingTab({ roomId, socket, session }) {
         socket.off('roles-assigned');
       };
     }
-  }, [socket, roomId]);
+  }, [roomId, socket]);
 
   const handleBetChange = (horse, amount) => {
     const newBets = { ...bets, [horse]: amount };
@@ -172,7 +178,7 @@ export default function BettingTab({ roomId, socket, session }) {
       {/* **모달 창** */}
       {showDurationModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white p-6 rounded shadow-lg text-center">
+          <div className="bg-white p-6 rounded shadow-lg text-center" ref={roundPopupRef}>
             <h3 className="text-lg font-bold mb-4">라운드 지속 시간 설정</h3>
             <input
               type="number"
@@ -195,7 +201,7 @@ export default function BettingTab({ roomId, socket, session }) {
       {/* **설정 모달 창** */}
       {showSettingsModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white p-6 rounded shadow-lg text-center">
+          <div className="bg-white p-6 rounded shadow-lg text-center" ref={settingPopupRef}>
             <h3 className="text-lg font-bold mb-4">골인지점 설정</h3>
             <input
               type="number"

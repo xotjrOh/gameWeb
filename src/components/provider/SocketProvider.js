@@ -23,19 +23,21 @@ export const SocketProvider = ({children}) => {
         const newSocket = io(process.env.NEXT_PUBLIC_SITE_URL, {
             path : "/api/socket/io",
             addTrailingSlash: false,
-            // reconnection: true, 		// 자동 재연결 활성화
-            // reconnectionAttempts: 10, // 재연결 시도 횟수
-            // reconnectionDelay: 1000, // 재연결 시도 간격 (1초)
+            reconnection: true, 		// 자동 재연결 활성화
+            reconnectionAttempts: Infinity, // 재연결 시도 횟수
+            reconnectionDelay: 1000, // 재연결 시도 간격 (1초)
+            forceNew: false,
         });
 
         newSocket.on('connect', () => {
-            console.log("client : connect");
+            console.log("client : connect", newSocket);
+            console.log("socket id : ", newSocket.id, newSocket.connected);
             setSocket(newSocket);
         });
 
         newSocket.on('disconnect', () => {
             console.log("client : disconnect");
-            setSocket(null);
+            // setSocket(null);
         });
 
         newSocket.on('reconnect', (attempt) => {
@@ -61,8 +63,8 @@ export const SocketProvider = ({children}) => {
 
         return () => {
         //   if (socket) {
-            console.log("provider에서 socket disconnect");
-            socket.disconnect();
+            // console.log("provider에서 socket disconnect");
+            // socket.disconnect();
         //   }
         };
     }, []); // todo : 위의 상황 발생시 [] 비워

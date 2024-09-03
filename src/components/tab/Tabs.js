@@ -22,8 +22,11 @@ export default function Tabs({ activeTab, onChange, children }) {
         <div className="p-4">
           {React.Children.map(children, (child) => {
             // 자식이 TabPanel 컴포넌트인지 확인
-            if (child.type === TabPanel && activeTab === child.props.value) {
-              return child;
+            if (child.type === TabPanel) {
+              // 모든 TabPanel을 렌더링하되, 활성화된 탭만 표시
+              return React.cloneElement(child, {
+                hidden: activeTab !== child.props.value,
+              });
             }
             return null;
           })}
