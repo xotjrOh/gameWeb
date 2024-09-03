@@ -12,6 +12,9 @@ export default function BettingTab({ roomId, socket, session }) {
   const [isBetLocked, setIsBetLocked] = useState(false);
   const [showDurationModal, setShowDurationModal] = useState(false);  // **모달 창을 관리하는 상태**
   const [duration, setDuration] = useState(300);  // **사용자가 설정할 라운드 지속 시간**
+  const [isRoundStarted, setIsRoundStarted] = useState(false);  // **라운드 시작 여부**
+  const [finishLine, setFinishLine] = useState(10);  // **골인지점 설정 상태**
+  const [showSettingsModal, setShowSettingsModal] = useState(false);  // **설정을 위한 모달 창 상태**
   const { chip } = useSelector((state) => state.chip);
 
   useEffect(() => {
@@ -60,6 +63,10 @@ export default function BettingTab({ roomId, socket, session }) {
   };
 
   const assignRoles = () => {
+    if (isRoundStarted) {
+      return alert("라운드가 시작된 후에는 역할을 할당할 수 없습니다.");
+    }
+
     socket.emit('horse-assign-roles', { roomId }, (response) => {
       if (!response.success) {
         alert(response.message);
@@ -74,28 +81,58 @@ export default function BettingTab({ roomId, socket, session }) {
   };
 
   const confirmStartRound = () => {
-    socket.emit('horse-start-round', { roomId, duration }, (response) => {
+    socket.emit('horse-start-round', { roomId, duration, finishLine }, (response) => {
       if (!response.success) {
         alert(response.message);
       } else {
         alert("성공적으로 타이머가 동작했습니다.");
         setShowDurationModal(false);  // **모달 창 닫기**
+        setIsRoundStarted(true);  // **라운드 시작됨을 표시**
+      }
+    });
+  };
+
+  const openSettingsModal = () => {
+    if (isRoundStarted) {
+      return alert("라운드가 시작된 후에는 설정을 변경할 수 없습니다.");
+    }
+    setShowSettingsModal(true);  // **설정 모달 창 열기**
+  };
+
+  const confirmSettings = () => {
+    socket.emit('horse-update-settings', { roomId, finishLine }, (response) => {
+      if (!response.success) {
+        alert(response.message);
+      } else {
+        alert("설정이 성공적으로 업데이트되었습니다.");
+        setShowSettingsModal(false);  // **설정 모달 창 닫기**
       }
     });
   };
 
   return (
     <div className="space-y-4">
+      {/* **설정 버튼** */}
+      <button
+        onClick={openSettingsModal}
+        className="bg-blue-500 text-white py-2 px-4 rounded"
+        disabled={isRoundStarted} // **라운드 시작 후 비활성화**
+      >
+        설정
+      </button>
+
       <button
         onClick={assignRoles}
-        className="bg-yellow-500 text-white py-2 px-4 rounded"
+        className={`bg-yellow-500 text-white py-2 px-4 rounded ${isRoundStarted ? 'opacity-50 cursor-not-allowed' : ''}`}
+        disabled={isRoundStarted} // **라운드 시작 후 비활성화**
       >
         역할 할당
       </button>
 
       <button
         onClick={startRound}
-        className="bg-red-500 text-white py-2 px-4 rounded"
+        className={`bg-red-500 text-white py-2 px-4 rounded ${isRoundStarted ? 'opacity-50 cursor-not-allowed' : ''}`}
+        disabled={isRoundStarted} // **라운드 시작 후 비활성화**
       >
         라운드 시작
       </button>
@@ -150,6 +187,29 @@ export default function BettingTab({ roomId, socket, session }) {
               className="bg-blue-500 text-white py-2 px-4 rounded w-full"
             >
               라운드 시작
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* **설정 모달 창** */}
+      {showSettingsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+          <div className="bg-white p-6 rounded shadow-lg text-center">
+            <h3 className="text-lg font-bold mb-4">골인지점 설정</h3>
+            <input
+              type="number"
+              value={finishLine}
+              onChange={(e) => setFinishLine(parseInt(e.target.value))}
+              min="5"
+              max="20"
+              className="border p-2 rounded mb-4 w-full"
+            />
+            <button
+              onClick={confirmSettings}
+              className="bg-green-500 text-white py-2 px-4 rounded w-full"
+            >
+              설정 완료
             </button>
           </div>
         </div>

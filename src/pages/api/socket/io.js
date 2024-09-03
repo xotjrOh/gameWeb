@@ -63,7 +63,11 @@ const ioHandler = (req, res) => {
               name : userName,
             },
             players: [],
-            gameData: {},
+            gameData: {
+              // horse 용 설정
+              // finishLine: 9,
+              // positions: {},
+            },
             status: '대기중',
             maxPlayers,
           };
@@ -147,6 +151,7 @@ const ioHandler = (req, res) => {
         room.gameData.timeLeft = duration;
         room.gameData.rounds = room.gameData.rounds || [];
         room.gameData.bets = {}; // 라운드마다 베팅 초기화
+        room.gameData.positions = room.gameData.positions || {}; // 말들의 위치 초기화 (또는 유지)
         clearInterval(timers[roomId]);
   
         timers[roomId] = setInterval(() => {
@@ -170,9 +175,36 @@ const ioHandler = (req, res) => {
               progress: chips === maxChips ? 2 : chips === secondMaxChips ? 1 : 0,
             }));
 
+            // 말들의 현재 위치 업데이트
+            roundResult.forEach(({ horse, progress }) => {
+              room.gameData.positions[horse] = (room.gameData.positions[horse] || 0) + progress;
+            });
+
             room.gameData.rounds.push(roundResult);
 
-            io.to(roomId).emit('round-ended', room.players); // 라운드 종료 알림
+            // **게임 종료 체크**
+            const horsesPositions = Object.entries(room.gameData.positions);
+
+            // 골인점을 넘은 말들을 찾음 (losers)
+            const losers = horsesPositions.filter(([horse, position]) => position >= room.gameData.finishLine);
+
+            // 만약 골인점을 넘은 말이 있다면 게임 종료
+            if (losers.length > 0) {
+              // 골인점에 도달하지 않은 말 중 가장 가까운 말들을 찾음 (winners)
+              const remainingHorses = horsesPositions.filter(([horse, position]) => position < room.gameData.finishLine);
+              const maxPosition = Math.max(...remainingHorses.map(([, position]) => position));
+              
+              const winners = remainingHorses.filter(([, position]) => position === maxPosition);
+
+              io.to(roomId).emit('game-ended', {
+                winners: winners.map(([horse]) => horse),  // 우승자 말 목록
+                losers: losers.map(([horse]) => horse)    // 골인점에 도달한 말 목록
+              });
+
+              // 추가 로직이 필요하다면 여기서 처리
+            } else {
+              io.to(roomId).emit('round-ended', room.players); // 라운드 종료 알림
+            }
           }
         }, 1000);
 
@@ -235,7 +267,7 @@ const ioHandler = (req, res) => {
           return callback({ success: false, message: '존재하지 않는 게임방입니다.' });
         }
 
-        const player = room.players.find(p => p.id === socket.id);
+        const player = room.players.find(p => p.socketId === socket.id);
         if (!player) {
           return callback({ success: false, message: '본인이 참여하고 있지 않은 게임방입니다.' });
         }
@@ -258,6 +290,19 @@ const ioHandler = (req, res) => {
       });
     });
   }
+
+  // **설정 업데이트 이벤트**
+  socket.on('horse-update-settings', ({ roomId, finishLine }, callback) => {
+    const room = rooms[roomId];
+    if (!room) {
+      return callback({ success: false, message: '존재하지 않는 게임방입니다.' });
+    }
+
+    // finishLine 설정 업데이트
+    room.gameData.finishLine = finishLine;
+    callback({ success: true });
+  });
+  
   res.end();
 };
 
