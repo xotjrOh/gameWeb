@@ -3,20 +3,19 @@
 import { useState, useRef, useEffect } from 'react';
 import useOutsideClick from '@/hooks/useOutsideClick';
 import { useSelector, useDispatch } from 'react-redux';
-import { setChip } from '@/store/chipSlice';
+import { updateStatusInfo } from '@/store/horseSlice';
 
 export default function MyStatusButton({ roomId, socket, session }) {
   const dispatch = useDispatch();
   const [showStatus, setShowStatus] = useState(false);
-  const [statusInfo, setStatusInfo] = useState({ dummyName: '할당되지않음', horse: '할당되지않음', isSolo: false });
   const popupRef = useRef(null);
-  const { chip } = useSelector((state) => state.chip);
+  const { statusInfo, chip } = useSelector((state) => state.horse.gameData);
 
   useOutsideClick(popupRef, () => setShowStatus(false));
 
   useEffect(() => {
     socket.on('status-update', (data) => {
-        setStatusInfo(data);
+      dispatch(updateStatusInfo(data));
     });
 
     return () => {

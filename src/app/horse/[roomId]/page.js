@@ -13,6 +13,7 @@ import useRedirectIfInvalidRoom from '@/hooks/useRedirectIfInvalidRoom';
 import { useSocket } from '@/components/provider/SocketProvider';
 import { useSession } from 'next-auth/react';
 import useUpdateSocketId from '@/hooks/useUpdateSocketId';
+import useGameData from '@/hooks/useGameData';
 
 export default function HorseGamePage({ params }) {
   const { roomId } = params;
@@ -26,7 +27,8 @@ export default function HorseGamePage({ params }) {
 
   useRedirectIfInvalidRoom(roomId);
   useUpdateSocketId(socket, session, roomId);
-  
+  useGameData(roomId, socket);
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       {/* 상단 네비게이션 바 */}

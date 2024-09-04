@@ -1,15 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { updatePlayers } from '@/store/horseSlice';
 
 export default function ChipsTab({ roomId, socket, session }) {
-  const [players, setPlayers] = useState([]);
+  const dispatch = useDispatch();
+  const { players } = useSelector((state) => state.horse.gameData);
 
   useEffect(() => {
     if (socket) {
       // 'round-ended' 이벤트를 수신하여 칩 개수 업데이트
       socket.on('round-ended', (updatedPlayers) => {
-        setPlayers(updatedPlayers);
+        dispatch(updatePlayers(updatedPlayers));
       });
 
       // 컴포넌트 언마운트 시 이벤트 리스너 제거

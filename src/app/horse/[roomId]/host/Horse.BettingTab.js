@@ -2,23 +2,21 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { setChip } from '@/store/chipSlice';
 import useOutsideClick from '@/hooks/useOutsideClick';
+import { updateHorses, updateChip, updateIsRoundStarted } from '@/store/horseSlice';
 
 export default function BettingTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
   const [timeLeft, setTimeLeft] = useState(0);
-  const [horses, setHorses] = useState([]);
   const [bets, setBets] = useState({});
   const [isBetLocked, setIsBetLocked] = useState(false);
   const [showDurationModal, setShowDurationModal] = useState(false);  // **모달 창을 관리하는 상태**
   const [duration, setDuration] = useState(300);  // **사용자가 설정할 라운드 지속 시간**
-  const [isRoundStarted, setIsRoundStarted] = useState(false);  // **라운드 시작 여부**
   const [finishLine, setFinishLine] = useState(9);  // **골인지점 설정 상태**
   const [showSettingsModal, setShowSettingsModal] = useState(false);  // **설정을 위한 모달 창 상태**
   const roundPopupRef = useRef(null);
   const settingPopupRef = useRef(null);
-  const { chip } = useSelector((state) => state.chip);
+  const { horses, chip, isRoundStarted } = useSelector((state) => state.horse.gameData);
 
   useOutsideClick(roundPopupRef, () => setShowDurationModal(false));
   useOutsideClick(settingPopupRef, () => setShowSettingsModal(false));
@@ -30,7 +28,7 @@ export default function BettingTab({ roomId, socket, session }) {
       });
 
       socket.on('roles-assigned', ({ horses }) => {
-        setHorses(horses);
+        dispatch(updateHorses(horses));
       });
 
       return () => {
@@ -57,7 +55,7 @@ export default function BettingTab({ roomId, socket, session }) {
       socket.emit('horse-bet', { roomId, bets }, (response) => {
         if (response.success) {
           alert('베팅이 완료되었습니다.');
-          dispatch(setChip(response.remainChips));
+          dispatch(updateChip(response.remainChips));
           setIsBetLocked(true);
         } else {
           alert(response.message);
@@ -93,7 +91,7 @@ export default function BettingTab({ roomId, socket, session }) {
       } else {
         alert("성공적으로 타이머가 동작했습니다.");
         setShowDurationModal(false);  // **모달 창 닫기**
-        setIsRoundStarted(true);  // **라운드 시작됨을 표시**
+        dispatch(updateIsRoundStarted(true));
       }
     });
   };
@@ -137,8 +135,8 @@ export default function BettingTab({ roomId, socket, session }) {
 
       <button
         onClick={startRound}
-        className={`bg-red-500 text-white py-2 px-4 rounded ${isRoundStarted ? 'opacity-50 cursor-not-allowed' : ''}`}
-        disabled={isRoundStarted} // **라운드 시작 후 비활성화**
+        className={`bg-red-500 text-white py-2 px-4 rounded ${timeLeft > 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+        disabled={timeLeft > 0} // **라운드 시작 후 비활성화**
       >
         라운드 시작
       </button>

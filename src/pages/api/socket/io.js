@@ -203,10 +203,14 @@ const ioHandler = (req, res) => {
             });
 
             room.gameData.rounds.push(roundResult);
-
-            io.to(roomId).emit('game-data-update', {
-              positions: room.gameData.positions,
-              finishLine: room.gameData.finishLine,
+            // positions 가공후 전달
+            const positions = room.gameData.positions || [];
+            const horsesData = Object.entries(positions).map(([name, position]) => ({
+              name,
+              position
+            }));
+            io.to(roomId).emit('update-positions', {
+              positions: horsesData,
             });
 
             // **게임 종료 체크**
@@ -326,15 +330,34 @@ const ioHandler = (req, res) => {
     
         // finishLine 설정 업데이트
         room.gameData.finishLine = finishLine;
-        io.to(roomId).emit('game-data-update', {
-          positions: room.gameData.positions || [],
-          finishLine: room.gameData.finishLine,
-        });
-        console.log(`Emitted game-data-update to room ${roomId}`, room.gameData.positions || [], room.gameData.finishLine);
+        io.to(roomId).emit('update-finishLine', finishLine);
 
         callback({ success: true });
       });
 
+      socket.on('horse-get-game-data', ({ roomId, sessionId }, callback) => {
+        const room = rooms[roomId];
+        if (!room) callback({ success: false, message: '존재하지 않는 게임방입니다.' });
+        const player = rooms[roomId].players.find(p => p.id === sessionId);
+        const hasRounds = Array.isArray(room.gameData.rounds) && room.gameData.rounds.length > 0;
+        const positions = room.gameData.positions || [];
+        const horsesData = Object.entries(positions).map(([name, position]) => ({
+          name,
+          position
+        }));
+
+        // 현재 게임 데이터를 클라이언트로 전송
+        socket.emit('game-data-update', {
+          horses: room.gameData.horses || [],
+          chip: player?.chips || 0,
+          players: rooms[roomId].players || [],
+          positions: horsesData,
+          finishLine: room.gameData.finishLine,
+          statusInfo: player,
+          isRoundStarted: hasRounds || (room.gameData.timeLeft > 0),
+        });
+        callback({ success: true });
+      });
 
     });
   }

@@ -2,15 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { setChip } from '@/store/chipSlice';
+import { updateHorses, updateChip } from '@/store/horseSlice';
 
 export default function BettingTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
-  const [timeLeft, setTimeLeft] = useState(0);
-  const [horses, setHorses] = useState([]);  // **현재 사용되는 말들을 저장**
-  const [bets, setBets] = useState({});  // **각 말에 대한 베팅을 저장**
-  const [isBetLocked, setIsBetLocked] = useState(false);  // **베팅이 잠겨있는지 여부**
-  const { chip } = useSelector((state) => state.chip);
+  const [timeLeft, setTimeLeft] = useState(0); // o
+  const [bets, setBets] = useState({}); // o
+  const [isBetLocked, setIsBetLocked] = useState(false); // o
+  const { horses, chip } = useSelector((state) => state.horse.gameData);
 
   useEffect(() => {
     if (socket) {
@@ -21,7 +20,7 @@ export default function BettingTab({ roomId, socket, session }) {
 
       // 서버에서 현재 라운드에 사용되는 말을 수신
       socket.on('roles-assigned', ({ horses }) => {
-        setHorses(horses);
+        dispatch(updateHorses(horses));
       });
 
       return () => {
@@ -29,7 +28,7 @@ export default function BettingTab({ roomId, socket, session }) {
         socket.off('roles-assigned');
       };
     }
-  }, [roomId, socket]);
+  }, [roomId, socket?.id, dispatch]);
 
   // **베팅 시 총 칩 수가 초과하지 않도록 제한**
   const handleBetChange = (horse, amount) => {
@@ -53,7 +52,7 @@ export default function BettingTab({ roomId, socket, session }) {
       socket.emit('horse-bet', { roomId, bets }, (response) => {
         if (response.success) {
           alert('베팅이 완료되었습니다.');
-          dispatch(setChip(response.remainChips));
+          dispatch(updateChip(response.remainChips));
           setIsBetLocked(true);  // **베팅 완료 후 잠금**
         } else {
           alert(response.message);

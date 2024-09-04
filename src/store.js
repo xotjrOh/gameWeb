@@ -2,13 +2,13 @@
 import { configureStore } from '@reduxjs/toolkit'
 import loadingSlice from './store/loadingSlice.js'
 import roomSlice from './store/roomSlice.js'
-import chipSlice from './store/chipSlice.js'
+import horseSlice from './store/horseSlice.js'
 
 export default configureStore({
   reducer: { 
 	  loading: loadingSlice.reducer,
 	  room : roomSlice.reducer,
-	  chip : chipSlice.reducer,
+	  horse : horseSlice.reducer,
   },
   devTools : true,
 }) 

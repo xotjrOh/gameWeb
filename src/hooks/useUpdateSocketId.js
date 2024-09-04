@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 
 function useUpdateSocketId(socket, session, roomId) {
+    console.log("socket 변화감지 이벤트 등록");
   useEffect(() => {
     console.log("hook 변화감지 ", socket?.id);
     if (socket && session && roomId) {
