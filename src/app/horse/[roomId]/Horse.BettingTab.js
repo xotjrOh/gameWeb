@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { updateHorses, updateChip } from '@/store/horseSlice';
+import { updateHorses, updatePositions, updateChip, updatePlayers } from '@/store/horseSlice';
 
 export default function BettingTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
   const [timeLeft, setTimeLeft] = useState(0); // o
   const [bets, setBets] = useState({}); // o
   const [isBetLocked, setIsBetLocked] = useState(false); // o
-  const { horses, chip } = useSelector((state) => state.horse.gameData);
+  const { horses, statusInfo } = useSelector((state) => state.horse.gameData);
 
   useEffect(() => {
     if (socket) {
@@ -17,8 +17,14 @@ export default function BettingTab({ roomId, socket, session }) {
         setTimeLeft(newTimeLeft);
       });
 
-      socket.on('roles-assigned', ({ horses }) => {
+      socket.on('roles-assigned', ({ horses, players }) => {
+        const positions = horses.map(horse => ({
+          name: horse,
+          position: 0
+        }));
         dispatch(updateHorses(horses));
+        dispatch(updatePositions(positions));
+        dispatch(updatePlayers(players));
       });
 
       return () => {
@@ -33,7 +39,7 @@ export default function BettingTab({ roomId, socket, session }) {
     const totalBet = Object.values(newBets).reduce((sum, chips) => sum + chips, 0);
     
     // todo : 초과하여 설정은 되나 체크 필요
-    if (totalBet <= chip) {
+    if (totalBet <= (statusInfo?.chips || 0)) {
       setBets(newBets);
     }
   };
@@ -74,7 +80,7 @@ export default function BettingTab({ roomId, socket, session }) {
               <input
                 type="range"
                 min="0"
-                max={chip}  
+                max={(statusInfo?.chips || 0)}  
                 value={bets[horse] || 0}
                 onChange={(e) => handleBetChange(horse, parseInt(e.target.value))}
                 disabled={isBetLocked || timeLeft === 0}  

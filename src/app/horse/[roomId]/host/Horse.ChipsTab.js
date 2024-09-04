@@ -7,6 +7,7 @@ import { updatePlayers } from '@/store/horseSlice';
 export default function ChipsTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
   const { players } = useSelector((state) => state.horse.gameData);
+  console.log("players", players);
 
   useEffect(() => {
     if (socket) {

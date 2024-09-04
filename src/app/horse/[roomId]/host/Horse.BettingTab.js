@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import useOutsideClick from '@/hooks/useOutsideClick';
-import { updateHorses, updateChip, updateIsRoundStarted } from '@/store/horseSlice';
+import { updateHorses, updatePositions, updateChip, updatePlayers, updateIsRoundStarted } from '@/store/horseSlice';
 
 export default function BettingTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
@@ -16,7 +16,7 @@ export default function BettingTab({ roomId, socket, session }) {
   const [showSettingsModal, setShowSettingsModal] = useState(false);  // **설정을 위한 모달 창 상태**
   const roundPopupRef = useRef(null);
   const settingPopupRef = useRef(null);
-  const { horses, chip, isRoundStarted } = useSelector((state) => state.horse.gameData);
+  const { horses, statusInfo, isRoundStarted } = useSelector((state) => state.horse.gameData);
 
   useOutsideClick(roundPopupRef, () => setShowDurationModal(false));
   useOutsideClick(settingPopupRef, () => setShowSettingsModal(false));
@@ -27,8 +27,14 @@ export default function BettingTab({ roomId, socket, session }) {
         setTimeLeft(newTimeLeft);
       });
 
-      socket.on('roles-assigned', ({ horses }) => {
+      socket.on('roles-assigned', ({ horses, players }) => {
+        const positions = horses.map(horse => ({
+          name: horse,
+          position: 0
+        }));
         dispatch(updateHorses(horses));
+        dispatch(updatePositions(positions));
+        dispatch(updatePlayers(players));
       });
 
       return () => {
@@ -42,7 +48,7 @@ export default function BettingTab({ roomId, socket, session }) {
     const newBets = { ...bets, [horse]: amount };
     const totalBet = Object.values(newBets).reduce((sum, chips) => sum + chips, 0);
 
-    if (totalBet <= chip) {
+    if (totalBet <= (statusInfo?.chips || 0)) {
       setBets(newBets);
     }
   };
@@ -119,7 +125,7 @@ export default function BettingTab({ roomId, socket, session }) {
       {/* **설정 버튼** */}
       <button
         onClick={openSettingsModal}
-        className="bg-blue-500 text-white py-2 px-4 rounded"
+        className={`bg-blue-500 text-white py-2 px-4 rounded ${isRoundStarted ? 'opacity-50 cursor-not-allowed' : ''}`}
         disabled={isRoundStarted} // **라운드 시작 후 비활성화**
       >
         설정
@@ -153,7 +159,7 @@ export default function BettingTab({ roomId, socket, session }) {
               <input
                 type="range"
                 min="0"
-                max={chip}
+                max={(statusInfo?.chips || 0)}
                 value={bets[horse] || 0}
                 onChange={(e) => handleBetChange(horse, parseInt(e.target.value))}
                 disabled={isBetLocked || timeLeft === 0}

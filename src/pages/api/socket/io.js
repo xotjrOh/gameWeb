@@ -209,9 +209,7 @@ const ioHandler = (req, res) => {
               name,
               position
             }));
-            io.to(roomId).emit('update-positions', {
-              positions: horsesData,
-            });
+            io.to(roomId).emit('update-positions', horsesData);
 
             // **게임 종료 체크**
             const horsesPositions = Object.entries(room.gameData.positions);
@@ -278,6 +276,9 @@ const ioHandler = (req, res) => {
         // 플레이어 상태 업데이트 전송
         players.forEach((player) => {
           const data = {
+            id: player.id,
+            name: player.name,
+            socketId: player.socketId, //여기까지는 호스트용
             dummyName: player.dummyName,
             horse: player.horse,
             chips: player.chips,
@@ -286,7 +287,7 @@ const ioHandler = (req, res) => {
           io.to(player.socketId).emit('status-update', data);
         });
 
-        io.to(roomId).emit('roles-assigned', { success: true, horses });
+        io.to(roomId).emit('roles-assigned', { success: true, horses, players });
         return callback({ success: true });
       });
       
@@ -349,7 +350,6 @@ const ioHandler = (req, res) => {
         // 현재 게임 데이터를 클라이언트로 전송
         socket.emit('game-data-update', {
           horses: room.gameData.horses || [],
-          chip: player?.chips || 0,
           players: rooms[roomId].players || [],
           positions: horsesData,
           finishLine: room.gameData.finishLine,

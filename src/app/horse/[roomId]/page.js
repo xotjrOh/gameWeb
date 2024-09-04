@@ -27,7 +27,7 @@ export default function HorseGamePage({ params }) {
 
   useRedirectIfInvalidRoom(roomId);
   useUpdateSocketId(socket, session, roomId);
-  useGameData(roomId, socket);
+  useGameData(roomId, socket, session?.user?.id);
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">

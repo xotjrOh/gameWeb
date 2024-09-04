@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 export default function HorsesTab({ roomId, socket, session }) {
   console.log("horse 페이지");
   const { positions, finishLine } = useSelector((state) => state.horse.gameData);
+  console.log("positions : ", positions, finishLine);
 
   return (
     <div>
