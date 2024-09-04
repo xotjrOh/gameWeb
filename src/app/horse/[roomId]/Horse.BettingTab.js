@@ -13,12 +13,10 @@ export default function BettingTab({ roomId, socket, session }) {
 
   useEffect(() => {
     if (socket) {
-      // 서버에서 1초마다 보내는 타이머 업데이트를 수신
       socket.on('update-timer', (newTimeLeft) => {
         setTimeLeft(newTimeLeft);
       });
 
-      // 서버에서 현재 라운드에 사용되는 말을 수신
       socket.on('roles-assigned', ({ horses }) => {
         dispatch(updateHorses(horses));
       });
@@ -30,7 +28,6 @@ export default function BettingTab({ roomId, socket, session }) {
     }
   }, [roomId, socket?.id, dispatch]);
 
-  // **베팅 시 총 칩 수가 초과하지 않도록 제한**
   const handleBetChange = (horse, amount) => {
     const newBets = { ...bets, [horse]: amount };
     const totalBet = Object.values(newBets).reduce((sum, chips) => sum + chips, 0);
@@ -41,8 +38,6 @@ export default function BettingTab({ roomId, socket, session }) {
     }
   };
 
-  // **말에 대한 선택을 처리하는 로직은 제거**
-  // 베팅을 진행하는 handleBet 함수
   const handleBet = () => {
     if (isBetLocked || timeLeft === 0) {
       return alert("더이상 베팅할 수 없습니다.");
@@ -53,7 +48,7 @@ export default function BettingTab({ roomId, socket, session }) {
         if (response.success) {
           alert('베팅이 완료되었습니다.');
           dispatch(updateChip(response.remainChips));
-          setIsBetLocked(true);  // **베팅 완료 후 잠금**
+          setIsBetLocked(true);
         } else {
           alert(response.message);
         }
@@ -72,7 +67,6 @@ export default function BettingTab({ roomId, socket, session }) {
         <p className="text-lg">남은 시간: {Math.floor(timeLeft / 60)}:{timeLeft % 60}</p>
         <p className="text-red-500">칩은 리필되지 않으니 아껴서 베팅해주세요. 베팅하기 버튼을 누른 이후에는 수정이 불가합니다.</p>
 
-        {/* **현재 사용되는 말들을 이용해 화면에 뿌려주기** */}
         <div className="grid grid-cols-2 gap-4 mt-4">
           {horses.map((horse) => (
             <div key={horse} className="flex flex-col items-center">
@@ -80,13 +74,13 @@ export default function BettingTab({ roomId, socket, session }) {
               <input
                 type="range"
                 min="0"
-                max={chip}  // **총 칩 수를 최대값으로 설정**
+                max={chip}  
                 value={bets[horse] || 0}
                 onChange={(e) => handleBetChange(horse, parseInt(e.target.value))}
-                disabled={isBetLocked || timeLeft === 0}  // **베팅 잠금 또는 시간이 0초 남았을 경우 비활성화**
+                disabled={isBetLocked || timeLeft === 0}  
                 className="w-full"
               />
-              <p>{bets[horse] || 0} chips</p>  {/* **현재 베팅된 칩 수를 표시** */}
+              <p>{bets[horse] || 0} chips</p>
             </div>
           ))}
         </div>
@@ -94,7 +88,7 @@ export default function BettingTab({ roomId, socket, session }) {
         <button
           onClick={handleBet}
           className={`mt-4 ${isBetLocked || timeLeft === 0 ? 'bg-gray-500' : 'bg-green-500'} text-white py-2 px-4 rounded`}
-          disabled={isBetLocked || timeLeft === 0}  // **베팅 잠금 또는 시간이 0초 남았을 경우 비활성화**
+          disabled={isBetLocked || timeLeft === 0}
         >
           베팅하기
         </button>

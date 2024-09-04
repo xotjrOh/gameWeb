@@ -1,36 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { updatePositions, updateFinishLine } from '@/store/horseSlice';
+import { useSelector } from 'react-redux';
 
 export default function HorsesTab({ roomId, socket, session }) {
   console.log("horse 페이지");
-  const dispatch = useDispatch();
   const { positions, finishLine } = useSelector((state) => state.horse.gameData);
-
-  // useEffect(() => {
-  //   console.log("확인 : ", socket?.id);
-  //   console.log("확인 : ", socket?.connected);
-  //   if (socket) {
-  //     // 게임 데이터에서 경주마들의 위치와 골인점을 가져옴
-  //     console.log("hose tab useEffect");
-
-  //     socket.on('game-data-update', ({ positions, finishLine }) => {
-  //       console.log("hose tab emit 받음");
-  //       const horsesData = Object.entries(positions).map(([name, position]) => ({
-  //         name,
-  //         position
-  //       }));
-  //       dispatch(updatePositions(horsesData));
-  //       dispatch(updateFinishLine(finishLine));
-  //     });
-
-  //     return () => {
-  //       socket.off('game-data-update');
-  //     };
-  //   }
-  // }, [socket?.id]);
 
   return (
     <div>

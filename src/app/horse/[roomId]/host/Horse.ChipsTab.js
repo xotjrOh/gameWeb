@@ -20,7 +20,7 @@ export default function ChipsTab({ roomId, socket, session }) {
         socket.off('round-ended');
       };
     }
-  }, [roomId, socket]);
+  }, [roomId, socket?.id]);
 
   return (
     <div>
