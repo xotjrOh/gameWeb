@@ -126,7 +126,7 @@ const ioHandler = (req, res) => {
           return callback({ success: true });
         }
 
-        room.players.push({ id: sessionId, name: userName, socketId: socket.id, rounds: [] });
+        room.players.push({ id: sessionId, name: userName, socketId: socket.id, rounds: [], isBetLocked: false });
         socket.join(roomId.toString());
         io.emit('room-updated', rooms);
         return callback({ success: true });
@@ -175,7 +175,12 @@ const ioHandler = (req, res) => {
         room.gameData.bets = {}; // 라운드마다 베팅 초기화
         room.gameData.positions = room.gameData.positions || {}; // 말들의 위치 초기화 (또는 유지)
         clearInterval(timers[roomId]);
-  
+
+        room.players.forEach(player => {
+          player.isBetLocked = false;  // 모든 플레이어의 isBetLocked를 false로 설정
+        });
+        io.to(roomId).emit('update-isBetLocked', false);
+
         timers[roomId] = setInterval(() => {
           if (room.gameData.timeLeft > 0) {
             room.gameData.timeLeft -= 1;
@@ -188,7 +193,7 @@ const ioHandler = (req, res) => {
             const sortedHorses = Object.entries(room.gameData.bets)
               .sort(([, chipsA], [, chipsB]) => chipsB - chipsA);
 
-            const maxChips = sortedHorses[0][1];
+            const maxChips = sortedHorses?.[0]?.[1] || -1;
             const secondMaxChips = sortedHorses.find(([, chips]) => chips < maxChips)?.[1] || 0;
 
             const roundResult = sortedHorses.map(([horse, chips]) => ({
@@ -210,6 +215,16 @@ const ioHandler = (req, res) => {
               position
             }));
             io.to(roomId).emit('update-positions', { horsesData, rounds : room.gameData.rounds });
+
+            // 베팅 안 한 라운드 히스토리 추가
+            console.log(room.players);
+            console.log(room.player);
+            room.players.forEach(player => {
+              if (!player.isBetLocked) {
+                player.rounds.push([]);  // 빈 배열 추가
+              }
+              io.to(player.socketId).emit('personal-round-update', player.rounds);
+            });
 
             // **게임 종료 체크**
             const horsesPositions = Object.entries(room.gameData.positions);
@@ -319,6 +334,7 @@ const ioHandler = (req, res) => {
         });
 
         player.chips -= totalBets;
+        player.isBetLocked = true;
 
         // 개인용 칩사용 히스토리
         const sortedHorses = Object.entries(bets)
@@ -330,7 +346,7 @@ const ioHandler = (req, res) => {
         }));
         player.rounds.push(roundResult || []);
 
-        callback({ success: true, remainChips: player.chips, personalRounds: player.rounds });
+        callback({ success: true, remainChips: player.chips, personalRounds: player.rounds, isBetLocked : player.isBetLocked });
       });
 
       // **설정 업데이트 이벤트**

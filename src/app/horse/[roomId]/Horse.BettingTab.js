@@ -2,15 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { updateHorses, updatePositions, updateChip, updatePersonalRounds, updatePlayers } from '@/store/horseSlice';
+import { updateHorses, updatePositions, updateChip, updatePersonalRounds, updateIsBetLocked, updatePlayers } from '@/store/horseSlice';
 
 export default function BettingTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
   const [timeLeft, setTimeLeft] = useState(0); 
   const [bets, setBets] = useState({}); 
-  const [isBetLocked, setIsBetLocked] = useState(false); 
   const { horses, statusInfo } = useSelector((state) => state.horse.gameData);
-
+  
   useEffect(() => {
     if (socket) {
       socket.on('update-timer', (newTimeLeft) => {
@@ -37,7 +36,7 @@ export default function BettingTab({ roomId, socket, session }) {
   const handleBetChange = (horse, amount) => {
     const newBets = { ...bets, [horse]: amount };
     const totalBet = Object.values(newBets).reduce((sum, chips) => sum + chips, 0);
-    
+
      // todo : 초과하여 설정은 되나 체크 필요
     if (totalBet <= (statusInfo?.chips || 0)) {
       setBets(newBets);
@@ -45,7 +44,7 @@ export default function BettingTab({ roomId, socket, session }) {
   };
 
   const handleBet = () => {
-    if (isBetLocked || timeLeft === 0) {
+    if (statusInfo.isBetLocked || timeLeft === 0) {
       return alert("더이상 베팅할 수 없습니다.");
     }
 
@@ -55,7 +54,7 @@ export default function BettingTab({ roomId, socket, session }) {
           alert('베팅이 완료되었습니다.');
           dispatch(updateChip(response.remainChips));
           dispatch(updatePersonalRounds(response.personalRounds));
-          setIsBetLocked(true);
+          dispatch(updateIsBetLocked(response.isBetLocked));
         } else {
           alert(response.message);
         }
@@ -83,7 +82,7 @@ export default function BettingTab({ roomId, socket, session }) {
                 max={(statusInfo?.chips || 0)}  
                 value={bets[horse] || 0}
                 onChange={(e) => handleBetChange(horse, parseInt(e.target.value))}
-                disabled={isBetLocked || timeLeft === 0}  
+                disabled={statusInfo.isBetLocked || timeLeft === 0}  
                 className="w-full"
               />
               <p className="text-gray-700 mt-2">{bets[horse] || 0} chips</p>
@@ -94,9 +93,9 @@ export default function BettingTab({ roomId, socket, session }) {
         <button
           onClick={handleBet}
           className={`mt-6 px-6 py-2 rounded-lg text-white font-semibold ${
-            isBetLocked || timeLeft === 0 ? 'bg-gray-500' : 'bg-green-500 hover:bg-green-600'
+            statusInfo.isBetLocked || timeLeft === 0 ? 'bg-gray-500' : 'bg-green-500 hover:bg-green-600'
           }`}
-          disabled={isBetLocked || timeLeft === 0}
+          disabled={statusInfo.isBetLocked || timeLeft === 0}
         >
           베팅하기
         </button>

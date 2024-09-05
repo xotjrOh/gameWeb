@@ -17,6 +17,7 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
   const createRoom = (e) => {
     e.preventDefault();
     dispatch(setIsLoading(true));
+    console.log("create room", socket?.id, socket?.connected);
     socket.emit('create-room', { roomName, userName: session.user.name, gameType, sessionId: session.user.id, maxPlayers }, (response) => {
       if (!response.success) {
         alert(response.message);
