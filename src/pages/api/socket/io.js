@@ -126,7 +126,7 @@ const ioHandler = (req, res) => {
           return callback({ success: true });
         }
 
-        room.players.push({ id: sessionId, name: userName, socketId: socket.id });
+        room.players.push({ id: sessionId, name: userName, socketId: socket.id, rounds: [] });
         socket.join(roomId.toString());
         io.emit('room-updated', rooms);
         return callback({ success: true });
@@ -202,14 +202,14 @@ const ioHandler = (req, res) => {
               room.gameData.positions[horse] = (room.gameData.positions[horse] || 0) + progress;
             });
 
-            room.gameData.rounds.push(roundResult);
+            room.gameData.rounds.push(roundResult || []);
             // positions 가공후 전달
             const positions = room.gameData.positions || [];
             const horsesData = Object.entries(positions).map(([name, position]) => ({
               name,
               position
             }));
-            io.to(roomId).emit('update-positions', horsesData);
+            io.to(roomId).emit('update-positions', { horsesData, rounds : room.gameData.rounds });
 
             // **게임 종료 체크**
             const horsesPositions = Object.entries(room.gameData.positions);
@@ -283,6 +283,7 @@ const ioHandler = (req, res) => {
             horse: player.horse,
             chips: player.chips,
             isSolo: player.isSolo,
+            rounds: player.rounds,
           };
           io.to(player.socketId).emit('status-update', data);
         });
@@ -319,7 +320,17 @@ const ioHandler = (req, res) => {
 
         player.chips -= totalBets;
 
-        callback({ success: true, remainChips: player.chips });
+        // 개인용 칩사용 히스토리
+        const sortedHorses = Object.entries(bets)
+          .sort(([, chipsA], [, chipsB]) => chipsB - chipsA);
+        const roundResult = sortedHorses.map(([horse, chips]) => ({
+          horse,
+          chips,
+          // progress: chips === maxChips ? 2 : chips === secondMaxChips ? 1 : 0,
+        }));
+        player.rounds.push(roundResult || []);
+
+        callback({ success: true, remainChips: player.chips, personalRounds: player.rounds });
       });
 
       // **설정 업데이트 이벤트**
@@ -337,6 +348,7 @@ const ioHandler = (req, res) => {
       });
 
       socket.on('horse-get-game-data', ({ roomId, sessionId }, callback) => {
+        console.log("server : horse-get-game-data");
         const room = rooms[roomId];
         if (!room) callback({ success: false, message: '존재하지 않는 게임방입니다.' });
         const player = rooms[roomId].players.find(p => p.id === sessionId);
@@ -350,11 +362,12 @@ const ioHandler = (req, res) => {
         // 현재 게임 데이터를 클라이언트로 전송
         socket.emit('game-data-update', {
           horses: room.gameData.horses || [],
-          players: rooms[roomId].players || [],
+          players: room.players || [],
           positions: horsesData,
           finishLine: room.gameData.finishLine,
           statusInfo: player,
           isRoundStarted: hasRounds || (room.gameData.timeLeft > 0),
+          rounds: room.gameData.rounds,
         });
         callback({ success: true });
       });

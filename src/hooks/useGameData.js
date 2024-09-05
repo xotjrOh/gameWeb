@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { setGameData, updatePositions, updateFinishLine } from '@/store/horseSlice'; // Redux 슬라이스에서 가져옴
+import { setGameData, updatePositions, updateRounds, updateFinishLine } from '@/store/horseSlice'; // Redux 슬라이스에서 가져옴
 
 const useGameData = (roomId, socket, sessionId) => {
   const dispatch = useDispatch();
@@ -16,9 +16,10 @@ const useGameData = (roomId, socket, sessionId) => {
             dispatch(setGameData(data)); // Redux에 상태 저장
         });
 
-        socket.on('update-positions', (data) => {
-            console.log("update-positions:", data);
-            dispatch(updatePositions(data)); // Redux에 상태 저장
+        socket.on('update-positions', ({ horsesData, rounds }) => {
+            console.log("update-positions:", horsesData, rounds);
+            dispatch(updatePositions(horsesData)); // Redux에 상태 저장
+            dispatch(updateRounds(rounds)); // Redux에 상태 저장
         });
         socket.on('update-finishLine', (data) => {
             console.log("update-finishLine:", data);

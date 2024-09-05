@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSelector, useDispatch } from 'react-redux';
 import { setIsLoading } from '@/store/loadingSlice';
@@ -15,6 +15,10 @@ export default function GameRooms({ session }) {
   const [showModal, setShowModal] = useState(false);
   const { rooms } = useSelector((state) => state.room);
   // useBrowserWarning();
+
+  useEffect(() => {
+    console.log(socket?.id, socket?.connected);
+  }, [socket?.id]);
 
   const closeModal = () => setShowModal(false);
 

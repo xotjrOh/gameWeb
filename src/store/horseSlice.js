@@ -14,9 +14,21 @@ const horseSlice = createSlice({
 				{ name: 'B', position: 3 },
 			],
 			finishLine: 9,
-			statusInfo: { dummyName: '할당되지않음', horse: '할당되지않음', isSolo: false, chips: 0 },
+			statusInfo: { dummyName: '할당되지않음', horse: '할당되지않음', isSolo: false, chips: 0, rounds: [] },
 
 			isRoundStarted : false,
+			rounds: [
+				[ // 1R
+					{ horse : "A", chips: 13, progress: 2},
+					{ horse : "C", chips: 13, progress: 2},
+					{ horse : "B", chips: 7,  progress: 1},
+				],
+				[ // 2R
+					{ horse : "C", chips: 10, progress: 2},
+					{ horse : "A", chips: 9,  progress: 1},
+					{ horse : "B", chips: 7,  progress: 0},
+				],
+			]
 		}
 	},
 	reducers : {
@@ -40,16 +52,21 @@ const horseSlice = createSlice({
 			state.gameData.statusInfo = action.payload;  // statusInfo 필드만 업데이트
 		},
 		updateChip(state, action) {
-			state.gameData.statusInfo.chips = action.payload;  // chip 필드만 업데이트
+			state.gameData.statusInfo.chips = action.payload;  // statusInfo.chip 필드만 업데이트
+		},
+		updatePersonalRounds(state, action) {
+			state.gameData.statusInfo.rounds = action.payload;  // statusInfo.rounds 필드만 업데이트
 		},
 
-		// todo : 새로고침시 별도의 로직 필요. length
 		updateIsRoundStarted(state, action) {
 			state.gameData.isRoundStarted = action.payload;  // isRoundStarted 필드만 업데이트
+		},
+		updateRounds(state, action) {
+			state.gameData.rounds = action.payload;  // rounds 필드만 업데이트
 		},
 	}
 });
 
-export const { setGameData, updateHorses, updatePlayers, updatePositions, updateFinishLine, updateStatusInfo, updateChip,
-	updateIsRoundStarted } = horseSlice.actions; // state 변경함수들 남음
+export const { setGameData, updateHorses, updatePlayers, updatePositions, updateFinishLine, updateStatusInfo, updateChip, updatePersonalRounds,
+	updateIsRoundStarted, updateRounds } = horseSlice.actions; // state 변경함수들 남음
 export default horseSlice;

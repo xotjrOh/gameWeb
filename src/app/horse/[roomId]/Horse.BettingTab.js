@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { updateHorses, updatePositions, updateChip, updatePlayers } from '@/store/horseSlice';
+import { updateHorses, updatePositions, updateChip, updatePersonalRounds, updatePlayers } from '@/store/horseSlice';
 
 export default function BettingTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
@@ -54,6 +54,7 @@ export default function BettingTab({ roomId, socket, session }) {
         if (response.success) {
           alert('베팅이 완료되었습니다.');
           dispatch(updateChip(response.remainChips));
+          dispatch(updatePersonalRounds(response.personalRounds));
           setIsBetLocked(true);
         } else {
           alert(response.message);
@@ -98,6 +99,32 @@ export default function BettingTab({ roomId, socket, session }) {
         >
           베팅하기
         </button>
+      </div>
+
+      {/* 라운드별 경주마 베팅 현황 */}
+      <div className="mt-6">
+        <h3 className="text-xl font-bold mb-4">라운드별 경주마 베팅 현황</h3>
+        {statusInfo.rounds && statusInfo.rounds.length > 0 ? (
+          statusInfo.rounds.map((round, roundIndex) => (
+            <div key={roundIndex} className="mb-6">
+              <h4 className="text-lg font-semibold mb-2">Round {roundIndex + 1}</h4>
+              <div className="space-y-2">
+                {round.map((bet, betIndex) => (
+                  <div key={betIndex} className="flex justify-between items-center p-3 bg-white rounded-lg shadow-md border border-gray-300">
+                    <div className="flex items-center space-x-4">
+                      <span className="text-lg font-medium">{bet.horse}</span>
+                      {/* 칩과 진행 상태를 경주마와 더 가깝게 배치 */}
+                      <span className="text-sm text-gray-700">Chips: {bet.chips}</span>
+                      {/* <span className="text-sm text-gray-700">Progress: {bet.progress}</span> */}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))
+        ) : (
+          <p className="text-center text-gray-500">아직 베팅 기록이 없습니다.</p>
+        )}
       </div>
     </div>
   );
