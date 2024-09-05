@@ -14,6 +14,7 @@ import { useSocket } from '@/components/provider/SocketProvider';
 import { useSession } from 'next-auth/react';
 import useUpdateSocketId from '@/hooks/useUpdateSocketId';
 import useGameData from '@/hooks/useGameData';
+import RoundResultModal from './Horse.RoundResultModal';
 
 export default function HorseGamePage({ params }) {
   const { roomId } = params;
@@ -55,6 +56,8 @@ export default function HorseGamePage({ params }) {
           <HorsesTab roomId={roomId} socket={socket} session={session} />
         </TabPanel>
       </Tabs>
+
+      <RoundResultModal roomId={roomId} socket={socket} />
     </div>
   );
 }

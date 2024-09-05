@@ -247,7 +247,7 @@ const ioHandler = (req, res) => {
 
               // 추가 로직이 필요하다면 여기서 처리
             } else {
-              io.to(roomId).emit('round-ended', room.players); // 라운드 종료 알림
+              io.to(roomId).emit('round-ended', { players : room.players, roundResult : roundResult }); // 라운드 종료 알림
             }
           }
         }, 1000);
@@ -381,7 +381,7 @@ const ioHandler = (req, res) => {
           players: room.players || [],
           positions: horsesData,
           finishLine: room.gameData.finishLine,
-          statusInfo: player,
+          statusInfo: player || {},
           isRoundStarted: hasRounds || (room.gameData.timeLeft > 0),
           rounds: room.gameData.rounds,
         });

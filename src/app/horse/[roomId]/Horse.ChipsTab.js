@@ -11,13 +11,14 @@ export default function ChipsTab({ roomId, socket, session }) {
   useEffect(() => {
     if (socket) {
       // 'round-ended' 이벤트를 수신하여 칩 개수 업데이트
-      socket.on('round-ended', (updatedPlayers) => {
-        dispatch(updatePlayers(updatedPlayers));
-      });
+      const updatePlayersAfterRoundEnd = ({players}) => {
+        dispatch(updatePlayers(players));
+      }
+      socket.on('round-ended', updatePlayersAfterRoundEnd);
 
       // 컴포넌트 언마운트 시 이벤트 리스너 제거
       return () => {
-        socket.off('round-ended');
+        socket.off('round-ended', updatePlayersAfterRoundEnd);
       };
     }
   }, [roomId, socket?.id]);

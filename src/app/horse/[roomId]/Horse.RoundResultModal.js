@@ -12,11 +12,11 @@ export default function RoundResultModal({ socket, roomId }) {
 
   useEffect(() => {
     if (socket) {
-      // 라운드 종료 시 이벤트 받기
-      const setRoundResultAfterRoundEnd = ({roundResult}) => {
-        setResults(roundResult); // 라운드 결과 저장
-        setIsOpen(true);     // 모달 열기
-      }
+      const setRoundResultAfterRoundEnd = ({ roundResult }) => {
+        setResults(roundResult);
+        setIsOpen(true);
+      };
+
       socket.on('round-ended', setRoundResultAfterRoundEnd);
 
       return () => {
@@ -29,15 +29,24 @@ export default function RoundResultModal({ socket, roomId }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-96" ref={resultPopupRef} >
+      <div className="bg-white p-6 rounded-lg shadow-lg w-96" ref={resultPopupRef}>
         <h2 className="text-2xl font-bold mb-4">라운드 결과</h2>
-        <div className="space-y-2">
+        <div className="space-y-4">
           {results.map(({ horse, progress }, index) => (
-            <div key={index} className="flex items-center justify-between">
+            <div key={index} className="flex flex-col items-center justify-between">
               <span className="text-xl font-semibold">{horse}</span>
-              <span className={`text-lg ${progress === 2 ? 'text-green-500' : 'text-blue-500'}`}>
-                {progress === 2 ? '⚡ 2칸 전진! ⚡' : '🐎 1칸 전진! 🐎'}
-              </span>
+              <div className="track bg-racetrack"> {/* 배경 이미지가 있는 트랙 */}
+                <div
+                  className="horse-emoji"
+                  style={{
+                    animationName: progress === 2 ? 'moveHorseFast' : 'moveHorseSlow',
+                    animationDuration: '1s',  // 1초로 설정
+                    left: progress === 2 ? '66%' : '33%'  // 2칸은 66%, 1칸은 33%까지 이동
+                  }}
+                >
+                  🐎 {/* 말 이모지 */}
+                </div>
+              </div>
             </div>
           ))}
         </div>
