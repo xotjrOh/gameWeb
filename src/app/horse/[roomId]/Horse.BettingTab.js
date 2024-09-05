@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
@@ -6,9 +6,9 @@ import { updateHorses, updatePositions, updateChip, updatePersonalRounds, update
 
 export default function BettingTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
-  const [timeLeft, setTimeLeft] = useState(0); // o
-  const [bets, setBets] = useState({}); // o
-  const [isBetLocked, setIsBetLocked] = useState(false); // o
+  const [timeLeft, setTimeLeft] = useState(0); 
+  const [bets, setBets] = useState({}); 
+  const [isBetLocked, setIsBetLocked] = useState(false); 
   const { horses, statusInfo } = useSelector((state) => state.horse.gameData);
 
   useEffect(() => {
@@ -38,7 +38,7 @@ export default function BettingTab({ roomId, socket, session }) {
     const newBets = { ...bets, [horse]: amount };
     const totalBet = Object.values(newBets).reduce((sum, chips) => sum + chips, 0);
     
-    // todo : 초과하여 설정은 되나 체크 필요
+     // todo : 초과하여 설정은 되나 체크 필요
     if (totalBet <= (statusInfo?.chips || 0)) {
       setBets(newBets);
     }
@@ -66,18 +66,17 @@ export default function BettingTab({ roomId, socket, session }) {
   };
 
   return (
-    <div className="space-y-4">
-
+    <div className="space-y-6">
       {/* 타이머 및 베팅 */}
-      <div className="text-center">
+      <div className="text-center bg-gray-100 p-4 rounded-lg shadow-md">
         <h2 className="text-2xl font-bold">베팅</h2>
         <p className="text-lg">남은 시간: {Math.floor(timeLeft / 60)}:{timeLeft % 60}</p>
         <p className="text-red-500">칩은 리필되지 않으니 아껴서 베팅해주세요. 베팅하기 버튼을 누른 이후에는 수정이 불가합니다.</p>
 
-        <div className="grid grid-cols-2 gap-4 mt-4">
+        <div className="grid grid-cols-2 gap-6 mt-6">
           {horses.map((horse) => (
-            <div key={horse} className="flex flex-col items-center">
-              <label className="font-semibold">{horse}</label>
+            <div key={horse} className="flex flex-col items-center bg-white p-4 rounded-lg shadow-sm border border-gray-300">
+              <label className="font-semibold text-lg mb-2">{horse}</label>
               <input
                 type="range"
                 min="0"
@@ -87,14 +86,16 @@ export default function BettingTab({ roomId, socket, session }) {
                 disabled={isBetLocked || timeLeft === 0}  
                 className="w-full"
               />
-              <p>{bets[horse] || 0} chips</p>
+              <p className="text-gray-700 mt-2">{bets[horse] || 0} chips</p>
             </div>
           ))}
         </div>
 
         <button
           onClick={handleBet}
-          className={`mt-4 ${isBetLocked || timeLeft === 0 ? 'bg-gray-500' : 'bg-green-500'} text-white py-2 px-4 rounded`}
+          className={`mt-6 px-6 py-2 rounded-lg text-white font-semibold ${
+            isBetLocked || timeLeft === 0 ? 'bg-gray-500' : 'bg-green-500 hover:bg-green-600'
+          }`}
           disabled={isBetLocked || timeLeft === 0}
         >
           베팅하기
@@ -102,21 +103,17 @@ export default function BettingTab({ roomId, socket, session }) {
       </div>
 
       {/* 라운드별 경주마 베팅 현황 */}
-      <div className="mt-6">
-        <h3 className="text-xl font-bold mb-4">라운드별 경주마 베팅 현황</h3>
+      <div className="bg-gray-100 p-4 rounded-lg shadow-md">
+        <h3 className="text-xl font-bold mb-4">내 베팅 내역</h3>
         {statusInfo.rounds && statusInfo.rounds.length > 0 ? (
           statusInfo.rounds.map((round, roundIndex) => (
             <div key={roundIndex} className="mb-6">
               <h4 className="text-lg font-semibold mb-2">Round {roundIndex + 1}</h4>
               <div className="space-y-2">
                 {round.map((bet, betIndex) => (
-                  <div key={betIndex} className="flex justify-between items-center p-3 bg-white rounded-lg shadow-md border border-gray-300">
-                    <div className="flex items-center space-x-4">
-                      <span className="text-lg font-medium">{bet.horse}</span>
-                      {/* 칩과 진행 상태를 경주마와 더 가깝게 배치 */}
-                      <span className="text-sm text-gray-700">Chips: {bet.chips}</span>
-                      {/* <span className="text-sm text-gray-700">Progress: {bet.progress}</span> */}
-                    </div>
+                  <div key={betIndex} className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm border border-gray-300">
+                    <span className="font-medium text-lg">{bet.horse}</span>
+                    <span className="text-gray-600">Chips: {bet.chips}</span>
                   </div>
                 ))}
               </div>
