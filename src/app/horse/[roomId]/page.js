@@ -16,6 +16,7 @@ import useUpdateSocketId from '@/hooks/useUpdateSocketId';
 import useGameData from '@/hooks/useGameData';
 import RoundResultModal from './Horse.RoundResultModal';
 import GameEndModal from './Horse.GameEndModal';
+import useCheckVersion from '@/hooks/useCheckVersion';
 
 export default function HorseGamePage({ params }) {
   const { roomId } = params;
@@ -27,6 +28,7 @@ export default function HorseGamePage({ params }) {
     setActiveTab(newValue);
   };
 
+  useCheckVersion(socket);
   useRedirectIfInvalidRoom(roomId);
   useUpdateSocketId(socket, session, roomId);
   useGameData(roomId, socket, session?.user?.id);

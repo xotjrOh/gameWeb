@@ -34,7 +34,7 @@ export default function ChipsTab({ roomId, socket, session }) {
             {player.dummyName}: {player.chips}개 
             {hasRaceEnded && (
               <span>
-                ({player.horse}, {player.name}, {player.isSolo ? "솔로" : ""})
+                ({player.horse}, {player.name}{player.isSolo ? ", 솔로" : ""})
               </span>
             )}
           </li>

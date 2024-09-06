@@ -17,6 +17,7 @@ import useGameData from '@/hooks/useGameData';
 import RoundResultModal from './Horse.RoundResultModal';
 import GameEndModal from './Horse.GameEndModal';
 import { useSelector } from 'react-redux';
+import useCheckVersion from '@/hooks/useCheckVersion';
 
 export default function HorseGamePage({ params }) {
   console.log("메인 root 페이지");
@@ -30,6 +31,7 @@ export default function HorseGamePage({ params }) {
     setActiveTab(newValue);
   };
 
+  useCheckVersion(socket);
   useRedirectIfNotHost(roomId);
   useUpdateSocketId(socket, session, roomId);
   useGameData(roomId, socket, session?.user?.id);

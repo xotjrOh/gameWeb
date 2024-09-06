@@ -6,6 +6,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { setIsLoading } from '@/store/loadingSlice';
 import { useSocket } from '@/components/provider/SocketProvider';
 import RoomModal from './RoomModal';
+import useCheckVersion from '@/hooks/useCheckVersion';
 // import { useBrowserWarning } from '@/hooks/useBrowserWarning';
 
 export default function GameRooms({ session }) {
@@ -15,6 +16,8 @@ export default function GameRooms({ session }) {
   const [showModal, setShowModal] = useState(false);
   const { rooms } = useSelector((state) => state.room);
   // useBrowserWarning();
+
+  useCheckVersion(socket);
 
   useEffect(() => {
     console.log(socket?.id, socket?.connected);
