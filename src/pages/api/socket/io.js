@@ -217,8 +217,6 @@ const ioHandler = (req, res) => {
             io.to(roomId).emit('update-positions', { horsesData, rounds : room.gameData.rounds });
 
             // 베팅 안 한 라운드 히스토리 추가
-            console.log(room.players);
-            console.log(room.player);
             room.players.forEach(player => {
               if (!player.isBetLocked) {
                 player.rounds.push([]);  // 빈 배열 추가
@@ -240,12 +238,21 @@ const ioHandler = (req, res) => {
               
               const winners = remainingHorses.filter(([, position]) => position === maxPosition);
 
+              const getPlayersByHorse = (horseName) =>
+                room.players
+                  .filter((player) => player.horse === horseName)
+                  .map((player) => player.name);  // 말에 할당된 플레이어 이름
+        
               io.to(roomId).emit('game-ended', {
-                winners: winners.map(([horse]) => horse),  // 우승자 말 목록
-                losers: losers.map(([horse]) => horse)    // 골인점에 도달한 말 목록
+                winners: winners.map(([horse]) => ({
+                  horse,
+                  playerNames: getPlayersByHorse(horse),
+                })),
+                losers: losers.map(([horse]) => ({
+                  horse,
+                  playerNames: getPlayersByHorse(horse),
+                })),
               });
-
-              // 추가 로직이 필요하다면 여기서 처리
             } else {
               io.to(roomId).emit('round-ended', { players : room.players, roundResult : roundResult }); // 라운드 종료 알림
             }

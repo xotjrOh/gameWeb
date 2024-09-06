@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import useOutsideClick from '@/hooks/useOutsideClick';
+import './../RoundEnd.css'
 
 export default function RoundResultModal({ socket, roomId }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -41,10 +42,9 @@ export default function RoundResultModal({ socket, roomId }) {
                   style={{
                     animationName: progress === 2 ? 'moveHorseFast' : 'moveHorseSlow',
                     animationDuration: '1s',  // 1초로 설정
-                    left: progress === 2 ? '66%' : '33%'  // 2칸은 66%, 1칸은 33%까지 이동
                   }}
                 >
-                  🏇 {/* 말 이모지 */}
+                  🏇
                 </div>
               </div>
             </div>
