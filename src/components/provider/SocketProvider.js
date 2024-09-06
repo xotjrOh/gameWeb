@@ -19,7 +19,10 @@ export const SocketProvider = ({children}) => {
   
     useEffect(() => {
         // socket이 이미 초기화되어 있는지 확인
-        // if (!socket || !socket.connected) {
+        if (socket && socket.connected) {
+            return;
+        }
+
         const newSocket = io(process.env.NEXT_PUBLIC_SITE_URL, {
             path : "/api/socket/io",
             addTrailingSlash: false,
@@ -55,19 +58,13 @@ export const SocketProvider = ({children}) => {
 
         setSocket(newSocket);
     
-        // } else {
-        //     console.log("Socket is already initialized.");
-        // }
-        // todo : 에러 상황 발생시
-        // setSocket을 필수적으로 진행하고, clean up으로 disconnect 쓰는걸 고려
-
         return () => {
-        //   if (socket) {
-            // console.log("provider에서 socket disconnect");
-            // socket.disconnect();
-        //   }
+          if (socket) {
+            console.log("provider에서 socket disconnect");
+            socket.disconnect();
+          }
         };
-    }, []); // todo : 위의 상황 발생시 [] 비워
+    }, [socket?.id]);
     
     useEffect(() => {
         if (socket) {

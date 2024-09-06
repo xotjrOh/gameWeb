@@ -169,6 +169,11 @@ const ioHandler = (req, res) => {
         if (!room) {
           return callback({ success: false, message: '존재하지 않는 게임방입니다.' });
         }
+        // room.players 중 horse 속성이 없거나 빈 값이 있으면 false 리턴
+        const hasMissingHorse = room.players.some(player => !player.horse);
+        if (hasMissingHorse) {
+          return callback({ success: false, message: '모든 플레이어에게 말이 할당되지 않았습니다.' });
+        }
 
         room.gameData.timeLeft = duration;
         room.gameData.rounds = room.gameData.rounds || [];
@@ -224,7 +229,7 @@ const ioHandler = (req, res) => {
               io.to(player.socketId).emit('personal-round-update', player.rounds);
             });
             io.to(roomId).emit('round-ended', { players : room.players, roundResult : roundResult }); // 라운드 종료 알림
-            
+
             // **게임 종료 체크**
             const horsesPositions = Object.entries(room.gameData.positions);
 
@@ -398,7 +403,7 @@ const ioHandler = (req, res) => {
 
     });
   }
-
+  console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@io handler 호출됨");
   
   res.end();
 };

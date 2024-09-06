@@ -19,8 +19,8 @@ export default function HorsesTab({ roomId, socket, session }) {
       <h2 className="text-2xl font-bold mb-4">경주마 현황</h2>
       <div className="space-y-4">
         {positions.map((horse, index) => (
-          <>
-            <div key={index} className="flex items-center">
+          <div key={index}>
+            <div className="flex items-center">
               <span className="mr-4 text-lg font-semibold">{horse.name}</span>
 
               <div className="flex-1 relative bg-gray-200 rounded h-6">
@@ -42,7 +42,7 @@ export default function HorsesTab({ roomId, socket, session }) {
               <span className="ml-4 text-lg">{horse.position}칸</span>
             </div>
             <span className="text-sm text-gray-500">{getHorsePlayers(horse.name)}</span>  {/* 플레이어 이름 */}
-          </>
+          </div>
         ))}
       </div>
       <p className="text-center mt-4 text-sm text-gray-500">골인점: {finishLine}칸</p>
