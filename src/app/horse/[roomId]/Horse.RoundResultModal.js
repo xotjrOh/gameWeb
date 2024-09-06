@@ -18,6 +18,7 @@ export default function RoundResultModal({ socket, roomId }) {
       const setRoundResultAfterRoundEnd = ({ roundResult }) => {
         if (!hasRaceEnded) {
             setResults(roundResult);
+            console.log("round result ", roundResult);
             setIsOpen(true);
         }
       };
@@ -53,6 +54,16 @@ export default function RoundResultModal({ socket, roomId }) {
               </div>
             </div>
           ))}
+          {results.length === 0 && (
+            <div className="text-center py-6">
+                <h2 className="text-2xl font-bold text-red-500 mb-4">😢 아무도 😢</h2>
+                <h2 className="text-2xl font-bold text-red-500 mb-4">베팅하지 않았어요! </h2>
+                <p className="text-gray-600">이렇게나 흥미진진한 라운드에 </p>
+                <p className="text-gray-600">아무도 베팅을 하지 않다니... 너무 아쉽네요!</p>
+                <p className="text-gray-600 mt-2">다음 라운드는 꼭 베팅해 주세요! <br/>
+                🐎 말들도 기대하고 있어요 🐎</p>
+            </div>
+          )}
         </div>
         <button
           onClick={() => setIsOpen(false)}

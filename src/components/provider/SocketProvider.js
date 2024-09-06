@@ -69,6 +69,7 @@ export const SocketProvider = ({children}) => {
     useEffect(() => {
         if (socket) {
             const handleRoomUpdated = (updatedRooms) => {
+                console.log("room-updated", updatedRooms);
                 dispatch(setRooms(updatedRooms));
             };
 

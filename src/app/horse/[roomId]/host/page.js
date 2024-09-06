@@ -16,6 +16,7 @@ import useUpdateSocketId from '@/hooks/useUpdateSocketId';
 import useGameData from '@/hooks/useGameData';
 import RoundResultModal from './Horse.RoundResultModal';
 import GameEndModal from './Horse.GameEndModal';
+import { useSelector } from 'react-redux';
 
 export default function HorseGamePage({ params }) {
   console.log("메인 root 페이지");
@@ -23,6 +24,7 @@ export default function HorseGamePage({ params }) {
   const { socket } = useSocket();
   const [activeTab, setActiveTab] = useState('betting'); // 기본 탭을 'betting'으로 설정
   const { data: session, status } = useSession();
+  const { rooms } = useSelector((state) => state.room);
   
   const handleTabChange = (newValue) => {
     setActiveTab(newValue);
@@ -39,7 +41,10 @@ export default function HorseGamePage({ params }) {
         <h1 className="text-xl font-bold text-center">
           🐎 경마게임 🐎 호스트방
         </h1>
-        <MyStatusButton roomId={roomId} socket={socket} session={session} />
+        <div className="flex">
+          <h1 className="mr-4">{rooms[roomId].players.length}명 참가중 </h1>
+          <MyStatusButton roomId={roomId} socket={socket} session={session} />
+        </div>
       </header>
 
       {/* 탭 네비게이션과 컨텐츠 영역 */}
