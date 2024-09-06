@@ -1,53 +1,39 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
-import useOutsideClick from '@/hooks/useOutsideClick';
+import { useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { updatePlayers } from '@/store/horseSlice';
 
-export default function RoundResultModal({ socket, roomId }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [results, setResults] = useState([]);
-  const resultPopupRef = useRef(null);
-
-  useOutsideClick(resultPopupRef, () => setIsOpen(false));
-
+export default function ChipsTab({ roomId, socket, session }) {
+  const dispatch = useDispatch();
+  const { players } = useSelector((state) => state.horse.gameData);
+  
   useEffect(() => {
+    console.log("players", players);
     if (socket) {
-      // 라운드 종료 시 이벤트 받기
-      const setRoundResultAfterRoundEnd = ({roundResult}) => {
-        setResults(roundResult); // 라운드 결과 저장
-        setIsOpen(true);     // 모달 열기
+      // 'round-ended' 이벤트를 수신하여 칩 개수 업데이트
+      const updatePlayersAfterRoundEnd = ({players}) => {
+        dispatch(updatePlayers(players));
       }
-      socket.on('round-ended', setRoundResultAfterRoundEnd);
+      socket.on('round-ended', updatePlayersAfterRoundEnd);
 
+      // 컴포넌트 언마운트 시 이벤트 리스너 제거
       return () => {
-        socket.off('round-ended', setRoundResultAfterRoundEnd);
+        socket.off('round-ended', updatePlayersAfterRoundEnd);
       };
     }
-  }, [socket]);
-
-  if (!isOpen) return null;
+  }, [roomId, socket?.id]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-96" ref={resultPopupRef} >
-        <h2 className="text-2xl font-bold mb-4">라운드 결과</h2>
-        <div className="space-y-2">
-          {results.map(({ horse, progress }, index) => (
-            <div key={index} className="flex items-center justify-between">
-              <span className="text-xl font-semibold">{horse}</span>
-              <span className={`text-lg ${progress === 2 ? 'text-green-500' : 'text-blue-500'}`}>
-                {progress === 2 ? '⚡ 2칸 전진! ⚡' : '🐎 1칸 전진! 🐎'}
-              </span>
-            </div>
-          ))}
-        </div>
-        <button
-          onClick={() => setIsOpen(false)}
-          className="mt-4 bg-blue-500 text-white py-2 px-4 rounded w-full"
-        >
-          닫기
-        </button>
-      </div>
+    <div>
+      <h2 className="text-2xl font-bold">칩 개수</h2>
+      <ul className="mt-4">
+        {players.map((player, index) => (
+          <li key={index} className="py-2 border-b">
+            {player.dummyName}: {player.chips}개 ({player.horse}, {player.name}, {player.isSolo ? "솔로" : ""}, {player.socketId})
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
