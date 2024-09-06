@@ -1,17 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
+import useRaceEnd from '@/hooks/useRaceEnd';
 
 export default function HorsesTab({ roomId, socket, session }) {
   const { positions, finishLine, players } = useSelector((state) => state.horse.gameData);
-  const [hasRaceEnded, setHasRaceEnded] = useState(false); // 게임 종료 여부를 상태로 관리
-
-  useEffect(() => {
-    // positions 배열에서 결승선을 넘은 말이 있는지 확인
-    const raceEnded = positions.some(horse => horse.position >= finishLine);
-    setHasRaceEnded(raceEnded); // 게임 종료 여부 업데이트
-  }, [positions, finishLine]);
+  const { hasRaceEnded } = useRaceEnd();
 
   const getHorsePlayers = (horseName) => {
     return players

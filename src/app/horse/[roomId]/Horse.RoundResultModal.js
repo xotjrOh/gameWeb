@@ -2,11 +2,13 @@
 
 import { useEffect, useState, useRef } from 'react';
 import useOutsideClick from '@/hooks/useOutsideClick';
+import useRaceEnd from '@/hooks/useRaceEnd';
 import './RoundEnd.css'
 
 export default function RoundResultModal({ socket, roomId }) {
   const [isOpen, setIsOpen] = useState(false);
   const [results, setResults] = useState([]);
+  const { hasRaceEnded } = useRaceEnd();
   const resultPopupRef = useRef(null);
 
   useOutsideClick(resultPopupRef, () => setIsOpen(false));
@@ -14,8 +16,10 @@ export default function RoundResultModal({ socket, roomId }) {
   useEffect(() => {
     if (socket) {
       const setRoundResultAfterRoundEnd = ({ roundResult }) => {
-        setResults(roundResult);
-        setIsOpen(true);
+        if (!hasRaceEnded) {
+            setResults(roundResult);
+            setIsOpen(true);
+        }
       };
 
       socket.on('round-ended', setRoundResultAfterRoundEnd);

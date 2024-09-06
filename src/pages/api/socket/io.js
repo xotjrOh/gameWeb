@@ -223,7 +223,8 @@ const ioHandler = (req, res) => {
               }
               io.to(player.socketId).emit('personal-round-update', player.rounds);
             });
-
+            io.to(roomId).emit('round-ended', { players : room.players, roundResult : roundResult }); // 라운드 종료 알림
+            
             // **게임 종료 체크**
             const horsesPositions = Object.entries(room.gameData.positions);
 
@@ -254,7 +255,7 @@ const ioHandler = (req, res) => {
                 })),
               });
             } else {
-              io.to(roomId).emit('round-ended', { players : room.players, roundResult : roundResult }); // 라운드 종료 알림
+              // io.to(roomId).emit('round-ended', { players : room.players, roundResult : roundResult }); // 라운드 종료 알림
             }
           }
         }, 1000);

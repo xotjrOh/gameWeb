@@ -55,6 +55,7 @@ export default function BettingTab({ roomId, socket, session }) {
           dispatch(updateChip(response.remainChips));
           dispatch(updatePersonalRounds(response.personalRounds));
           dispatch(updateIsBetLocked(response.isBetLocked));
+          setBets({});
         } else {
           alert(response.message);
         }
