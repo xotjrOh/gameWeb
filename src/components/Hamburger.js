@@ -38,8 +38,8 @@ export default function Hamburger() {
             <Link href="/rankings">
               <span className="menu block px-4 py-2 text-black hover:bg-gray-100">랭크 순위</span>
             </Link>
-            <Link href="/settings">
-              <span className="menu block px-4 py-2 text-black hover:bg-gray-100">게임 설정</span>
+            <Link href="/settings" onClick={(e) => e.preventDefault()}>
+              <span className="menu block px-4 py-2 text-black hover:bg-gray-100 cursor-not-allowed">게임 설정</span>
             </Link>
             <div className="relative">
               <button
@@ -54,14 +54,11 @@ export default function Hamburger() {
               </button>
               {isSubmenuOpen && (
                 <div className="absolute top-0 left-full mt-0 w-48 bg-white border rounded shadow-lg">
-                  <Link href="/games/tictactoe">
-                    <span className="block px-4 py-2 text-black hover:bg-gray-100">Tic Tac Toe</span>
+                  <Link href="/games/horse">
+                    <span className="block px-4 py-2 text-black hover:bg-gray-100">🐎 경마게임</span>
                   </Link>
-                  <Link href="/games/chess">
-                    <span className="block px-4 py-2 text-black hover:bg-gray-100">Chess</span>
-                  </Link>
-                  <Link href="/games/poker">
-                    <span className="block px-4 py-2 text-black hover:bg-gray-100">Poker</span>
+                  <Link href="/games/shuffle">
+                    <span className="block px-4 py-2 text-black hover:bg-gray-100">🔀 뒤죽박죽</span>
                   </Link>
                 </div>
               )}
