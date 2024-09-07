@@ -37,17 +37,17 @@ export default function VoteTab({ roomId, socket, session, timeLeft }) {
       <div className="text-center bg-gray-100 p-4 rounded-lg shadow-md">
         <h2 className="text-2xl font-bold">라운드마다 최다 득표할 것 같은 말에 투표하세요!</h2>
         <p className="text-red-500">맞을 경우 칩이 2개 추가됩니다.</p>
-        <p className="text-red-500">베팅하기 버튼을 누른 이후에는 수정이 불가합니다.</p>
+        <p className="text-red-500">투표하기 버튼을 누른 이후에는 수정이 불가합니다.</p>
 
         <div className="grid grid-cols-2 gap-6 mt-6">
           {horses.map((horse) => (
             <div
               key={horse}
-              className={`flex flex-col items-center bg-white p-4 rounded-lg shadow-sm border border-gray-300 cursor-pointer transition-colors duration-200 
-              ${selectedHorse === horse ? 'border-blue-500 bg-blue-100' : 'hover:bg-blue-50'}`}
+              className={`flex flex-col items-center p-4 rounded-lg shadow-sm border cursor-pointer transition-all duration-300 
+              ${selectedHorse === horse ? 'border-blue-500 bg-blue-100' : 'bg-white hover:bg-blue-50'}`}  // 선택된 말과 hover 시 배경색 변화
               onClick={() => setSelectedHorse(horse)}  // 선택된 말 업데이트
             >
-              <label className={`font-semibold text-lg mb-2 ${selectedHorse === horse ? 'text-blue-700' : ''}`}>
+              <label className={`font-semibold text-lg mb-2 transition-colors duration-300 ${selectedHorse === horse ? 'text-blue-700' : 'text-black'}`}>
                 {horse}
               </label>
             </div>
@@ -87,7 +87,7 @@ export default function VoteTab({ roomId, socket, session, timeLeft }) {
               return (
                 <div
                   key={index}
-                  className={`flex justify-between items-center p-3 rounded-lg shadow-sm border border-gray-300 ${
+                  className={`flex justify-between items-center p-3 rounded-lg shadow-sm border transition-all duration-300 ${
                     isSuccessful ? 'bg-green-100 border-green-500' : 'bg-white'
                   }`}  // 성공 시 초록 배경과 테두리 추가
                 >

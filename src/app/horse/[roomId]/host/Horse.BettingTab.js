@@ -124,7 +124,6 @@ export default function BettingTab({ roomId, socket, session, timeLeft }) {
 
       <div className="text-center">
         <h2 className="text-2xl font-bold">베팅</h2>
-        <p className="text-lg">남은 시간: {Math.floor(timeLeft / 60)}:{timeLeft % 60}</p>
         <p className="text-red-500">칩은 리필되지 않으니 아껴서 베팅해주세요. <br/>베팅하기 버튼을 누른 이후에는 수정이 불가합니다.</p>
 
         <div className="grid grid-cols-2 gap-4 mt-4">

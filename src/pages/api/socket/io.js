@@ -126,7 +126,8 @@ const ioHandler = (req, res) => {
           return callback({ success: true });
         }
 
-        room.players.push({ id: sessionId, name: userName, socketId: socket.id, rounds: [], isBetLocked: false, isVoteLocked: false });
+        room.players.push({ id: sessionId, dummyName: '할당되지않음', horse: '할당되지않음', name: userName, socketId: socket.id, 
+          chips: 0, rounds: [], voteHistory: [], isBetLocked: false, isVoteLocked: false });
         socket.join(roomId.toString());
         io.emit('room-updated', rooms);
         return callback({ success: true });
