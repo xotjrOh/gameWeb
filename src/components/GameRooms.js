@@ -48,11 +48,9 @@ export default function GameRooms({ session }) {
   return (
     <div className="flex flex-col items-center p-4 bg-[#eff9ff] yanolza-font min-h-screen">
 
-      {session.user.id == '3624891095' && (
-        <button onClick={() => setShowModal(true)} className="bg-blue-500 text-white px-4 py-2 rounded mb-4">
-          방 만들기
-        </button>
-      )}
+      <button onClick={() => setShowModal(true)} className="bg-blue-500 text-white px-4 py-2 rounded mb-4">
+        방 만들기
+      </button>
 
       <table className="min-w-full text-center">
         <thead>
