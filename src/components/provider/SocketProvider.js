@@ -26,16 +26,18 @@ export const SocketProvider = ({children}) => {
         const newSocket = io(process.env.NEXT_PUBLIC_SITE_URL, {
             path : "/api/socket/io",
             addTrailingSlash: false,
-            reconnection: true, 		// 자동 재연결 활성화
-            reconnectionAttempts: Infinity, // 재연결 시도 횟수
-            reconnectionDelay: 1000, // 재연결 시도 간격 (1초)
-            forceNew: false,
+            // reconnection: true, 		// 자동 재연결 활성화
+            // reconnectionAttempts: Infinity, // 재연결 시도 횟수
+            // reconnectionDelay: 1000, // 재연결 시도 간격 (1초)
+            // forceNew: false,
         });
 
         newSocket.on('connect', () => {
             console.log("client : connect", newSocket);
             console.log("socket id : ", newSocket.id, newSocket.connected);
             setSocket(newSocket);
+            newSocket.emit("get-room-list"); // 서버 재시작시 방 없애기위함
+            // socket?.emit("get-room-list");
         });
 
         newSocket.on('disconnect', () => {
@@ -58,10 +60,23 @@ export const SocketProvider = ({children}) => {
 
         setSocket(newSocket);
     
-        return () => {
+        return async () => {
           if (socket) {
             console.log("provider에서 socket disconnect");
-            socket.disconnect();
+            // socket.disconnect();
+            const disconnectSocket = async () => {
+                if (socket && socket.connected) {
+                    return new Promise((resolve) => {
+                        console.log('기존 소켓 연결 해제 중...', socket.id);
+                        socket.disconnect(() => {
+                            console.log('소켓 연결이 해제되었습니다.');
+                            resolve();
+                        });
+                    });
+                }
+            };
+
+            await disconnectSocket();
           }
         };
     }, [socket?.id]);
@@ -80,7 +95,7 @@ export const SocketProvider = ({children}) => {
                 socket.off('room-updated', handleRoomUpdated);
             };
         }
-    }, [socket, dispatch]);
+    }, [socket, socket?.id, dispatch]);
 
     return (
       <SocketContext.Provider value={{socket}}>

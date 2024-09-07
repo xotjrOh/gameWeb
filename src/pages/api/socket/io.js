@@ -19,7 +19,7 @@ const ioHandler = (req, res) => {
     res.socket.server.io = io;
 
     io.on('connection', (socket) => {
-      console.log('server : A user connected');
+      console.log('server : A user connected', socket.id);
 
       socket.on('update-socket-id', ({ roomId, sessionId, newSocketId }) => {
         // roomId와 sessionId를 기반으로 해당 플레이어를 찾아서 socketId를 업데이트
@@ -159,6 +159,11 @@ const ioHandler = (req, res) => {
 
       socket.on('disconnect', () => {
         console.log('server : A user disconnected');
+      });
+
+      // 예약된 error 이벤트 처리
+      socket.on('error', (err) => {
+        console.error(`Error occurred on socket ${socket.id}:`, err);
       });
 
       // -------------------- HORSE GAME --------------------------
@@ -400,7 +405,6 @@ const ioHandler = (req, res) => {
         });
         callback({ success: true });
       });
-
     });
   }
   console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@io handler 호출됨");

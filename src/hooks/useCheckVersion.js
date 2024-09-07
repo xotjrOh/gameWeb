@@ -16,10 +16,23 @@ export default function useCheckVersion(socket) {
             }
 
             if (parseFloat(localVersion) !== parseFloat(serverVersion)) {
-                // 서버 버전이 다를 경우 로비로 리다이렉트
                 console.log(`버전이 변경되었습니다: ${localVersion} -> ${serverVersion}. 새로고침합니다.`);
+                const disconnectSocket = async () => {
+                    if (socket && socket.connected) {
+                        return new Promise((resolve) => {
+                            console.log('기존 소켓 연결 해제 중...', socket.id);
+                            socket.disconnect(() => {
+                                console.log('소켓 연결이 해제되었습니다.');
+                                resolve();
+                            });
+                        });
+                    }
+                };
+                
                 localStorage.setItem('localVersion', serverVersion);
-                window.location.href = '/';  // 새로고침하여 로비로 이동
+                window.location.href = '/';
+                
+                await disconnectSocket();  // 소켓 연결 해제가 완료된 후 새로고침 진행
             }
         } catch (error) {
             console.error('서버 버전 체크 중 에러 발생:', error);

@@ -44,7 +44,7 @@ export default function HorseGamePage({ params }) {
           🐎 경마게임 🐎 호스트방
         </h1>
         <div className="flex">
-          <h1 className="mr-4">{rooms[roomId].players.length}명 참가중 </h1>
+          <h1 className="mr-4">{rooms?.[roomId]?.players?.length}명 참가중 </h1>
           <MyStatusButton roomId={roomId} socket={socket} session={session} />
         </div>
       </header>
