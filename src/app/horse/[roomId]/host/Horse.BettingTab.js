@@ -12,12 +12,15 @@ export default function BettingTab({ roomId, socket, session, timeLeft }) {
   const [duration, setDuration] = useState(300);  // **사용자가 설정할 라운드 지속 시간**
   const [finishLine, setFinishLine] = useState(9);  // **골인지점 설정 상태**
   const [showSettingsModal, setShowSettingsModal] = useState(false);  // **설정을 위한 모달 창 상태**
+  const [showNewGameModal, setShowNewGameModal] = useState(false);  // **새 게임 확인 모달 상태 추가**
   const roundPopupRef = useRef(null);
   const settingPopupRef = useRef(null);
+  const newGamePopupRef = useRef(null);  // **새 게임 모달 참조 추가**
   const { horses, statusInfo, isRoundStarted } = useSelector((state) => state.horse.gameData);
 
   useOutsideClick(roundPopupRef, () => setShowDurationModal(false));
   useOutsideClick(settingPopupRef, () => setShowSettingsModal(false));
+  useOutsideClick(newGamePopupRef, () => setShowNewGameModal(false));  // **새 게임 모달 외부 클릭 닫기**
 
   const handleBetChange = (horse, amount) => {
     const newBets = { ...bets, [horse]: amount };
@@ -66,7 +69,7 @@ export default function BettingTab({ roomId, socket, session, timeLeft }) {
   };
 
   const confirmStartRound = () => {
-    socket.emit('horse-start-round', { roomId, duration, finishLine }, (response) => {
+    socket.emit('horse-start-round', { roomId, duration }, (response) => {
       if (!response.success) {
         alert(response.message);
       } else {
@@ -95,32 +98,61 @@ export default function BettingTab({ roomId, socket, session, timeLeft }) {
     });
   };
 
+  // **새 게임 시작 모달 확인**
+  const openNewGameModal = () => {
+    setShowNewGameModal(true);  // **새 게임 모달 열기**
+  };
+
+  const confirmNewGame = () => {
+    socket.emit('horse-new-game', { roomId }, (response) => {
+      if (!response.success) {
+        alert(response.message);
+      } else {
+        alert("새 게임이 성공적으로 시작되었습니다.");
+        setShowNewGameModal(false);  // **새 게임 모달 닫기**
+        
+      }
+    });
+  };
+
   return (
     <div className="space-y-4">
       {/* **설정 버튼** */}
-      <button
-        onClick={openSettingsModal}
-        className={`bg-blue-500 text-white py-2 px-4 rounded ${isRoundStarted ? 'opacity-50 cursor-not-allowed' : ''}`}
-        disabled={isRoundStarted} // **라운드 시작 후 비활성화**
-      >
-        설정
-      </button>
+      <div className="flex justify-between">
+        <div className="flex">
+          <button
+            onClick={openSettingsModal}
+            className={`bg-blue-500 text-white py-2 px-4 rounded mr-2 ${isRoundStarted ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={isRoundStarted} // **라운드 시작 후 비활성화**
+          >
+            설정
+          </button>
 
-      <button
-        onClick={assignRoles}
-        className={`bg-yellow-500 text-white py-2 px-4 rounded ${isRoundStarted ? 'opacity-50 cursor-not-allowed' : ''}`}
-        disabled={isRoundStarted} // **라운드 시작 후 비활성화**
-      >
-        역할 할당
-      </button>
+          <button
+            onClick={assignRoles}
+            className={`bg-yellow-500 text-white py-2 px-4 rounded mr-2 ${isRoundStarted ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={isRoundStarted} // **라운드 시작 후 비활성화**
+          >
+            역할 할당
+          </button>
 
-      <button
-        onClick={startRound}
-        className={`bg-red-500 text-white py-2 px-4 rounded ${timeLeft > 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-        disabled={timeLeft > 0} // **라운드 시작 후 비활성화**
-      >
-        라운드 시작
-      </button>
+          <button
+            onClick={startRound}
+            className={`bg-red-500 text-white py-2 px-4 rounded mr-2 ${timeLeft > 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={timeLeft > 0} // **라운드 시작 후 비활성화**
+          >
+            라운드 시작
+          </button>
+        </div>
+
+        {/* **새 게임 버튼 추가** */}
+        <button
+          onClick={openNewGameModal}
+          className="bg-purple-500 text-white py-2 px-4 rounded"
+        >
+          새 게임
+        </button>
+      </div>
 
       <div className="text-center">
         <h2 className="text-2xl font-bold">베팅</h2>
@@ -194,6 +226,27 @@ export default function BettingTab({ roomId, socket, session, timeLeft }) {
               className="bg-green-500 text-white py-2 px-4 rounded w-full"
             >
               설정 완료
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* **새 게임 모달 창 추가** */}
+      {showNewGameModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+          <div className="bg-white p-6 rounded shadow-lg text-center" ref={newGamePopupRef}>
+            <h3 className="text-lg font-bold mb-4">정말 새로 시작하시겠습니까?</h3>
+            <button
+              onClick={confirmNewGame}
+              className="bg-purple-500 text-white py-2 px-4 rounded w-full mb-2"
+            >
+              확인
+            </button>
+            <button
+              onClick={() => setShowNewGameModal(false)}
+              className="bg-gray-500 text-white py-2 px-4 rounded w-full"
+            >
+              취소
             </button>
           </div>
         </div>

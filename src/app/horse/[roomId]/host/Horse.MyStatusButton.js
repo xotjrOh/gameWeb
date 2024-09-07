@@ -10,7 +10,7 @@ export default function MyStatusButton({ roomId, socket, session }) {
   useOutsideClick(popupRef, () => setShowStatus(false));
 
   return (
-    <div className="relative">
+    <div className="relative z-50">
       <button
         onClick={() => setShowStatus(true)}
         className="bg-blue-500 text-white py-2 px-4 rounded"

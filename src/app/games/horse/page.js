@@ -1,9 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { useSession } from 'next-auth/react';
+import Header from '@/components/header/Header';
 
 export default function GameRulePage() {
   const [activeTab, setActiveTab] = useState('overview');
+  const { data: session, status } = useSession();
 
   const tabs = [
     { key: 'overview',  label: '게임 개요' },
@@ -97,27 +100,30 @@ export default function GameRulePage() {
   };
 
   return (
-    <div className="p-8 bg-gradient-to-br from-blue-100 to-purple-200 min-h-screen">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4 yeogieottae-font">🏇 경마게임 룰 설명 🏇</h1>
-        <p className="text-xl">경마게임의 모든 규칙을 쉽게 이해하세요!</p>
-      </div>
+    <>
+        <Header session={session} />
+        <div className="p-8 bg-gradient-to-br from-blue-100 to-purple-200 min-h-screen">
+        <div className="text-center mb-12">
+            <h1 className="text-4xl font-bold mb-4 yeogieottae-font">🏇 경마게임 룰 설명 🏇</h1>
+            <p className="text-xl">경마게임의 모든 규칙을 쉽게 이해하세요!</p>
+        </div>
 
-      <div className="flex justify-center space-x-4 mb-8">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2 rounded-lg text-white font-semibold ${
-              activeTab === tab.key ? 'bg-blue-500' : 'bg-gray-400 hover:bg-blue-400'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+        <div className="flex justify-center space-x-4 mb-8">
+            {tabs.map((tab) => (
+            <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-4 py-2 rounded-lg text-white font-semibold ${
+                activeTab === tab.key ? 'bg-blue-500' : 'bg-gray-400 hover:bg-blue-400'
+                }`}
+            >
+                {tab.label}
+            </button>
+            ))}
+        </div>
 
-      <div>{renderTabContent()}</div>
-    </div>
+        <div>{renderTabContent()}</div>
+        </div>
+    </>
   );
 }

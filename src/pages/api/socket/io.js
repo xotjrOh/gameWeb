@@ -80,6 +80,7 @@ const ioHandler = (req, res) => {
             host: {
               id : sessionId,
               name : userName,
+              socketId : socket.id,
             },
             players: [],
             gameData: {
@@ -176,7 +177,7 @@ const ioHandler = (req, res) => {
           return callback({ success: false, message: '존재하지 않는 게임방입니다.' });
         }
         // room.players 중 horse 속성이 없거나 빈 값이 있으면 false 리턴
-        const hasMissingHorse = room.players.some(player => !player.horse);
+        const hasMissingHorse = room.players.some(player => !player.horse || player.horse === '할당되지않음');
         if (hasMissingHorse) {
           return callback({ success: false, message: '모든 플레이어에게 말이 할당되지 않았습니다.' });
         }
@@ -448,10 +449,66 @@ const ioHandler = (req, res) => {
         });
         callback({ success: true });
       });
+
+      // 새로운 게임 시작을 위한 이벤트 추가
+      socket.on('horse-new-game', ({ roomId }, callback) => {
+        const room = rooms[roomId];
+        if (!room) {
+          return callback({ success: false, message: '존재하지 않는 게임방입니다.' });
+        }
+
+        clearInterval(timers[roomId]);
+        delete timers[roomId];
+        io.to(roomId).emit('update-timer', 0);
+
+        // gameData 초기화
+        room.gameData = {
+          finishLine: 9,  // 기본 설정
+          horses: [],
+          positions: [],  // 경주마 위치 초기화
+          rounds: [],  // 라운드 초기화
+        };
+
+        // statusInfo 초기화
+        room.players.forEach(player => {
+          player.dummyName = '할당되지않음';
+          player.horse = '할당되지않음';
+          player.chips = 0;  // 각 플레이어에게 20개의 칩 지급
+          player.rounds = [];  // 각 플레이어의 라운드 정보 초기화
+          player.voteHistory = [];  // 투표 내역 초기화
+          player.isBetLocked = false;  // 베팅 잠금 초기화
+          player.isVoteLocked = false;  // 투표 잠금 초기화
+        });
+
+        // gameData 초기화
+        room.players.forEach(player => {
+          io.to(player.socketId).emit('game-data-update', {
+            horses: [],
+            players: room.players,
+            positions: [],
+            finishLine: 9,
+            statusInfo: player,
+            isRoundStarted: false,
+            rounds: [],
+          });
+        });
+
+        // host 초기화
+        io.to(room.host.socketId).emit('game-data-update', {
+          horses: [],
+          players: room.players,
+          positions: [],
+          finishLine: 9,
+          statusInfo: {},
+          isRoundStarted: false,
+          rounds: [],
+        });
+
+        callback({ success: true });
+      });
+
     });
-  }
-  console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@io handler 호출됨");
-  
+  }  
   res.end();
 };
 
