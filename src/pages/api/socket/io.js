@@ -126,7 +126,7 @@ const ioHandler = (req, res) => {
           return callback({ success: true });
         }
 
-        room.players.push({ id: sessionId, name: userName, socketId: socket.id, rounds: [], isBetLocked: false });
+        room.players.push({ id: sessionId, name: userName, socketId: socket.id, rounds: [], isBetLocked: false, isVoteLocked: false });
         socket.join(roomId.toString());
         io.emit('room-updated', rooms);
         return callback({ success: true });
@@ -188,8 +188,10 @@ const ioHandler = (req, res) => {
 
         room.players.forEach(player => {
           player.isBetLocked = false;  // 모든 플레이어의 isBetLocked를 false로 설정
+          player.isVoteLocked = false;
         });
         io.to(roomId).emit('update-isBetLocked', false);
+        io.to(roomId).emit('update-isVoteLocked', false);
 
         timers[roomId] = setInterval(() => {
           if (room.gameData.timeLeft > 0) {
@@ -212,6 +214,33 @@ const ioHandler = (req, res) => {
               progress: chips === maxChips ? 2 : chips === secondMaxChips ? 1 : 0,
             }));
 
+            // 1. progress가 2인 말만 객체로 변환
+            const progressTwoHorses = roundResult.reduce((acc, { horse, progress }) => {
+              if (progress === 2) {
+                acc[horse] = true;  // progress가 2인 말만 저장
+              }
+              return acc;
+            }, {});
+
+            // 베팅 안 한 라운드 히스토리 추가 + 2.vote에 따라 칩 추가
+            room.players.forEach(player => {
+              if (!player.isBetLocked) {
+                player.rounds.push([]);  // 빈 배열 추가
+              }
+              io.to(player.socketId).emit('personal-round-update', player.rounds);
+              
+              if (!player.isVoteLocked) {
+                player.voteHistory.push('X');
+              }
+              io.to(player.socketId).emit('vote-history-update', player.voteHistory);
+
+              const lastVote = player.voteHistory[player.voteHistory.length - 1];  // voteHistory의 마지막 값
+              if (progressTwoHorses[lastVote]) {  // progress가 2인 말에 투표했는지 확인
+                player.chips += player.isSolo ? 5 : 2; 
+                io.to(player.socketId).emit('update-chip', player.chips);
+              }
+            });
+
             // 말들의 현재 위치 업데이트
             roundResult.forEach(({ horse, progress }) => {
               room.gameData.positions[horse] = (room.gameData.positions[horse] || 0) + progress;
@@ -226,14 +255,7 @@ const ioHandler = (req, res) => {
             }));
             io.to(roomId).emit('update-positions', { horsesData, rounds : room.gameData.rounds });
 
-            // 베팅 안 한 라운드 히스토리 추가
-            room.players.forEach(player => {
-              if (!player.isBetLocked) {
-                player.rounds.push([]);  // 빈 배열 추가
-              }
-              io.to(player.socketId).emit('personal-round-update', player.rounds);
-            });
-            io.to(roomId).emit('round-ended', { players : room.players, roundResult : roundResult }); // 라운드 종료 알림
+            io.to(roomId).emit('round-ended', { players : room.players, roundResult : roundResult }); // 라운드 종료 알림, players 업데이트됨
 
             // **게임 종료 체크**
             const horsesPositions = Object.entries(room.gameData.positions);
@@ -365,6 +387,26 @@ const ioHandler = (req, res) => {
         player.rounds.push(roundResult || []);
 
         callback({ success: true, remainChips: player.chips, personalRounds: player.rounds, isBetLocked : player.isBetLocked });
+      });
+
+      // **말 투표 로직 (클라이언트에서 'horse-vote' 이벤트 발생)**
+      socket.on('horse-vote', ({ roomId, session, selectedHorse }, callback) => {
+        const room = rooms[roomId];
+        if (!room) {
+          return callback({ success: false, message: '존재하지 않는 게임방입니다.' });
+        }
+
+        const player = room.players.find(p => p.id === session.user.id);
+        if (!player) {
+          return callback({ success: false, message: '본인이 참여하고 있지 않은 게임방입니다.' });
+        }
+
+        // 투표 저장
+        player.voteHistory = player.voteHistory || [];
+        player.voteHistory.push(selectedHorse);
+        player.isVoteLocked = true;
+
+        callback({ success: true, voteHistory: player.voteHistory, isVoteLocked: player.isVoteLocked });
       });
 
       // **설정 업데이트 이벤트**

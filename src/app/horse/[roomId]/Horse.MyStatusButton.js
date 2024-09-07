@@ -41,7 +41,10 @@ console.log(statusInfo);
             <p>익명 이름: {statusInfo?.dummyName}</p>
             <p>내 경주마: {statusInfo?.horse}</p>
             <p>남은 칩 개수: {statusInfo?.chips}</p>
-            {statusInfo?.isSolo && <p>Tooltip: 혼자만 팀원이 없는 대신 우승자 예측으로 인한 칩이 2개가 아닌 5개가 증가합니다.</p>}
+            {statusInfo?.isSolo && (
+              <p>Tip: 당신 혼자만 팀원이 없습니다.<br/>
+              팀원이 없는걸 숨기고 정보를 모아 '예측'에 성공하면 게임이 쉬워집니다.</p>
+            )}
             <button
               onClick={() => setShowStatus(false)}
               className="mt-4 bg-blue-500 text-white py-2 px-4 rounded"

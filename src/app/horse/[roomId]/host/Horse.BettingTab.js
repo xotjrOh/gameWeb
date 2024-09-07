@@ -1,13 +1,12 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import useOutsideClick from '@/hooks/useOutsideClick';
-import { updateHorses, updatePositions, updateChip, updateIsBetLocked, updatePlayers, updateIsRoundStarted } from '@/store/horseSlice';
+import { updateChip, updateIsBetLocked, updateIsRoundStarted } from '@/store/horseSlice';
 
-export default function BettingTab({ roomId, socket, session }) {
+export default function BettingTab({ roomId, socket, session, timeLeft }) {
   const dispatch = useDispatch();
-  const [timeLeft, setTimeLeft] = useState(0);
   const [bets, setBets] = useState({});
   const [showDurationModal, setShowDurationModal] = useState(false);  // **모달 창을 관리하는 상태**
   const [duration, setDuration] = useState(300);  // **사용자가 설정할 라운드 지속 시간**
@@ -19,29 +18,6 @@ export default function BettingTab({ roomId, socket, session }) {
 
   useOutsideClick(roundPopupRef, () => setShowDurationModal(false));
   useOutsideClick(settingPopupRef, () => setShowSettingsModal(false));
-
-  useEffect(() => {
-    if (socket) {
-      socket.on('update-timer', (newTimeLeft) => {
-        setTimeLeft(newTimeLeft);
-      });
-
-      socket.on('roles-assigned', ({ horses, players }) => {
-        const positions = horses.map(horse => ({
-          name: horse,
-          position: 0
-        }));
-        dispatch(updateHorses(horses));
-        dispatch(updatePositions(positions));
-        dispatch(updatePlayers(players));
-      });
-
-      return () => {
-        socket.off('update-timer');
-        socket.off('roles-assigned');
-      };
-    }
-  }, [roomId, socket]);
 
   const handleBetChange = (horse, amount) => {
     const newBets = { ...bets, [horse]: amount };
@@ -149,7 +125,7 @@ export default function BettingTab({ roomId, socket, session }) {
       <div className="text-center">
         <h2 className="text-2xl font-bold">베팅</h2>
         <p className="text-lg">남은 시간: {Math.floor(timeLeft / 60)}:{timeLeft % 60}</p>
-        <p className="text-red-500">칩은 리필되지 않으니 아껴서 베팅해주세요. 베팅하기 버튼을 누른 이후에는 수정이 불가합니다.</p>
+        <p className="text-red-500">칩은 리필되지 않으니 아껴서 베팅해주세요. <br/>베팅하기 버튼을 누른 이후에는 수정이 불가합니다.</p>
 
         <div className="grid grid-cols-2 gap-4 mt-4">
           {horses.map((horse) => (

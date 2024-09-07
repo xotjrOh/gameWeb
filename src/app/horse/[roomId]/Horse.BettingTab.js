@@ -1,37 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { updateHorses, updatePositions, updateChip, updatePersonalRounds, updateIsBetLocked, updatePlayers } from '@/store/horseSlice';
+import { updateChip, updatePersonalRounds, updateIsBetLocked } from '@/store/horseSlice';
 
-export default function BettingTab({ roomId, socket, session }) {
+export default function BettingTab({ roomId, socket, session, timeLeft }) {
   const dispatch = useDispatch();
-  const [timeLeft, setTimeLeft] = useState(0); 
   const [bets, setBets] = useState({}); 
   const { horses, statusInfo } = useSelector((state) => state.horse.gameData);
-  
-  useEffect(() => {
-    if (socket) {
-      socket.on('update-timer', (newTimeLeft) => {
-        setTimeLeft(newTimeLeft);
-      });
-
-      socket.on('roles-assigned', ({ horses, players }) => {
-        const positions = horses.map(horse => ({
-          name: horse,
-          position: 0
-        }));
-        dispatch(updateHorses(horses));
-        dispatch(updatePositions(positions));
-        dispatch(updatePlayers(players));
-      });
-
-      return () => {
-        socket.off('update-timer');
-        socket.off('roles-assigned');
-      };
-    }
-  }, [roomId, socket?.id, dispatch]);
 
   const handleBetChange = (horse, amount) => {
     const newBets = { ...bets, [horse]: amount };
@@ -70,8 +46,7 @@ export default function BettingTab({ roomId, socket, session }) {
       {/* 타이머 및 베팅 */}
       <div className="text-center bg-gray-100 p-4 rounded-lg shadow-md">
         <h2 className="text-2xl font-bold">베팅</h2>
-        <p className="text-lg">남은 시간: {Math.floor(timeLeft / 60)}:{timeLeft % 60}</p>
-        <p className="text-red-500">칩은 리필되지 않으니 아껴서 베팅해주세요. 베팅하기 버튼을 누른 이후에는 수정이 불가합니다.</p>
+        <p className="text-red-500">칩은 리필되지 않으니 아껴서 베팅해주세요. <br/>베팅하기 버튼을 누른 이후에는 수정이 불가합니다.</p>
 
         <div className="grid grid-cols-2 gap-6 mt-6">
           {horses.map((horse) => (
