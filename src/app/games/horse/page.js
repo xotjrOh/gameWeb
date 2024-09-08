@@ -86,7 +86,7 @@ export default function GameRulePage() {
           <div className="text-center p-4">
             <h2 className="text-2xl font-bold mb-4 yeogieottae-font">경주마 탭 설명</h2>
             <p className="mb-2">각 경주마의 위치를 볼 수 있습니다.</p>
-            <p className="mb-2">경주마가 1마리라도 결승선(아래에 '골인점'으로 표기됨)을 통과하면 그 즉시 게임이 종료됩니다.</p>
+            <p className="mb-2">경주마가 1마리라도 결승선(현재는 아래에 '결승선'으로 표기됨)을 통과하면 그 즉시 게임이 종료됩니다.</p>
             <p className="mb-2">종료 시점에 결승선을 통과하지 않은 말(A, C)중 결승선에 가장 가까운 말(C)이 우승자가 됩니다.</p>
             <p className="mb-2">'내 경주마'는 '내 상태 보기'를 통해 확인할 수 있습니다.</p>
             <p className="mb-2">각 플레이어의 경주마 위치는 '라운드 종료'시 업데이트됩니다.</p>

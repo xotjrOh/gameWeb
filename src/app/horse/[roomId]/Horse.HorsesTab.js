@@ -51,7 +51,7 @@ function HorsesTab({ roomId, socket, session }) {
           </div>
         ))}
       </div>
-      <p className="text-center mt-4 text-sm text-gray-500">골인점: {finishLine}칸</p>
+      <p className="text-center mt-4 text-sm text-gray-500">결승선: {finishLine}칸</p>
     </div>
   );
 }

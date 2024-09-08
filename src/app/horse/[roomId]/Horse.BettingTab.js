@@ -62,7 +62,7 @@ function BettingTab({ roomId, socket, session }) {
                 disabled={statusInfo.isBetLocked || isTimeover}  
                 className="w-full"
               />
-              <p className="text-gray-700 mt-2">{bets[horse] || 0} chips</p>
+              <p className="text-gray-700 mt-2">칩 : {bets[horse] || 0}</p>
             </div>
           ))}
         </div>
@@ -84,12 +84,12 @@ function BettingTab({ roomId, socket, session }) {
         {statusInfo.rounds && statusInfo.rounds.length > 0 ? (
           statusInfo.rounds.map((round, roundIndex) => (
             <div key={roundIndex} className="mb-6">
-              <h4 className="text-lg font-semibold mb-2">Round {roundIndex + 1}</h4>
+              <h4 className="text-lg font-semibold mb-2">라운드 {roundIndex + 1}</h4>
               <div className="space-y-2">
                 {round.map((bet, betIndex) => (
                   <div key={betIndex} className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm border border-gray-300">
                     <span className="font-medium text-lg">{bet.horse}</span>
-                    <span className="text-gray-600">Chips: {bet.chips}</span>
+                    <span className="text-gray-600">칩 : {bet.chips}</span>
                   </div>
                 ))}
               </div>

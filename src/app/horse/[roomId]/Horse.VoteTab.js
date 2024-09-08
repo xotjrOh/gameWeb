@@ -37,7 +37,7 @@ function VoteTab({ roomId, socket, session }) {
       {/* 타이머 및 투표 */}
       <div className="text-center bg-gray-100 p-4 rounded-lg shadow-md">
         <h2 className="text-2xl font-bold">라운드마다 최다 득표할 것 같은 말에 투표하세요!</h2>
-        <p className="text-red-500">맞을 경우 칩이 2개 추가됩니다.</p>
+        <p className="text-red-500">예측 성공시 칩이 2개 추가됩니다. (라운드 종료 시점에 추가됨)</p>
         <p className="text-red-500">투표하기 버튼을 누른 이후에는 수정이 불가합니다.</p>
 
         <div className="grid grid-cols-2 gap-6 mt-6">
@@ -92,8 +92,8 @@ function VoteTab({ roomId, socket, session }) {
                     isSuccessful ? 'bg-green-100 border-green-500' : 'bg-white'
                   }`}  // 성공 시 초록 배경과 테두리 추가
                 >
-                  <span className="font-medium text-lg">Round {index + 1}</span>
-                  <span className="text-gray-600">Voted: {vote}</span>
+                  <span className="font-medium text-lg">라운드 {index + 1}</span>
+                  <span className="text-gray-600">예측 : {vote}</span>
                 </div>
               );
             })}

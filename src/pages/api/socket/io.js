@@ -258,12 +258,12 @@ const ioHandler = (req, res) => {
             // **게임 종료 체크**
             const horsesPositions = Object.entries(room.gameData.positions);
 
-            // 골인점을 넘은 말들을 찾음 (losers)
+            // 결승선을 넘은 말들을 찾음 (losers)
             const losers = horsesPositions.filter(([horse, position]) => position >= room.gameData.finishLine);
 
-            // 만약 골인점을 넘은 말이 있다면 게임 종료
+            // 만약 결승선을 넘은 말이 있다면 게임 종료
             if (losers.length > 0) {
-              // 골인점에 도달하지 않은 말 중 가장 가까운 말들을 찾음 (winners)
+              // 결승선에 도달하지 않은 말 중 가장 가까운 말들을 찾음 (winners)
               const remainingHorses = horsesPositions.filter(([horse, position]) => position < room.gameData.finishLine);
               const maxPosition = Math.max(...remainingHorses.map(([, position]) => position));
               

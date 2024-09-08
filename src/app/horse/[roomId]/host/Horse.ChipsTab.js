@@ -29,7 +29,7 @@ function ChipsTab({ roomId, socket, session }) {
       <ul className="mt-4">
         {players.map((player, index) => (
           <li key={index} className="py-2 border-b">
-            {player.dummyName}: {player.chips}개 ({player.horse}, {player.name}, {player.isSolo ? "솔로" : ""}, {player.socketId})
+            {player.dummyName}: {player.chips}개 ({player.horse}, {player.name}{player.isSolo ? ", 솔로" : ""}, {player.socketId})
           </li>
         ))}
       </ul>

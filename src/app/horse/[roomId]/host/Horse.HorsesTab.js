@@ -48,7 +48,7 @@ function HorsesTab({ roomId, socket, session }) {
           </div>
         ))}
       </div>
-      <p className="text-center mt-4 text-sm text-gray-500">골인점: {finishLine}칸</p>
+      <p className="text-center mt-4 text-sm text-gray-500">결승선: {finishLine}칸</p>
 
       {/* 라운드별 경주마 베팅 현황 */}
       <div className="mt-6">
@@ -56,15 +56,15 @@ function HorsesTab({ roomId, socket, session }) {
         {rounds && rounds.length > 0 ? (
           rounds.map((round, roundIndex) => (
             <div key={roundIndex} className="mb-6">
-              <h4 className="text-lg font-semibold mb-2">Round {roundIndex + 1}</h4>
+              <h4 className="text-lg font-semibold mb-2">라운드 {roundIndex + 1}</h4>
               <div className="space-y-2">
                 {round.map((bet, betIndex) => (
                   <div key={betIndex} className="flex justify-between items-center p-3 bg-white rounded-lg shadow-md border border-gray-300">
                     <div className="flex items-center space-x-4">
                       <span className="text-lg font-medium">{bet.horse}</span>
                       {/* 칩과 진행 상태를 경주마와 더 가깝게 배치 */}
-                      <span className="text-sm text-gray-700">Chips: {bet.chips}</span>
-                      <span className="text-sm text-gray-700">Progress: {bet.progress}</span>
+                      <span className="text-sm text-gray-700">칩 : {bet.chips}</span>
+                      <span className="text-sm text-gray-700">전진: {bet.progress}</span>
                     </div>
                   </div>
                 ))}

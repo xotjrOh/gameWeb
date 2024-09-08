@@ -177,7 +177,7 @@ function BettingTab({ roomId, socket, session }) {
                   disabled={statusInfo?.isBetLocked || isTimeover}
                   className="w-full"
                 />
-                <p>{bets[horse] || 0} chips</p>
+                <p>칩 : {bets[horse] || 0}</p>
               </div>
             ))}
           </div>
