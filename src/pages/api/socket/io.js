@@ -128,7 +128,7 @@ const ioHandler = (req, res) => {
         }
 
         room.players.push({ id: sessionId, dummyName: '할당되지않음', horse: '할당되지않음', name: userName, socketId: socket.id, 
-          chips: 0, rounds: [], voteHistory: [], isBetLocked: false, isVoteLocked: false });
+          chips: 0, rounds: [], voteHistory: [], isBetLocked: false, isVoteLocked: false, memo: [] });
         socket.join(roomId.toString());
         io.emit('room-updated', rooms);
         return callback({ success: true });
@@ -340,7 +340,11 @@ const ioHandler = (req, res) => {
             horse: player.horse,
             chips: player.chips,
             isSolo: player.isSolo,
-            rounds: player.rounds,
+            rounds: [], //player.rounds,
+            voteHistory: [], //player.voteHistory,
+            isBetLocked: false, //player.isBetLocked,
+            isVoteLocked: false, //player.isVoteLocked,
+            memo: [], //player.memo,
           };
           io.to(player.socketId).emit('status-update', data);
         });
@@ -426,7 +430,7 @@ const ioHandler = (req, res) => {
       });
 
       socket.on('horse-get-game-data', ({ roomId, sessionId }, callback) => {
-        console.log("server : horse-get-game-data");
+        console.log("server : horse-get-game-data", sessionId);
         const room = rooms[roomId];
         if (!room) callback({ success: false, message: '존재하지 않는 게임방입니다.' });
         const player = rooms[roomId].players.find(p => p.id === sessionId);
@@ -443,7 +447,7 @@ const ioHandler = (req, res) => {
           players: room.players || [],
           positions: horsesData,
           finishLine: room.gameData.finishLine,
-          statusInfo: player || {},
+          statusInfo: player || { memo: [] },
           isRoundStarted: hasRounds || (room.gameData.timeLeft > 0),
           rounds: room.gameData.rounds || [],
           isTimeover: room.gameData.isTimeover || true,
@@ -481,6 +485,7 @@ const ioHandler = (req, res) => {
           player.voteHistory = [];  // 투표 내역 초기화
           player.isBetLocked = false;  // 베팅 잠금 초기화
           player.isVoteLocked = false;  // 투표 잠금 초기화
+          player.memo = [];
         });
 
         // gameData 초기화
@@ -511,6 +516,24 @@ const ioHandler = (req, res) => {
 
         callback({ success: true });
       });
+
+      // 서버 코드 (예: socket.io 서버)
+      socket.on('horse-update-memo', ({ roomId, index, memo, sessionId }, callback) => {
+        const room = rooms[roomId];
+        if (!room) {
+          return callback({ success: false, message: '존재하지 않는 게임방입니다.' });
+        }
+
+        const player = rooms[roomId].players.find(p => p.id === sessionId); // 요청 본인
+        if (!player) {
+          return callback({ success: false, message: '본인이 참여하고 있지 않은 게임방입니다.' });
+        }
+
+        player.memo = player.memo || [];
+        player.memo[index] = memo;
+        callback({ success: true });
+      });
+
 
     });
   }  

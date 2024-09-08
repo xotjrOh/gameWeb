@@ -67,7 +67,7 @@ const useGameData = (roomId, socket, sessionId) => {
             socket.off('update-chip');
         };
     }
-  }, [roomId, socket?.id, dispatch]);
+  }, [roomId, socket?.id, sessionId, dispatch]);
 };
 
 export default useGameData;

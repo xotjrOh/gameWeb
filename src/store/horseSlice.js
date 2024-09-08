@@ -15,7 +15,7 @@ const horseSlice = createSlice({
 			],
 			finishLine: 9,
 			isTimeover: true,
-			statusInfo: { dummyName: '할당되지않음', horse: '할당되지않음', isSolo: false, chips: 0, rounds: [], voteHistory:[], isBetLocked: false, isVoteLocked: false },
+			statusInfo: { dummyName: '할당되지않음', horse: '할당되지않음', isSolo: false, chips: 0, rounds: [], voteHistory:[], isBetLocked: false, isVoteLocked: false, memo: [] },
 
 			isRoundStarted : false,
 			rounds: [
@@ -72,6 +72,10 @@ const horseSlice = createSlice({
 		updateIsVoteLocked(state, action) {
 			state.gameData.statusInfo.isVoteLocked = action.payload;  // statusInfo.isVoteLocked 필드만 업데이트
 		},
+		updateMemo(state, action) {
+			const { index, memo } = action.payload; 				// statusInfo.memo 필드만 업데이트
+			state.gameData.statusInfo.memo[index] = memo;
+		},
 
 		updateIsRoundStarted(state, action) {
 			state.gameData.isRoundStarted = action.payload;  // isRoundStarted 필드만 업데이트
@@ -83,6 +87,6 @@ const horseSlice = createSlice({
 });
 
 export const { setGameData, updateHorses, updatePlayers, updatePositions, updateFinishLine, updateIsTimeover, updateStatusInfo, 
-	updateChip, updatePersonalRounds, updateVoteHistory, updateIsBetLocked, updateIsVoteLocked,
+	updateChip, updatePersonalRounds, updateVoteHistory, updateIsBetLocked, updateIsVoteLocked, updateMemo,
 	updateIsRoundStarted, updateRounds } = horseSlice.actions; // state 변경함수들 남음
 export default horseSlice;
