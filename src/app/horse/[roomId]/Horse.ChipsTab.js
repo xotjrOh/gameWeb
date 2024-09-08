@@ -73,6 +73,7 @@ function ChipsTab({ roomId, socket, session }) {
         {/* **칩개수 추가** */}
         <p className="text-sm text-gray-500 ml-2">(각 메모는 16글자 제한)</p>
       </div>
+      <p className="mt-1">각 플레이어가 누구일지, 어떤 경주마일지 예측하여 기록해두면 기억하기 편하답니다 :)</p>
       <ul className="mt-4">
         {players.map((player, index) => (
           <li key={index} className="py-2 border-b">
@@ -88,7 +89,7 @@ function ChipsTab({ roomId, socket, session }) {
               type="text"
               value={memoState[index] || ''} // **로컬 상태에서 메모 관리**
               onChange={(e) => handleMemoChange(index, e.target.value)} // **debounce 처리된 메모 업데이트**
-              className="border p-1 ml-4"
+              className="border p-1 ml-4 min-w-[280px]"
               placeholder="플레이어 정보 메모"
               maxLength={16}  // **16글자 제한**
             />
