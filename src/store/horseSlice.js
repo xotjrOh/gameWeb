@@ -59,11 +59,9 @@ const horseSlice = createSlice({
 			state.gameData.statusInfo.chips = action.payload;  // statusInfo.chip 필드만 업데이트
 		},
 		updatePersonalRounds(state, action) {
-			console.log("여기", action.payload);
 			state.gameData.statusInfo.rounds = action.payload;  // statusInfo.rounds 필드만 업데이트
 		},
 		updateVoteHistory(state, action) {
-			console.log("voteHistory slice", action.payload);
 			state.gameData.statusInfo.voteHistory = action.payload;  // statusInfo.rounds 필드만 업데이트
 		},
 		updateIsBetLocked(state, action) {

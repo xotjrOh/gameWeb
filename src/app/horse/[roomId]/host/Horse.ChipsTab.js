@@ -5,12 +5,10 @@ import { useSelector, useDispatch } from 'react-redux';
 import { updatePlayers } from '@/store/horseSlice';
 
 function ChipsTab({ roomId, socket, session }) {
-  console.log("ChipsTab 페이지");
   const dispatch = useDispatch();
   const { players } = useSelector((state) => state.horse.gameData);
   
   useEffect(() => {
-    console.log("players", players);
     if (socket) {
       // 'round-ended' 이벤트를 수신하여 칩 개수 업데이트
       const updatePlayersAfterRoundEnd = ({players}) => {

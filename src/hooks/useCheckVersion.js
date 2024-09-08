@@ -7,9 +7,6 @@ export default function useCheckVersion(socket) {
             const response = await fetch('/api/version');
             const { serverVersion } = await response.json();
             const localVersion = localStorage.getItem('localVersion');     // 로컬 저장된 버전
-
-            console.log("Current local version:", localVersion);
-            console.log("Current server version:", serverVersion);
             
             if (!localVersion) {
                 localStorage.setItem('localVersion', serverVersion);

@@ -7,7 +7,6 @@ import { updateChip, updateIsBetLocked, updateIsRoundStarted } from '@/store/hor
 import { showToast } from '@/store/toastSlice';
 
 function BettingTab({ roomId, socket, session }) {
-  console.log("BettingTab 페이지");
   const dispatch = useDispatch();
   const [bets, setBets] = useState({});
   const [showDurationModal, setShowDurationModal] = useState(false);  // **모달 창을 관리하는 상태**

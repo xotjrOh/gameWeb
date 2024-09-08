@@ -23,25 +23,22 @@ const ioHandler = (req, res) => {
 
       socket.on('update-socket-id', ({ roomId, sessionId, newSocketId }) => {
         // roomId와 sessionId를 기반으로 해당 플레이어를 찾아서 socketId를 업데이트
-        console.log(roomId, sessionId, newSocketId);
         if (rooms[roomId]) {
           const player = rooms[roomId].players.find(p => p.id === sessionId);
           if (player) {
             player.socketId = newSocketId;
             socket.join(roomId.toString());
-            console.log(`Updated player socketId for player ${sessionId} in room ${roomId}`);
+            console.log(`Updated player socketId for player ${sessionId} in room ${roomId} : ${newSocketId}`);
           }
 
           if (rooms[roomId].host.id == sessionId) {
             socket.join(roomId.toString());
-            console.log(`Updated host socketId for player ${sessionId} in room ${roomId}`);
+            console.log(`Updated host socketId for player ${sessionId} in room ${roomId} : ${newSocketId}`);
           }
-          console.log(socket.rooms);
         }
       });
 
       socket.on('get-room-list', () => {
-        console.log("get rooms", rooms);
         socket.emit('room-updated', rooms);
       });
 
@@ -57,7 +54,6 @@ const ioHandler = (req, res) => {
       });
 
       socket.on('create-room', ({ roomName, userName, gameType, sessionId, maxPlayers }, callback) => {
-        console.log("create room 방문 server")
         // if (!AUTHORIZED_SESSION_IDS.includes(sessionId)) {
         //   return callback({ success: false, message: '방을 만들기 위해서는 오태석에게 문의하세요.' });
         // }

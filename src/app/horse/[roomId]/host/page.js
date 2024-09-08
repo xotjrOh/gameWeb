@@ -22,7 +22,6 @@ import { useSelector, useDispatch } from 'react-redux';
 import useCheckVersion from '@/hooks/useCheckVersion';
 
 export default function HorseGamePage({ params }) {
-  console.log("메인 root 페이지");
   const dispatch = useDispatch();
   const { roomId } = params;
   const { socket } = useSocket();

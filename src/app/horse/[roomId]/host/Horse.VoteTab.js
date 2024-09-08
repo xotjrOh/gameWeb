@@ -6,7 +6,6 @@ import { updateVoteHistory, updateIsVoteLocked } from '@/store/horseSlice';
 import { showToast } from '@/store/toastSlice';
 
 function VoteTab({ roomId, socket, session }) {
-  console.log("VoteTab 페이지");
   const dispatch = useDispatch();
   const [selectedHorse, setSelectedHorse] = useState('');  // 투표한 말
   const { horses, statusInfo, rounds, isTimeover } = useSelector((state) => state.horse.gameData);  // rounds 가져오기

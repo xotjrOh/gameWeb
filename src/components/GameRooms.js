@@ -20,10 +20,6 @@ export default function GameRooms({ session }) {
 
   useCheckVersion(socket);
 
-  useEffect(() => {
-    console.log(socket?.id, socket?.connected);
-  }, [socket?.id]);
-
   const closeModal = () => setShowModal(false);
 
   const joinRoom = (roomId, gameType) => {

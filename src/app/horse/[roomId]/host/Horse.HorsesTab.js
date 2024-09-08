@@ -4,9 +4,7 @@ import { memo } from 'react';
 import { useSelector } from 'react-redux';
 
 function HorsesTab({ roomId, socket, session }) {
-  console.log("horse 페이지");
   const { positions, finishLine, rounds, players } = useSelector((state) => state.horse.gameData);
-  console.log("positions : ", positions, finishLine);
 
   const getHorsePlayers = (horseName) => {
     return players

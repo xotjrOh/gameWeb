@@ -6,7 +6,6 @@ import { updateChip, updatePersonalRounds, updateIsBetLocked } from '@/store/hor
 import { showToast } from '@/store/toastSlice';
 
 function BettingTab({ roomId, socket, session }) {
-  console.log("BettingTab 이다.");
   const dispatch = useDispatch();
   const [bets, setBets] = useState({}); 
   const { horses, statusInfo, isTimeover } = useSelector((state) => state.horse.gameData);

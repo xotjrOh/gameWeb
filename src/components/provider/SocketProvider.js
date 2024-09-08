@@ -34,12 +34,9 @@ export const SocketProvider = ({children}) => {
         });
 
         newSocket.on('connect', () => {
-            console.log("client : connect", newSocket);
-            console.log("socket id : ", newSocket.id, newSocket.connected);
             setSocket(newSocket);
             newSocket.emit("get-room-list"); // 서버 재시작시 방 없애기위함
             dispatch(setIsLoading(false))
-            // socket?.emit("get-room-list");
         });
 
         newSocket.on('disconnect', () => {
@@ -87,7 +84,6 @@ export const SocketProvider = ({children}) => {
     useEffect(() => {
         if (socket) {
             const handleRoomUpdated = (updatedRooms) => {
-                console.log("room-updated", updatedRooms);
                 dispatch(setRooms(updatedRooms));
             };
 

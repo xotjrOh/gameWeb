@@ -5,47 +5,34 @@ import { showToast } from '@/store/toastSlice';
 
 const useGameData = (roomId, socket, sessionId) => {
   const dispatch = useDispatch();
-  console.log("useGameData");
 
   useEffect(() => {
-    console.log("useGameData1");
     if (socket && roomId) {
-        console.log("useGameData2");
-        
         socket.on('game-data-update', (data) => {
-            console.log("Received game data:", data);
             dispatch(setGameData(data)); // Redux에 상태 저장
         });
 
         // 호스트를 위한 rounds 데이터
         socket.on('update-positions', ({ horsesData, rounds }) => {
-            console.log("update-positions:", horsesData);
-            console.log("update-positions2:", rounds);
             dispatch(updatePositions(horsesData)); // Redux에 상태 저장
             dispatch(updateRounds(rounds)); // Redux에 상태 저장
         });
         socket.on('update-finishLine', (data) => {
-            console.log("update-finishLine:", data);
             dispatch(updateFinishLine(data)); // Redux에 상태 저장
         });
         socket.on('personal-round-update', (data) => {
-            console.log("personal-round-update:", data);
             dispatch(updatePersonalRounds(data)); // Redux에 상태 저장
         });
         socket.on('vote-history-update', (data) => {
-            console.log("vote-history-update:", data);
             dispatch(updateVoteHistory(data)); // Redux에 상태 저장
         });
         socket.on('update-isBetLocked', (data) => {
-            console.log("update-isBetLocked:", data);
             dispatch(updateIsBetLocked(data)); // Redux에 상태 저장
         });
         socket.on('update-isVoteLocked', (data) => {
-            console.log("update-isVoteLocked:", data);
             dispatch(updateIsVoteLocked(data)); // Redux에 상태 저장
         });
         socket.on('update-chip', (data) => {
-            console.log("update-chip:", data);
             dispatch(updateChip(data)); // Redux에 상태 저장
         });
 

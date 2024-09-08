@@ -1,11 +1,8 @@
 import { useEffect } from 'react';
 
 function useUpdateSocketId(socket, session, roomId) {
-    console.log("socket 변화감지 이벤트 등록");
   useEffect(() => {
-    console.log("hook 변화감지 ", socket?.id);
     if (socket?.id && session && roomId) {
-        console.log("내부진입", session);
       // 페이지 로드 또는 새로고침 시 서버에 socketId 업데이트 요청
       socket.emit('update-socket-id', {
         roomId,

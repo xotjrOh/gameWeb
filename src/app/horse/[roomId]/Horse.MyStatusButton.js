@@ -10,7 +10,7 @@ export default function MyStatusButton({ roomId, socket, session }) {
   const [showStatus, setShowStatus] = useState(false);
   const popupRef = useRef(null);
   const { statusInfo } = useSelector((state) => state.horse.gameData);
-console.log(statusInfo);
+  
   useOutsideClick(popupRef, () => setShowStatus(false));
 
   useEffect(() => {

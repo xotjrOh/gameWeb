@@ -7,7 +7,6 @@ import useRaceEnd from '@/hooks/useRaceEnd';
 import { showToast } from '@/store/toastSlice';
 
 function ChipsTab({ roomId, socket, session }) {
-  console.log("ChipsTab 이다.");
   const dispatch = useDispatch();
   const { players, statusInfo } = useSelector((state) => state.horse.gameData);
   const { hasRaceEnded } = useRaceEnd();

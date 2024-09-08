@@ -5,7 +5,6 @@ import { useSelector } from 'react-redux';
 import useRaceEnd from '@/hooks/useRaceEnd';
 
 function HorsesTab({ roomId, socket, session }) {
-  console.log("HorsesTab 이다.");
   const { positions, finishLine, players } = useSelector((state) => state.horse.gameData);
   const { hasRaceEnded } = useRaceEnd();
 

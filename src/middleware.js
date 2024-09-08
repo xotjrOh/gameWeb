@@ -4,7 +4,6 @@ import { getToken } from 'next-auth/jwt';
 export async function middleware(request) {
   // 토큰을 가져옵니다.
   const session = await getToken({ req: request });
-  // console.log('Session:', session);
   console.log(request.nextUrl.pathname);
 
   // 요청된 경로가 '/auth/signin'으로 시작하는 경우
