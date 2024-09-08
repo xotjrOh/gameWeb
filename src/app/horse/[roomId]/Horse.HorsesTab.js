@@ -1,12 +1,16 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import useRaceEnd from '@/hooks/useRaceEnd';
 
 function HorsesTab({ roomId, socket, session }) {
   const { positions, finishLine, players } = useSelector((state) => state.horse.gameData);
   const { hasRaceEnded } = useRaceEnd();
+
+  const sortedPositions = useMemo(() => {
+    return [...positions].sort((a, b) => a.name.localeCompare(b.name));
+  }, [positions]);
 
   const getHorsePlayers = (horseName) => {
     return players
@@ -19,7 +23,7 @@ function HorsesTab({ roomId, socket, session }) {
     <div>
       <h2 className="text-2xl font-bold mb-4">경주마 현황</h2>
       <div className="space-y-4">
-        {positions.map((horse, index) => (
+        {sortedPositions.map((horse, index) => (
           <div key={index}>
             <div className="flex items-center">
               <span className="mr-4 text-lg font-semibold">{horse.name}</span>
