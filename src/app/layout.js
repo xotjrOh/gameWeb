@@ -4,6 +4,8 @@ import ReduxProvider from "@/components/provider/ReduxProvider";
 import { SocketProvider } from '@/components/provider/SocketProvider';
 
 import LoadingSpinner from "@/components/LoadingSpinner";
+import Toast from "@/components/Toast";
+import './toast.css';
 
 export const metadata = {
   title: "Create Next App",
@@ -18,6 +20,7 @@ export default function RootLayout({ children }) {
           <ReduxProvider>
             <SocketProvider>
               <LoadingSpinner />
+              <Toast />
               {children}
             </SocketProvider>
           </ReduxProvider>

@@ -1,8 +1,8 @@
-// components/RoomModal.js
 'use client';
 
 import { useState, useRef } from 'react';
 import { setIsLoading } from '@/store/loadingSlice';
+import { showToast } from '@/store/toastSlice';
 
 export default function RoomModal({ closeModal, socket, router, dispatch, session }) {
   const [roomName, setRoomName] = useState('');
@@ -20,7 +20,7 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
     console.log("create room", socket?.id, socket?.connected);
     socket.emit('create-room', { roomName, userName: session.user.name, gameType, sessionId: session.user.id, maxPlayers }, (response) => {
       if (!response.success) {
-        alert(response.message);
+        dispatch(showToast({ message: response.message, type: 'error' }));
         inputRefs.current[response.field]?.focus();
       } else {
         router.push(`/${gameType}/${response.roomId}/host`);
