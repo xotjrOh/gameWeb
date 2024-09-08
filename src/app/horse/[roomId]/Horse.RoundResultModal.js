@@ -46,7 +46,9 @@ export default function RoundResultModal({ socket, roomId }) {
       <div className="bg-white p-6 rounded-lg shadow-lg w-96" ref={resultPopupRef}>
         <h2 className="text-2xl font-bold mb-4">라운드 결과</h2>
         <div className="space-y-4">
-          {results.map(({ horse, progress }, index) => {
+          {results
+            .filter(({ progress }) => progress !== 0)
+            .map(({ horse, progress }, index) => {
             const isSuccess = getPlayerSuccess(horse);  // 성공 여부 확인
             return (
               <div
