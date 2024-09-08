@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useRef } from 'react';
+import { useState, useRef, memo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import useOutsideClick from '@/hooks/useOutsideClick';
 import { updateChip, updateIsBetLocked, updateIsRoundStarted } from '@/store/horseSlice';
 
-export default function BettingTab({ roomId, socket, session, timeLeft }) {
+function BettingTab({ roomId, socket, session }) {
+  console.log("BettingTab 페이지");
   const dispatch = useDispatch();
   const [bets, setBets] = useState({});
   const [showDurationModal, setShowDurationModal] = useState(false);  // **모달 창을 관리하는 상태**
@@ -16,7 +17,7 @@ export default function BettingTab({ roomId, socket, session, timeLeft }) {
   const roundPopupRef = useRef(null);
   const settingPopupRef = useRef(null);
   const newGamePopupRef = useRef(null);  // **새 게임 모달 참조 추가**
-  const { horses, statusInfo, isRoundStarted } = useSelector((state) => state.horse.gameData);
+  const { horses, statusInfo, isRoundStarted, isTimeover } = useSelector((state) => state.horse.gameData);
 
   useOutsideClick(roundPopupRef, () => setShowDurationModal(false));
   useOutsideClick(settingPopupRef, () => setShowSettingsModal(false));
@@ -32,7 +33,7 @@ export default function BettingTab({ roomId, socket, session, timeLeft }) {
   };
 
   const handleBet = () => {
-    if (statusInfo?.isBetLocked || timeLeft === 0) {
+    if (statusInfo?.isBetLocked || isTimeover) {
       return alert("더이상 베팅할 수 없습니다.");
     }
     if (Object.keys(bets).length > 0) {
@@ -109,85 +110,91 @@ export default function BettingTab({ roomId, socket, session, timeLeft }) {
         alert(response.message);
       } else {
         alert("새 게임이 성공적으로 시작되었습니다.");
+        socket.emit('horse-get-game-data', { roomId, sessionId : session.user.id }, (response) => {
+          if (!response.success) {
+            alert(response.message);
+          }
+        });
         setShowNewGameModal(false);  // **새 게임 모달 닫기**
-        
       }
     });
   };
 
   return (
-    <div className="space-y-4">
-      {/* **설정 버튼** */}
-      <div className="flex justify-between">
-        <div className="flex">
-          <button
-            onClick={openSettingsModal}
-            className={`bg-blue-500 text-white py-2 px-4 rounded mr-2 ${isRoundStarted ? 'opacity-50 cursor-not-allowed' : ''}`}
-            disabled={isRoundStarted} // **라운드 시작 후 비활성화**
-          >
-            설정
-          </button>
+    <div>
+      <div className="space-y-4">
+        {/* **설정 버튼** */}
+        <div className="flex justify-between">
+          <div className="flex">
+            <button
+              onClick={openSettingsModal}
+              className={`bg-blue-500 text-white py-2 px-4 rounded mr-2 ${isRoundStarted ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={isRoundStarted} // **라운드 시작 후 비활성화**
+            >
+              설정
+            </button>
 
-          <button
-            onClick={assignRoles}
-            className={`bg-yellow-500 text-white py-2 px-4 rounded mr-2 ${isRoundStarted ? 'opacity-50 cursor-not-allowed' : ''}`}
-            disabled={isRoundStarted} // **라운드 시작 후 비활성화**
-          >
-            역할 할당
-          </button>
+            <button
+              onClick={assignRoles}
+              className={`bg-yellow-500 text-white py-2 px-4 rounded mr-2 ${isRoundStarted ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={isRoundStarted} // **라운드 시작 후 비활성화**
+            >
+              역할 할당
+            </button>
 
+            <button
+              onClick={startRound}
+              className={`bg-red-500 text-white py-2 px-4 rounded mr-2 ${!isTimeover ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={!isTimeover} // **라운드 시작 후 비활성화**
+            >
+              라운드 시작
+            </button>
+          </div>
+
+          {/* **새 게임 버튼 추가** */}
           <button
-            onClick={startRound}
-            className={`bg-red-500 text-white py-2 px-4 rounded mr-2 ${timeLeft > 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-            disabled={timeLeft > 0} // **라운드 시작 후 비활성화**
+            onClick={openNewGameModal}
+            className="bg-purple-500 text-white py-2 px-4 rounded"
           >
-            라운드 시작
+            새 게임
           </button>
         </div>
 
-        {/* **새 게임 버튼 추가** */}
-        <button
-          onClick={openNewGameModal}
-          className="bg-purple-500 text-white py-2 px-4 rounded"
-        >
-          새 게임
-        </button>
-      </div>
+        <div className="text-center">
+          <h2 className="text-2xl font-bold">베팅</h2>
+          <p className="text-red-500">칩은 리필되지 않으니 아껴서 베팅해주세요. <br/>베팅하기 버튼을 누른 이후에는 수정이 불가합니다.</p>
 
-      <div className="text-center">
-        <h2 className="text-2xl font-bold">베팅</h2>
-        <p className="text-red-500">칩은 리필되지 않으니 아껴서 베팅해주세요. <br/>베팅하기 버튼을 누른 이후에는 수정이 불가합니다.</p>
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            {horses.map((horse) => (
+              <div key={horse} className="flex flex-col items-center">
+                <label className="font-semibold">{horse}</label>
+                <input
+                  type="range"
+                  min="0"
+                  max={(statusInfo?.chips || 0)}
+                  value={bets[horse] || 0}
+                  onChange={(e) => handleBetChange(horse, parseInt(e.target.value))}
+                  disabled={statusInfo?.isBetLocked || isTimeover}
+                  className="w-full"
+                />
+                <p>{bets[horse] || 0} chips</p>
+              </div>
+            ))}
+          </div>
 
-        <div className="grid grid-cols-2 gap-4 mt-4">
-          {horses.map((horse) => (
-            <div key={horse} className="flex flex-col items-center">
-              <label className="font-semibold">{horse}</label>
-              <input
-                type="range"
-                min="0"
-                max={(statusInfo?.chips || 0)}
-                value={bets[horse] || 0}
-                onChange={(e) => handleBetChange(horse, parseInt(e.target.value))}
-                disabled={statusInfo?.isBetLocked || timeLeft === 0}
-                className="w-full"
-              />
-              <p>{bets[horse] || 0} chips</p>
-            </div>
-          ))}
+          <button
+            onClick={handleBet}
+            className={`mt-4 ${statusInfo?.isBetLocked || isTimeover ? 'bg-gray-500' : 'bg-green-500'} text-white py-2 px-4 rounded`}
+            disabled={statusInfo?.isBetLocked || isTimeover}
+          >
+            베팅하기
+          </button>
         </div>
 
-        <button
-          onClick={handleBet}
-          className={`mt-4 ${statusInfo?.isBetLocked || timeLeft === 0 ? 'bg-gray-500' : 'bg-green-500'} text-white py-2 px-4 rounded`}
-          disabled={statusInfo?.isBetLocked || timeLeft === 0}
-        >
-          베팅하기
-        </button>
       </div>
-
       {/* **모달 창** */}
       {showDurationModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded shadow-lg text-center" ref={roundPopupRef}>
             <h3 className="text-lg font-bold mb-4">라운드 지속 시간 설정</h3>
             <input
@@ -210,7 +217,7 @@ export default function BettingTab({ roomId, socket, session, timeLeft }) {
 
       {/* **설정 모달 창** */}
       {showSettingsModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded shadow-lg text-center" ref={settingPopupRef}>
             <h3 className="text-lg font-bold mb-4">골인지점 설정</h3>
             <input
@@ -233,7 +240,7 @@ export default function BettingTab({ roomId, socket, session, timeLeft }) {
 
       {/* **새 게임 모달 창 추가** */}
       {showNewGameModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded shadow-lg text-center" ref={newGamePopupRef}>
             <h3 className="text-lg font-bold mb-4">정말 새로 시작하시겠습니까?</h3>
             <button
@@ -254,3 +261,5 @@ export default function BettingTab({ roomId, socket, session, timeLeft }) {
     </div>
   );
 }
+
+export default memo(BettingTab);

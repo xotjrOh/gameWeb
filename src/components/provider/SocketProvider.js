@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { io } from 'socket.io-client';
 import { setRooms } from '@/store/roomSlice';
+import { setIsLoading } from '@/store/loadingSlice';
 
 const SocketContext = createContext({
     socket: null,
@@ -37,11 +38,13 @@ export const SocketProvider = ({children}) => {
             console.log("socket id : ", newSocket.id, newSocket.connected);
             setSocket(newSocket);
             newSocket.emit("get-room-list"); // 서버 재시작시 방 없애기위함
+            dispatch(setIsLoading(false))
             // socket?.emit("get-room-list");
         });
 
         newSocket.on('disconnect', () => {
             console.log("client : disconnect");
+            dispatch(setIsLoading(true))
             // setSocket(null);
         });
 

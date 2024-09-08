@@ -6,6 +6,7 @@ import { useDispatch } from 'react-redux';
 import Tabs from '@/components/tab/Tabs';
 import Tab from '@/components/tab/Tab';
 import TabPanel from '@/components/tab/TabPanel';
+import TimerDisplay from '@/components/TimerDisplay';
 import BettingTab from './Horse.BettingTab';
 import VoteTab from './Horse.VoteTab';
 import ChipsTab from './Horse.ChipsTab';
@@ -19,7 +20,6 @@ import useGameData from '@/hooks/useGameData';
 import RoundResultModal from './Horse.RoundResultModal';
 import GameEndModal from './Horse.GameEndModal';
 import useCheckVersion from '@/hooks/useCheckVersion';
-import useTimeLeft from '@/hooks/useTimeLeft';
 
 export default function HorseGamePage({ params }) {
   const dispatch = useDispatch();
@@ -27,7 +27,6 @@ export default function HorseGamePage({ params }) {
   const { socket } = useSocket();
   const [activeTab, setActiveTab] = useState('betting'); // 기본 탭을 'betting'으로 설정
   const { data: session, status } = useSession();
-  const { timeLeft } = useTimeLeft(roomId, socket, dispatch);
   
   const handleTabChange = (newValue) => {
     setActiveTab(newValue);
@@ -45,7 +44,7 @@ export default function HorseGamePage({ params }) {
         <h1 className="text-xl font-bold text-center">
           🐎 경마게임 🐎
         </h1>
-        <p className="text-lg">남은 시간: {Math.floor(timeLeft / 60)}:{timeLeft % 60}</p>
+        <TimerDisplay roomId={roomId} socket={socket} dispatch={dispatch} />
         <MyStatusButton roomId={roomId} socket={socket} session={session} />
       </header>
 
@@ -57,10 +56,10 @@ export default function HorseGamePage({ params }) {
         <Tab label="경주마"  value="horses" />
 
         <TabPanel value="betting">
-          <BettingTab roomId={roomId} socket={socket} session={session} timeLeft={timeLeft} />
+          <BettingTab roomId={roomId} socket={socket} session={session} />
         </TabPanel>
         <TabPanel value="vote">
-          <VoteTab roomId={roomId} socket={socket} session={session} timeLeft={timeLeft} />
+          <VoteTab roomId={roomId} socket={socket} session={session} />
         </TabPanel>
         <TabPanel value="chips">
           <ChipsTab roomId={roomId} socket={socket} session={session} />

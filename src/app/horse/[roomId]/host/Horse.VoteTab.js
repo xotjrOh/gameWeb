@@ -1,17 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateVoteHistory, updateIsVoteLocked } from '@/store/horseSlice';
 
-export default function VoteTab({ roomId, socket, session, timeLeft }) {
+function VoteTab({ roomId, socket, session }) {
+  console.log("VoteTab 페이지");
   const dispatch = useDispatch();
   const [selectedHorse, setSelectedHorse] = useState('');  // 투표한 말
-  const { horses, statusInfo, rounds } = useSelector((state) => state.horse.gameData);  // rounds 가져오기
+  const { horses, statusInfo, rounds, isTimeover } = useSelector((state) => state.horse.gameData);  // rounds 가져오기
 
   // 투표 처리
   const handleVote = () => {
-    if (statusInfo.isVoteLocked || timeLeft === 0) {
+    if (statusInfo.isVoteLocked || isTimeover) {
       return alert("더 이상 투표할 수 없습니다.");
     }
 
@@ -57,9 +58,9 @@ export default function VoteTab({ roomId, socket, session, timeLeft }) {
         <button
           onClick={handleVote}
           className={`mt-6 px-6 py-2 rounded-lg text-white font-semibold ${
-            statusInfo.isVoteLocked || timeLeft === 0 ? 'bg-gray-500' : 'bg-green-500 hover:bg-green-600'
+            statusInfo.isVoteLocked || isTimeover ? 'bg-gray-500' : 'bg-green-500 hover:bg-green-600'
           }`}
-          disabled={statusInfo.isVoteLocked || timeLeft === 0}
+          disabled={statusInfo.isVoteLocked || isTimeover}
         >
           투표하기
         </button>
@@ -104,3 +105,5 @@ export default function VoteTab({ roomId, socket, session, timeLeft }) {
     </div>
   );
 }
+
+export default memo(VoteTab);

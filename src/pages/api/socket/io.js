@@ -445,7 +445,8 @@ const ioHandler = (req, res) => {
           finishLine: room.gameData.finishLine,
           statusInfo: player || {},
           isRoundStarted: hasRounds || (room.gameData.timeLeft > 0),
-          rounds: room.gameData.rounds,
+          rounds: room.gameData.rounds || [],
+          isTimeover: room.gameData.isTimeover || true,
         });
         callback({ success: true });
       });
@@ -467,12 +468,14 @@ const ioHandler = (req, res) => {
           horses: [],
           positions: [],  // 경주마 위치 초기화
           rounds: [],  // 라운드 초기화
+          isTimeover: true,
         };
 
         // statusInfo 초기화
         room.players.forEach(player => {
           player.dummyName = '할당되지않음';
           player.horse = '할당되지않음';
+          player.isSolo = false;
           player.chips = 0;  // 각 플레이어에게 20개의 칩 지급
           player.rounds = [];  // 각 플레이어의 라운드 정보 초기화
           player.voteHistory = [];  // 투표 내역 초기화
@@ -490,6 +493,7 @@ const ioHandler = (req, res) => {
             statusInfo: player,
             isRoundStarted: false,
             rounds: [],
+            isTimeover: true,
           });
         });
 
@@ -502,6 +506,7 @@ const ioHandler = (req, res) => {
           statusInfo: {},
           isRoundStarted: false,
           rounds: [],
+          isTimeover: true,
         });
 
         callback({ success: true });

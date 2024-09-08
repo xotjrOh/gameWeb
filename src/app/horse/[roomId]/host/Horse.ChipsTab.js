@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, memo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { updatePlayers } from '@/store/horseSlice';
 
-export default function ChipsTab({ roomId, socket, session }) {
+function ChipsTab({ roomId, socket, session }) {
+  console.log("ChipsTab 페이지");
   const dispatch = useDispatch();
   const { players } = useSelector((state) => state.horse.gameData);
   
@@ -37,3 +38,5 @@ export default function ChipsTab({ roomId, socket, session }) {
     </div>
   );
 }
+
+export default memo(ChipsTab);

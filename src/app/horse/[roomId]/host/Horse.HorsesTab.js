@@ -1,8 +1,9 @@
 'use client';
 
+import { memo } from 'react';
 import { useSelector } from 'react-redux';
 
-export default function HorsesTab({ roomId, socket, session }) {
+function HorsesTab({ roomId, socket, session }) {
   console.log("horse 페이지");
   const { positions, finishLine, rounds, players } = useSelector((state) => state.horse.gameData);
   console.log("positions : ", positions, finishLine);
@@ -75,3 +76,5 @@ export default function HorsesTab({ roomId, socket, session }) {
     </div>
   );
 }
+
+export default memo(HorsesTab);

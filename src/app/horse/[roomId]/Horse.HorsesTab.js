@@ -1,9 +1,11 @@
 'use client';
 
+import { memo } from 'react';
 import { useSelector } from 'react-redux';
 import useRaceEnd from '@/hooks/useRaceEnd';
 
-export default function HorsesTab({ roomId, socket, session }) {
+function HorsesTab({ roomId, socket, session }) {
+  console.log("HorsesTab 이다.");
   const { positions, finishLine, players } = useSelector((state) => state.horse.gameData);
   const { hasRaceEnded } = useRaceEnd();
 
@@ -50,3 +52,5 @@ export default function HorsesTab({ roomId, socket, session }) {
     </div>
   );
 }
+
+export default memo(HorsesTab);

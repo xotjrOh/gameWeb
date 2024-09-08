@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateChip, updatePersonalRounds, updateIsBetLocked } from '@/store/horseSlice';
 
-export default function BettingTab({ roomId, socket, session, timeLeft }) {
+function BettingTab({ roomId, socket, session }) {
+  console.log("BettingTab 이다.");
   const dispatch = useDispatch();
   const [bets, setBets] = useState({}); 
-  const { horses, statusInfo } = useSelector((state) => state.horse.gameData);
+  const { horses, statusInfo, isTimeover } = useSelector((state) => state.horse.gameData);
 
   const handleBetChange = (horse, amount) => {
     const newBets = { ...bets, [horse]: amount };
@@ -20,7 +21,7 @@ export default function BettingTab({ roomId, socket, session, timeLeft }) {
   };
 
   const handleBet = () => {
-    if (statusInfo.isBetLocked || timeLeft === 0) {
+    if (statusInfo.isBetLocked || isTimeover) {
       return alert("더이상 베팅할 수 없습니다.");
     }
 
@@ -58,7 +59,7 @@ export default function BettingTab({ roomId, socket, session, timeLeft }) {
                 max={(statusInfo?.chips || 0)}  
                 value={bets[horse] || 0}
                 onChange={(e) => handleBetChange(horse, parseInt(e.target.value))}
-                disabled={statusInfo.isBetLocked || timeLeft === 0}  
+                disabled={statusInfo.isBetLocked || isTimeover}  
                 className="w-full"
               />
               <p className="text-gray-700 mt-2">{bets[horse] || 0} chips</p>
@@ -69,9 +70,9 @@ export default function BettingTab({ roomId, socket, session, timeLeft }) {
         <button
           onClick={handleBet}
           className={`mt-6 px-6 py-2 rounded-lg text-white font-semibold ${
-            statusInfo.isBetLocked || timeLeft === 0 ? 'bg-gray-500' : 'bg-green-500 hover:bg-green-600'
+            statusInfo.isBetLocked || isTimeover ? 'bg-gray-500' : 'bg-green-500 hover:bg-green-600'
           }`}
-          disabled={statusInfo.isBetLocked || timeLeft === 0}
+          disabled={statusInfo.isBetLocked || isTimeover}
         >
           베팅하기
         </button>
@@ -101,3 +102,5 @@ export default function BettingTab({ roomId, socket, session, timeLeft }) {
     </div>
   );
 }
+
+export default memo(BettingTab);

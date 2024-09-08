@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { updateHorses, updatePositions, updatePlayers } from '@/store/horseSlice';
+import { updateIsTimeover, updateHorses, updatePositions, updatePlayers } from '@/store/horseSlice';
 
 function useTimeLeft(roomId, socket, dispatch) {
     const [timeLeft, setTimeLeft] = useState(0); 
@@ -8,6 +8,7 @@ function useTimeLeft(roomId, socket, dispatch) {
         if (socket) {
           socket.on('update-timer', (newTimeLeft) => {
             setTimeLeft(newTimeLeft);
+            dispatch(updateIsTimeover(newTimeLeft <= 0));
           });
     
           socket.on('roles-assigned', ({ horses, players }) => {
