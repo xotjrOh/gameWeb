@@ -46,7 +46,11 @@ function BettingTab({ roomId, socket, session }) {
     <div className="space-y-6">
       {/* 타이머 및 베팅 */}
       <div className="text-center bg-gray-100 p-4 rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold">베팅</h2>
+      <div className="flex justify-center items-baseline">
+          <h2 className="text-2xl font-bold">베팅</h2>
+          {/* **칩개수 추가** */}
+          <p className="text-sm text-gray-500 ml-2">(남은 칩 개수 : {statusInfo?.chips || 0})</p>
+        </div>
         <p className="text-red-500">칩은 리필되지 않으니 아껴서 베팅해주세요. <br/>베팅하기 버튼을 누른 이후에는 수정이 불가합니다.</p>
 
         <div className="grid grid-cols-2 gap-6 mt-6">

@@ -68,7 +68,11 @@ function ChipsTab({ roomId, socket, session }) {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold">칩 개수</h2>
+      <div className="flex items-baseline">
+      <h2 className="text-2xl font-bold">칩 개수</h2> 
+        {/* **칩개수 추가** */}
+        <p className="text-sm text-gray-500 ml-2">(각 메모는 16글자 제한)</p>
+      </div>
       <ul className="mt-4">
         {players.map((player, index) => (
           <li key={index} className="py-2 border-b">
