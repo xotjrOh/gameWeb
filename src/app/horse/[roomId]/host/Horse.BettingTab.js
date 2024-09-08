@@ -4,6 +4,7 @@ import { useState, useRef, memo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import useOutsideClick from '@/hooks/useOutsideClick';
 import { updateChip, updateIsBetLocked, updateIsRoundStarted } from '@/store/horseSlice';
+import { showToast } from '@/store/toastSlice';
 
 function BettingTab({ roomId, socket, session }) {
   console.log("BettingTab 페이지");
@@ -34,33 +35,33 @@ function BettingTab({ roomId, socket, session }) {
 
   const handleBet = () => {
     if (statusInfo?.isBetLocked || isTimeover) {
-      return alert("더이상 베팅할 수 없습니다.");
+      return dispatch(showToast({ message: "더이상 베팅할 수 없습니다.", type: 'error' }));
     }
     if (Object.keys(bets).length > 0) {
       socket.emit('horse-bet', { roomId, bets }, (response) => {
         if (response.success) {
-          alert('베팅이 완료되었습니다.');
+          dispatch(showToast({ message: '베팅이 완료되었습니다.', type: 'success' }));
           dispatch(updateChip(response.remainChips));
           dispatch(updateIsBetLocked(response.isBetLocked));
         } else {
-          alert(response.message);
+          dispatch(showToast({ message: response.message, type: 'error' }));
         }
       });
     } else {
-      alert('최소 하나의 말에 베팅해주세요.');
+      dispatch(showToast({ message: '최소 하나의 말에 베팅해주세요.', type: 'error' }));
     }
   };
 
   const assignRoles = () => {
     if (isRoundStarted) {
-      return alert("라운드가 시작된 후에는 역할을 할당할 수 없습니다.");
+      return dispatch(showToast({ message: "라운드가 시작된 후에는 역할을 할당할 수 없습니다.", type: 'error' }));
     }
 
     socket.emit('horse-assign-roles', { roomId }, (response) => {
       if (!response.success) {
-        alert(response.message);
+        dispatch(showToast({ message: response.message, type: 'error' }));
       } else {
-        alert("성공적으로 할당이 완료되었습니다.");
+        dispatch(showToast({ message: "성공적으로 할당이 완료되었습니다.", type: 'success' }));
       }
     });
   };
@@ -72,9 +73,9 @@ function BettingTab({ roomId, socket, session }) {
   const confirmStartRound = () => {
     socket.emit('horse-start-round', { roomId, duration }, (response) => {
       if (!response.success) {
-        alert(response.message);
+        dispatch(showToast({ message: response.message, type: 'error' }));
       } else {
-        alert("성공적으로 타이머가 동작했습니다.");
+        dispatch(showToast({ message: "성공적으로 타이머가 동작했습니다.", type: 'success' }));
         setShowDurationModal(false);  // **모달 창 닫기**
         dispatch(updateIsRoundStarted(true));
       }
@@ -83,7 +84,7 @@ function BettingTab({ roomId, socket, session }) {
 
   const openSettingsModal = () => {
     if (isRoundStarted) {
-      return alert("라운드가 시작된 후에는 설정을 변경할 수 없습니다.");
+      return dispatch(showToast({ message: "라운드가 시작된 후에는 설정을 변경할 수 없습니다.", type: 'error' }));
     }
     setShowSettingsModal(true);  // **설정 모달 창 열기**
   };
@@ -91,9 +92,9 @@ function BettingTab({ roomId, socket, session }) {
   const confirmSettings = () => {
     socket.emit('horse-update-settings', { roomId, finishLine }, (response) => {
       if (!response.success) {
-        alert(response.message);
+        dispatch(showToast({ message: response.message, type: 'error' }));
       } else {
-        alert("설정이 성공적으로 업데이트되었습니다.");
+        dispatch(showToast({ message: "설정이 성공적으로 업데이트되었습니다.", type: 'success' }));
         setShowSettingsModal(false);  // **설정 모달 창 닫기**
       }
     });
@@ -107,12 +108,12 @@ function BettingTab({ roomId, socket, session }) {
   const confirmNewGame = () => {
     socket.emit('horse-new-game', { roomId }, (response) => {
       if (!response.success) {
-        alert(response.message);
+        dispatch(showToast({ message: response.message, type: 'error' }));
       } else {
-        alert("새 게임이 성공적으로 시작되었습니다.");
+        dispatch(showToast({ message: "새 게임이 성공적으로 시작되었습니다.", type: 'success' }));
         socket.emit('horse-get-game-data', { roomId, sessionId : session.user.id }, (response) => {
           if (!response.success) {
-            alert(response.message);
+            dispatch(showToast({ message: response.message, type: 'error' }));
           }
         });
         setShowNewGameModal(false);  // **새 게임 모달 닫기**

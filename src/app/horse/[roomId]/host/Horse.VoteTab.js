@@ -3,6 +3,7 @@
 import { useState, memo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateVoteHistory, updateIsVoteLocked } from '@/store/horseSlice';
+import { showToast } from '@/store/toastSlice';
 
 function VoteTab({ roomId, socket, session }) {
   console.log("VoteTab 페이지");
@@ -13,22 +14,22 @@ function VoteTab({ roomId, socket, session }) {
   // 투표 처리
   const handleVote = () => {
     if (statusInfo.isVoteLocked || isTimeover) {
-      return alert("더 이상 투표할 수 없습니다.");
+      return dispatch(showToast({ message: "더 이상 투표할 수 없습니다.", type: 'error' }));
     }
 
     if (selectedHorse) {
       socket.emit('horse-vote', { roomId, session, selectedHorse }, (response) => {
         if (response.success) {
-          alert('투표가 완료되었습니다.');
+          dispatch(showToast({ message: '투표가 완료되었습니다.', type: 'success' }));
           dispatch(updateVoteHistory(response.voteHistory));  // 개인 라운드 정보 업데이트
           dispatch(updateIsVoteLocked(response.isVoteLocked));  // 투표 잠금
           setSelectedHorse('');  // 선택 초기화
         } else {
-          alert(response.message);
+          dispatch(showToast({ message: response.message, type: 'error' }));
         }
       });
     } else {
-      alert('말을 선택해주세요.');
+      dispatch(showToast({ message: '말을 선택해주세요.', type: 'error' }));
     }
   };
 

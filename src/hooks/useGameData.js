@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { setGameData, updatePositions, updateRounds, updateFinishLine, updatePersonalRounds, updateVoteHistory, updateIsBetLocked, updateIsVoteLocked, updateChip } from '@/store/horseSlice'; // Redux 슬라이스에서 가져옴
+import { showToast } from '@/store/toastSlice';
 
 const useGameData = (roomId, socket, sessionId) => {
   const dispatch = useDispatch();
@@ -51,7 +52,7 @@ const useGameData = (roomId, socket, sessionId) => {
         // 서버에서 데이터를 받아와 Redux에 저장
         socket.emit('horse-get-game-data', { roomId, sessionId }, (response) => {
             if (!response.success) {
-                alert(response.message);
+                dispatch(showToast({ message: response.message, type: 'error' }));
             }
         });
 

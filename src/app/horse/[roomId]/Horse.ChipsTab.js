@@ -4,6 +4,7 @@ import { useEffect, useState, memo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { updatePlayers, updateMemo } from '@/store/horseSlice';
 import useRaceEnd from '@/hooks/useRaceEnd';
+import { showToast } from '@/store/toastSlice';
 
 function ChipsTab({ roomId, socket, session }) {
   console.log("ChipsTab 이다.");
@@ -31,11 +32,11 @@ function ChipsTab({ roomId, socket, session }) {
   useEffect(() => {
     setMemoState(statusInfo?.memo || []);
   }, [statusInfo?.memo]);
-  
+
   // **서버에 메모 업데이트 요청을 debounce 처리**
   const handleMemoChange = (index, newMemo) => {
     if (newMemo.length > 16) {
-      return alert("메모는 최대 16자까지 입력할 수 있습니다.");
+      return dispatch(showToast({ message: "메모는 최대 16자까지 입력할 수 있습니다.", type: 'error' }));
     }
 
     // **메모 상태 업데이트**
@@ -54,7 +55,7 @@ function ChipsTab({ roomId, socket, session }) {
         if (response.success) {
           dispatch(updateMemo({ index, memo: newMemo }));  // **Redux 스토어 업데이트**
         } else {
-          alert(response.message || "메모 저장에 실패했습니다.");
+          dispatch(showToast({ message: response.message || "메모 저장에 실패했습니다.", type: 'error' }));
         }
       });
     }, 500); // **500ms 후에 서버 요청**

@@ -3,6 +3,7 @@
 import { useState, memo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateChip, updatePersonalRounds, updateIsBetLocked } from '@/store/horseSlice';
+import { showToast } from '@/store/toastSlice';
 
 function BettingTab({ roomId, socket, session }) {
   console.log("BettingTab 이다.");
@@ -22,23 +23,23 @@ function BettingTab({ roomId, socket, session }) {
 
   const handleBet = () => {
     if (statusInfo.isBetLocked || isTimeover) {
-      return alert("더이상 베팅할 수 없습니다.");
+      return dispatch(showToast({ message: "더이상 베팅할 수 없습니다.", type: 'error' }));
     }
 
     if (Object.keys(bets).length > 0) {
       socket.emit('horse-bet', { roomId, bets }, (response) => {
         if (response.success) {
-          alert('베팅이 완료되었습니다.');
+          dispatch(showToast({ message: '베팅이 완료되었습니다.', type: 'success' }));
           dispatch(updateChip(response.remainChips));
           dispatch(updatePersonalRounds(response.personalRounds));
           dispatch(updateIsBetLocked(response.isBetLocked));
           setBets({});
         } else {
-          alert(response.message);
+          dispatch(showToast({ message: response.message, type: 'error' }));
         }
       });
     } else {
-      alert('최소 하나의 말에 베팅해주세요.');
+      dispatch(showToast({ message: '최소 하나의 말에 베팅해주세요.', type: 'error' }));
     }
   };
 
