@@ -14,14 +14,17 @@ function BettingTab({ roomId, socket, session }) {
   const [finishLine, setFinishLine] = useState(9);  // **골인지점 설정 상태**
   const [showSettingsModal, setShowSettingsModal] = useState(false);  // **설정을 위한 모달 창 상태**
   const [showNewGameModal, setShowNewGameModal] = useState(false);  // **새 게임 확인 모달 상태 추가**
+  const [showLeaveModal, setShowLeaveModal] = useState(false);  // **나가기 확인 모달 추가**
   const roundPopupRef = useRef(null);
   const settingPopupRef = useRef(null);
   const newGamePopupRef = useRef(null);  // **새 게임 모달 참조 추가**
+  const leavePopupRef = useRef(null); // **나가기 모달 참조 추가**
   const { horses, statusInfo, isRoundStarted, isTimeover } = useSelector((state) => state.horse.gameData);
 
   useOutsideClick(roundPopupRef, () => setShowDurationModal(false));
   useOutsideClick(settingPopupRef, () => setShowSettingsModal(false));
   useOutsideClick(newGamePopupRef, () => setShowNewGameModal(false));  // **새 게임 모달 외부 클릭 닫기**
+  useOutsideClick(leavePopupRef, () => setShowLeaveModal(false));  // **나가기 모달 외부 클릭 닫기**
 
   const handleBetChange = (horse, amount) => {
     const newBets = { ...bets, [horse]: amount };
@@ -120,6 +123,24 @@ function BettingTab({ roomId, socket, session }) {
     });
   };
 
+  // **방장 나가기 모달 열기**
+  const openLeaveModal = () => {
+    setShowLeaveModal(true);
+  };
+
+  // **방장 나가기 확인**
+  const confirmLeaveRoom = () => {
+    socket.emit('leave-room', { roomId, sessionId: session.user.id }, (response) => {
+      if (response.success) {
+        dispatch(showToast({ message: "방장이 방을 나갔습니다. 방이 종료되었습니다.", type: 'success' }));
+        setShowLeaveModal(false);
+        window.location.href = '/';
+      } else {
+        dispatch(showToast({ message: response.message, type: 'error' }));
+      }
+    });
+  };
+
   return (
     <div>
       <div className="space-y-4">
@@ -152,12 +173,23 @@ function BettingTab({ roomId, socket, session }) {
           </div>
 
           {/* **새 게임 버튼 추가** */}
-          <button
-            onClick={openNewGameModal}
-            className="bg-purple-500 text-white py-2 px-4 rounded"
-          >
-            새 게임
-          </button>
+          <div className="flex">
+            <button
+              onClick={openNewGameModal}
+              className="bg-purple-500 text-white py-2 px-4 rounded mr-5"
+            >
+              새 게임
+            </button>
+
+            {/* **나가기 이모지 버튼 추가** */}
+            <button
+              onClick={openLeaveModal}
+              className="text-red-500 text-3xl"
+              title="나가기"
+            >
+              🚪
+            </button>
+          </div>
         </div>
 
         <div className="text-center">
@@ -251,6 +283,27 @@ function BettingTab({ roomId, socket, session }) {
             </button>
             <button
               onClick={() => setShowNewGameModal(false)}
+              className="bg-gray-500 text-white py-2 px-4 rounded w-full"
+            >
+              취소
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* **나가기 모달 창 추가** */}
+      {showLeaveModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded shadow-lg text-center" ref={leavePopupRef}>
+            <h3 className="text-lg font-bold mb-4">정말 방을 나가시겠습니까?</h3>
+            <button
+              onClick={confirmLeaveRoom}
+              className="bg-red-500 text-white py-2 px-4 rounded w-full mb-2"
+            >
+              확인
+            </button>
+            <button
+              onClick={() => setShowLeaveModal(false)}
               className="bg-gray-500 text-white py-2 px-4 rounded w-full"
             >
               취소

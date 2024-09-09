@@ -66,6 +66,18 @@ const ioHandler = (req, res) => {
         if (!Number.isInteger(maxPlayers) || maxPlayers < 1) {
           return callback({ success: false, message: '최대 플레이어 수는 1 이상의 정수여야 합니다.', field:"maxPlayers" });
         }
+        // **다른 방에서 이미 sessionId가 있는지 체크**
+        for (const [otherRoomId, otherRoom] of Object.entries(rooms)) {
+          const isPlayerInOtherRoom = otherRoom.players.some(player => player.id === sessionId);
+          const isHostInOtherRoom = otherRoom.host.id === sessionId;
+
+          if (isPlayerInOtherRoom || isHostInOtherRoom) {
+            return callback({
+              success: false,
+              message: `이미 참여중인 게임방(${otherRoom.roomName})이 있습니다`
+            });
+          }
+        }
 
         lock.acquire('rooms', (done) => {
           const roomId = ++currentRoomId;
@@ -106,23 +118,42 @@ const ioHandler = (req, res) => {
         if (!room) {
           return callback({ success: false, host: false, message: '방이 존재하지 않습니다' });
         }
-        if (room.players.length >= room.maxPlayers) {
-          return callback({ success: false, host: false, message: '방이 가득찼습니다' });
-        }
-        if (room.status === '게임중') {
-          return callback({ success: false, host: false, message: '이미 게임이 시작되었습니다' });
-        }
-        if (room.host.id === sessionId) {
-          return callback({ success: false, host: true });
-        }
 
+        // **다른 방에서 이미 sessionId가 있는지 체크**
+        for (const [otherRoomId, otherRoom] of Object.entries(rooms)) {
+          if (otherRoomId.toString() !== roomId.toString()) {
+            const isPlayerInOtherRoom = otherRoom.players.some(player => player.id === sessionId);
+            const isHostInOtherRoom = otherRoom.host.id === sessionId;
+
+            if (isPlayerInOtherRoom || isHostInOtherRoom) {
+              return callback({
+                success: false,
+                host: false,
+                message: `이미 참여중인 게임방(${otherRoom.roomName})이 있습니다`
+              });
+            }
+          }
+        }
+        
         const playerExists = room.players.some(player => player.id === sessionId);
         // 튕겼다가 온 사람은 재연결 해줌
         if (playerExists) {
+          const player = room.players.find(player => player.id === sessionId);
+          player.socketId = socket.id;
           socket.join(roomId.toString());
           return callback({ success: true });
         }
 
+        if (room.players.length >= room.maxPlayers) {
+          return callback({ success: false, host: false, message: '방이 가득찼습니다' });
+        }
+        if (room.host.id === sessionId) {
+          return callback({ success: true, host: true });
+        }
+        if (room.status === '게임중') {
+          return callback({ success: false, host: false, message: '이미 게임이 시작되었습니다' });
+        }
+        
         room.players.push({ id: sessionId, dummyName: '할당되지않음', horse: '할당되지않음', name: userName, socketId: socket.id, 
           chips: 0, rounds: [], voteHistory: [], isBetLocked: false, isVoteLocked: false, memo: [] });
         socket.join(roomId.toString());
@@ -130,30 +161,42 @@ const ioHandler = (req, res) => {
         return callback({ success: true });
       });
 
-      socket.on('leave-room', ({ roomId, sessionId }) => {
+      socket.on('leave-room', ({ roomId, sessionId }, callback) => {
         const room = rooms[roomId];
         if (!room) {
           return callback({ success: false, message: '존재하지 않는 게임방입니다.' });
         }
-
-        const playerIndex = room.players.findIndex(player => player.id === sessionId);
-        if (playerIndex == -1) {
-          return callback({ success: false, message: '이미 벗어난 게임방입니다.' });
-        }
         if (room.status === '게임중') {
           return callback({ success: false, message: '게임이 진행 중입니다. 게임이 끝나기 전까지 방을 나갈 수 없습니다.' });
         }
-
-        room.players.splice(playerIndex, 1);
-        socket.leave(roomId);
-        io.emit('room-updated', rooms);
-
-        if (room.host.id === sessionId) {
-          delete rooms[roomId];
-          io.emit('room-updated', rooms);
+      
+        // 방장인지 확인
+        const isHost = room.host.id === sessionId;
+      
+        // 방장이 아닌 경우는 나갈 수 없음
+        if (!isHost) {
+          return callback({ success: false, message: '방장만이 방을 종료할 수 있습니다.' });
         }
-        return callback({ success: true });
+      
+        // 방 삭제 처리
+        delete rooms[roomId];
+        io.to(roomId).emit('room-closed', { message: '방장이 방을 종료했습니다.' });
+      
+        // 방 내 다른 플레이어들의 소켓 이벤트 해제
+        io.in(roomId).socketsLeave(roomId);  // 모든 플레이어를 방에서 제거
+        // io.in(roomId).clients((error, clients) => {
+        //   if (error) throw error;
+        //   clients.forEach(clientId => {
+        //     const clientSocket = io.sockets.sockets.get(clientId);
+        //     clientSocket.removeAllListeners();  // 각 클라이언트 소켓의 이벤트 리스너 제거
+        //   });
+        // });
+        
+        io.emit('room-updated', rooms);      // 방이 삭제되었음을 알림
+      
+        return callback({ success: true, host: false });
       });
+      
 
       socket.on('disconnect', () => {
         console.log('server : A user disconnected');
@@ -177,6 +220,8 @@ const ioHandler = (req, res) => {
         if (hasMissingHorse) {
           return callback({ success: false, message: '모든 플레이어에게 말이 할당되지 않았습니다.' });
         }
+
+        room.status = "게임중";
 
         room.gameData.timeLeft = duration;
         room.gameData.rounds = room.gameData.rounds || [];
@@ -284,6 +329,7 @@ const ioHandler = (req, res) => {
                   playerNames: getPlayersByHorse(horse),
                 })),
               });
+              room.status = "대기중";
             } else {
               // io.to(roomId).emit('round-ended', { players : room.players, roundResult : roundResult }); // 라운드 종료 알림
             }
@@ -457,6 +503,7 @@ const ioHandler = (req, res) => {
         if (!room) {
           return callback({ success: false, message: '존재하지 않는 게임방입니다.' });
         }
+        room.status = "대기중";
 
         clearInterval(timers[roomId]);
         delete timers[roomId];

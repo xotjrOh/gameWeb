@@ -6,7 +6,7 @@ import { setIsLoading } from '@/store/loadingSlice';
 import { useSocket } from '@/components/provider/SocketProvider';
 import { showToast } from '@/store/toastSlice';
 
-const useRedirectIfInvalidRoom = (roomId) => {
+const useRedirectIfNotHost = (roomId) => {
   const { socket } = useSocket();
   const router = useRouter();
   const dispatch = useDispatch();
@@ -27,4 +27,4 @@ const useRedirectIfInvalidRoom = (roomId) => {
   }, [socket?.id, status, roomId, session, router, dispatch]);
 }
 
-export default useRedirectIfInvalidRoom;
+export default useRedirectIfNotHost;

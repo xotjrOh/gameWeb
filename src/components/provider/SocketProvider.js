@@ -36,12 +36,12 @@ export const SocketProvider = ({children}) => {
         newSocket.on('connect', () => {
             setSocket(newSocket);
             newSocket.emit("get-room-list"); // 서버 재시작시 방 없애기위함
-            dispatch(setIsLoading(false))
+            dispatch(setIsLoading(false));
         });
 
         newSocket.on('disconnect', () => {
             console.log("client : disconnect");
-            dispatch(setIsLoading(true))
+            dispatch(setIsLoading(true));
             // setSocket(null);
         });
 

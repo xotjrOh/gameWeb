@@ -20,6 +20,7 @@ import useGameData from '@/hooks/useGameData';
 import RoundResultModal from './Horse.RoundResultModal';
 import GameEndModal from './Horse.GameEndModal';
 import useCheckVersion from '@/hooks/useCheckVersion';
+import useLeaveRoom from '@/hooks/useLeaveRoom';
 
 export default function HorseGamePage({ params }) {
   const dispatch = useDispatch();
@@ -36,6 +37,7 @@ export default function HorseGamePage({ params }) {
   useRedirectIfInvalidRoom(roomId);
   useUpdateSocketId(socket, session, roomId);
   useGameData(roomId, socket, session?.user?.id);
+  useLeaveRoom(socket, dispatch);
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">

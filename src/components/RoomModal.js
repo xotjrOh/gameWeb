@@ -16,16 +16,21 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
 
   const createRoom = (e) => {
     e.preventDefault();
-    dispatch(setIsLoading(true));
-    socket.emit('create-room', { roomName, userName: session.user.name, gameType, sessionId: session.user.id, maxPlayers }, (response) => {
-      if (!response.success) {
-        dispatch(showToast({ message: response.message, type: 'error' }));
-        inputRefs.current[response.field]?.focus();
-      } else {
-        router.push(`/${gameType}/${response.roomId}/host`);
-      }
-      dispatch(setIsLoading(false));
-    });
+
+    if (socket && socket.connected && socket.id) {
+      dispatch(setIsLoading(true));
+      socket?.emit('create-room', { roomName, userName: session.user.name, gameType, sessionId: session.user.id, maxPlayers }, (response) => {
+        if (!response.success) {
+          dispatch(showToast({ message: response.message, type: 'error' }));
+          if (response.field) inputRefs.current[response.field]?.focus();
+        } else {
+          router.push(`/${gameType}/${response.roomId}/host`);
+        }
+        dispatch(setIsLoading(false));
+      });
+    } else {
+      dispatch(showToast({ message: '소켓 연결 대기 중입니다.', type: 'warning' }));
+    }
   };
 
   return (
@@ -46,7 +51,7 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
         />
         <select ref={(el) => (inputRefs.current.gameType = el)} value={gameType} onChange={(e) => setGameType(e.target.value)} className="border p-2 rounded mb-4 w-full">
           {/* <option value="rps">가위바위보</option> */}
-          <option value="horse">경마게임</option>
+          <option value="horse">🏇경마게임</option>
         </select>
         <input
           type="number"
