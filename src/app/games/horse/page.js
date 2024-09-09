@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
+import Image from 'next/image';
 import Header from '@/components/header/Header';
 
 export default function GameRulePage() {
@@ -29,8 +30,8 @@ export default function GameRulePage() {
             <p className="mb-2">최초로 결승선을 통과하는 말이 나오면 그 즉시 게임이 종료되며, </p>
             <p className="mb-2">통과한 말들은 꼴등이 되고 그 당시에 결승선에 가장 가까운 말을 맡은 팀이 1등이 됩니다.</p>
             <p className="mb-2 text-red-500">웹 화면을 직접적으로 다른사람에게 보여주는건 &apos;규칙위반&apos; 입니다.</p>
-            <img src="/rule/horse/horsesTab.png"  alt="경주마 게임 이미지" className="mx-auto rounded-lg shadow-md"/>
-            <img src="/rule/horse/myHorseWin.png" alt="게임종료 후 승리 이미지" className="mx-auto rounded-lg shadow-md mt-5"/>
+            <Image src="/rule/horse/horsesTab.png" alt="경주마 게임 이미지" layout="responsive" width={540} height={125} quality={90} className="mx-auto rounded-lg shadow-md" />
+            <Image src="/rule/horse/myHorseWin.png" alt="게임종료 후 승리 이미지" layout="responsive" width={540} height={330} quality={90} className="mx-auto rounded-lg shadow-md mt-5" />
           </div>
         );
     case 'statusInfo':
@@ -43,7 +44,7 @@ export default function GameRulePage() {
             <p className="mb-2">&apos;내 경주마&apos;는 팀원을 찾고 힘을 합쳐 2등의 위치를 사수해야합니다.</p>
             <p className="mb-2">2명당 1팀이기때문에 전체인원수/2 만큼의 &apos;경주마&apos;가 존재합니다.</p>
             <p className="mb-2">&apos;남은 칩 개수&apos;는 &apos;베팅&apos;탭에 사용되며 &apos;예측&apos;탭을 통해 다시 증가할 수 있습니다.</p>
-            <img src="/rule/horse/statusInfo.png" alt="내 상태 보기" className="mx-auto rounded-lg shadow-md"/>
+            <Image src="/rule/horse/statusInfo.png" alt="내 상태 보기" layout="responsive" width={540} height={230} quality={90} className="mx-auto rounded-lg shadow-md" />
           </div>
         );
       case 'betting':
@@ -54,7 +55,7 @@ export default function GameRulePage() {
             <p className="mb-2">라운드 종료시마다 최다득표 말은 2칸, 차다득표 말은 1칸 전진합니다. (동률은 함께 전진)</p>
             <p className="mb-2">하단에 라운드마다 내가 베팅했던 내역을 확인할 수 있습니다.</p>
             <p className="mb-2">Tip : 베팅은 필수가 아닙니다. 칩을 아껴 후반을 노리는 것도 좋겠죠!</p>
-            <img src="/rule/horse/bettingTab.png" alt="베팅탭 이미지" className="mx-auto rounded-lg shadow-md"/>
+            <Image src="/rule/horse/bettingTab.png" alt="베팅탭 이미지" layout="responsive" width={540} height={230} quality={90} className="mx-auto rounded-lg shadow-md" />
           </div>
         );
       case 'vote':
@@ -66,7 +67,7 @@ export default function GameRulePage() {
             <p className="mb-2">하단에 라운드마다 내가 예측했던 내역을 확인할 수 있습니다.</p>
             <p className="mb-2">(예측에 성공한 경우 초록색으로 표기돼요)</p>
             <p className="mb-2">Tip : 예측탭에는 라운드마다 반드시 투표하는게 좋아요!</p>
-            <img src="/rule/horse/voteTab.png" alt="예측탭 이미지" className="mx-auto rounded-lg shadow-md"/>
+            <Image src="/rule/horse/voteTab.png" alt="예측탭 이미지" layout="responsive" width={540} height={230} quality={90} className="mx-auto rounded-lg shadow-md" />
           </div>
         );
       case 'chips':
@@ -77,8 +78,8 @@ export default function GameRulePage() {
             <p className="mb-2">다만 각 플레이어들의 &apos;익명이름&apos;을 통해 남은 칩 개수를 확인할 수 있습니다.</p>
             <p className="mb-2">본인의 &apos;익명이름&apos;은 &apos;내 상태 보기&apos;를 통해 확인할 수 있습니다.</p>
             <p className="mb-2">각 플레이어의 남은 칩개수는 &apos;라운드 종료&apos;시 업데이트됩니다.</p>
-            <img src="/rule/horse/chips.png" alt="칩 개수 탭 이미지" className="mx-auto rounded-lg shadow-md"/>
-            <img src="/rule/horse/statusInfo.png" alt="내 상태 보기" className="mx-auto rounded-lg shadow-md mt-5"/>
+            <Image src="/rule/horse/chips.png" alt="칩 개수 탭 이미지" layout="responsive" width={540} height={230} quality={90} className="mx-auto rounded-lg shadow-md" />
+            <Image src="/rule/horse/statusInfo.png" alt="내 상태 보기" layout="responsive" width={540} height={230} quality={90} className="mx-auto rounded-lg shadow-md mt-5" />
           </div>
         );
       case 'horses':
@@ -90,8 +91,8 @@ export default function GameRulePage() {
             <p className="mb-2">종료 시점에 결승선을 통과하지 않은 말(A, C)중 결승선에 가장 가까운 말(C)이 우승자가 됩니다.</p>
             <p className="mb-2">&apos;내 경주마&apos;는 &apos;내 상태 보기&apos;를 통해 확인할 수 있습니다.</p>
             <p className="mb-2">각 플레이어의 경주마 위치는 &apos;라운드 종료&apos;시 업데이트됩니다.</p>
-            <img src="/rule/horse/horsesTab.png" alt="경주마 탭 이미지" className="mx-auto rounded-lg shadow-md"/>
-            <img src="/rule/horse/statusInfo.png" alt="내 상태 보기" className="mx-auto rounded-lg shadow-md mt-5"/>
+            <Image src="/rule/horse/horsesTab.png" alt="경주마 탭 이미지" layout="responsive" width={540} height={230} quality={90} className="mx-auto rounded-lg shadow-md" />
+            <Image src="/rule/horse/statusInfo.png" alt="내 상태 보기" layout="responsive" width={540} height={230} quality={90} className="mx-auto rounded-lg shadow-md mt-5" />
           </div>
         );
       default:

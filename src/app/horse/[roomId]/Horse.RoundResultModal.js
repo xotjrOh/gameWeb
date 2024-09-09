@@ -31,7 +31,7 @@ export default function RoundResultModal({ socket, roomId }) {
         socket.off('round-ended', setRoundResultAfterRoundEnd);
       };
     }
-  }, [socket]);
+  }, [socket, hasRaceEnded]);
 
   if (!isOpen) return null;
 

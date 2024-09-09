@@ -21,7 +21,7 @@ function ChipsTab({ roomId, socket, session }) {
         socket.off('round-ended', updatePlayersAfterRoundEnd);
       };
     }
-  }, [socket?.id]);
+  }, [socket?.id, dispatch]);
 
   return (
     <div>
