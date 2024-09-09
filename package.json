@@ -1,6 +1,6 @@
 {
   "name": "next-game-web",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -28,6 +28,6 @@
     "eslint-config-next": "14.2.5"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": "20.x"
   }
 }
