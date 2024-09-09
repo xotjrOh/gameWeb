@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useSelector } from 'react-redux';
+import Image from 'next/image';
 import useOutsideClick from '@/hooks/useOutsideClick';
 import './GameEnd.css'; // 모달에 대한 애니메이션을 추가한 css 파일
 
@@ -50,7 +51,7 @@ export default function GameEndModal({ socket, roomId }) {
                 </div>
               ))}
               <div className="winner-animation">
-                <img src="/images/trophy.webp" alt="우승 트로피" className="w-32 h-32 mx-auto" />
+                <Image src="/images/trophy.webp" alt="우승 트로피" width={128} height={128} className="mx-auto" />
               </div>
             </>
           )}
@@ -69,7 +70,7 @@ export default function GameEndModal({ socket, roomId }) {
                 </div>
               ))}
               <div className="loser-animation">
-                <img src="/images/teardrop.webp" alt="패배 눈물" className="w-32 h-32 mx-auto" />
+                <Image src="/images/teardrop.webp" alt="패배 눈물" width={128} height={128} className="mx-auto" />
               </div>
             </>
           )}

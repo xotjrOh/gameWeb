@@ -43,7 +43,7 @@ export default function MyStatusButton({ roomId, socket, session }) {
             <p>남은 칩 개수: {statusInfo?.chips}</p>
             {statusInfo?.isSolo && (
               <p>Tip: 당신 혼자만 팀원이 없습니다.<br/>
-              팀원이 없는걸 숨기고 정보를 모아 '예측'에 성공하면 게임이 쉬워집니다.</p>
+              팀원이 없는걸 숨기고 정보를 모아 &apos;예측&apos;에 성공하면 게임이 쉬워집니다.</p>
             )}
             <button
               onClick={() => setShowStatus(false)}
