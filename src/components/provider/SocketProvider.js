@@ -20,7 +20,7 @@ export const SocketProvider = ({children}) => {
   
     useEffect(() => {
         // socket이 이미 초기화되어 있는지 확인
-        if (socket && socket.connected) {
+        if (socket && socket?.connected) {
             return;
         }
 
@@ -79,7 +79,7 @@ export const SocketProvider = ({children}) => {
             await disconnectSocket();
           }
         };
-    }, [socket?.id]);
+    }, [socket?.id, dispatch]);
     
     useEffect(() => {
         if (socket) {

@@ -26,7 +26,7 @@ function ChipsTab({ roomId, socket, session }) {
         socket.off('round-ended', updatePlayersAfterRoundEnd);
       };
     }
-  }, [roomId, socket?.id]);
+  }, [roomId, socket?.id, dispatch]);
 
   useEffect(() => {
     setMemoState(statusInfo?.memo || []);

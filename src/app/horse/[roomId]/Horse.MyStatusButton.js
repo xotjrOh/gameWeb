@@ -10,7 +10,7 @@ export default function MyStatusButton({ roomId, socket, session }) {
   const [showStatus, setShowStatus] = useState(false);
   const popupRef = useRef(null);
   const { statusInfo } = useSelector((state) => state.horse.gameData);
-  
+
   useOutsideClick(popupRef, () => setShowStatus(false));
 
   useEffect(() => {
@@ -23,7 +23,7 @@ export default function MyStatusButton({ roomId, socket, session }) {
           socket.off('status-update');
       };
     }
-  }, [roomId, socket?.id, session]);
+  }, [roomId, socket?.id, session, dispatch]);
 
   return (
     <div className="relative z-50">
