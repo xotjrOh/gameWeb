@@ -33,7 +33,7 @@ let serverVersion = packageJson.version || '1.0.0';
 
 const nextConfig = {
   env: {
-    NEXT_PUBLIC_SERVER_VERSION: serverVersion.toString(), // 클라이언트에서도 사용할 수 있도록 설정
+    SERVER_VERSION: serverVersion.toString(), // 클라이언트에서도 사용할 수 있도록 설정
   },
   reactStrictMode: false,
 };
