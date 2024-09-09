@@ -1,12 +1,10 @@
 {
   "name": "next-game-web",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "npm version patch --no-git-tag-version",
     "build": "next build",
-    "postbuild": "git add package.json && git commit -m 'Update version' && git push origin main",
     "start": "next start",
     "lint": "next lint"
   },
