@@ -4,7 +4,7 @@ import packageJson from './package.json' assert { type: 'json' };
 
 // 현재 서버 버전 불러오기
 // let serverVersion = parseFloat(process.env.SERVER_VERSION) || 1.00;
-let serverVersion = parseFloat(packageJson.version) || 1.00;
+let serverVersion = packageJson.version || '1.0.0';
 
 // 서버 버전 증가 함수
 // const incrementServerVersion = async () => {
