@@ -13,7 +13,9 @@
 ### 주요 기능
 - **실시간 통신**: Socket.IO를 활용한 실시간 이벤트 관리 및 통신.
 - **게임 상태 관리**: 사용자별 상태 저장 및 실시간 동기화.
-- **[게임 소개 페이지](https://gameweb-production.up.railway.app/games/horse)**: 유저들에게 게임 규칙과 진행 방법을 안내하는 전용 페이지.
+- **게임 소개 페이지**: 유저들에게 게임 규칙과 진행 방법을 안내하는 전용 페이지.
+
+[🌐 게임 소개 페이지를 미리 확인해보세요!](https://gameweb-production.up.railway.app/games/horse)
 
 ## 🎮 게임 방식
 
