@@ -4,6 +4,7 @@ import { signIn } from "next-auth/react";
 import Image from 'next/image';
 import KakaoIcon from '@/components/icon/KakaoIcon';
 import GoogleIcon from '@/components/icon/GoogleIcon';
+import Link from 'next/link';
 
 export default function SignInPage() {
 
@@ -12,10 +13,18 @@ export default function SignInPage() {
       <Image 
         src="/images/background-image.webp" 
         alt="Background" 
-        layout="fill" 
-        objectFit="cover" 
+        fill={true} 
+        style={{ objectFit: 'cover' }} 
         priority={true} 
       />
+
+      {/* 룰 설명 버튼 */}
+      <div className="absolute top-4 right-4 z-50">
+        <Link href="/games/horse" className="py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg shadow-md transition duration-200 hover:bg-blue-700 hover:scale-105 transform border-2 border-blue-700">
+          룰 설명 먼저보기
+        </Link>
+      </div>
+
       <div className="absolute inset-0 flex flex-col justify-center items-center h-screen bg-black bg-opacity-70">
         <div className="bg-white p-5 pb-8 rounded-xl shadow-md w-72 mb-5 text-center">
           <h1 className="mb-5 text-2xl font-bold text-gray-800">간편로그인</h1>
