@@ -24,6 +24,6 @@ export async function middleware(request) {
 // 모든 경로에 대해 미들웨어를 적용하지만, 로그인 경로와 특정 예외 경로는 제외합니다.
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|public|images|auth|api|socket).*)',
+    '/((?!_next/static|_next/image|favicon.ico|public|images|rule|auth|api|socket).*)',
   ],
 };
