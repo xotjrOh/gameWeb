@@ -93,7 +93,7 @@ npm install next socket.io
    ```
 5. **로컬 서버 실행**:
    
-   아래 명령어로 개발 서버를 실행하고, 웹 브라우저에서 http://localhost:3000으로 접속합니다.
+   아래 명령어로 개발 서버를 실행하고, 웹 브라우저에서 http://localhost:3000 으로 접속합니다.
    ```bash
    npm run dev
    ```
