@@ -336,6 +336,7 @@ const ioHandler = (req, res) => {
           }
         }, 1000);
 
+        io.emit('room-updated', rooms); // '게임중' 으로 변한게 체크 되어야함
         return callback({ success: true });
       });
 
@@ -557,6 +558,7 @@ const ioHandler = (req, res) => {
           isTimeover: true,
         });
 
+        io.emit('room-updated', rooms);
         callback({ success: true });
       });
 
