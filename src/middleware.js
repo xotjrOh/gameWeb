@@ -7,7 +7,7 @@ export async function middleware(request) {
   console.log(request.nextUrl.pathname);
 
   // 요청된 경로가 '/auth/signin'으로 시작하는 경우
-  if (request.nextUrl.pathname.startsWith('/auth/signin')) {
+  if (request.nextUrl.pathname.startsWith('/auth/signin') || request.nextUrl.pathname.startsWith('/games/horse')) {
     return NextResponse.next();
   }
 
