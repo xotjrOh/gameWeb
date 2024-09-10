@@ -29,7 +29,7 @@ export default function useCheckVersion(socket) {
                 localStorage.setItem('localVersion', serverVersion);
                 window.location.href = '/';
                 
-                await disconnectSocket();  // 소켓 연결 해제가 완료된 후 새로고침 진행
+                await disconnectSocket();
             }
         } catch (error) {
             console.error('서버 버전 체크 중 에러 발생:', error);

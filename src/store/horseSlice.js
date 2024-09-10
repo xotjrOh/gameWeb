@@ -4,14 +4,14 @@ const horseSlice = createSlice({
 	name : 'horse',
 	initialState: {
 		gameData : {
-			horses : ['A', 'B', 'C'],
+			horses : [], // ['A', 'B', 'C'],
 			players : [
-				{ dummyName: 'player1', chips: 20 },
-				{ dummyName: 'player2', chips: 20 },
+				// { dummyName: 'player1', chips: 20 },
+				// { dummyName: 'player2', chips: 20 },
 			],
 			positions: [
-				{ name: 'A', position: 2 },
-				{ name: 'B', position: 3 },
+				// { name: 'A', position: 2 },
+				// { name: 'B', position: 3 },
 			],
 			finishLine: 9,
 			isTimeover: true,
@@ -20,15 +20,15 @@ const horseSlice = createSlice({
 			isRoundStarted : false,
 			rounds: [
 				[ // 1R
-					{ horse : "A", chips: 13, progress: 2},
-					{ horse : "C", chips: 13, progress: 2},
-					{ horse : "B", chips: 7,  progress: 1},
+					// { horse : "A", chips: 13, progress: 2},
+					// { horse : "C", chips: 13, progress: 2},
+					// { horse : "B", chips: 7,  progress: 1},
 				],
-				[ // 2R
-					{ horse : "C", chips: 10, progress: 2},
-					{ horse : "A", chips: 9,  progress: 1},
-					{ horse : "B", chips: 7,  progress: 0},
-				],
+				// [ // 2R
+				// 	{ horse : "C", chips: 10, progress: 2},
+				// 	{ horse : "A", chips: 9,  progress: 1},
+				// 	{ horse : "B", chips: 7,  progress: 0},
+				// ],
 			],
 		}
 	},

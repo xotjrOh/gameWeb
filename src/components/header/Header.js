@@ -14,8 +14,8 @@ export default function Header({ session }) {
   const handleClick = () => {
     socket?.emit('get-room-list');
     dispatch(setIsLoading(false));
-    socket.disconnect();
-    socket.connect();
+    // socket.disconnect();
+    // socket.connect();
   }
 
   return (
