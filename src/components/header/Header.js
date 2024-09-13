@@ -22,7 +22,7 @@ export default function Header({ session }) {
   return (
     <div className="flex justify-between items-center p-2 bg-white text-black shadow-md">
       <div className="flex items-center space-x-4">
-        <Link href="/" onClick={handleClick} className="z-[9999]">
+        <Link href="/" prefetch={false} onClick={handleClick} className="z-[9999]">
           <span className="text-xl font-bold cursor-pointer p-2 hover:bg-gray-200 rounded-full">G</span>
         </Link>
         <Hamburger />
