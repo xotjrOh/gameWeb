@@ -35,10 +35,10 @@ export default function Hamburger() {
         </button>
         {hamburgerDropdown && (
           <div className="absolute w-48 bg-white border rounded shadow-lg">
-            <Link href="/rankings" prefetch={false}>
+            <Link href="/rankings">
               <span className="menu block px-4 py-2 text-black hover:bg-gray-100">랭크 순위</span>
             </Link>
-            <Link href="/settings" prefetch={false} onClick={(e) => e.preventDefault()}>
+            <Link href="/settings" onClick={(e) => e.preventDefault()}>
               <span className="menu block px-4 py-2 text-black hover:bg-gray-100 cursor-not-allowed">게임 설정</span>
             </Link>
             <div className="relative">
@@ -54,10 +54,10 @@ export default function Hamburger() {
               </button>
               {isSubmenuOpen && (
                 <div className="absolute top-0 left-full mt-0 w-48 bg-white border rounded shadow-lg">
-                  <Link href="/games/horse" prefetch={false}>
+                  <Link href="/games/horse">
                     <span className="block px-4 py-2 text-black hover:bg-gray-100">🐎 경마게임</span>
                   </Link>
-                  <Link href="/games/shuffle" prefetch={false}>
+                  <Link href="/games/shuffle">
                     <span className="block px-4 py-2 text-black hover:bg-gray-100">🔀 뒤죽박죽</span>
                   </Link>
                 </div>
