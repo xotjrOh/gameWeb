@@ -1,6 +1,7 @@
 'use client';
 
 import { signIn } from "next-auth/react";
+import Image from 'next/image';
 import KakaoIcon from '@/components/icon/KakaoIcon';
 import GoogleIcon from '@/components/icon/GoogleIcon';
 import Link from 'next/link';
@@ -8,7 +9,14 @@ import Link from 'next/link';
 export default function SignInPage() {
 
   return (
-    <div className="relative h-screen bg-cover bg-center" style={{ backgroundImage: "url('/images/background-image.webp')" }}>
+    <div className="relative h-screen">
+      <Image 
+        src="/images/background-image.webp" 
+        alt="Background" 
+        fill={true} 
+        style={{ objectFit: 'cover' }} 
+        priority={true} 
+      />
 
       {/* 룰 설명 버튼 */}
       <div className="absolute top-4 right-4 z-50">
