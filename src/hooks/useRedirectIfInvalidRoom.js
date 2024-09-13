@@ -19,6 +19,7 @@ const useRedirectIfInvalidRoom = (roomId) => {
         if (!response.isInRoom) {
           dispatch(showToast({ message: '잘못된 접근입니다. 대기방으로 이동합니다.', type: 'error' }));
           router.push('/');
+          socket?.emit('get-room-list');
         }
       });
     } else if (status === "loading") {

@@ -10,6 +10,7 @@ export default function ShuffleGame() {
 
   const handleGoHome = () => {
     router.push('/');  // 홈으로 이동
+    socket?.emit('get-room-list');
   };
 
   return (

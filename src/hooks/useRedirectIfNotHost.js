@@ -19,6 +19,7 @@ const useRedirectIfNotHost = (roomId) => {
         if (!response.isInRoom) {
           dispatch(showToast({ message: '호스트가 아닙니다. 대기방으로 이동합니다.', type: 'error' }));
           router.push('/');
+          socket?.emit('get-room-list');
         }
       });
     } else if (status === "loading") {
