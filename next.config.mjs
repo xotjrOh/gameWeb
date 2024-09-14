@@ -38,7 +38,20 @@ const nextConfig = {
   reactStrictMode: false,
   images: {
     formats: ['image/avif', 'image/webp']
-  }
+  },
+  async headers() { // 이미지 바로 캐싱
+    return [
+      {
+        source: '/images/:all*(jpg|jpeg|png|svg|webp|avif)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable', // 1년 동안 캐시 유지
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
