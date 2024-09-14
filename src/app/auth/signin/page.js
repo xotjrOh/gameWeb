@@ -11,7 +11,7 @@ export default function SignInPage() {
   return (
     <div className="relative h-screen">
       <Image 
-        src="/images/background-image.webp" 
+        src="/images/background-image.avif" 
         alt="Background" 
         fill={true} 
         style={{ objectFit: 'cover' }} 

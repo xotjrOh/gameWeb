@@ -36,6 +36,9 @@ const nextConfig = {
     SERVER_VERSION: serverVersion.toString(), // 클라이언트에서도 사용할 수 있도록 설정
   },
   reactStrictMode: false,
+  images: {
+    formats: ['image/avif', 'image/webp']
+  }
 };
 
 export default nextConfig;
