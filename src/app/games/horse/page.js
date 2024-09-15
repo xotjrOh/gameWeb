@@ -48,18 +48,18 @@ export default function GameRulePage() {
   return (
     <>
       <Header session={session} />
-      <div className="p-8 bg-gradient-to-br from-blue-100 to-purple-200 min-h-screen">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4 yeogieottae-font">🏇 경마게임 룰 설명 🏇</h1>
-          <p className="text-xl">경마게임의 모든 규칙을 쉽게 이해하세요!</p>
+      <div className="px-4 py-4 md:py-8 bg-gradient-to-br from-blue-100 to-purple-200 min-h-screen">
+        <div className="text-center mb-4 md:mb-8">
+          <h1 className="text-2xl md:text-4xl font-bold mb-2 yeogieottae-font">🏇 경마게임 룰 설명 🏇</h1>
+          <p className="text-sm md:text-xl">경마게임의 모든 규칙을 쉽게 이해하세요!</p>
         </div>
 
-        <div className="flex justify-center space-x-4 mb-8">
+        <div className="flex flex-wrap justify-center gap-2 md:gap-4 mb-1 md:mb-8">
           {tabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-2 rounded-lg text-white font-semibold ${
+              className={`px-3 py-1 md:px-4 md:py-2 rounded-lg text-white font-semibold text-xs md:text-base ${
                 activeTab === tab.key ? 'bg-blue-500' : 'bg-gray-400 hover:bg-blue-400'
               }`}
             >
@@ -68,7 +68,7 @@ export default function GameRulePage() {
           ))}
         </div>
 
-        <div>{renderTabContent()}</div>
+        <div className="text-sm md:text-base">{renderTabContent()}</div>
       </div>
     </>
   );
