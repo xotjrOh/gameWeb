@@ -5,7 +5,7 @@ function TimerDisplay({ roomId, socket, dispatch }) {
 
   return (
     <p className="text-lg">
-      남은 시간: {Math.floor(timeLeft / 60)}:{timeLeft % 60}
+      {Math.floor(timeLeft / 60)}:{timeLeft % 60}
     </p>
   );
 }

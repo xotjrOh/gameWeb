@@ -36,11 +36,11 @@ function VoteTab({ roomId, socket, session }) {
     <div className="space-y-6">
       {/* 타이머 및 투표 */}
       <div className="text-center bg-gray-100 p-4 rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold">라운드마다 최다 득표할 것 같은 말에 투표하세요!</h2>
-        <p className="text-red-500">예측 성공시 칩이 2개 추가됩니다. (라운드 종료 시점에 추가됨)</p>
-        <p className="text-red-500">투표하기 버튼을 누른 이후에는 수정이 불가합니다.</p>
+        <h2 className="text-md font-bold md:text-xl">라운드마다 최다 득표할 것 같은 말에 투표하세요!</h2>
+        <p className="text-red-500 text-sm md:text-base">예측 성공시 칩이 2개 추가됩니다. <br/>(라운드 종료 시점에 추가됨)</p>
+        <p className="text-red-500 text-sm md:text-base">투표하기 버튼을 누른 이후에는 수정이 불가합니다.</p>
 
-        <div className="grid grid-cols-2 gap-6 mt-6">
+        <div className="grid grid-cols-2 gap-4 mt-4">
           {horses.map((horse) => (
             <div
               key={horse}
@@ -48,7 +48,7 @@ function VoteTab({ roomId, socket, session }) {
               ${selectedHorse === horse ? 'border-blue-500 bg-blue-100' : 'hover:bg-blue-50'}`}
               onClick={() => setSelectedHorse(horse)}  // 선택된 말 업데이트
             >
-              <label className={`font-semibold text-lg mb-2 ${selectedHorse === horse ? 'text-blue-700' : ''}`}>
+              <label className={`font-semibold text-base md:text-lg mb-1 md:mb-2 ${selectedHorse === horse ? 'text-blue-700' : ''}`}>
                 {horse}
               </label>
             </div>
@@ -57,7 +57,7 @@ function VoteTab({ roomId, socket, session }) {
 
         <button
           onClick={handleVote}
-          className={`mt-6 px-6 py-2 rounded-lg text-white font-semibold ${
+          className={`mt-6 px-6 py-2 rounded-lg text-white font-semibold w-full ${
             statusInfo.isVoteLocked || isTimeover ? 'bg-gray-500' : 'bg-green-500 hover:bg-green-600'
           }`}
           disabled={statusInfo.isVoteLocked || isTimeover}
@@ -68,16 +68,16 @@ function VoteTab({ roomId, socket, session }) {
 
       {/* 보너스 안내 */}
       {statusInfo.isSolo && (
-        <div className="bg-yellow-100 p-4 rounded-lg shadow-md mt-6">
-          <p className="text-yellow-800 font-semibold">
+        <div className="bg-yellow-100 p-3 rounded-lg shadow-md mt-4">
+          <p className="text-yellow-800 font-semibold text-sm md:text-base">
             솔로 플레이어는 투표에 성공할 경우 5개의 칩이 추가됩니다!
           </p>
         </div>
       )}
 
       {/* 투표 내역 표시 */}
-      <div className="bg-gray-100 p-4 rounded-lg shadow-md mt-6">
-        <h3 className="text-xl font-bold mb-4">내 투표 내역</h3>
+      <div className="bg-gray-100 p-3 rounded-lg shadow-md mt-4">
+        <h3 className="text-lg font-bold md:text-xl mb-2 md:mb-4">내 투표 내역</h3>
         {statusInfo.voteHistory && statusInfo.voteHistory.length > 0 ? (
           <div className="space-y-2">
             {statusInfo.voteHistory.map((vote, index) => {
@@ -92,14 +92,14 @@ function VoteTab({ roomId, socket, session }) {
                     isSuccessful ? 'bg-green-100 border-green-500' : 'bg-white'
                   }`}  // 성공 시 초록 배경과 테두리 추가
                 >
-                  <span className="font-medium text-lg">Round {index + 1}</span>
-                  <span className="text-gray-600">Voted: {vote}</span>
+                  <span className="font-medium text-base">라운드 {index + 1}</span>
+                  <span className="text-gray-600 text-sm">예측: {vote}</span>
                 </div>
               );
             })}
           </div>
         ) : (
-          <p className="text-center text-gray-500">아직 투표 기록이 없습니다.</p>
+          <p className="text-center text-gray-500 text-sm">아직 투표 기록이 없습니다.</p>
         )}
       </div>
     </div>

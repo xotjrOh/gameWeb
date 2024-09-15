@@ -13,7 +13,7 @@ export default function MyStatusButton({ roomId, socket, session }) {
     <div className="relative z-50">
       <button
         onClick={() => setShowStatus(true)}
-        className="bg-blue-500 text-white py-2 px-4 rounded"
+        className="bg-blue-500 text-white py-2 px-3 rounded text-xs md:text-sm lg:text-lg"
       >
         내 상태 보기
       </button>
@@ -21,7 +21,7 @@ export default function MyStatusButton({ roomId, socket, session }) {
       {showStatus && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
           <div ref={popupRef} className="bg-white p-6 rounded shadow-lg text-center">
-            <h3 className="text-lg font-bold">내 상태</h3>
+            <h3 className="text-lg font-bold mb-1">내 상태</h3>
             <p>익명 이름: 호스트</p>
             <p>내 경주마: 없음</p>
             <p>남은 칩 개수: 20</p>

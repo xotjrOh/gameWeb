@@ -36,19 +36,19 @@ function VoteTab({ roomId, socket, session }) {
     <div className="space-y-6">
       {/* 타이머 및 투표 */}
       <div className="text-center bg-gray-100 p-4 rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold">라운드마다 최다 득표할 것 같은 말에 투표하세요!</h2>
-        <p className="text-red-500">예측 성공시 칩이 2개 추가됩니다. (라운드 종료 시점에 추가됨)</p>
-        <p className="text-red-500">투표하기 버튼을 누른 이후에는 수정이 불가합니다.</p>
+        <h2 className="text-md font-bold md:text-xl">라운드마다 최다 득표할 것 같은 말에 투표하세요!</h2>
+        <p className="text-red-500 text-sm md:text-base">예측 성공시 칩이 2개 추가됩니다. <br/>(라운드 종료 시점에 추가됨)</p>
+        <p className="text-red-500 text-sm md:text-base">투표하기 버튼을 누른 이후에는 수정이 불가합니다.</p>
 
-        <div className="grid grid-cols-2 gap-6 mt-6">
+        <div className="grid grid-cols-2 gap-4 md:gap-6 mt-4">
           {horses.map((horse) => (
             <div
               key={horse}
-              className={`flex flex-col items-center p-4 rounded-lg shadow-sm border cursor-pointer transition-all duration-300 
+              className={`flex flex-col items-center p-2 md:p-4 rounded-lg shadow-sm border cursor-pointer transition-all duration-300 
               ${selectedHorse === horse ? 'border-blue-500 bg-blue-100' : 'bg-white hover:bg-blue-50'}`}  // 선택된 말과 hover 시 배경색 변화
               onClick={() => setSelectedHorse(horse)}  // 선택된 말 업데이트
             >
-              <label className={`font-semibold text-lg mb-2 transition-colors duration-300 ${selectedHorse === horse ? 'text-blue-700' : 'text-black'}`}>
+              <label className={`font-semibold text-base md:text-lg mb-2 transition-colors duration-300 ${selectedHorse === horse ? 'text-blue-700' : 'text-black'}`}>
                 {horse}
               </label>
             </div>
@@ -57,9 +57,8 @@ function VoteTab({ roomId, socket, session }) {
 
         <button
           onClick={handleVote}
-          className={`mt-6 px-6 py-2 rounded-lg text-white font-semibold ${
-            statusInfo.isVoteLocked || isTimeover ? 'bg-gray-500' : 'bg-green-500 hover:bg-green-600'
-          }`}
+          className={`mt-4 md:mt-6 px-4 md:px-6 py-2 rounded-lg text-white font-semibold w-full ${
+            statusInfo.isVoteLocked || isTimeover ? 'bg-gray-500' : 'bg-green-500 hover:bg-green-600'}`}
           disabled={statusInfo.isVoteLocked || isTimeover}
         >
           투표하기
@@ -68,8 +67,8 @@ function VoteTab({ roomId, socket, session }) {
 
       {/* 보너스 안내 */}
       {statusInfo.isSolo && (
-        <div className="bg-yellow-100 p-4 rounded-lg shadow-md mt-6">
-          <p className="text-yellow-800 font-semibold">
+        <div className="bg-yellow-100 p-3 rounded-lg shadow-md mt-4">
+          <p className="text-yellow-800 font-semibold text-sm md:text-base">
             솔로 플레이어는 투표에 성공할 경우 5개의 칩이 추가됩니다!
           </p>
         </div>
@@ -77,7 +76,7 @@ function VoteTab({ roomId, socket, session }) {
 
       {/* 투표 내역 표시 */}
       <div className="bg-gray-100 p-4 rounded-lg shadow-md mt-6">
-        <h3 className="text-xl font-bold mb-4">내 투표 내역</h3>
+        <h3 className="text-lg md:text-xl font-bold mb-4">내 투표 내역</h3>
         {statusInfo.voteHistory && statusInfo.voteHistory.length > 0 ? (
           <div className="space-y-2">
             {statusInfo.voteHistory.map((vote, index) => {
@@ -88,18 +87,18 @@ function VoteTab({ roomId, socket, session }) {
               return (
                 <div
                   key={index}
-                  className={`flex justify-between items-center p-3 rounded-lg shadow-sm border transition-all duration-300 ${
+                  className={`flex justify-between items-center p-2 md:p-3 rounded-lg shadow-sm border transition-all duration-300 ${
                     isSuccessful ? 'bg-green-100 border-green-500' : 'bg-white'
                   }`}  // 성공 시 초록 배경과 테두리 추가
                 >
-                  <span className="font-medium text-lg">라운드 {index + 1}</span>
-                  <span className="text-gray-600">예측 : {vote}</span>
+                  <span className="font-medium text-base">라운드 {index + 1}</span>
+                  <span className="text-gray-600 text-sm">예측 : {vote}</span>
                 </div>
               );
             })}
           </div>
         ) : (
-          <p className="text-center text-gray-500">아직 투표 기록이 없습니다.</p>
+          <p className="text-center text-gray-500 text-sm">아직 투표 기록이 없습니다.</p>
         )}
       </div>
     </div>

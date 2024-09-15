@@ -19,7 +19,7 @@ export default function Tabs({ activeTab, onChange, children }) {
             return null;
           })}
         </div>
-        <div className="p-4">
+        <div className="p-2 md:p-4">
           {React.Children.map(children, (child) => {
             // 자식이 TabPanel 컴포넌트인지 확인
             if (child.type === TabPanel) {

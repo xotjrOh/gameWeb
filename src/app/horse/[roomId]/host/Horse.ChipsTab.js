@@ -25,11 +25,12 @@ function ChipsTab({ roomId, socket, session }) {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold">칩 개수</h2>
-      <ul className="mt-4">
+      <h2 className="text-xl font-bold md:text-2xl">칩 개수</h2>
+      <ul className="mt-4 space-y-2">
         {players.map((player, index) => (
-          <li key={index} className="py-2 border-b">
-            {player.dummyName}: {player.chips}개 ({player.horse}, {player.name}{player.isSolo ? ", 솔로" : ""}, {player.socketId})
+          <li key={index} className="flex justify-between items-center py-2 border-b text-sm md:text-base">
+            <span className="font-semibold">{player.dummyName} :</span>
+            <span className="text-gray-600"> {player.chips}개 ({player.horse}, {player.name}{player.isSolo ? ", 솔로" : ""}, {player.socketId}) </span>
           </li>
         ))}
       </ul>

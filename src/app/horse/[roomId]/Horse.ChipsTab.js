@@ -68,18 +68,18 @@ function ChipsTab({ roomId, socket, session }) {
 
   return (
     <div>
-      <div className="flex items-baseline">
-      <h2 className="text-2xl font-bold">칩 개수</h2> 
+      <div className="flex items-baseline mb-2">
+      <h2 className="text-xl md:text-2xl font-bold">칩 개수</h2> 
         {/* **칩개수 추가** */}
-        <p className="text-sm text-gray-500 ml-2">(각 메모는 16글자 제한)</p>
+        <p className="text-xs md:text-sm text-gray-500 ml-2">(각 메모는 16글자 제한)</p>
       </div>
-      <p className="mt-1">각 플레이어가 누구일지, 어떤 경주마일지 예측하여 기록해두면 기억하기 편하답니다 :)</p>
+      <p className="mt-1 text-xs md:text-sm">각 플레이어가 누구일지, 어떤 경주마일지 예측하여 기록해두면 <br/>기억하기 편하답니다 :)</p>
       <ul className="mt-4">
         {players.map((player, index) => (
           <li key={index} className="py-2 border-b">
-            {player.dummyName}: {player.chips}개 
+            <span className="text-sm md:text-base">{player.dummyName}: {player.chips}개</span>
             {hasRaceEnded && (
-              <span>
+              <span className="ml-2 text-xs md:text-sm text-gray-700">
                 ({player.horse}, {player.name}{player.isSolo ? ", 솔로" : ""})
               </span>
             )}
@@ -89,7 +89,7 @@ function ChipsTab({ roomId, socket, session }) {
               type="text"
               value={memoState[index] || ''} // **로컬 상태에서 메모 관리**
               onChange={(e) => handleMemoChange(index, e.target.value)} // **debounce 처리된 메모 업데이트**
-              className="border p-1 ml-4 min-w-[280px]"
+              className="border p-1 ml-4 w-48 md:w-64 text-xs md:text-sm"
               placeholder="플레이어 정보 메모"
               maxLength={16}  // **16글자 제한**
             />

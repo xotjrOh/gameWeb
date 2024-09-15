@@ -146,10 +146,10 @@ function BettingTab({ roomId, socket, session }) {
       <div className="space-y-4">
         {/* **설정 버튼** */}
         <div className="flex justify-between">
-          <div className="flex">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={openSettingsModal}
-              className={`bg-blue-500 text-white py-2 px-4 rounded mr-2 ${isRoundStarted ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`bg-blue-500 text-white py-2 px-3 text-sm rounded mr-2 ${isRoundStarted ? 'opacity-50 cursor-not-allowed' : ''}`}
               disabled={isRoundStarted} // **라운드 시작 후 비활성화**
             >
               설정
@@ -157,7 +157,7 @@ function BettingTab({ roomId, socket, session }) {
 
             <button
               onClick={assignRoles}
-              className={`bg-yellow-500 text-white py-2 px-4 rounded mr-2 ${isRoundStarted ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`bg-yellow-500 text-white py-2 px-3 text-sm rounded mr-2 ${isRoundStarted ? 'opacity-50 cursor-not-allowed' : ''}`}
               disabled={isRoundStarted} // **라운드 시작 후 비활성화**
             >
               역할 할당
@@ -165,7 +165,7 @@ function BettingTab({ roomId, socket, session }) {
 
             <button
               onClick={startRound}
-              className={`bg-red-500 text-white py-2 px-4 rounded mr-2 ${!isTimeover ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`bg-red-500 text-white py-2 px-3 text-sm rounded mr-2 ${!isTimeover ? 'opacity-50 cursor-not-allowed' : ''}`}
               disabled={!isTimeover} // **라운드 시작 후 비활성화**
             >
               라운드 시작
@@ -176,7 +176,7 @@ function BettingTab({ roomId, socket, session }) {
           <div className="flex">
             <button
               onClick={openNewGameModal}
-              className="bg-purple-500 text-white py-2 px-4 rounded mr-5"
+              className="bg-purple-500 text-white py-2 px-3 text-sm rounded mr-5"
             >
               새 게임
             </button>
@@ -194,7 +194,7 @@ function BettingTab({ roomId, socket, session }) {
 
         <div className="text-center">
           <h2 className="text-2xl font-bold">베팅</h2>
-          <p className="text-red-500">칩은 리필되지 않으니 아껴서 베팅해주세요. <br/>베팅하기 버튼을 누른 이후에는 수정이 불가합니다.</p>
+          <p className="text-red-500 text-sm">칩은 리필되지 않으니 아껴서 베팅해주세요. <br/>베팅하기 버튼을 누른 이후에는 수정이 불가합니다.</p>
 
           <div className="grid grid-cols-2 gap-4 mt-4">
             {horses.map((horse) => (
@@ -209,14 +209,14 @@ function BettingTab({ roomId, socket, session }) {
                   disabled={statusInfo?.isBetLocked || isTimeover}
                   className="w-full"
                 />
-                <p>칩 : {bets[horse] || 0}</p>
+                <p className="text-sm">칩 : {bets[horse] || 0}</p>
               </div>
             ))}
           </div>
 
           <button
             onClick={handleBet}
-            className={`mt-4 ${statusInfo?.isBetLocked || isTimeover ? 'bg-gray-500' : 'bg-green-500'} text-white py-2 px-4 rounded`}
+            className={`mt-4 ${statusInfo?.isBetLocked || isTimeover ? 'bg-gray-500' : 'bg-green-500'} text-white py-2 px-4 text-sm rounded w-full`}
             disabled={statusInfo?.isBetLocked || isTimeover}
           >
             베팅하기

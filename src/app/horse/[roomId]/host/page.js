@@ -42,12 +42,12 @@ export default function HorseGamePage({ params }) {
     <div className="min-h-screen bg-gray-100 flex flex-col">
       {/* 상단 네비게이션 바 */}
       <header className="bg-white shadow p-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold text-center">
-          🐎 경마게임 🐎 호스트방
+        <h1 className="text-xl font-bold text-center md:text-2xl">
+          🐎 경마게임 🐎
         </h1>
         <TimerDisplay roomId={roomId} socket={socket} dispatch={dispatch} />
         <div className="flex">
-          <h1 className="mr-4">{rooms?.[roomId]?.players?.length}명 참가중 </h1>
+          <h1 className="mr-4 text-sm md:text-base">{rooms?.[roomId]?.players?.length}명 </h1>
           <MyStatusButton roomId={roomId} socket={socket} session={session} />
         </div>
       </header>
