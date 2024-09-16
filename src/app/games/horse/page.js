@@ -18,12 +18,12 @@ export default function GameRulePage() {
   const { data: session, status } = useSession();
 
   const tabs = [
-    { key: 'overview', label: '게임 개요' },
-    { key: 'statusInfo', label: '역할 분배' },
-    { key: 'betting', label: '베팅탭 설명' },
-    { key: 'vote', label: '예측탭 설명' },
-    { key: 'chips', label: '칩 개수 탭 설명' },
-    { key: 'horses', label: '경주마 탭 설명' },
+    { key: 'overview',    label: '게임 개요',       icon: '🎮' },
+    { key: 'statusInfo',  label: '내 상태 보기',       icon: '👥' },
+    { key: 'betting',     label: '베팅탭 설명',     icon: '💰' },
+    { key: 'vote',        label: '예측탭 설명',     icon: '🔮' },
+    { key: 'chips',       label: '칩 개수 탭 설명', icon: '🎫' },
+    { key: 'horses',      label: '경주마 탭 설명',  icon: '🏇' },
   ];
 
   const renderTabContent = () => {
@@ -48,27 +48,32 @@ export default function GameRulePage() {
   return (
     <>
       <Header session={session} />
-      <div className="px-4 py-4 md:py-8 bg-gradient-to-br from-blue-100 to-purple-200 min-h-screen">
-        <div className="text-center mb-4 md:mb-8">
-          <h1 className="text-2xl md:text-4xl font-bold mb-2 yeogieottae-font">🏇 경마게임 룰 설명 🏇</h1>
-          <p className="text-sm md:text-xl">경마게임의 모든 규칙을 쉽게 이해하세요!</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl md:text-5xl font-extrabold text-gray-800 mb-4">🏇 경마게임 룰 설명 🏇</h1>
+            <p className="text-lg md:text-2xl text-gray-600">경마게임의 모든 규칙을 쉽게 이해하세요!</p>
+          </div>
 
-        <div className="flex flex-wrap justify-center gap-2 md:gap-4 mb-1 md:mb-8">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`px-3 py-1 md:px-4 md:py-2 rounded-lg text-white font-semibold text-xs md:text-base ${
-                activeTab === tab.key ? 'bg-blue-500' : 'bg-gray-400 hover:bg-blue-400'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+          <div className="flex flex-wrap justify-center gap-4 mb-8">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-4 py-2 rounded-full font-semibold text-base transition-colors duration-300 ${
+                  activeTab === tab.key
+                    ? 'bg-indigo-600 text-white shadow-lg'
+                    : 'bg-white text-gray-600 hover:bg-indigo-100'
+                }`}
+              >
+                <span className="mr-2">{tab.icon}</span>
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
-        <div className="text-sm md:text-base">{renderTabContent()}</div>
+          <div className="bg-white rounded-lg shadow-lg p-6">{renderTabContent()}</div>
+        </div>
       </div>
     </>
   );

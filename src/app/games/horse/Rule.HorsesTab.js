@@ -2,15 +2,46 @@ import Image from 'next/image';
 
 export default function HorsesTab() {
   return (
-    <div className="text-center p-4">
-        <h2 className="text-xl md:text-2xl font-bold mb-4 yeogieottae-font">경주마 탭 설명</h2>
-        <p className="mb-2 text-xs md:text-base">각 경주마의 위치를 볼 수 있습니다.</p>
-        <p className="mb-2 text-xs md:text-base">경주마가 1마리라도 결승선(현재는 아래에 &apos;결승선&apos;으로 표기됨)을 통과하면 그 즉시 게임이 종료됩니다.</p>
-        <p className="mb-2 text-xs md:text-base">종료 시점에 결승선을 통과하지 않은 말(A, C)중 결승선에 가장 가까운 말(C)이 우승자가 됩니다.</p>
-        <p className="mb-2 text-xs md:text-base">&apos;내 경주마&apos;는 &apos;내 상태 보기&apos;를 통해 확인할 수 있습니다.</p>
-        <p className="mb-2 text-xs md:text-base">각 플레이어의 경주마 위치는 &apos;라운드 종료&apos;시 업데이트됩니다.</p>
-        <Image src="/images/rule/horse/horsesTab.avif" alt="경주마 탭 이미지" layout="responsive" width={540} height={230} quality={90} className="mx-auto rounded-lg shadow-md" />
-        <Image src="/images/rule/horse/statusInfo.avif" alt="내 상태 보기" layout="responsive" width={540} height={230} quality={90} className="mx-auto rounded-lg shadow-md mt-5" />
+    <div className="p-4 animate-fadeIn">
+      <h2 className="text-2xl md:text-3xl font-bold mb-6 text-indigo-700">🏇 경주마 탭 설명</h2>
+      <div className="max-w-screen-md mx-auto">
+        <p className="mb-4 text-base md:text-lg text-gray-700">
+          각 경주마의 위치를 볼 수 있습니다.
+        </p>
+        <p className="mb-4 text-base md:text-lg text-gray-700">
+          경주마가 1마리라도 결승선에 도달하면 그 즉시 게임이 종료됩니다.
+        </p>
+        <p className="mb-4 text-base md:text-lg text-gray-700">
+          종료 시점에 결승선을 통과하지 않은 말 중 가장 앞선 말이 우승자가 됩니다.
+        </p>
+        <p className="mb-6 text-base md:text-lg text-gray-700">
+          <span className="text-indigo-600 font-semibold">‘내 경주마’</span>는 <span className="text-indigo-600 font-semibold">‘내 상태 보기’</span>를 통해 확인할 수 있습니다.
+        </p>
+        <div className="relative w-full mb-4">
+          <Image
+            src="/images/rule/horse/horsesTab.avif"
+            alt="경주마 탭 화면"
+            width={1456}
+            height={336}
+            quality={90}
+            className="rounded-lg shadow-md mx-auto"
+            sizes="(max-width: 768px) 100vw, 540px"
+            style={{ width: '100%', height: 'auto' }}
+          />
+        </div>
+        <div className="relative w-full">
+          <Image
+            src="/images/rule/horse/statusInfo.avif"
+            alt="내 상태 보기"
+            width={1422}
+            height={559}
+            quality={90}
+            className="rounded-lg shadow-md mx-auto mt-5"
+            sizes="(max-width: 768px) 100vw, 540px"
+            style={{ width: '100%', height: 'auto' }}
+          />
+        </div>
+      </div>
     </div>
   );
 }
