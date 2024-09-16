@@ -11,7 +11,7 @@ export default function useCheckVersion(socket) {
             if (!localVersion) {
                 localStorage.setItem('localVersion', serverVersion);
             }
-debugger;
+
             if (localVersion !== serverVersion) {
                 console.log(`버전이 변경되었습니다: ${localVersion} -> ${serverVersion}. 새로고침합니다.`);
                 const disconnectSocket = async () => {
