@@ -34,13 +34,13 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-9">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       {/* 어두운 배경 */}
       <div className="fixed inset-0 bg-black opacity-50" onClick={closeModal}></div>
       
       {/* 모달 내용 */}
-      <div className="bg-white p-6 rounded-lg z-10">
-        <h2 className="text-xl font-bold mb-4">방 만들기</h2>
+      <div className="bg-white p-6 rounded-lg shadow-lg z-10 w-full max-w-md">
+        <h2 className="text-xl font-bold mb-4 text-indigo-600">방 만들기</h2>
         <input
           type="text"
           ref={(el) => (inputRefs.current.roomName = el)}
@@ -50,7 +50,6 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
           className="border p-2 rounded mb-2 w-full"
         />
         <select ref={(el) => (inputRefs.current.gameType = el)} value={gameType} onChange={(e) => setGameType(e.target.value)} className="border p-2 rounded mb-4 w-full">
-          {/* <option value="rps">가위바위보</option> */}
           <option value="horse">🏇경마게임</option>
         </select>
         <input
@@ -61,7 +60,7 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
           placeholder="최대 인원"
           className="border p-2 rounded mb-2 w-full"
         />
-        <button onClick={createRoom} className="bg-blue-500 text-white px-4 py-2 rounded w-full">
+        <button onClick={createRoom} className="bg-indigo-500 text-white px-4 py-2 rounded w-full transition-transform duration-300 hover:scale-105">
           방 만들기
         </button>
       </div>
