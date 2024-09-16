@@ -28,9 +28,10 @@ function ChipsTab({ roomId, socket, session }) {
     }
   }, [roomId, socket?.id, dispatch]);
 
+  // 새로고침시의 memo값 할당
   useEffect(() => {
     setMemoState(statusInfo?.memo || []);
-  }, [statusInfo?.memo]);
+  }, [statusInfo]);
 
   // **서버에 메모 업데이트 요청을 debounce 처리**
   const handleMemoChange = (index, newMemo) => {
