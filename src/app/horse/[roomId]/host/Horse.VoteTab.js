@@ -7,8 +7,8 @@ import { showToast } from '@/store/toastSlice';
 
 function VoteTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
-  const [selectedHorse, setSelectedHorse] = useState('');  // 투표한 말
-  const { horses, statusInfo, rounds, isTimeover } = useSelector((state) => state.horse.gameData);  // rounds 가져오기
+  const [selectedHorse, setSelectedHorse] = useState('');
+  const { horses, statusInfo, rounds, isTimeover } = useSelector((state) => state.horse.gameData);
 
   // 투표 처리
   const handleVote = () => {
@@ -35,20 +35,19 @@ function VoteTab({ roomId, socket, session }) {
   return (
     <div className="space-y-6">
       {/* 타이머 및 투표 */}
-      <div className="text-center bg-gray-100 p-4 rounded-lg shadow-md">
-        <h2 className="text-md font-bold md:text-xl">라운드마다 최다 득표할 것 같은 말에 투표하세요!</h2>
-        <p className="text-red-500 text-sm md:text-base">예측 성공시 칩이 2개 추가됩니다. <br/>(라운드 종료 시점에 추가됨)</p>
-        <p className="text-red-500 text-sm md:text-base">투표하기 버튼을 누른 이후에는 수정이 불가합니다.</p>
+      <div className="text-center bg-white p-4 rounded-lg shadow-lg">
+        <h2 className="text-lg md:text-xl font-bold text-indigo-600">최다 득표할 것 같은 말을 선택하세요!</h2>
+        <p className="text-red-500 text-sm md:text-base">예측 성공시 칩이 2개 추가됩니다.</p>
 
-        <div className="grid grid-cols-2 gap-4 mt-4">
+        <div className="grid grid-cols-2 gap-4 md:gap-6 mt-4">
           {horses.map((horse) => (
             <div
               key={horse}
-              className={`flex flex-col items-center bg-white p-4 rounded-lg shadow-sm border border-gray-300 cursor-pointer transition-colors duration-200 
-              ${selectedHorse === horse ? 'border-blue-500 bg-blue-100' : 'hover:bg-blue-50'}`}
-              onClick={() => setSelectedHorse(horse)}  // 선택된 말 업데이트
+              className={`flex flex-col items-center p-4 rounded-lg shadow-sm border cursor-pointer transition-all duration-300 
+              ${selectedHorse === horse ? 'border-indigo-500 bg-indigo-100' : 'bg-white hover:bg-indigo-50'}`}
+              onClick={() => setSelectedHorse(horse)}
             >
-              <label className={`font-semibold text-base md:text-lg mb-1 md:mb-2 ${selectedHorse === horse ? 'text-blue-700' : ''}`}>
+              <label className={`font-semibold text-lg transition-colors duration-300 ${selectedHorse === horse ? 'text-indigo-700' : 'text-gray-800'}`}>
                 {horse}
               </label>
             </div>
@@ -57,9 +56,8 @@ function VoteTab({ roomId, socket, session }) {
 
         <button
           onClick={handleVote}
-          className={`mt-6 px-6 py-2 rounded-lg text-white font-semibold w-full ${
-            statusInfo.isVoteLocked || isTimeover ? 'bg-gray-500' : 'bg-green-500 hover:bg-green-600'
-          }`}
+          className={`mt-4 px-6 py-2 rounded-lg text-white font-semibold w-full ${
+            statusInfo.isVoteLocked || isTimeover ? 'bg-gray-500' : 'bg-green-500 hover:bg-green-600'}`}
           disabled={statusInfo.isVoteLocked || isTimeover}
         >
           투표하기
@@ -68,32 +66,31 @@ function VoteTab({ roomId, socket, session }) {
 
       {/* 보너스 안내 */}
       {statusInfo.isSolo && (
-        <div className="bg-yellow-100 p-3 rounded-lg shadow-md mt-4">
-          <p className="text-yellow-800 font-semibold text-sm md:text-base">
+        <div className="bg-green-50 p-3 rounded-lg shadow-md mt-4">
+          <p className="text-green-800 font-semibold text-sm md:text-base">
             솔로 플레이어는 투표에 성공할 경우 5개의 칩이 추가됩니다!
           </p>
         </div>
       )}
 
       {/* 투표 내역 표시 */}
-      <div className="bg-gray-100 p-3 rounded-lg shadow-md mt-4">
-        <h3 className="text-lg font-bold md:text-xl mb-2 md:mb-4">내 투표 내역</h3>
+      <div className="bg-white p-4 rounded-lg shadow-lg mt-6">
+        <h3 className="text-lg md:text-xl font-bold mb-4 text-indigo-600">내 투표 내역</h3>
         {statusInfo.voteHistory && statusInfo.voteHistory.length > 0 ? (
           <div className="space-y-2">
             {statusInfo.voteHistory.map((vote, index) => {
-              const round = rounds?.[index] || [];  // 해당 라운드 데이터
-              const votedHorseResult = round.find(r => r.horse === vote);  // 해당 라운드에서 투표한 말의 결과 찾기
-              const isSuccessful = votedHorseResult && votedHorseResult.progress === 2;  // 성공 여부 체크
+              const round = rounds?.[index] || [];
+              const votedHorseResult = round.find(r => r.horse === vote);
+              const isSuccessful = votedHorseResult && votedHorseResult.progress === 2;
 
               return (
                 <div
                   key={index}
-                  className={`flex justify-between items-center p-3 rounded-lg shadow-sm border border-gray-300 ${
-                    isSuccessful ? 'bg-green-100 border-green-500' : 'bg-white'
-                  }`}  // 성공 시 초록 배경과 테두리 추가
+                  className={`flex justify-between items-center p-2 md:p-3 rounded-lg shadow-sm border transition-all duration-300 ${
+                    isSuccessful ? 'bg-green-100 border-green-500' : 'bg-white'}`}
                 >
                   <span className="font-medium text-base">라운드 {index + 1}</span>
-                  <span className="text-gray-600 text-sm">예측: {vote}</span>
+                  <span className="text-gray-600 text-sm">예측 : {vote}</span>
                 </div>
               );
             })}

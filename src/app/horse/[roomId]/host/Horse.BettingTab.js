@@ -1,30 +1,18 @@
-'use client'
+'use client';
 
 import { useState, useRef, memo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import useOutsideClick from '@/hooks/useOutsideClick';
 import { updateChip, updateIsBetLocked, updateIsRoundStarted } from '@/store/horseSlice';
 import { showToast } from '@/store/toastSlice';
+import Modal from '@/components/Modal';  // Modal 컴포넌트 가져오기
 
 function BettingTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
   const [bets, setBets] = useState({});
-  const [showDurationModal, setShowDurationModal] = useState(false);  // **모달 창을 관리하는 상태**
-  const [duration, setDuration] = useState(300);  // **사용자가 설정할 라운드 지속 시간**
-  const [finishLine, setFinishLine] = useState(9);  // **골인지점 설정 상태**
-  const [showSettingsModal, setShowSettingsModal] = useState(false);  // **설정을 위한 모달 창 상태**
-  const [showNewGameModal, setShowNewGameModal] = useState(false);  // **새 게임 확인 모달 상태 추가**
-  const [showLeaveModal, setShowLeaveModal] = useState(false);  // **나가기 확인 모달 추가**
-  const roundPopupRef = useRef(null);
-  const settingPopupRef = useRef(null);
-  const newGamePopupRef = useRef(null);  // **새 게임 모달 참조 추가**
-  const leavePopupRef = useRef(null); // **나가기 모달 참조 추가**
-  const { horses, statusInfo, isRoundStarted, isTimeover } = useSelector((state) => state.horse.gameData);
-
-  useOutsideClick(roundPopupRef, () => setShowDurationModal(false));
-  useOutsideClick(settingPopupRef, () => setShowSettingsModal(false));
-  useOutsideClick(newGamePopupRef, () => setShowNewGameModal(false));  // **새 게임 모달 외부 클릭 닫기**
-  useOutsideClick(leavePopupRef, () => setShowLeaveModal(false));  // **나가기 모달 외부 클릭 닫기**
+  const [showModal, setShowModal] = useState({ type: null, visible: false });  // 모달 상태
+  const [duration, setDuration] = useState(300);  // 라운드 지속 시간
+  const [finishLine, setFinishLine] = useState(9);  // 골인 지점
+  const { horses = [], statusInfo, isRoundStarted, isTimeover } = useSelector((state) => state.horse.gameData);
 
   const handleBetChange = (horse, amount) => {
     const newBets = { ...bets, [horse]: amount };
@@ -37,7 +25,7 @@ function BettingTab({ roomId, socket, session }) {
 
   const handleBet = () => {
     if (statusInfo?.isBetLocked || isTimeover) {
-      return dispatch(showToast({ message: "더이상 베팅할 수 없습니다.", type: 'error' }));
+      return dispatch(showToast({ message: "더 이상 베팅할 수 없습니다.", type: 'error' }));
     }
     if (Object.keys(bets).length > 0) {
       socket.emit('horse-bet', { roomId, bets }, (response) => {
@@ -63,13 +51,13 @@ function BettingTab({ roomId, socket, session }) {
       if (!response.success) {
         dispatch(showToast({ message: response.message, type: 'error' }));
       } else {
-        dispatch(showToast({ message: "성공적으로 할당이 완료되었습니다.", type: 'success' }));
+        dispatch(showToast({ message: "성공적으로 역할이 할당되었습니다.", type: 'success' }));
       }
     });
   };
 
   const startRound = () => {
-    setShowDurationModal(true);  // **모달 창 열기**
+    setShowModal({ type: 'startRound', visible: true });
   };
 
   const confirmStartRound = () => {
@@ -77,8 +65,8 @@ function BettingTab({ roomId, socket, session }) {
       if (!response.success) {
         dispatch(showToast({ message: response.message, type: 'error' }));
       } else {
-        dispatch(showToast({ message: "성공적으로 타이머가 동작했습니다.", type: 'success' }));
-        setShowDurationModal(false);  // **모달 창 닫기**
+        dispatch(showToast({ message: "라운드가 성공적으로 시작되었습니다.", type: 'success' }));
+        setShowModal({ type: null, visible: false });
         dispatch(updateIsRoundStarted(true));
       }
     });
@@ -88,7 +76,7 @@ function BettingTab({ roomId, socket, session }) {
     if (isRoundStarted) {
       return dispatch(showToast({ message: "라운드가 시작된 후에는 설정을 변경할 수 없습니다.", type: 'error' }));
     }
-    setShowSettingsModal(true);  // **설정 모달 창 열기**
+    setShowModal({ type: 'settings', visible: true });
   };
 
   const confirmSettings = () => {
@@ -97,14 +85,13 @@ function BettingTab({ roomId, socket, session }) {
         dispatch(showToast({ message: response.message, type: 'error' }));
       } else {
         dispatch(showToast({ message: "설정이 성공적으로 업데이트되었습니다.", type: 'success' }));
-        setShowSettingsModal(false);  // **설정 모달 창 닫기**
+        setShowModal({ type: null, visible: false });
       }
     });
   };
 
-  // **새 게임 시작 모달 확인**
   const openNewGameModal = () => {
-    setShowNewGameModal(true);  // **새 게임 모달 열기**
+    setShowModal({ type: 'newGame', visible: true });
   };
 
   const confirmNewGame = () => {
@@ -113,27 +100,26 @@ function BettingTab({ roomId, socket, session }) {
         dispatch(showToast({ message: response.message, type: 'error' }));
       } else {
         dispatch(showToast({ message: "새 게임이 성공적으로 시작되었습니다.", type: 'success' }));
+        // 방 내부 redux값 업데이트 때문
         socket.emit('horse-get-game-data', { roomId, sessionId : session.user.id }, (response) => {
           if (!response.success) {
             dispatch(showToast({ message: response.message, type: 'error' }));
           }
         });
-        setShowNewGameModal(false);  // **새 게임 모달 닫기**
+        setShowModal({ type: null, visible: false });
       }
     });
   };
 
-  // **방장 나가기 모달 열기**
   const openLeaveModal = () => {
-    setShowLeaveModal(true);
+    setShowModal({ type: 'leave', visible: true });
   };
 
-  // **방장 나가기 확인**
   const confirmLeaveRoom = () => {
     socket.emit('leave-room', { roomId, sessionId: session.user.id }, (response) => {
       if (response.success) {
         dispatch(showToast({ message: "방장이 방을 나갔습니다. 방이 종료되었습니다.", type: 'success' }));
-        setShowLeaveModal(false);
+        setShowModal({ type: null, visible: false });
         window.location.href = '/';
       } else {
         dispatch(showToast({ message: response.message, type: 'error' }));
@@ -143,63 +129,58 @@ function BettingTab({ roomId, socket, session }) {
 
   return (
     <div>
-      <div className="space-y-4">
-        {/* **설정 버튼** */}
-        <div className="flex justify-between">
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={openSettingsModal}
-              className={`bg-blue-500 text-white py-2 px-3 text-sm rounded mr-2 ${isRoundStarted ? 'opacity-50 cursor-not-allowed' : ''}`}
-              disabled={isRoundStarted} // **라운드 시작 후 비활성화**
-            >
-              설정
-            </button>
+      {/* 버튼을 상단에 배치 */}
+      <div className="flex justify-between items-center mt-6 mb-4">
+        <button
+          onClick={openSettingsModal}
+          className={`bg-indigo-500 text-white py-2 px-4 text-sm rounded ${isRoundStarted ? 'opacity-50 cursor-not-allowed' : ''}`}
+          disabled={isRoundStarted}
+        >
+          설정
+        </button>
 
-            <button
-              onClick={assignRoles}
-              className={`bg-yellow-500 text-white py-2 px-3 text-sm rounded mr-2 ${isRoundStarted ? 'opacity-50 cursor-not-allowed' : ''}`}
-              disabled={isRoundStarted} // **라운드 시작 후 비활성화**
-            >
-              역할 할당
-            </button>
+        <button
+          onClick={assignRoles}
+          className={`bg-indigo-500 text-white py-2 px-4 text-sm rounded ${isRoundStarted ? 'opacity-50 cursor-not-allowed' : ''}`}
+          disabled={isRoundStarted}
+        >
+          역할 할당
+        </button>
 
-            <button
-              onClick={startRound}
-              className={`bg-red-500 text-white py-2 px-3 text-sm rounded mr-2 ${!isTimeover ? 'opacity-50 cursor-not-allowed' : ''}`}
-              disabled={!isTimeover} // **라운드 시작 후 비활성화**
-            >
-              라운드 시작
-            </button>
-          </div>
+        <button
+          onClick={startRound}
+          className={`bg-indigo-500 text-white py-2 px-4 text-sm rounded ${!isTimeover ? 'opacity-50 cursor-not-allowed' : ''}`}
+          disabled={!isTimeover}
+        >
+          라운드 시작
+        </button>
 
-          {/* **새 게임 버튼 추가** */}
-          <div className="flex">
-            <button
-              onClick={openNewGameModal}
-              className="bg-purple-500 text-white py-2 px-3 text-sm rounded mr-5"
-            >
-              새 게임
-            </button>
+        <button
+          onClick={openNewGameModal}
+          className="bg-indigo-500 text-white py-2 px-4 text-sm rounded"
+        >
+          새 게임
+        </button>
 
-            {/* **나가기 이모지 버튼 추가** */}
-            <button
-              onClick={openLeaveModal}
-              className="text-red-500 text-3xl"
-              title="나가기"
-            >
-              🚪
-            </button>
-          </div>
-        </div>
+        <button
+          onClick={openLeaveModal}
+          className="text-red-500 text-3xl"
+          title="나가기"
+        >
+          🚪
+        </button>
+      </div>
 
+      {/* 흰색 container 내부 */}
+      <div  className="text-center bg-white p-4 md:p-6 rounded-lg shadow-lg">
         <div className="text-center">
-          <h2 className="text-2xl font-bold">베팅</h2>
-          <p className="text-red-500 text-sm">칩은 리필되지 않으니 아껴서 베팅해주세요. <br/>베팅하기 버튼을 누른 이후에는 수정이 불가합니다.</p>
+          <h2 className="text-2xl font-bold text-indigo-600">베팅</h2>
+          <p className="text-red-500 text-sm">칩은 리필되지 않으니 아껴서 베팅해주세요. <br/>베팅 후 수정은 불가능합니다.</p>
 
           <div className="grid grid-cols-2 gap-4 mt-4">
             {horses.map((horse) => (
-              <div key={horse} className="flex flex-col items-center">
-                <label className="font-semibold">{horse}</label>
+              <div key={horse} className="flex flex-col items-center bg-indigo-50 p-3 md:p-4 rounded-lg shadow-md">
+                <label className="font-semibold text-base md:text-lg mb-2">{horse}</label>
                 <input
                   type="range"
                   min="0"
@@ -209,108 +190,61 @@ function BettingTab({ roomId, socket, session }) {
                   disabled={statusInfo?.isBetLocked || isTimeover}
                   className="w-full"
                 />
-                <p className="text-sm">칩 : {bets[horse] || 0}</p>
+                <p className="text-sm text-gray-600">칩: {bets[horse] || 0}</p>
               </div>
             ))}
           </div>
 
           <button
             onClick={handleBet}
-            className={`mt-4 ${statusInfo?.isBetLocked || isTimeover ? 'bg-gray-500' : 'bg-green-500'} text-white py-2 px-4 text-sm rounded w-full`}
-            disabled={statusInfo?.isBetLocked || isTimeover}
+            className={`mt-4 md:mt-6 px-4 md:px-6 py-2 rounded-lg text-white font-semibold text-sm md:text-base w-full
+              ${statusInfo.isBetLocked || isTimeover ? 'bg-gray-500' : 'bg-indigo-500 hover:bg-indigo-600'}`}
+            disabled={statusInfo.isBetLocked || isTimeover}
           >
             베팅하기
           </button>
         </div>
-
       </div>
-      {/* **모달 창** */}
-      {showDurationModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded shadow-lg text-center" ref={roundPopupRef}>
-            <h3 className="text-lg font-bold mb-4">라운드 지속 시간 설정</h3>
-            <input
-              type="number"
-              value={duration}
-              onChange={(e) => setDuration(parseInt(e.target.value))}
-              min="60"
-              max="600"
-              className="border p-2 rounded mb-4 w-full"
-            />
-            <button
-              onClick={confirmStartRound}
-              className="bg-blue-500 text-white py-2 px-4 rounded w-full"
-            >
-              라운드 시작
-            </button>
-          </div>
-        </div>
+
+      {/* 모달 컴포넌트 사용 */}
+      {showModal.visible && (
+        <Modal
+          title={
+            showModal.type === 'startRound' ? '라운드 지속 시간 설정' :
+            showModal.type === 'settings' ? '골인지점 설정' :
+            showModal.type === 'newGame' ? '새 게임 시작' : '방 나가기'
+          }
+          message={
+            showModal.type === 'startRound' ? (
+              <input
+                type="number"
+                value={duration}
+                onChange={(e) => setDuration(parseInt(e.target.value))}
+                min="60"
+                max="600"
+                className="border border-gray-300 p-3 rounded-lg w-full"
+              />
+            ) : showModal.type === 'settings' ? (
+              <input
+                type="number"
+                value={finishLine}
+                onChange={(e) => setFinishLine(parseInt(e.target.value))}
+                min="5"
+                max="20"
+                className="border border-gray-300 p-3 rounded-lg w-full"
+              />
+            ) : showModal.type === 'newGame' ? '정말 새 게임을 시작하시겠습니까?' : '정말 방을 나가시겠습니까?'
+          }
+          onConfirm={
+            showModal.type === 'startRound' ? confirmStartRound :
+            showModal.type === 'settings' ? confirmSettings :
+            showModal.type === 'newGame' ? confirmNewGame : confirmLeaveRoom
+          }
+          onCancel={() => setShowModal({ type: null, visible: false })}
+          type={showModal.type === 'leave' ? 'warning' : 'info'}
+        />
       )}
 
-      {/* **설정 모달 창** */}
-      {showSettingsModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded shadow-lg text-center" ref={settingPopupRef}>
-            <h3 className="text-lg font-bold mb-4">골인지점 설정</h3>
-            <input
-              type="number"
-              value={finishLine}
-              onChange={(e) => setFinishLine(parseInt(e.target.value))}
-              min="5"
-              max="20"
-              className="border p-2 rounded mb-4 w-full"
-            />
-            <button
-              onClick={confirmSettings}
-              className="bg-green-500 text-white py-2 px-4 rounded w-full"
-            >
-              설정 완료
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* **새 게임 모달 창 추가** */}
-      {showNewGameModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded shadow-lg text-center" ref={newGamePopupRef}>
-            <h3 className="text-lg font-bold mb-4">정말 새로 시작하시겠습니까?</h3>
-            <button
-              onClick={confirmNewGame}
-              className="bg-purple-500 text-white py-2 px-4 rounded w-full mb-2"
-            >
-              확인
-            </button>
-            <button
-              onClick={() => setShowNewGameModal(false)}
-              className="bg-gray-500 text-white py-2 px-4 rounded w-full"
-            >
-              취소
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* **나가기 모달 창 추가** */}
-      {showLeaveModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded shadow-lg text-center" ref={leavePopupRef}>
-            <h3 className="text-lg font-bold mb-4">정말 방을 나가시겠습니까?</h3>
-            <button
-              onClick={confirmLeaveRoom}
-              className="bg-red-500 text-white py-2 px-4 rounded w-full mb-2"
-            >
-              확인
-            </button>
-            <button
-              onClick={() => setShowLeaveModal(false)}
-              className="bg-gray-500 text-white py-2 px-4 rounded w-full"
-            >
-              취소
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
