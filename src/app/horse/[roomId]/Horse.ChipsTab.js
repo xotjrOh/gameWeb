@@ -30,6 +30,7 @@ function ChipsTab({ roomId, socket, session }) {
 
   // 새로고침시의 memo값 할당
   useEffect(() => {
+    console.log("chips effect", statusInfo);
     setMemoState(statusInfo?.memo || []);
   }, [statusInfo]);
 
