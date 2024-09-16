@@ -36,6 +36,7 @@ function ChipsTab({ roomId, socket, session }) {
   // **서버에 메모 업데이트 요청을 debounce 처리**
   const handleMemoChange = (index, newMemo) => {
     if (newMemo.length > 16) {
+      console.log("값확인용", statusInfo);
       return dispatch(showToast({ message: "메모는 최대 16자까지 입력할 수 있습니다.", type: 'error' }));
     }
 
@@ -54,6 +55,7 @@ function ChipsTab({ roomId, socket, session }) {
       socket.emit('horse-update-memo', { roomId, index, memo: newMemo, sessionId: session.user.id }, (response) => {
         if (response.success) {
           dispatch(updateMemo({ index, memo: newMemo }));  // **Redux 스토어 업데이트**
+          console.log("redux 업데이트", statusInfo, debounceTimeouts);
         } else {
           dispatch(showToast({ message: response.message || "메모 저장에 실패했습니다.", type: 'error' }));
         }
