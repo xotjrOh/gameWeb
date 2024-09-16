@@ -17,25 +17,23 @@ function HorsesTab({ roomId, socket, session }) {
       .filter((player) => player.horse === horseName)
       .map((player) => player.name)
       .join(', ');
-  }
+  };
 
   return (
-    <div>
-      <h2 className="text-xl md:text-2xl font-bold mb-4">경주마 현황</h2>
+    <div className="bg-white p-4 md:p-6 rounded-lg shadow-lg">
+      <h2 className="text-xl md:text-2xl font-bold text-indigo-600 mb-4">경주마 현황</h2>
       <div className="space-y-4">
         {sortedPositions.map((horse, index) => (
-          <div key={index}>
+          <div key={index} className="bg-indigo-50 p-4 rounded-lg shadow-md">
             <div className="flex items-center">
-              <span className="mr-2 md:mr-4 text-lg md:text-xl font-semibold">{horse.name}</span>
+              <span className="mr-4 text-lg md:text-xl font-semibold">{horse.name}</span>
               <div className="flex-1 relative bg-gray-200 rounded h-4 md:h-6">
-                {/* 트랙 표시 */}
                 <div className="absolute inset-0 flex items-center">
                   <span
                     className="block h-full bg-blue-500 rounded"
                     style={{ width: `${Math.min((horse.position / finishLine) * 100, 100)}%` }}
                   ></span>
                 </div>
-                {/* 경주마 위치 */}
                 <div
                   className="absolute -top-1 -left-1"
                   style={{ left: `${Math.min((horse.position / finishLine) * 100, 100)}%`, transform: 'scaleX(-1)' }}
@@ -43,7 +41,7 @@ function HorsesTab({ roomId, socket, session }) {
                   🏇
                 </div>
               </div>
-              <span className="ml-2 md:ml-4 text-sm md:text-lg">{horse.position}칸</span>
+              <span className="ml-4 text-sm md:text-lg">{horse.position}칸</span>
             </div>
             {hasRaceEnded && (
               <span className="text-xs md:text-sm text-gray-500">{getHorsePlayers(horse.name)}</span>
@@ -55,7 +53,7 @@ function HorsesTab({ roomId, socket, session }) {
 
       {/* 라운드별 경주마 현황 */}
       <div className="mt-6">
-        <h3 className="text-lg md:text-xl font-bold mb-4">라운드별 경주마 현황</h3>
+        <h3 className="text-lg md:text-xl font-bold mb-4 text-indigo-600">라운드별 경주마 현황</h3>
         {rounds && rounds.length > 0 ? (
           rounds.map((round, roundIndex) => (
             <div key={roundIndex} className="mb-6">
@@ -63,21 +61,16 @@ function HorsesTab({ roomId, socket, session }) {
               <div className="space-y-2">
                 {round.map((bet, betIndex) => (
                   <div key={betIndex} className="flex justify-between items-center p-2 md:p-3 bg-white rounded-lg shadow-md border border-gray-300">
-                    <div className="flex items-center space-x-2 md:space-x-4">
-                      <span className="text-sm md:text-lg font-medium">{bet.horse}</span>
-                      {/* 칩과 진행 상태를 경주마와 더 가깝게 배치 */}
-                      {hasRaceEnded && (
-                        <span className="text-xs md:text-sm text-gray-700">칩 : {bet.chips}</span>
-                      )}
-                      <span className="text-xs md:text-sm text-gray-700">전진: {bet.progress}</span>
-                    </div>
+                    <span className="text-sm md:text-lg font-medium">{bet.horse}</span>
+                    <span className="text-gray-600 text-xs md:text-sm">전진: {bet.progress}</span>
+                    {hasRaceEnded && <span className="text-xs md:text-sm text-gray-700">칩: {bet.chips}</span>}
                   </div>
                 ))}
               </div>
             </div>
           ))
         ) : (
-          <p className="text-center text-xs md:text-sm text-gray-500">아직 베팅 기록이 없습니다.</p>
+          <p className="text-center text-gray-500 text-xs md:text-sm">아직 베팅 기록이 없습니다.</p>
         )}
       </div>
     </div>

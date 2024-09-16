@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
-
 import Tabs from '@/components/tab/Tabs';
 import Tab from '@/components/tab/Tab';
 import TabPanel from '@/components/tab/TabPanel';
@@ -26,9 +25,9 @@ export default function HorseGamePage({ params }) {
   const dispatch = useDispatch();
   const { roomId } = params;
   const { socket } = useSocket();
-  const [activeTab, setActiveTab] = useState('betting'); // 기본 탭을 'betting'으로 설정
+  const [activeTab, setActiveTab] = useState('betting');
   const { data: session, status } = useSession();
-  
+
   const handleTabChange = (newValue) => {
     setActiveTab(newValue);
   };
@@ -40,10 +39,10 @@ export default function HorseGamePage({ params }) {
   useLeaveRoom(socket, dispatch);
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-b from-indigo-50 to-indigo-100 flex flex-col">
       {/* 상단 네비게이션 바 */}
-      <header className="bg-white shadow p-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold text-center">
+      <header className="bg-white shadow-lg p-4 flex justify-between items-center">
+        <h1 className="text-2xl md:text-3xl font-bold text-indigo-600 text-center">
           🐎 경마게임 🐎
         </h1>
         <TimerDisplay roomId={roomId} socket={socket} dispatch={dispatch} />

@@ -1,5 +1,5 @@
 .winner-animation {
-    animation: winnerEffect 1s ease-out;
+    animation: winnerEffect 1.2s ease-out;
 }
 
 @keyframes winnerEffect {
@@ -14,12 +14,12 @@
 }
 
 .loser-animation {
-    animation: loserEffect 1s ease-out;
+    animation: loserEffect 1.2s ease-out;
 }
 
 @keyframes loserEffect {
     0% {
-        transform: translateY(-10px);
+        transform: translateY(-20px);
         opacity: 0;
     }
     100% {
@@ -29,6 +29,22 @@
 }
 
 .bg-dark {
-    background: rgba(0, 0, 0, 0.75);
+    background: rgba(0, 0, 0, 0.85);
 }
-  
+
+.winner-section {
+    animation: fadeIn 0.8s ease-in;
+}
+
+.loser-section {
+    animation: fadeIn 0.8s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}

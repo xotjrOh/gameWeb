@@ -34,52 +34,48 @@ export default function GameEndModal({ socket, roomId }) {
   const isMyHorseWinner = gameResult.winners.some(winner => winner.horse === statusInfo.horse);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-dark bg-opacity-50">
-      <div className="bg-white p-4 md:p-6 rounded-lg shadow-lg w-80 md:w-96 text-center" ref={resultPopupRef}>
-        <h2 className="text-xl md:text-2xl font-bold mb-4">게임 종료</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white p-6 md:p-8 rounded-lg shadow-lg w-80 md:w-96 text-center" ref={resultPopupRef}>
+        <h2 className="text-xl md:text-2xl font-bold mb-4 text-blue-600">🎮 게임 종료 🎮</h2>
 
         {/* 우승자 표시 */}
-        <div className="mb-4">
-          {gameResult.winners.length > 0 && (
-            <>
-              <h3 className="text-xl md:text-2xl font-bold text-green-500">🎉 우승한 말 🎉</h3>
-              {gameResult.winners.map(({ horse, playerNames }, index) => (
-                <div key={index} className="mb-2">
-                  <span className="text-lg md:text-xl font-semibold">
-                    {horse} ({playerNames.join(', ')})
-                  </span>
-                </div>
-              ))}
-              <div className="winner-animation">
-                <Image src="/images/trophy.webp" alt="우승 트로피" width={96} height={96} className="mx-auto" />
+        {gameResult.winners.length > 0 && (
+          <div className="mb-4 winner-section">
+            <h3 className="text-xl md:text-2xl font-bold text-green-600">🎉 우승한 말 🎉</h3>
+            {gameResult.winners.map(({ horse, playerNames }, index) => (
+              <div key={index} className="mb-2">
+                <span className="text-lg md:text-xl font-semibold">
+                  {horse} ({playerNames.join(', ')})
+                </span>
               </div>
-            </>
-          )}
-        </div>
+            ))}
+            <div className="winner-animation">
+              <Image src="/images/trophy.webp" alt="우승 트로피" width={96} height={96} className="mx-auto" />
+            </div>
+          </div>
+        )}
 
         {/* 패배자 표시 */}
-        <div className="mb-4">
-          {gameResult.losers.length > 0 && (
-            <>
-              <h3 className="text-xl md:text-2xl font-bold text-red-500">😢 패배한 말 😢</h3>
-              {gameResult.losers.map(({ horse, playerNames }, index) => (
-                <div key={index} className="mb-2">
-                  <span className="text-lg md:text-xl font-semibold">
-                    {horse} ({playerNames.join(', ')})
-                  </span>
-                </div>
-              ))}
-              <div className="loser-animation">
-                <Image src="/images/teardrop.webp" alt="패배 눈물" width={96} height={96} className="mx-auto" />
+        {gameResult.losers.length > 0 && (
+          <div className="mb-4 loser-section">
+            <h3 className="text-xl md:text-2xl font-bold text-red-600">😢 패배한 말 😢</h3>
+            {gameResult.losers.map(({ horse, playerNames }, index) => (
+              <div key={index} className="mb-2">
+                <span className="text-lg md:text-xl font-semibold">
+                  {horse} ({playerNames.join(', ')})
+                </span>
               </div>
-            </>
-          )}
-        </div>
+            ))}
+            <div className="loser-animation">
+              <Image src="/images/teardrop.webp" alt="패배 눈물" width={96} height={96} className="mx-auto" />
+            </div>
+          </div>
+        )}
 
-        {/* 내 말이 우승자인지 확인 후 별도 문구 추가 */}
+        {/* 내 말 우승/패배 확인 */}
         {isMyHorseWinner ? (
-          <div className="my-winner-message text-blue-500 text-lg md:text-xl font-bold">
-            🎉 내 말 {statusInfo.horse}가 우승했어요! 🎉
+          <div className="my-winner-message text-blue-600 text-lg md:text-xl font-bold">
+            🎉 내 말 {statusInfo.horse}가 우승했습니다! 🎉
           </div>
         ) : (
           <div className="my-loser-message text-gray-500 text-lg md:text-xl">
@@ -87,9 +83,10 @@ export default function GameEndModal({ socket, roomId }) {
           </div>
         )}
 
+        {/* 닫기 버튼 */}
         <button
           onClick={() => setIsOpen(false)}
-          className="mt-4 bg-blue-500 text-white py-2 px-4 rounded w-full text-base md:text-lg"
+          className="mt-4 bg-blue-500 text-white py-2 px-4 rounded-lg text-base md:text-lg w-full hover:bg-blue-600 transition"
         >
           닫기
         </button>
