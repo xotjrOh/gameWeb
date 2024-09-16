@@ -61,7 +61,7 @@ function ChipsTab({ roomId, socket, session }) {
           dispatch(showToast({ message: response.message || "메모 저장에 실패했습니다.", type: 'error' }));
         }
       });
-    }, 500); // **500ms 후에 서버 요청**
+    }, 600); // **500ms 후에 서버 요청**
 
     // **타이머 관리**
     setDebounceTimeouts((prev) => ({
