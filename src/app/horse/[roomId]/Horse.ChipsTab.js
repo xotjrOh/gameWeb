@@ -51,7 +51,7 @@ function ChipsTab({ roomId, socket, session }) {
       clearTimeout(debounceTimeouts[index]);
     }
 
-    // **debounce 타이머 설정 (500ms)**
+    // **debounce 타이머 설정 (600ms)**
     const timeoutId = setTimeout(() => {
       socket.emit('horse-update-memo', { roomId, index, memo: newMemo, sessionId: session.user.id }, (response) => {
         if (response.success) {
@@ -61,13 +61,26 @@ function ChipsTab({ roomId, socket, session }) {
           dispatch(showToast({ message: response.message || "메모 저장에 실패했습니다.", type: 'error' }));
         }
       });
-    }, 600); // **500ms 후에 서버 요청**
+    }, 600); // **600ms 후에 서버 요청**
 
     // **타이머 관리**
     setDebounceTimeouts((prev) => ({
       ...prev,
       [index]: timeoutId,
     }));
+  };
+
+  // **focus를 잃었을 때 바로 서버에 업데이트 요청**
+  const handleBlur = (index) => {
+    const newMemo = memoState[index];
+    socket.emit('horse-update-memo', { roomId, index, memo: newMemo, sessionId: session.user.id }, (response) => {
+      if (response.success) {
+        clearTimeout(debounceTimeouts[index]);
+        dispatch(updateMemo({ index, memo: newMemo })); // **Redux 스토어 업데이트**
+      } else {
+        dispatch(showToast({ message: response.message || '메모 저장에 실패했습니다.', type: 'error' }));
+      }
+    });
   };
 
   return (
@@ -93,6 +106,7 @@ function ChipsTab({ roomId, socket, session }) {
               type="text"
               value={memoState[index] || ''} // **로컬 상태에서 메모 관리**
               onChange={(e) => handleMemoChange(index, e.target.value)} // **debounce 처리된 메모 업데이트**
+              onBlur={() => handleBlur(index)}
               className="border p-1 ml-4 w-48 md:w-64 text-xs md:text-sm"
               placeholder="플레이어 정보 메모"
               maxLength={16}  // **16글자 제한**
