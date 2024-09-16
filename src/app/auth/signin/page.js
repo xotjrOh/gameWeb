@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { signIn } from "next-auth/react";
 import Image from 'next/image';
 import KakaoIcon from '@/components/icon/KakaoIcon';
@@ -7,6 +8,16 @@ import GoogleIcon from '@/components/icon/GoogleIcon';
 import Link from 'next/link';
 
 export default function SignInPage() {
+  const [isKakaoBrowser, setIsKakaoBrowser] = useState(false);
+
+  useEffect(() => {
+    // User-Agent에서 'KAKAOTALK' 문자열이 포함되어 있으면 카카오톡 브라우저로 간주
+    console.log(navigator);
+    const userAgent = navigator.userAgent.toLowerCase();
+    if (userAgent.includes('kakaotalk')) {
+      setIsKakaoBrowser(true);
+    }
+  }, []);
 
   return (
     <div className="relative h-screen">
@@ -36,10 +47,22 @@ export default function SignInPage() {
             </button>
           </div>
           <div>
-            <button type="button" onClick={() => signIn('google', { callbackUrl: '/' })}
-            className="mt-2 py-2 px-4 flex justify-center items-center  bg-red-600 hover:bg-red-700 focus:ring-red-500 focus:ring-offset-red-200 text-white w-full transition ease-in duration-200 text-center text-base font-semibold shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2  rounded-lg ">
+            <button type="button" onClick={() => signIn('google', { callbackUrl: '/' })} disabled={isKakaoBrowser}
+              className={`mt-2 py-2 px-4 flex justify-center items-center w-full transition ease-in duration-200 text-center text-base font-semibold shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 rounded-lg ${
+                isKakaoBrowser 
+                  ? 'bg-gray-400 text-gray-200 cursor-not-allowed'  // 비활성화 상태일 때 스타일
+                  : 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500 focus:ring-offset-red-200'  // 활성화 상태일 때 스타일
+              }`}
+            >
               <GoogleIcon/>
-              구글 로그인
+              {isKakaoBrowser ? (
+                <span className="text-sm">
+                  구글 로그인 지원X <br />
+                  <span className="text-xs">카카오톡 브라우저는 거부됨</span>
+                </span>
+              ) : (
+                "구글 로그인"
+              )}
             </button>
           </div>
         </div>
