@@ -82,7 +82,7 @@ function ChipsTab({ roomId, socket, session }) {
       <ul className="mt-4 space-y-2">
         {players.map((player, index) => (
           <li key={index} className="py-2 border-b">
-            <span className="text-sm md:text-base">{player.dummyName}: {player.chips}개</span>
+            <span className="text-sm md:text-base">{player.dummyName}: {player.chips.toString().padStart(2, '0')}개</span>
             {hasRaceEnded && (
               <span className="ml-2 text-xs md:text-sm text-gray-700">({player.horse}, {player.name}{player.isSolo ? ', 솔로' : ''})</span>
             )}

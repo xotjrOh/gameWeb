@@ -46,6 +46,7 @@ export default function RankingPage() {
             <label className="mr-4 text-lg font-semibold text-gray-700">
               게임 선택:
             </label>
+            {/* gradient 배경색이라 FloatingLabelSelect 는 사용치 않음 */}
             <select
               value={selectedGame}
               onChange={handleGameChange}
