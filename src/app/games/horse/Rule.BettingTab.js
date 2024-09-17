@@ -23,8 +23,8 @@ export default function BettingTab() {
           <Image
             src="/images/rule/horse/bettingTab.avif"
             alt="베팅탭 이미지"
-            width={1450}
-            height={958}
+            width={425}
+            height={714}
             quality={90}
             className="rounded-lg shadow-md mx-auto"
             sizes="(max-width: 768px) 100vw, 540px"

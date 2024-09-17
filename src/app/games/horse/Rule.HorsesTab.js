@@ -21,8 +21,8 @@ export default function HorsesTab() {
           <Image
             src="/images/rule/horse/horsesTab.avif"
             alt="경주마 탭 화면"
-            width={1456}
-            height={336}
+            width={425}
+            height={605}
             quality={90}
             className="rounded-lg shadow-md mx-auto"
             sizes="(max-width: 768px) 100vw, 540px"
@@ -33,8 +33,8 @@ export default function HorsesTab() {
           <Image
             src="/images/rule/horse/statusInfo.avif"
             alt="내 상태 보기"
-            width={1422}
-            height={559}
+            width={423}
+            height={580}
             quality={90}
             className="rounded-lg shadow-md mx-auto mt-5"
             sizes="(max-width: 768px) 100vw, 540px"

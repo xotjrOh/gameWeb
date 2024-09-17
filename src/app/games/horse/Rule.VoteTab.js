@@ -21,8 +21,8 @@ export default function VoteTab() {
           <Image
             src="/images/rule/horse/voteTab.avif"
             alt="예측탭 화면"
-            width={1452}
-            height={873}
+            width={425}
+            height={581}
             quality={90}
             className="rounded-lg shadow-md mx-auto"
             sizes="(max-width: 768px) 100vw, 540px"

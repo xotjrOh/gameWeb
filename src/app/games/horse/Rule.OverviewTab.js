@@ -27,8 +27,8 @@ export default function OverviewTab() {
           <Image
             src="/images/rule/horse/horsesTab.avif"
             alt="경주마 탭 화면"
-            width={1456}
-            height={336}
+            width={425}
+            height={605}
             quality={90}
             className="rounded-lg shadow-md mx-auto"
             sizes="(max-width: 768px) 100vw, 540px"
@@ -39,8 +39,8 @@ export default function OverviewTab() {
           <Image
             src="/images/rule/horse/myHorseWin.avif"
             alt="게임 종료 후 승리 화면"
-            width={1497}
-            height={917}
+            width={425}
+            height={607}
             quality={90}
             className="rounded-lg shadow-md mx-auto"
             sizes="(max-width: 768px) 100vw, 540px"

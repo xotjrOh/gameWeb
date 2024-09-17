@@ -19,7 +19,7 @@ export default function GameRulePage() {
 
   const tabs = [
     { key: 'overview',    label: '게임 개요',       icon: '🎮' },
-    { key: 'statusInfo',  label: '내 상태 보기',       icon: '👥' },
+    { key: 'statusInfo',  label: '내 상태 보기',    icon: '👥' },
     { key: 'betting',     label: '베팅탭 설명',     icon: '💰' },
     { key: 'vote',        label: '예측탭 설명',     icon: '🔮' },
     { key: 'chips',       label: '칩 개수 탭 설명', icon: '🎫' },

@@ -18,8 +18,8 @@ export default function ChipsTab() {
           <Image
             src="/images/rule/horse/chips.avif"
             alt="칩 개수 탭 이미지"
-            width={964}
-            height={433}
+            width={425}
+            height={581}
             quality={90}
             className="rounded-lg shadow-md mx-auto"
             sizes="(max-width: 768px) 100vw, 540px"
@@ -30,8 +30,8 @@ export default function ChipsTab() {
           <Image
             src="/images/rule/horse/statusInfo.avif"
             alt="내 상태 보기"
-            width={1422}
-            height={559}
+            width={423}
+            height={580}
             quality={90}
             className="rounded-lg shadow-md mx-auto mt-5"
             sizes="(max-width: 768px) 100vw, 540px"
