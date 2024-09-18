@@ -18,7 +18,7 @@ const useRedirectIfNotHost = (roomId) => {
       socket.emit('check-room-host', { roomId, sessionId: session.user.id }, (response) => {
         if (!response.isInRoom) {
           dispatch(showToast({ message: '호스트가 아닙니다. 대기방으로 이동합니다.', type: 'error' }));
-          router.push('/');
+          router.replace('/');
           socket?.emit('get-room-list');
         }
       });

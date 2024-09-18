@@ -32,7 +32,7 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
             maxPlayersRef.current?.focus();
           }
         } else {
-          router.push(`/${gameType}/${response.roomId}/host`);
+          router.replace(`/${gameType}/${response.roomId}/host`);
         }
         dispatch(setIsLoading(false));
       });

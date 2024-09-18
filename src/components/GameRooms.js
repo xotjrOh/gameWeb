@@ -49,8 +49,8 @@ export default function GameRooms({ session }) {
         if (!response.success) {
           dispatch(showToast({ message: response.message, type: 'error' }));
         } else {
-          if (response.host) router.push(`/${gameType}/${roomId}/host`);
-          else router.push(`/${gameType}/${roomId}`);
+          if (response.host) router.replace(`/${gameType}/${roomId}/host`);
+          else router.replace(`/${gameType}/${roomId}`);
         }
         dispatch(setIsLoading(false));
       }

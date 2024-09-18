@@ -27,7 +27,7 @@ export default function useCheckVersion(socket) {
                 };
                 
                 localStorage.setItem('localVersion', serverVersion);
-                window.location.href = '/';
+                window.location.replace('/');
                 
                 await disconnectSocket();
             }

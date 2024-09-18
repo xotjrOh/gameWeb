@@ -7,7 +7,7 @@ function useLeaveRoom(socket, dispatch) {
     if (socket) {
       socket.on('room-closed', (response) => {
         dispatch(showToast({ message: response.message, type: 'info' }));
-        window.location.href = '/';
+        window.location.replace('/');
       });
     }
 

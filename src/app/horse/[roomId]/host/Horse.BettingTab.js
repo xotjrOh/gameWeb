@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, memo } from 'react';
+import { useState, memo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateChip, updateIsBetLocked, updateIsRoundStarted } from '@/store/horseSlice';
 import { showToast } from '@/store/toastSlice';
@@ -120,7 +120,7 @@ function BettingTab({ roomId, socket, session }) {
       if (response.success) {
         dispatch(showToast({ message: "방장이 방을 나갔습니다. 방이 종료되었습니다.", type: 'success' }));
         setShowModal({ type: null, visible: false });
-        window.location.href = '/';
+        window.location.replace('/');
       } else {
         dispatch(showToast({ message: response.message, type: 'error' }));
       }
