@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, memo } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateChip, updatePersonalRounds, updateIsBetLocked } from '@/store/horseSlice';
 import { showToast } from '@/store/toastSlice';
@@ -9,6 +9,21 @@ function BettingTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
   const [bets, setBets] = useState({});
   const { horses, statusInfo, isTimeover } = useSelector((state) => state.horse.gameData);
+
+  useEffect(() => {
+    if (socket) {
+      // 'round-ended' 이벤트를 수신하여 칩 개수 업데이트
+      const updateBetsAfterRoundEnd = () => {
+        setBets({});
+      };
+      socket.on('round-ended', updateBetsAfterRoundEnd);
+
+      // 컴포넌트 언마운트 시 이벤트 리스너 제거
+      return () => {
+        socket.off('round-ended', updateBetsAfterRoundEnd);
+      };
+    }
+  }, [socket?.id]);
 
   const handleBetChange = (horse, amount) => {
     const newBets = { ...bets, [horse]: amount };

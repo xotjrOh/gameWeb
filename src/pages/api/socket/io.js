@@ -407,7 +407,7 @@ const ioHandler = (req, res) => {
         // todo : session 비교로 바꾸고 인자로 받을것. socket은 변수가 많음
         const player = room.players.find(p => p.socketId === socket.id);
         if (!player) {
-          return callback({ success: false, message: '본인이 참여하고 있지 않은 게임방입니다.' });
+          return callback({ success: false, message: '당신은 게임 참가자가 아닙니다.' });
         }
 
         // 플레이어가 가진 칩이 충분한지 체크
@@ -447,7 +447,7 @@ const ioHandler = (req, res) => {
 
         const player = room.players.find(p => p.id === session.user.id);
         if (!player) {
-          return callback({ success: false, message: '본인이 참여하고 있지 않은 게임방입니다.' });
+          return callback({ success: false, message: '당신은 게임 참가자가 아닙니다.' });
         }
 
         // 투표 저장
@@ -571,7 +571,7 @@ const ioHandler = (req, res) => {
 
         const player = rooms[roomId].players.find(p => p.id === sessionId); // 요청 본인
         if (!player) {
-          return callback({ success: false, message: '본인이 참여하고 있지 않은 게임방입니다.' });
+          return callback({ success: false, message: '당신은 게임 참가자가 아닙니다.' });
         }
 
         player.memo = player.memo || [];
