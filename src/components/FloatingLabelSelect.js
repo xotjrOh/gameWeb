@@ -13,7 +13,7 @@ const FloatingLabelSelect = ({ label, value, onChange, selectRef, options }) => 
         onChange={onChange}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        className="block w-full px-2 pt-4 pb-2 border 
+        className="block w-full px-2 pt-4 pb-2 border bg-white
           border-gray-300 focus:border-blue-500 
           focus:ring-2 focus:ring-blue-500 focus:outline-none rounded-lg transition duration-300"
       >
