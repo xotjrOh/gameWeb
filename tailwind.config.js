@@ -39,7 +39,7 @@ module.exports = {
         },
         moveHorseSlow: {
           '0%': { left: '0' },
-          '100%': { left: '50%' },
+          '100%': { left: '45%' },
         },
       },
       backgroundImage: {
