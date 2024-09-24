@@ -4,7 +4,6 @@ import { useEffect, useState, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import Image from 'next/image';
 import useOutsideClick from '@/hooks/useOutsideClick';
-import './../GameEnd.css'; // 모달에 대한 애니메이션을 추가한 css 파일
 
 export default function GameEndModal({ socket, roomId }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -40,7 +39,7 @@ export default function GameEndModal({ socket, roomId }) {
 
         {/* 우승자 표시 */}
         {gameResult.winners.length > 0 && (
-          <div className="mb-4 winner-section">
+          <div className="mb-4 animate-fadeIn">
             <h3 className="text-xl md:text-2xl font-bold text-green-600">🎉 우승한 말 🎉</h3>
             {gameResult.winners.map(({ horse, playerNames }, index) => (
               <div key={index} className="mb-2">
@@ -49,7 +48,7 @@ export default function GameEndModal({ socket, roomId }) {
                 </span>
               </div>
             ))}
-            <div className="winner-animation">
+            <div className="animate-winnerEffect">
               <Image src="/images/trophy.webp" alt="우승 트로피" width={96} height={96} className="mx-auto" />
             </div>
           </div>
@@ -57,7 +56,7 @@ export default function GameEndModal({ socket, roomId }) {
 
         {/* 패배자 표시 */}
         {gameResult.losers.length > 0 && (
-          <div className="mb-4 loser-section">
+          <div className="mb-4 animate-fadeIn">
             <h3 className="text-xl md:text-2xl font-bold text-red-600">😢 패배한 말 😢</h3>
             {gameResult.losers.map(({ horse, playerNames }, index) => (
               <div key={index} className="mb-2">
@@ -66,7 +65,7 @@ export default function GameEndModal({ socket, roomId }) {
                 </span>
               </div>
             ))}
-            <div className="loser-animation">
+            <div className="animate-loserEffect">
               <Image src="/images/teardrop.webp" alt="패배 눈물" width={96} height={96} className="mx-auto" />
             </div>
           </div>
