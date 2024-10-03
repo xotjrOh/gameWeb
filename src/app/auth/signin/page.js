@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { signIn } from 'next-auth/react';
-import Image from 'next/image';
 import KakaoIcon from '@/components/icon/KakaoIcon';
 import GoogleIcon from '@/components/icon/GoogleIcon';
 import Link from 'next/link';
+import { Container, Box, Button, Typography, Card, CardContent } from '@mui/material';
+
 
 export default function SignInPage() {
   const [isKakaoBrowser, setIsKakaoBrowser] = useState(false);
@@ -18,64 +19,132 @@ export default function SignInPage() {
   }, []);
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center">
-      {/* 배경 이미지 */}
-      <Image
-        src="/images/background-image.avif"
-        alt="Background"
-        fill
-        className="object-cover"
-        priority
-      />
-
+    <Container
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundImage: 'url("/images/background-image.avif")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        position: 'relative',
+      }}
+    >
       {/* 어두운 오버레이 */}
-      <div className="absolute inset-0 bg-black opacity-70"></div>
+      <Box
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          bgcolor: 'rgba(0, 0, 0, 0.7)',
+        }}
+      ></Box>
 
       {/* 룰 설명 버튼 */}
-      <div className="absolute top-4 right-4 z-50">
-        <Link
-          href="/games/horse"
-          prefetch={false}
-          className="py-2 px-4 bg-indigo-600 text-white font-semibold rounded-full shadow-md transition duration-200 hover:bg-indigo-700 hover:scale-105 transform border-2 border-indigo-700"
-        >
-          룰 설명 보기
+      <Box sx={{ position: 'absolute', top: 16, right: 16, zIndex: 50 }}>
+        <Link href="/games/horse" prefetch={false}>
+          <Button
+            variant="contained"
+            color="primary"
+            sx={{
+              py: 1,
+              px: 2,
+              fontWeight: 'bold',
+              borderRadius: '50px',
+              boxShadow: 3,
+              transition: '0.2s',
+              '&:hover': {
+                transform: 'scale(1.05)',
+              },
+            }}
+          >
+            룰 설명 보기
+          </Button>
         </Link>
-      </div>
+      </Box>
 
-      {/* 로그인 카드 */}
-      <div className="relative z-10 bg-white bg-opacity-90 backdrop-filter backdrop-blur-lg p-8 rounded-2xl shadow-xl w-80 text-center">
-        <h1 className="mb-6 text-3xl font-extrabold text-gray-800">간편 로그인</h1>
-        <div className="space-y-4">
-          <button
-            type="button"
-            onClick={() => signIn('kakao', { callbackUrl: '/' })}
-            className="w-full flex items-center justify-center py-3 px-4 bg-yellow-400 hover:bg-yellow-500 text-white font-semibold rounded-full shadow-md transition duration-200"
+      <Card
+        sx={{
+          zIndex: 10,
+          backdropFilter: 'blur(10px)',
+          bgcolor: 'rgba(255, 255, 255, 0.9)',
+          borderRadius: '20px',
+          boxShadow: 5,
+          width: '90%', // 더 넓게 설정 (반응형)
+          maxWidth: 400, // 최대 너비 제한
+          py: 2, // 위아래 여백 증가
+          px: 2, // 좌우 여백 증가
+        }}
+      >
+        <CardContent>
+          <Typography 
+            variant="h4" 
+            gutterBottom 
+            sx={{ 
+              fontWeight: "bold", 
+              color: 'text.primary',
+              textAlign: 'center',
+              fontFamily: '"Noto Sans KR", sans-serif',
+            }}
           >
-            <KakaoIcon className="mr-2" />
-            카카오 로그인
-          </button>
-          <button
-            type="button"
-            onClick={() => signIn('google', { callbackUrl: '/' })}
-            disabled={isKakaoBrowser}
-            className={`w-full flex items-center justify-center py-3 px-4 rounded-full shadow-md transition duration-200 font-semibold ${
-              isKakaoBrowser
-                ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                : 'bg-red-500 hover:bg-red-600 text-white'
-            }`}
-          >
-            <GoogleIcon className="mr-2" />
-            {isKakaoBrowser ? (
-              <span className="text-sm">
-                구글 로그인 불가 <br />
-                <span className="text-xs">(카카오톡 브라우저 미지원)</span>
-              </span>
-            ) : (
-              '구글 로그인'
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
+            간편 로그인
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Button
+              variant="contained"
+              fullWidth
+              sx={{
+                bgcolor: '#FEE500',
+                '&:hover': { bgcolor: '#FFD700' },
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '10px 20px',
+              }}
+              onClick={() => signIn('kakao', { callbackUrl: '/' })}
+            >
+              <KakaoIcon sx={{ mr: 1 }} />
+              <Typography
+                variant="button"
+                sx={{ fontWeight: 'bold', color: 'inherit' }} // 상속된 컬러 유지
+              >
+                카카오 로그인
+              </Typography>
+            </Button>
+
+            {/* 구글 로그인 버튼 */}
+            <Button
+              variant="contained"
+              fullWidth
+              disabled={isKakaoBrowser}
+              sx={{
+                bgcolor: isKakaoBrowser ? 'grey.400' : 'error.main',
+                '&:hover': { bgcolor: isKakaoBrowser ? 'grey.500' : 'error.dark' },
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '10px 20px',
+                color: isKakaoBrowser ? 'grey.200' : 'white',
+              }}
+              onClick={() => signIn('google', { callbackUrl: '/' })}
+            >
+              <GoogleIcon sx={{ mr: 1 }} />
+              {isKakaoBrowser ? (
+                <Typography variant="body2" sx={{ fontWeight: 'bold', textAlign: 'center' }}>
+                  구글 로그인 불가 <br />
+                  <Typography variant="caption">(카카오톡 브라우저 미지원)</Typography>
+                </Typography>
+              ) : (
+                <Typography variant="button" sx={{ fontWeight: 'bold', color: 'inherit' }}>
+                  구글 로그인
+                </Typography>
+              )}
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
+
+    </Container>
   );
 }
