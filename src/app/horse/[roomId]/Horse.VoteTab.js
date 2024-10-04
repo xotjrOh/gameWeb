@@ -3,12 +3,13 @@
 import { useState, useEffect, memo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateVoteHistory, updateIsVoteLocked } from '@/store/horseSlice';
-import { showToast } from '@/store/toastSlice';
+import { useSnackbar } from 'notistack';
 
 function VoteTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
   const [selectedHorse, setSelectedHorse] = useState('');
   const { horses, statusInfo, rounds, isTimeover } = useSelector((state) => state.horse.gameData);
+  const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
     if (socket) {
@@ -27,22 +28,22 @@ function VoteTab({ roomId, socket, session }) {
 
   const handleVote = () => {
     if (statusInfo.isVoteLocked || isTimeover) {
-      return dispatch(showToast({ message: "더 이상 투표할 수 없습니다.", type: 'error' }));
+      return enqueueSnackbar("더 이상 투표할 수 없습니다.", { variant: 'error' });
     }
 
     if (selectedHorse) {
       socket.emit('horse-vote', { roomId, session, selectedHorse }, (response) => {
         if (response.success) {
-          dispatch(showToast({ message: '투표가 완료되었습니다.', type: 'success' }));
+          enqueueSnackbar('투표가 완료되었습니다.', { variant: 'success' });
           dispatch(updateVoteHistory(response.voteHistory));
           dispatch(updateIsVoteLocked(response.isVoteLocked));
           setSelectedHorse('');
         } else {
-          dispatch(showToast({ message: response.message, type: 'error' }));
+          enqueueSnackbar(response.message, { variant: 'error' });
         }
       });
     } else {
-      dispatch(showToast({ message: '말을 선택해주세요.', type: 'error' }));
+      enqueueSnackbar('말을 선택해주세요.', { variant: 'error' });
     }
   };
 

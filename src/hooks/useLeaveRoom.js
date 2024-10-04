@@ -1,12 +1,13 @@
 import { useEffect } from 'react';
-import { showToast } from '@/store/toastSlice';
+import { useSnackbar } from 'notistack';
 
 function useLeaveRoom(socket, dispatch) {
+  const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
     if (socket) {
       socket.on('room-closed', (response) => {
-        dispatch(showToast({ message: response.message, type: 'info' }));
+        enqueueSnackbar(response.message, { variant: 'info' });
         window.location.replace('/');
       });
     }

@@ -7,15 +7,15 @@ import {
   updatePersonalRounds,
   updateIsBetLocked,
 } from '@/store/horseSlice';
-import { showToast } from '@/store/toastSlice';
+import { useSnackbar } from 'notistack';
 
 function BettingTab({ roomId, socket, session }) {
-
   const dispatch = useDispatch();
   const [bets, setBets] = useState({});
   const { horses, statusInfo, isTimeover } = useSelector(
     (state) => state.horse.gameData
   );
+  const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
     if (socket) {
@@ -44,40 +44,29 @@ function BettingTab({ roomId, socket, session }) {
     if (totalBet <= (statusInfo?.chips || 0)) {
       setBets(newBets);
     } else {
-      dispatch(
-        showToast({
-          message: '보유한 칩보다 많이 베팅할 수 없습니다.',
-          type: 'error',
-        })
-      );
+      enqueueSnackbar('보유한 칩보다 많이 베팅할 수 없습니다.', { variant: 'error' });
     }
   };
 
   const handleBet = () => {
     if (statusInfo.isBetLocked || isTimeover) {
-      return dispatch(
-        showToast({ message: '더이상 베팅할 수 없습니다.', type: 'error' })
-      );
+      return enqueueSnackbar('더이상 베팅할 수 없습니다.', { variant: 'error' });
     }
 
     if (Object.keys(bets).length > 0) {
       socket.emit('horse-bet', { roomId, bets }, (response) => {
         if (response.success) {
-          dispatch(
-            showToast({ message: '베팅이 완료되었습니다.', type: 'success' })
-          );
+          enqueueSnackbar('베팅이 완료되었습니다.', { variant: 'success' });
           dispatch(updateChip(response.remainChips));
           dispatch(updatePersonalRounds(response.personalRounds));
           dispatch(updateIsBetLocked(response.isBetLocked));
           setBets({});
         } else {
-          dispatch(showToast({ message: response.message, type: 'error' }));
+          enqueueSnackbar(response.message, { variant: 'error' });
         }
       });
     } else {
-      dispatch(
-        showToast({ message: '최소 하나의 말에 베팅해주세요.', type: 'error' })
-      );
+      enqueueSnackbar('최소 하나의 말에 베팅해주세요.', { variant: 'error' });
     }
   };
 

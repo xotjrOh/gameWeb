@@ -8,7 +8,7 @@ import { useSocket } from '@/components/provider/SocketProvider';
 import RoomModal from './RoomModal';
 import useCheckVersion from '@/hooks/useCheckVersion';
 import useLoadingReset from '@/hooks/useLoadingReset';
-import { showToast } from '@/store/toastSlice';
+import { useSnackbar } from 'notistack';
 
 const gameTypeMap = {
   horse: '🏇 경마게임',
@@ -21,6 +21,7 @@ export default function GameRooms({ session }) {
   const dispatch = useDispatch();
   const [showModal, setShowModal] = useState(false);
   const { rooms } = useSelector((state) => state.room);
+  const { enqueueSnackbar } = useSnackbar();
 
   useCheckVersion(socket);
   useLoadingReset(socket, dispatch);
@@ -33,12 +34,7 @@ export default function GameRooms({ session }) {
 
   const joinRoom = (roomId, gameType) => {
     if (!socket || !socket.connected) {
-      return dispatch(
-        showToast({
-          message: '서버와 연결이 되어 있지 않습니다. 잠시 후 다시 시도해주세요.',
-          type: 'error',
-        })
-      );
+      return enqueueSnackbar('서버와 연결이 되어 있지 않습니다. 잠시 후 다시 시도해주세요.', { variant: 'error' });
     }
 
     dispatch(setIsLoading(true));
@@ -47,7 +43,7 @@ export default function GameRooms({ session }) {
       { roomId, userName: session.user.name, sessionId: session.user.id },
       (response) => {
         if (!response.success) {
-          dispatch(showToast({ message: response.message, type: 'error' }));
+          enqueueSnackbar(response.message, { variant: 'error' });
         } else {
           if (response.host) router.replace(`/${gameType}/${roomId}/host`);
           else router.replace(`/${gameType}/${roomId}`);

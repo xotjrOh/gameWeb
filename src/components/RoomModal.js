@@ -2,9 +2,9 @@
 
 import { useState, useRef } from 'react';
 import { setIsLoading } from '@/store/loadingSlice';
-import { showToast } from '@/store/toastSlice';
 import FloatingLabelInput from './FloatingLabelInput';
 import FloatingLabelSelect from './FloatingLabelSelect';
+import { useSnackbar } from 'notistack';
 
 // RoomModal 컴포넌트
 export default function RoomModal({ closeModal, socket, router, dispatch, session }) {
@@ -15,6 +15,7 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
   const roomNameRef = useRef(null);
   const gameTypeRef = useRef(null);
   const maxPlayersRef = useRef(null);
+  const { enqueueSnackbar } = useSnackbar();
 
   const createRoom = (e) => {
     e.preventDefault();
@@ -23,7 +24,7 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
       dispatch(setIsLoading(true));
       socket?.emit('create-room', { roomName, userName: session.user.name, gameType, sessionId: session.user.id, maxPlayers: parseInt(maxPlayers) }, (response) => {
         if (!response.success) {
-          dispatch(showToast({ message: response.message, type: 'error' }));
+          enqueueSnackbar(response.message, { variant: 'error' });
           if (response.field === 'roomName') {
             roomNameRef.current?.focus();
           } else if (response.field === 'gameType') {
@@ -37,7 +38,7 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
         dispatch(setIsLoading(false));
       });
     } else {
-      dispatch(showToast({ message: '소켓 연결 대기 중입니다.', type: 'warning' }));
+      enqueueSnackbar('소켓 연결 대기 중입니다.', { variant: 'warning' });
     }
   };
 

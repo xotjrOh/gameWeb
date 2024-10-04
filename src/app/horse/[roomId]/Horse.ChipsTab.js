@@ -4,7 +4,7 @@ import { useEffect, useState, memo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { updatePlayers, updateMemo } from '@/store/horseSlice';
 import useRaceEnd from '@/hooks/useRaceEnd';
-import { showToast } from '@/store/toastSlice';
+import { useSnackbar } from 'notistack';
 
 function ChipsTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
@@ -12,6 +12,7 @@ function ChipsTab({ roomId, socket, session }) {
   const { hasRaceEnded } = useRaceEnd();
   const [memoState, setMemoState] = useState(statusInfo?.memo || []);
   const [debounceTimeouts, setDebounceTimeouts] = useState({});
+  const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
     if (socket) {
@@ -33,7 +34,7 @@ function ChipsTab({ roomId, socket, session }) {
 
   const handleMemoChange = (index, newMemo) => {
     if (newMemo.length > 16) {
-      return dispatch(showToast({ message: '메모는 최대 16자까지 입력할 수 있습니다.', type: 'error' }));
+      return enqueueSnackbar('메모는 최대 16자까지 입력할 수 있습니다.', { variant: 'error' });
     }
 
     const updatedMemo = [...memoState];
@@ -49,7 +50,7 @@ function ChipsTab({ roomId, socket, session }) {
         if (response.success) {
           dispatch(updateMemo({ index, memo: newMemo }));
         } else {
-          dispatch(showToast({ message: response.message || '메모 저장에 실패했습니다.', type: 'error' }));
+          enqueueSnackbar(response.message || '메모 저장에 실패했습니다.', { variant: 'error' });
         }
       });
     }, 600);
@@ -67,7 +68,7 @@ function ChipsTab({ roomId, socket, session }) {
         clearTimeout(debounceTimeouts[index]);
         dispatch(updateMemo({ index, memo: newMemo }));
       } else {
-        dispatch(showToast({ message: response.message || '메모 저장에 실패했습니다.', type: 'error' }));
+        enqueueSnackbar(response.message || '메모 저장에 실패했습니다.', { variant: 'error' });
       }
     });
   };

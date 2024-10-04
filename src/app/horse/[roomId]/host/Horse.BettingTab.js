@@ -7,8 +7,8 @@ import {
   updateIsBetLocked,
   updateIsRoundStarted,
 } from '@/store/horseSlice';
-import { showToast } from '@/store/toastSlice';
 import Modal from '@/components/Modal';
+import { useSnackbar } from 'notistack';
 
 function BettingTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
@@ -19,6 +19,7 @@ function BettingTab({ roomId, socket, session }) {
   const { horses = [], statusInfo, isRoundStarted, isTimeover } = useSelector(
     (state) => state.horse.gameData
   );
+  const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
     if (socket) {
@@ -43,57 +44,39 @@ function BettingTab({ roomId, socket, session }) {
     if (totalBet <= (statusInfo?.chips || 0)) {
       setBets(newBets);
     } else {
-      dispatch(
-        showToast({
-          message: '보유한 칩보다 많이 베팅할 수 없습니다.',
-          type: 'error',
-        })
-      );
+      enqueueSnackbar('보유한 칩보다 많이 베팅할 수 없습니다.', { variant: 'error' });
     }
   };
 
   const handleBet = () => {
     if (statusInfo?.isBetLocked || isTimeover) {
-      return dispatch(
-        showToast({ message: '더 이상 베팅할 수 없습니다.', type: 'error' })
-      );
+      return enqueueSnackbar('더 이상 베팅할 수 없습니다.', { variant: 'error' });
     }
     if (Object.keys(bets).length > 0) {
       socket.emit('horse-bet', { roomId, bets }, (response) => {
         if (response.success) {
-          dispatch(
-            showToast({ message: '베팅이 완료되었습니다.', type: 'success' })
-          );
+          enqueueSnackbar('베팅이 완료되었습니다.', { variant: 'success' });
           dispatch(updateChip(response.remainChips));
           dispatch(updateIsBetLocked(response.isBetLocked));
         } else {
-          dispatch(showToast({ message: response.message, type: 'error' }));
+          enqueueSnackbar(response.message, { variant: 'error' });
         }
       });
     } else {
-      dispatch(
-        showToast({ message: '최소 하나의 말에 베팅해주세요.', type: 'error' })
-      );
+      enqueueSnackbar('최소 하나의 말에 베팅해주세요.', { variant: 'error' });
     }
   };
 
   const assignRoles = () => {
     if (isRoundStarted) {
-      return dispatch(
-        showToast({
-          message: '라운드가 시작된 후에는 역할을 할당할 수 없습니다.',
-          type: 'error',
-        })
-      );
+      return enqueueSnackbar('라운드가 시작된 후에는 역할을 할당할 수 없습니다.', { variant: 'error' });
     }
 
     socket.emit('horse-assign-roles', { roomId }, (response) => {
       if (!response.success) {
-        dispatch(showToast({ message: response.message, type: 'error' }));
+        enqueueSnackbar(response.message, { variant: 'error' });
       } else {
-        dispatch(
-          showToast({ message: '성공적으로 역할이 할당되었습니다.', type: 'success' })
-        );
+        enqueueSnackbar('성공적으로 역할이 할당되었습니다.', { variant: 'success' });
       }
     });
   };
@@ -105,11 +88,9 @@ function BettingTab({ roomId, socket, session }) {
   const confirmStartRound = () => {
     socket.emit('horse-start-round', { roomId, duration }, (response) => {
       if (!response.success) {
-        dispatch(showToast({ message: response.message, type: 'error' }));
+        enqueueSnackbar(response.message, { variant: 'error' });
       } else {
-        dispatch(
-          showToast({ message: '라운드가 성공적으로 시작되었습니다.', type: 'success' })
-        );
+        enqueueSnackbar('라운드가 성공적으로 시작되었습니다.', { variant: 'success' });
         setShowModal({ type: null, visible: false });
         dispatch(updateIsRoundStarted(true));
       }
@@ -118,12 +99,7 @@ function BettingTab({ roomId, socket, session }) {
 
   const openSettingsModal = () => {
     if (isRoundStarted) {
-      return dispatch(
-        showToast({
-          message: '라운드가 시작된 후에는 설정을 변경할 수 없습니다.',
-          type: 'error',
-        })
-      );
+      return enqueueSnackbar('라운드가 시작된 후에는 설정을 변경할 수 없습니다.', { variant: 'error' });
     }
     setShowModal({ type: 'settings', visible: true });
   };
@@ -131,11 +107,9 @@ function BettingTab({ roomId, socket, session }) {
   const confirmSettings = () => {
     socket.emit('horse-update-settings', { roomId, finishLine }, (response) => {
       if (!response.success) {
-        dispatch(showToast({ message: response.message, type: 'error' }));
+        enqueueSnackbar(response.message, { variant: 'error' });
       } else {
-        dispatch(
-          showToast({ message: '설정이 성공적으로 업데이트되었습니다.', type: 'success' })
-        );
+        enqueueSnackbar('설정이 성공적으로 업데이트되었습니다.', { variant: 'success' });
         setShowModal({ type: null, visible: false });
       }
     });
@@ -148,18 +122,16 @@ function BettingTab({ roomId, socket, session }) {
   const confirmNewGame = () => {
     socket.emit('horse-new-game', { roomId }, (response) => {
       if (!response.success) {
-        dispatch(showToast({ message: response.message, type: 'error' }));
+        enqueueSnackbar(response.message, { variant: 'error' });
       } else {
-        dispatch(
-          showToast({ message: '새 게임이 성공적으로 시작되었습니다.', type: 'success' })
-        );
+        enqueueSnackbar('새 게임이 성공적으로 시작되었습니다.', { variant: 'success' });
         // 방 내부 redux값 업데이트
         socket.emit(
           'horse-get-game-data',
           { roomId, sessionId: session.user.id },
           (response) => {
             if (!response.success) {
-              dispatch(showToast({ message: response.message, type: 'error' }));
+              enqueueSnackbar(response.message, { variant: 'error' });
             }
           }
         );
@@ -178,16 +150,11 @@ function BettingTab({ roomId, socket, session }) {
       { roomId, sessionId: session.user.id },
       (response) => {
         if (response.success) {
-          dispatch(
-            showToast({
-              message: '방장이 방을 나갔습니다. 방이 종료되었습니다.',
-              type: 'success',
-            })
-          );
+          enqueueSnackbar('방장이 방을 나갔습니다. 방이 종료되었습니다.', { variant: 'info' });
           setShowModal({ type: null, visible: false });
           window.location.replace('/');
         } else {
-          dispatch(showToast({ message: response.message, type: 'error' }));
+          enqueueSnackbar(response.message, { variant: 'error' });
         }
       }
     );

@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { setIsLoading } from '@/store/loadingSlice';
-import { showToast } from '@/store/toastSlice';
+import { useSnackbar } from 'notistack';
 
 function useLoadingReset(socket, dispatch) {
     const { isLoading } = useSelector((state) => state.loading);
+    const { enqueueSnackbar } = useSnackbar();
 
     useEffect(() => {
         let timeoutId;
@@ -14,7 +15,7 @@ function useLoadingReset(socket, dispatch) {
                     // socket.disconnect();
                     // socket.connect();
                     dispatch(setIsLoading(false));
-                    dispatch(showToast({ message: '서버와 재연결 시도중.. 모달이 열려있다면 닫았다가 다시 시도해주세요.', type: 'error' }));
+                    enqueueSnackbar('서버와 재연결 시도중.. 모달이 열려있다면 닫았다가 다시 시도해주세요.', { variant: 'error' });
                 }
             }, 9000); // 9초 후 타임아웃
         }
