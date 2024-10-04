@@ -5,7 +5,7 @@ import GameRooms from '@/components/GameRooms';
 
 export default async function HomePage() {
   const session = await getServerSession(authOptions);
-
+  
   return (
     <div>
       <Header session={session} />

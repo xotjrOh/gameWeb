@@ -1,8 +1,10 @@
+import { Backdrop, CircularProgress } from '@mui/material';
+
 export default function Loading() {
 
   return (
-    <div className="spinner-container">
-      <div className="spinner"></div>
-    </div>
+    <Backdrop open>
+      <CircularProgress color="inherit" />
+    </Backdrop>
   );
 }

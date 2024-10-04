@@ -1,8 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Header from '@/components/header/Header';
+import {
+  Container,
+  Typography,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  List,
+  ListItem,
+  Box,
+  Paper,
+  Collapse ,
+} from '@mui/material';
 
 const mockRankData = {
   horse: [
@@ -25,78 +38,129 @@ export default function RankingPage() {
   const { data: session } = useSession();
   const [selectedGame, setSelectedGame] = useState('horse');
   const [rankData, setRankData] = useState(mockRankData[selectedGame]);
+  const [visible, setVisible] = useState(true);
 
   const handleGameChange = (e) => {
     const game = e.target.value;
+    setVisible(false); // Fade out
     setSelectedGame(game);
-    setRankData(mockRankData[game]);
   };
+
+  useEffect(() => {
+    if (!visible) {
+      const timer = setTimeout(() => {
+        setRankData(mockRankData[selectedGame]);
+        setVisible(true); // Fade in
+      }, 300); // Duration matches Fade timeout
+      return () => clearTimeout(timer);
+    }
+  }, [visible, selectedGame]);
 
   return (
     <>
       <Header session={session} />
-      <div className="min-h-screen bg-gradient-to-b from-purple-50 to-indigo-100">
-        <div className="container mx-auto px-4 py-8">
-          <h1 className="text-4xl font-extrabold mb-8 text-center text-indigo-700">
+      <Box
+        sx={{
+          minHeight: '100vh',
+          backgroundColor: '#f5f5f5', // 단일 배경색
+          py: 6,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'flex-start', // Align to top to prevent shifting
+        }}
+      >
+        <Container maxWidth="sm">
+          <Typography
+            variant="h4"
+            component="h1"
+            gutterBottom
+            align="center"
+            sx={{ fontWeight: 'bold', color: '#3f51b5' }}
+          >
             🏆 랭킹 순위
-          </h1>
+          </Typography>
 
-          {/* 게임 종류 선택 드롭다운 */}
-          <div className="mb-8 flex justify-center items-center">
-            <label className="mr-4 text-lg font-semibold text-gray-700">
-              게임 선택:
-            </label>
-            {/* gradient 배경색이라 FloatingLabelSelect 는 사용치 않음 */}
-            <select
+          <FormControl fullWidth sx={{ mb: 4 }}>
+            <InputLabel id="game-select-label">게임 선택</InputLabel>
+            <Select
+              labelId="game-select-label"
               value={selectedGame}
               onChange={handleGameChange}
-              className="py-2 px-4 border border-gray-300 rounded-md bg-white text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              label="게임 선택"
+              sx={{ bgcolor: 'white' }}
             >
-              <option value="horse">🐎 경마게임</option>
-              <option value="shuffle">🔀 뒤죽박죽</option>
-            </select>
-          </div>
+              <MenuItem value="horse">🐎 경마게임</MenuItem>
+              <MenuItem value="shuffle">🔀 뒤죽박죽</MenuItem>
+            </Select>
+          </FormControl>
 
-          {/* 랭킹 데이터 카드 형식으로 표시 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {rankData.map((player) => {
-              let cardClass =
-                'bg-white rounded-lg p-6 flex items-center space-x-4 shadow-md hover:shadow-xl transition-shadow duration-300';
-              let rankTextClass = 'text-3xl font-bold';
-              let nameTextClass = 'text-xl font-semibold text-gray-800';
-              let scoreTextClass = 'text-xl flex items-center text-yellow-500';
-              let medal = '';
-
-              if (player.rank === 1) {
-                rankTextClass += ' text-indigo-700';
-                medal = '🥇';
-              } else if (player.rank === 2) {
-                rankTextClass += ' text-indigo-600';
-                medal = '🥈';
-              } else if (player.rank === 3) {
-                rankTextClass += ' text-indigo-500';
-                medal = '🥉';
-              } else {
-                rankTextClass += ' text-indigo-400';
-              }
-
-              return (
-                <div key={player.rank} className={cardClass}>
-                  <div className={rankTextClass}>
-                    {medal || `${player.rank}위`}
-                  </div>
-                  <div className="flex-1">
-                    <h2 className={nameTextClass}>{player.name}</h2>
-                  </div>
-                  <div className={scoreTextClass}>
-                    {player.score} <span className="ml-1">🏆</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+          {/* 순위 리스트 with Fade */}
+          <Collapse  in={visible} timeout={200}>
+            <List>
+              {rankData.map((player) => (
+                <ListItem
+                  key={`${selectedGame}-${player.rank}`}
+                  component={Paper}
+                  elevation={1}
+                  sx={{
+                    backgroundColor: '#ffffff',
+                    borderRadius: '8px',
+                    mb: 2,
+                    boxShadow: 1,
+                    transition: 'box-shadow 0.3s, transform 0.3s',
+                    '&:hover': {
+                      boxShadow: 3,
+                      transform: 'translateY(-2px)',
+                    },
+                    padding: '16px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  {/* 순위 */}
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 'bold',
+                      color: '#3f51b5',
+                      width: '15%',
+                      textAlign: 'left',
+                    }}
+                    aria-label={`Rank ${player.rank}`}
+                  >
+                    {player.rank}위
+                  </Typography>
+                  {/* 이름 */}
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 'bold',
+                      color: '#3f51b5',
+                      width: '60%',
+                      textAlign: 'center',
+                    }}
+                  >
+                    {player.name}
+                  </Typography>
+                  {/* 점수 */}
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 'bold',
+                      color: '#3f51b5',
+                      width: '25%',
+                      textAlign: 'right',
+                    }}
+                  >
+                    {player.score}점
+                  </Typography>
+                </ListItem>
+              ))}
+            </List>
+          </Collapse >
+        </Container>
+      </Box>
     </>
   );
 }
