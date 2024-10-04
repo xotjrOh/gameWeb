@@ -1,25 +1,24 @@
-'use client'
+'use client';
 
 import { useSocket } from '@/components/provider/SocketProvider';
 import { useSelector } from 'react-redux';
+import { Backdrop, CircularProgress } from '@mui/material';
 
 export default function LoadingSpinner() {
-    const { socket } = useSocket();
+  const { socket, isConnected } = useSocket();
 
-    if ( !socket || !socket.connected ) {
-      <div className="spinner-container">
-        <div className="spinner"></div>
-      </div>
-    }
+  // Redux에서 로딩 상태 가져오기
+  const { isLoading } = useSelector((state) => state.loading);
 
-    const { isLoading } = useSelector((state) => state.loading);
-
-    if (!isLoading) return null;
-
+  // 소켓 연결이 안되었거나 로딩 중일 때만 로딩 스피너를 표시
+  if (!isConnected || isLoading) {
     return (
-      <div className="spinner-container">
-        <div className="spinner"></div>
-      </div>
+      <Backdrop open={true} style={{ zIndex: 9999 }}>
+        <CircularProgress color="inherit" />
+      </Backdrop>
     );
   }
-  
+
+  // 로딩 상태가 아니라면 아무것도 렌더링하지 않음
+  return null;
+}

@@ -8,6 +8,7 @@ import { setIsLoading } from '@/store/loadingSlice';
 
 const SocketContext = createContext({
     socket: null,
+    isConnected: false,
 });
 
 export const useSocket = () => {
@@ -17,7 +18,9 @@ export const useSocket = () => {
 export const SocketProvider = ({children}) => {
     const dispatch = useDispatch();
     const [socket, setSocket] = useState(null);
+    const [isConnected, setIsConnected] = useState(false);
   
+    // console.log(socket, socket?.id, socket?.connected, isConnected);
     useEffect(() => {
         // socket이 이미 초기화되어 있는지 확인
         if (socket && socket?.connected) {
@@ -35,12 +38,14 @@ export const SocketProvider = ({children}) => {
 
         newSocket.on('connect', () => {
             setSocket(newSocket);
+            setIsConnected(true);
             newSocket.emit("get-room-list"); // 서버 재시작시 방 없애기위함
             dispatch(setIsLoading(false));
         });
 
         newSocket.on('disconnect', () => {
             console.log("client : disconnect");
+            setIsConnected(false);
             dispatch(setIsLoading(true));
             // setSocket(null);
         });
@@ -97,7 +102,7 @@ export const SocketProvider = ({children}) => {
     }, [socket, socket?.id, dispatch]);
 
     return (
-      <SocketContext.Provider value={{socket}}>
+      <SocketContext.Provider value={{ socket, isConnected }}>
         {children}
       </SocketContext.Provider>
     );
