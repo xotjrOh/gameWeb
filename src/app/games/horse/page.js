@@ -4,8 +4,19 @@ import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import dynamic from 'next/dynamic';
 import Header from '@/components/header/Header';
+import {
+  Container,
+  Typography,
+  Tabs,
+  Tab,
+  Box,
+  Paper,
+  Fade,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material';
 
-// 동적 import로 탭 컴포넌트들을 로드
+// 동적 import로 탭 컴포넌트들을 로드 (코드 스플리팅 유지)
 const OverviewTab = dynamic(() => import('./Rule.OverviewTab'));
 const StatusInfoTab = dynamic(() => import('./Rule.StatusInfoTab'));
 const BettingTab = dynamic(() => import('./Rule.BettingTab'));
@@ -14,67 +25,107 @@ const ChipsTab = dynamic(() => import('./Rule.ChipsTab'));
 const HorsesTab = dynamic(() => import('./Rule.HorsesTab'));
 
 export default function GameRulePage() {
-  const [activeTab, setActiveTab] = useState('overview');
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
+  const [activeTabIndex, setActiveTabIndex] = useState(0);
+  const theme = useTheme();
+
+  // 반응형 디자인을 위한 미디어 쿼리
+  const isXs = useMediaQuery(theme.breakpoints.down('sm')); // 모바일
+  const isSm = useMediaQuery(theme.breakpoints.between('sm', 'md')); // 태블릿
+  // const isMdUp = useMediaQuery(theme.breakpoints.up('md')); // 데스크톱 이상
 
   const tabs = [
-    { key: 'overview',    label: '게임 개요',       icon: '🎮' },
-    { key: 'statusInfo',  label: '내 상태 보기',    icon: '👥' },
-    { key: 'betting',     label: '베팅탭 설명',     icon: '💰' },
-    { key: 'vote',        label: '예측탭 설명',     icon: '🔮' },
-    { key: 'chips',       label: '칩 개수 탭 설명', icon: '🎫' },
-    { key: 'horses',      label: '경주마 탭 설명',  icon: '🏇' },
+    { label: '🎮 게임 개요', component: <OverviewTab /> },
+    { label: '👥 내 상태 보기', component: <StatusInfoTab /> },
+    { label: '💰 베팅탭 설명', component: <BettingTab /> },
+    { label: '🔮 예측탭 설명', component: <VoteTab /> },
+    { label: '🎫 칩 개수 탭 설명', component: <ChipsTab /> },
+    { label: '🏇 경주마 탭 설명', component: <HorsesTab /> },
   ];
 
+  const handleTabChange = (event, selectedTabIndex) => {
+    setActiveTabIndex(selectedTabIndex);
+  };
+
   const renderTabContent = () => {
-    switch (activeTab) {
-      case 'overview':
-        return <OverviewTab />;
-      case 'statusInfo':
-        return <StatusInfoTab />;
-      case 'betting':
-        return <BettingTab />;
-      case 'vote':
-        return <VoteTab />;
-      case 'chips':
-        return <ChipsTab />;
-      case 'horses':
-        return <HorsesTab />;
-      default:
-        return null;
-    }
+    return tabs[activeTabIndex].component;
   };
 
   return (
     <>
       <Header session={session} />
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100">
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl md:text-5xl font-extrabold text-gray-800 mb-4">🏇 경마게임 룰 설명 🏇</h1>
-            <p className="text-lg md:text-2xl text-gray-600">경마게임의 모든 규칙을 쉽게 이해하세요!</p>
-          </div>
+      <Box
+        sx={{
+          minHeight: '100vh',
+          background: 'linear-gradient(to bottom right, #e3f2fd, #ede7f6)', // 배경 그라데이션
+          py: 4, // 상하 패딩 줄이기
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'flex-start', // 내용이 위로 정렬되도록 설정
+        }}
+      >
+        <Container maxWidth="md">
+          {/* 제목 및 설명 */}
+          <Box sx={{ textAlign: 'center', mb: isXs ? 1 : isSm ? 2 : 3 }}>
+            <Typography
+              variant="h4"
+              component="h1"
+              gutterBottom
+              sx={{
+                fontWeight: 'bold',
+                color: theme.palette.primary.main,  // primary 색상 사용
+                fontSize: isXs ? '1.5rem' : isSm ? '2rem' : '2.5rem',
+              }}
+            >
+              🏇 경마게임 룰 설명 🏇
+            </Typography>
+            <Typography
+              variant="subtitle1"
+              sx={{
+                color: theme.palette.text.primary,  // text.primary 색상 사용
+                fontSize: isXs ? '1rem' : isSm ? '1.25rem' : '1.5rem',
+              }}
+            >
+              경마게임의 모든 규칙을 쉽게 이해하세요!
+            </Typography>
+          </Box>
 
-          <div className="flex flex-wrap justify-center gap-4 mb-8">
-            {tabs.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`px-4 py-2 rounded-full font-semibold text-base transition-colors duration-300 ${
-                  activeTab === tab.key
-                    ? 'bg-indigo-600 text-white shadow-lg'
-                    : 'bg-white text-gray-600 hover:bg-indigo-100'
-                }`}
-              >
-                <span className="mr-2">{tab.icon}</span>
-                {tab.label}
-              </button>
-            ))}
-          </div>
+          {/* 탭 전환 */}
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+            <Tabs
+              value={activeTabIndex}
+              onChange={handleTabChange}
+              variant="scrollable"
+              scrollButtons="auto"
+              textColor="primary"
+              indicatorColor="primary"
+              aria-label="게임 룰 탭"
+            >
+              {tabs.map((tab, index) => (
+                <Tab
+                  key={index}
+                  label={tab.label}
+                  id={`tab-${index}`}
+                  aria-controls={`tabpanel-${index}`}
+                />
+              ))}
+            </Tabs>
+          </Box>
 
-          <div className="bg-white rounded-lg shadow-lg p-6">{renderTabContent()}</div>
-        </div>
-      </div>
+          {/* 탭 내용 */}
+          <Fade in={true} timeout={500}>
+            <Paper
+              elevation={3}
+              sx={{
+                padding: 3, // padding: 4에서 padding: 3으로 감소
+                minHeight: '400px', // 레이아웃 쉬프트 방지
+              }}
+            >
+              {renderTabContent()}
+            </Paper>
+          </Fade>
+        </Container>
+      </Box>
     </>
   );
 }
