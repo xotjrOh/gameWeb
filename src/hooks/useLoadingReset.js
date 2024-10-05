@@ -1,11 +1,11 @@
 import { useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { setIsLoading } from '@/store/loadingSlice';
-import { useSnackbar } from 'notistack';
+import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 
 function useLoadingReset(socket, dispatch) {
     const { isLoading } = useSelector((state) => state.loading);
-    const { enqueueSnackbar, closeSnackbar } = useSnackbar();
+    const { enqueueSnackbar } = useCustomSnackbar();
 
     useEffect(() => {
         let timeoutId;

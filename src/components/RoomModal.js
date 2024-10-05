@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import { setIsLoading } from '@/store/loadingSlice';
 import FloatingLabelInput from './FloatingLabelInput';
 import FloatingLabelSelect from './FloatingLabelSelect';
-import { useSnackbar } from 'notistack';
+import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 
 // RoomModal 컴포넌트
 export default function RoomModal({ closeModal, socket, router, dispatch, session }) {
@@ -15,7 +15,7 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
   const roomNameRef = useRef(null);
   const gameTypeRef = useRef(null);
   const maxPlayersRef = useRef(null);
-  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
+  const { enqueueSnackbar } = useCustomSnackbar();
 
   const createRoom = (e) => {
     e.preventDefault();
@@ -24,10 +24,7 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
       dispatch(setIsLoading(true));
       socket?.emit('create-room', { roomName, userName: session.user.name, gameType, sessionId: session.user.id, maxPlayers: parseInt(maxPlayers) }, (response) => {
         if (!response.success) {
-          enqueueSnackbar(response.message, { variant: 'error',
-            onClick: (event, reason, key) => {
-              closeSnackbar(key); // 클릭 시 해당 Snackbar 닫기
-            }, });
+          enqueueSnackbar(response.message, { variant: 'error' });
           if (response.field === 'roomName') {
             roomNameRef.current?.focus();
           } else if (response.field === 'gameType') {

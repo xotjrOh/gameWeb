@@ -8,7 +8,7 @@ import { useSocket } from '@/components/provider/SocketProvider';
 import RoomModal from './RoomModal';
 import useCheckVersion from '@/hooks/useCheckVersion';
 import useLoadingReset from '@/hooks/useLoadingReset';
-import { useSnackbar } from 'notistack';
+import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 
 const gameTypeMap = {
   horse: '🏇 경마게임',
@@ -21,7 +21,7 @@ export default function GameRooms({ session }) {
   const dispatch = useDispatch();
   const [showModal, setShowModal] = useState(false);
   const { rooms } = useSelector((state) => state.room);
-  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
+  const { enqueueSnackbar } = useCustomSnackbar();
 
   useCheckVersion(socket);
   useLoadingReset(socket, dispatch);

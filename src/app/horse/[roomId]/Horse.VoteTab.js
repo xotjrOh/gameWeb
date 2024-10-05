@@ -3,13 +3,13 @@
 import { useState, useEffect, memo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateVoteHistory, updateIsVoteLocked } from '@/store/horseSlice';
-import { useSnackbar } from 'notistack';
+import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 
 function VoteTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
   const [selectedHorse, setSelectedHorse] = useState('');
   const { horses, statusInfo, rounds, isTimeover } = useSelector((state) => state.horse.gameData);
-  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
+  const { enqueueSnackbar } = useCustomSnackbar();
 
   useEffect(() => {
     if (socket) {

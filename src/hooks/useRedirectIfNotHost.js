@@ -4,14 +4,14 @@ import { useSession } from 'next-auth/react';
 import { useDispatch } from 'react-redux';
 import { setIsLoading } from '@/store/loadingSlice';
 import { useSocket } from '@/components/provider/SocketProvider';
-import { useSnackbar } from 'notistack';
+import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 
 const useRedirectIfNotHost = (roomId) => {
   const { socket } = useSocket();
   const router = useRouter();
   const dispatch = useDispatch();
   const { data: session, status } = useSession();
-  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
+  const { enqueueSnackbar } = useCustomSnackbar();
 
   useEffect(() => {
     if (status === 'authenticated' && socket) {

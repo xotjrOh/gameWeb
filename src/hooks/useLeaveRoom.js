@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
-import { useSnackbar } from 'notistack';
+import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 
 function useLeaveRoom(socket, dispatch) {
-  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
+  const { enqueueSnackbar } = useCustomSnackbar();
 
   useEffect(() => {
     if (socket) {

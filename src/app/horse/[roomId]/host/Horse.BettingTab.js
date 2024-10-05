@@ -8,7 +8,7 @@ import {
   updateIsRoundStarted,
 } from '@/store/horseSlice';
 import Modal from '@/components/Modal';
-import { useSnackbar } from 'notistack';
+import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 
 function BettingTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
@@ -19,7 +19,7 @@ function BettingTab({ roomId, socket, session }) {
   const { horses = [], statusInfo, isRoundStarted, isTimeover } = useSelector(
     (state) => state.horse.gameData
   );
-  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
+  const { enqueueSnackbar } = useCustomSnackbar();
 
   useEffect(() => {
     if (socket) {

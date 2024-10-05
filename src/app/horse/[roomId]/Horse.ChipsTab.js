@@ -4,7 +4,7 @@ import { useEffect, useState, memo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { updatePlayers, updateMemo } from '@/store/horseSlice';
 import useRaceEnd from '@/hooks/useRaceEnd';
-import { useSnackbar } from 'notistack';
+import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 
 function ChipsTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
@@ -12,7 +12,7 @@ function ChipsTab({ roomId, socket, session }) {
   const { hasRaceEnded } = useRaceEnd();
   const [memoState, setMemoState] = useState(statusInfo?.memo || []);
   const [debounceTimeouts, setDebounceTimeouts] = useState({});
-  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
+  const { enqueueSnackbar } = useCustomSnackbar();
 
   useEffect(() => {
     if (socket) {

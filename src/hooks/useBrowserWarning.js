@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
-import { useSnackbar } from 'notistack';
+import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 
 const useBrowserWarning = (dispatch) => {
-  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
+  const { enqueueSnackbar } = useCustomSnackbar();
 
   useEffect(() => {
     const userAgent = navigator.userAgent.toLowerCase();

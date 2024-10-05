@@ -7,7 +7,7 @@ import {
   updatePersonalRounds,
   updateIsBetLocked,
 } from '@/store/horseSlice';
-import { useSnackbar } from 'notistack';
+import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 
 function BettingTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
@@ -15,7 +15,7 @@ function BettingTab({ roomId, socket, session }) {
   const { horses, statusInfo, isTimeover } = useSelector(
     (state) => state.horse.gameData
   );
-  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
+  const { enqueueSnackbar } = useCustomSnackbar();
 
   useEffect(() => {
     if (socket) {
