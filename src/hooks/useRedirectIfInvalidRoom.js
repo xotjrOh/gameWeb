@@ -11,7 +11,7 @@ const useRedirectIfInvalidRoom = (roomId) => {
   const router = useRouter();
   const dispatch = useDispatch();
   const { data: session, status } = useSession();
-  const { enqueueSnackbar } = useSnackbar();
+  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
 
   useEffect(() => {
     if (status === 'authenticated' && socket) {

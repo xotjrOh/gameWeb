@@ -5,8 +5,8 @@ import { useSnackbar } from 'notistack';
 
 const useGameData = (roomId, socket, sessionId) => {
   const dispatch = useDispatch();
-  const { enqueueSnackbar } = useSnackbar();
-  
+  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
+
   useEffect(() => {
     if (socket && roomId) {
         socket.on('game-data-update', (data) => {

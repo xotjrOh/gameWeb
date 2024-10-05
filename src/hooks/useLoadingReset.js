@@ -5,7 +5,7 @@ import { useSnackbar } from 'notistack';
 
 function useLoadingReset(socket, dispatch) {
     const { isLoading } = useSelector((state) => state.loading);
-    const { enqueueSnackbar } = useSnackbar();
+    const { enqueueSnackbar, closeSnackbar } = useSnackbar();
 
     useEffect(() => {
         let timeoutId;

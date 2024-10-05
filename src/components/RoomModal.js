@@ -15,7 +15,7 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
   const roomNameRef = useRef(null);
   const gameTypeRef = useRef(null);
   const maxPlayersRef = useRef(null);
-  const { enqueueSnackbar } = useSnackbar();
+  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
 
   const createRoom = (e) => {
     e.preventDefault();
@@ -24,7 +24,10 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
       dispatch(setIsLoading(true));
       socket?.emit('create-room', { roomName, userName: session.user.name, gameType, sessionId: session.user.id, maxPlayers: parseInt(maxPlayers) }, (response) => {
         if (!response.success) {
-          enqueueSnackbar(response.message, { variant: 'error' });
+          enqueueSnackbar(response.message, { variant: 'error',
+            onClick: (event, reason, key) => {
+              closeSnackbar(key); // 클릭 시 해당 Snackbar 닫기
+            }, });
           if (response.field === 'roomName') {
             roomNameRef.current?.focus();
           } else if (response.field === 'gameType') {

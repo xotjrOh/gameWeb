@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useSnackbar } from 'notistack';
 
 function useLeaveRoom(socket, dispatch) {
-  const { enqueueSnackbar } = useSnackbar();
+  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
 
   useEffect(() => {
     if (socket) {

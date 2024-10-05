@@ -12,7 +12,7 @@ function ChipsTab({ roomId, socket, session }) {
   const { hasRaceEnded } = useRaceEnd();
   const [memoState, setMemoState] = useState(statusInfo?.memo || []);
   const [debounceTimeouts, setDebounceTimeouts] = useState({});
-  const { enqueueSnackbar } = useSnackbar();
+  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
 
   useEffect(() => {
     if (socket) {

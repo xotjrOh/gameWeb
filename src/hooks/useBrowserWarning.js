@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useSnackbar } from 'notistack';
 
 const useBrowserWarning = (dispatch) => {
-  const { enqueueSnackbar } = useSnackbar();
+  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
 
   useEffect(() => {
     const userAgent = navigator.userAgent.toLowerCase();

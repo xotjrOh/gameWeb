@@ -14,9 +14,9 @@ export default function RoundResultModal({ socket, roomId }) {
     (state) => state.horse.gameData
   );
 
-  useEffect(()=>{
-    console.log(results, hasRaceEnded, statusInfo, positions);
-  }, [results, hasRaceEnded, statusInfo, positions])
+  // useEffect(()=>{
+  //   console.log(results, hasRaceEnded, statusInfo, positions);
+  // }, [results, hasRaceEnded, statusInfo, positions])
 
   useOutsideClick(resultPopupRef, () => setIsOpen(false));
 

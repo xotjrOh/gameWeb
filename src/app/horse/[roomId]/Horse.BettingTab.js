@@ -15,7 +15,7 @@ function BettingTab({ roomId, socket, session }) {
   const { horses, statusInfo, isTimeover } = useSelector(
     (state) => state.horse.gameData
   );
-  const { enqueueSnackbar } = useSnackbar();
+  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
 
   useEffect(() => {
     if (socket) {

@@ -9,7 +9,7 @@ function VoteTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
   const [selectedHorse, setSelectedHorse] = useState('');
   const { horses, statusInfo, rounds, isTimeover } = useSelector((state) => state.horse.gameData);
-  const { enqueueSnackbar } = useSnackbar();
+  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
 
   useEffect(() => {
     if (socket) {

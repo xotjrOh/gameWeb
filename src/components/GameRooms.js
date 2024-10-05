@@ -21,7 +21,7 @@ export default function GameRooms({ session }) {
   const dispatch = useDispatch();
   const [showModal, setShowModal] = useState(false);
   const { rooms } = useSelector((state) => state.room);
-  const { enqueueSnackbar } = useSnackbar();
+  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
 
   useCheckVersion(socket);
   useLoadingReset(socket, dispatch);
