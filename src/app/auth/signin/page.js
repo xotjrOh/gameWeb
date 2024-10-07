@@ -31,6 +31,7 @@ export default function SignInPage() {
         backgroundPosition: 'center',
         position: 'relative',
       }}
+      maxWidth={false}
     >
       {/* 어두운 오버레이 */}
       <Box

@@ -1,41 +1,71 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import LogOutBtn from "@/components/LogOutBtn";
-import useOutsideClick from '@/hooks/useOutsideClick';
+import { useState } from 'react';
+import { signOut } from 'next-auth/react'
+import { Box, IconButton, Menu, MenuItem, Backdrop, ListItemIcon } from '@mui/material';
+import AccountCircle from '@mui/icons-material/AccountCircle';
+import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 
 export default function UserDropdown({ session }) {
-  const [userDropdown, setUserDropdown] = useState(false);
-  const menuRef = useRef(null);
+  const [anchorEl, setAnchorEl] = useState(null); // 사용자 드롭다운 상태
 
-  const toggleUserDropdown = () => {
-    setUserDropdown(!userDropdown);
-  };
-  const closeDropdowns = () => {
-    setUserDropdown(false);
+  // 사용자 메뉴 열기/닫기
+  const handleMenuOpen = (event) => {
+    setAnchorEl(event.currentTarget);
   };
 
-  useOutsideClick(menuRef, closeDropdowns);
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
 
   return (
-    <div>
-      {userDropdown && <div className="fixed inset-0 bg-black opacity-30 z-40"></div>}
-      <div ref={menuRef} className="relative z-50">
-        <button onClick={toggleUserDropdown} className={`text-black text-lg cursor-pointer p-2 hover:bg-gray-200 rounded yeogieottae-font`}>
-          {session?.user?.name}
-        </button>
-        {userDropdown && (
-          <div className="absolute right-0 bg-white border rounded shadow-lg z-10">
-            <ul className="text-left">
-              <li className="px-4 py-2 hover:bg-gray-200 cursor-not-allowed whitespace-nowrap">프로필</li>
-              <li className="px-4 py-2 hover:bg-gray-200 cursor-not-allowed whitespace-nowrap">설정</li>
-              <li className="cursor-pointer hover:bg-red-500 hover:text-white whitespace-nowrap">
-                <LogOutBtn className="px-4 py-2 w-full h-full" />
-              </li>
-            </ul>
-          </div>
-        )}
-      </div>
-    </div>
+    <Box>
+      {anchorEl && <Backdrop open={Boolean(anchorEl)} sx={{ zIndex: 40 }} />}
+
+      <IconButton
+        size="large"
+        edge="end"
+        aria-label="사용자 계정을 관리하는 버튼"
+        aria-controls="menu-appbar"
+        aria-haspopup="true"
+        onClick={handleMenuOpen}
+        color="inherit"
+      >
+        <AccountCircle />
+      </IconButton>
+      
+      <Menu
+        id="menu-appbar"
+        anchorEl={anchorEl}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        keepMounted
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+      >
+        {/* <MenuItem onClick={handleMenuClose}>프로필</MenuItem>
+        <MenuItem onClick={handleMenuClose}>내 계정</MenuItem> */}
+        <MenuItem
+          onClick={() => signOut()}
+          sx={{
+            '&:hover': {
+              backgroundColor: 'red', // 호버 시 붉은색 배경
+              color: 'white', // 텍스트 색상 변경
+            },
+          }}
+        >
+          <ListItemIcon>
+            <ExitToAppIcon sx={{ color: 'inherit' }} /> {/* 나가는 문 아이콘 */}
+          </ListItemIcon>
+          로그아웃
+        </MenuItem>
+      </Menu>
+    </Box>
   );
 }

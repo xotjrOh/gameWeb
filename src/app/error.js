@@ -21,6 +21,7 @@ export default function Error({ error, reset }) {
         textAlign: 'center',
         padding: 2, // 여백 조정
       }}
+      maxWidth={false}
     >
       <Box
         sx={{

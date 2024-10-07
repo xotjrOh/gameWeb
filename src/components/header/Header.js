@@ -1,12 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import UserDropdown from "@/components/UserDropdown";
-import Hamburger from "@/components/Hamburger";
 import { useDispatch } from 'react-redux';
 import { useSocket } from '@/components/provider/SocketProvider';
 import { setIsLoading } from '@/store/loadingSlice';
+import { AppBar, Box, Toolbar, IconButton, Button } from '@mui/material';
+import HomeIcon from '@mui/icons-material/Home';
 import { signIn } from "next-auth/react";
+import Hamburger from "@/components/Hamburger";
+import UserDropdown from "@/components/UserDropdown";
 
 export default function Header({ session }) {
   const dispatch = useDispatch();
@@ -20,24 +22,29 @@ export default function Header({ session }) {
   }
 
   return (
-    <div className="flex justify-between items-center p-2 bg-white text-black shadow-md">
-      <div className="flex items-center space-x-4">
-        <Link href="/" prefetch={false} onClick={handleClick} className="z-[9999]">
-          <span className="text-xl font-bold cursor-pointer p-2 hover:bg-gray-200 rounded-full">G</span>
-        </Link>
-        <Hamburger />
-      </div>
-      {/* 세션이 없으면 로그인 버튼을, 세션이 있으면 UserDropdown을 표시 */}
-      {session ? (
-        <UserDropdown session={session} />
-      ) : (
-        <button 
-          onClick={() => signIn()}  // 로그인 버튼 클릭 시 로그인 페이지로 이동
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
-        >
-          로그인
-        </button>
-      )}
-    </div>
+    <Box sx={{ flexGrow: 1 }}>
+      <AppBar position="static" sx={{ backgroundColor: 'white', color: 'black' }}>
+        <Toolbar sx={{ justifyContent: 'space-between' }}>
+          {/* 웹사이트 로고 */}
+          <Link href="/" prefetch={false} onClick={handleClick}>
+            <IconButton edge="start" color="inherit" aria-label="home" sx={{ mr: 2 }}>
+              <HomeIcon />
+            </IconButton>
+          </Link>
+
+          {/* 햄버거 메뉴 */}
+          <Box sx={{ flexGrow: 1 }}>
+            <Hamburger />
+          </Box>
+
+          {/* 세션이 있을 때: 사용자 드롭다운, 없을 때: 로그인 버튼 */}
+          {session ? (
+            <UserDropdown />
+          ) : (
+            <Button color="inherit" onClick={() => signIn()}>로그인</Button>
+          )}
+        </Toolbar>
+      </AppBar>
+    </Box>
   );
 }

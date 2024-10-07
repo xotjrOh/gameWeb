@@ -1,71 +1,113 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-// import useOutsideClick from '@/hooks/안되는파일'
-import useOutsideClick from '@/hooks/useOutsideClick';
+import { IconButton, Box, Menu, MenuItem, Backdrop } from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import ArrowRightIcon from '@mui/icons-material/ArrowRight';
 
 export default function Hamburger() {
-  const [hamburgerDropdown, setHamburgerDropdown] = useState(false);
-  const [isSubmenuOpen, setIsSubmenuOpen] = useState(false);
-  const menuRef = useRef(null);
+  const [anchorEl, setAnchorEl] = useState(null); // 햄버거 메뉴
+  const [submenuAnchorEl, setSubmenuAnchorEl] = useState(null); // '게임 소개' 서브메뉴
 
-  const toggleHamburgerDropdown = () => {
-    setHamburgerDropdown(!hamburgerDropdown);
-  };
-  const handleMouseLeave = (e) => {
-    const anotherMenu = e.relatedTarget.classList.contains('menu');
-    if (anotherMenu) {
-      setIsSubmenuOpen(false);
-    }
-  };
-  const closeDropdowns = () => {
-    setHamburgerDropdown(false);
-    setIsSubmenuOpen(false);
+  const handleMenuOpen = (event) => {
+    setAnchorEl(event.currentTarget);
   };
 
-  useOutsideClick(menuRef, closeDropdowns);
+  const handleSubmenuOpen = (event) => {
+    setSubmenuAnchorEl(event.currentTarget);
+  };
+
+  const closeMenus = () => {
+    setAnchorEl(null);
+    setSubmenuAnchorEl(null);
+  };
+
+  const handleSubmenuClose = () => {
+    setSubmenuAnchorEl(null);
+  };
 
   return (
-    <div>
-      {hamburgerDropdown && <div className="fixed inset-0 bg-black opacity-30 z-40"></div>}
-      <div ref={menuRef} className="relative z-50">
-        <button onClick={toggleHamburgerDropdown} className="text-lg cursor-pointer p-2 hover:bg-gray-200 rounded-full">
-          ☰
-        </button>
-        {hamburgerDropdown && (
-          <div className="absolute w-48 bg-white border rounded shadow-lg">
-            <Link href="/rankings">
-              <span className="menu block px-4 py-2 text-black hover:bg-gray-100">랭크 순위</span>
-            </Link>
-            <Link href="/settings" onClick={(e) => e.preventDefault()}>
-              <span className="menu block px-4 py-2 text-black hover:bg-gray-100 cursor-not-allowed">게임 설정</span>
-            </Link>
-            <div className="relative">
-              <button
-                onMouseEnter={() => setIsSubmenuOpen(true)}
-                onMouseLeave={handleMouseLeave}
-                className="menu block px-4 py-2 text-black hover:bg-gray-100 w-full text-left"
-              >
-                게임 소개
-                <span className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                  ▶
-                </span>
-              </button>
-              {isSubmenuOpen && (
-                <div className="absolute top-0 left-full mt-0 w-48 bg-white border rounded shadow-lg">
-                  <Link href="/games/horse">
-                    <span className="block px-4 py-2 text-black hover:bg-gray-100">🐎 경마게임</span>
-                  </Link>
-                  <Link href="/games/shuffle">
-                    <span className="block px-4 py-2 text-black hover:bg-gray-100">🔀 뒤죽박죽</span>
-                  </Link>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+    <Box>
+      {anchorEl && <Backdrop open={Boolean(anchorEl)} sx={{ zIndex: 40 }} />}
+
+      <IconButton onClick={handleMenuOpen} sx={{ fontSize: '1.25rem' }}>
+        <MenuIcon />
+      </IconButton>
+
+      {/* 햄버거 메뉴 */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={closeMenus}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'left',
+        }}
+      >
+        {/* 메뉴 아이템 */}
+        <MenuItem
+          component={Link}
+          href="/rankings"
+          onMouseEnter={handleSubmenuClose}
+        >
+          랭크 순위
+        </MenuItem>
+        {/* <MenuItem
+          component={Link}
+          href="/settings"
+          onMouseEnter={handleSubmenuClose}
+          disabled
+        >
+          게임 설정
+        </MenuItem> */}
+
+        {/* '게임 소개' 메뉴 */}
+        <MenuItem
+          onMouseEnter={handleSubmenuOpen}
+        >
+          게임 소개
+          <ArrowRightIcon />
+        </MenuItem>
+      </Menu>
+
+      {/* '게임 소개' 서브메뉴 */}
+      <Menu
+        anchorEl={submenuAnchorEl}
+        open={Boolean(submenuAnchorEl)}
+        onClose={handleSubmenuClose}
+        anchorOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'left',
+        }}
+        slotProps={{
+          root: {
+            sx: {
+              pointerEvents: 'none',  // 부모 요소가 클릭 이벤트를 차단하지 않도록 설정
+            },
+          },
+          paper: {
+            sx: { 
+              pointerEvents: 'auto'
+            },
+          },
+        }}
+      >
+        <MenuItem component={Link} href="/games/horse">
+          🐎 경마게임
+        </MenuItem>
+        <MenuItem component={Link} href="/games/shuffle">
+          🔀 뒤죽박죽
+        </MenuItem>
+      </Menu>
+    </Box>
   );
 }
