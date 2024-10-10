@@ -8,6 +8,9 @@ import { indigo, grey, red } from '@mui/material/colors'; // 색상 객체 임�
 
 const theme = createTheme({
   palette: {
+    background: {
+      default: '#f0f2f5', // 원하는 배경색으로 변경
+    },
     primary: {
       main: indigo[700], // indigo[700]으로 설정
       dark: indigo[800],
@@ -16,10 +19,18 @@ const theme = createTheme({
       main: indigo[600], // 필요 시 변경
     },
     text: {
-      primary: grey[700], // 본문 텍스트 색상 설정
+      primary: '#212121',  // 기본 텍스트 색상 수정
+      secondary: '#757575',  // 보조 텍스트 색상 수정
+    },
+    info: {
+      light: '#e3f2fd',
+      main: '#64b5f6',
+      dark: '#1976d2',
     },
     error: {
+      light: '#ffebee',
       main: red[500], // 오류 텍스트 색상 설정
+      dark: '#ba000d',
     },
   },
   typography: {

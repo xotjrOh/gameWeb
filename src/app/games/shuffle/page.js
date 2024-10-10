@@ -1,46 +1,62 @@
 'use client';
 
-import { useRouter } from 'next/navigation';  // router를 사용하기 위한 import
+import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { Button, Typography, Container, Paper } from '@mui/material';
 import Header from '@/components/header/Header';
+import ConstructionIcon from '@mui/icons-material/Construction'; // 공사중 아이콘
 
 export default function ShuffleGame() {
-  const { data: session, status } = useSession();
-  const router = useRouter();  // router 인스턴스 생성
+  const { data: session } = useSession();
+  const router = useRouter();
 
   const handleGoHome = () => {
-    router.push('/');  // 홈으로 이동
-    socket?.emit('get-room-list');
+    router.push('/');
+    // socket?.emit('get-room-list'); // socket 관련 코드가 필요하다면 추가하세요.
   };
 
   return (
     <>
-        <Header session={session} />
-        <div className="flex flex-col items-center justify-center h-screen bg-blue-50">
-        <h1 className="text-4xl font-extrabold text-gray-800 mb-4 animate-bounce">
-            아직 게임이 준비되지 않았습니다.
-        </h1>
-        <p className="text-lg text-gray-600 mb-6">
-            개발 중입니다! 조금만 기다려 주세요. 🙏
-        </p>
-        <div className="flex items-center space-x-4">
-            <div className="p-2 bg-yellow-300 rounded-full animate-spin-slow">
-            🚧
-            </div>
-            <p className="text-sm text-gray-600">
-            재미있는 게임이 곧 준비됩니다!
-            </p>
-        </div>
-        <div className="mt-10">
-            <button
+      <Header session={session} />
+      <Container maxWidth="sm">
+        <Paper elevation={3} sx={{ padding: 4, marginTop: 8, textAlign: 'center' }}>
+          {/* 공사 중 아이콘 */}
+          <ConstructionIcon color="action" sx={{ fontSize: 60, mb: 2 }} />
+
+          {/* 제목 */}
+          <Typography variant="h4" component="h1" color="textPrimary" sx={{ fontWeight: 'bold', mb: 2 }}>
+            게임 준비 중입니다.
+          </Typography>
+
+          {/* 설명 문구 */}
+          <Typography variant="body1" color="textSecondary" sx={{ mb: 4 }}>
+            현재 이 게임은 개발 중입니다.<br/>
+            곧 재미있는 게임으로 찾아뵙겠습니다!
+          </Typography>
+
+          {/* 홈으로 돌아가기 버튼 */}
+          <Button
+            variant="contained"
+            color="primary"
             onClick={handleGoHome}
-            className="px-6 py-3 bg-yellow-400 text-gray-800 rounded-full shadow-lg hover:bg-yellow-500 transform transition-transform duration-500 ease-in-out hover:rotate-12 hover:scale-110"
-            style={{ fontSize: '18px' }} // 글자 크기는 고정
-            >
+            sx={{
+              px: 4,
+              py: 1.5,
+              borderRadius: '8px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              textTransform: 'none',
+              boxShadow: 2,
+              '&:hover': {
+                boxShadow: 4,
+                bgcolor: 'primary.dark',
+              },
+            }}
+          >
             홈으로 돌아가기
-            </button>
-        </div>
-        </div>
+          </Button>
+        </Paper>
+      </Container>
     </>
   );
 }
