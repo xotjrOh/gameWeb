@@ -27,8 +27,8 @@ export default function GameRooms({ session }) {
   useLoadingReset(socket, dispatch);
 
   const closeModal = () => {
-    socket.disconnect();
-    socket.connect();
+    // socket.disconnect();
+    // socket.connect();
     setShowModal(false);
   };
 

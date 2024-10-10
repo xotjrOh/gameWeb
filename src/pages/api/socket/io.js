@@ -58,13 +58,13 @@ const ioHandler = (req, res) => {
         //   return callback({ success: false, message: '방을 만들기 위해서는 오태석에게 문의하세요.' });
         // }
         if (!roomName) {
-          return callback({ success: false, message: '방이름을 정해주세요.', field:"roomName" });
+          return callback({ success: false, message: '방이름을 정해주세요.' });
         }
         if (!gameType) {
-          return callback({ success: false, message: '게임종류를 정해주세요.', field:"gameType" });
+          return callback({ success: false, message: '게임종류를 정해주세요.' });
         }
         if (!Number.isInteger(maxPlayers) || maxPlayers < 1) {
-          return callback({ success: false, message: '최대 플레이어 수는 1 이상의 정수여야 합니다.', field:"maxPlayers" });
+          return callback({ success: false, message: '최대 플레이어 수는 1 이상의 정수여야 합니다.' });
         }
         // **다른 방에서 이미 sessionId가 있는지 체크**
         for (const [otherRoomId, otherRoom] of Object.entries(rooms)) {

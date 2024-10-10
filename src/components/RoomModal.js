@@ -1,98 +1,105 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { setIsLoading } from '@/store/loadingSlice';
-import FloatingLabelInput from './FloatingLabelInput';
-import FloatingLabelSelect from './FloatingLabelSelect';
+import { useForm } from 'react-hook-form';
+import { TextField, Button, Select, MenuItem, InputLabel, FormControl, Backdrop, IconButton, Box, Typography } from '@mui/material';
+import { Close as CloseIcon } from '@mui/icons-material';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
+import { setIsLoading } from '@/store/loadingSlice';
 
-// RoomModal 컴포넌트
 export default function RoomModal({ closeModal, socket, router, dispatch, session }) {
-  const [roomName, setRoomName] = useState('');
-  const [gameType, setGameType] = useState('horse');
-  const [maxPlayers, setMaxPlayers] = useState('');
-  // 각각의 ref 정의
-  const roomNameRef = useRef(null);
-  const gameTypeRef = useRef(null);
-  const maxPlayersRef = useRef(null);
   const { enqueueSnackbar } = useCustomSnackbar();
 
-  const createRoom = (e) => {
-    e.preventDefault();
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    defaultValues: {
+      roomName: '',
+      gameType: 'horse',
+      maxPlayers: '',
+    },
+  });
 
-    if (socket && socket.connected && socket.id) {
-      dispatch(setIsLoading(true));
-      socket?.emit('create-room', { roomName, userName: session.user.name, gameType, sessionId: session.user.id, maxPlayers: parseInt(maxPlayers) }, (response) => {
-        if (!response.success) {
-          enqueueSnackbar(response.message, { variant: 'error' });
-          if (response.field === 'roomName') {
-            roomNameRef.current?.focus();
-          } else if (response.field === 'gameType') {
-            gameTypeRef.current?.focus();
-          } else if (response.field === 'maxPlayers') {
-            maxPlayersRef.current?.focus();
-          }
-        } else {
-          router.replace(`/${gameType}/${response.roomId}/host`);
-        }
-        dispatch(setIsLoading(false));
-      });
-    } else {
-      enqueueSnackbar('소켓 연결 대기 중입니다.', { variant: 'warning' });
+  const onSubmit = (data) => {
+    if (!socket || !socket.connected || !socket.id) {
+      return enqueueSnackbar('소켓 연결 대기 중입니다.', { variant: 'warning' });
     }
+
+    dispatch(setIsLoading(true));
+    socket.emit('create-room', { ...data, userName: session.user.name, sessionId: session.user.id }, (response) => {
+      if (!response.success) {
+        enqueueSnackbar(response.message, { variant: 'error' });
+        return dispatch(setIsLoading(false));
+      }
+
+      router.replace(`/${data.gameType}/${response.roomId}/host`);
+      dispatch(setIsLoading(false));
+    });
   };
 
-  // 숫자가 아닌 문자는 입력되지 않도록 처리
-  const handleMaxPlayersChange = (e) => {
-    const { value } = e.target;
-    const rNumericString = /^\d*$/;
-    
-    if (rNumericString.test(value)) {
-      setMaxPlayers(value);
-    }
-  };
+  useHideScroll();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+    <Box sx={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', px: 2 }}> 
       {/* 어두운 배경 */}
-      <div className="fixed inset-0 bg-black opacity-50" onClick={closeModal}></div>
+      <Backdrop open={true} onClick={closeModal} />
       
       {/* 모달 내용 */}
-      <div className="bg-white p-6 rounded-lg shadow-lg z-10 w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4 text-indigo-600">방 만들기</h2>
+      <Box sx={{ backgroundColor: 'white', p: 4, borderRadius: 2, boxShadow: 24, zIndex: 10, width: '80%', maxWidth: 400, position: 'relative' }}>
+        <IconButton className="absolute top-4 right-4" onClick={closeModal}>
+          <CloseIcon />
+        </IconButton>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 4 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Typography variant="h5" color="primary" fontWeight="bold">방 만들기</Typography>
+          </Box>
+        </Box>
 
         {/* 방 이름 입력 */}
-        <FloatingLabelInput
+        <TextField
           label="방 이름"
-          value={roomName}
-          onChange={(e) => setRoomName(e.target.value)}
-          inputRef={roomNameRef}
+          {...register('roomName', { required: '방 이름을 입력해주세요.' })}
+          error={!!errors.roomName}
+          helperText={errors.roomName?.message}
+          fullWidth
+          variant="outlined"
+          margin="normal"
         />
 
-        <FloatingLabelSelect
-          label="게임 종류"
-          value={gameType}
-          onChange={(e) => setGameType(e.target.value)}
-          selectRef={gameTypeRef}  // **ref 추가**
-          options={[
-            { value: 'horse', label: '🏇경마게임' },
-          ]}
-        />
+        {/* 게임 종류 선택 */}
+        <FormControl fullWidth margin="normal">
+          <InputLabel id="game-type-label">게임 종류</InputLabel>
+          <Select
+            labelId="game-type-label"
+            defaultValue="horse" MenuProps={{ PaperProps: { style: { maxHeight: 200, overflowY: 'auto' } } }}
+            {...register('gameType', { required: '게임 종류가 미설정된 상태입니다.' })}
+            label="게임 종류"
+          >
+            <MenuItem value="horse">🏇경마게임</MenuItem>
+          </Select>
+        </FormControl>
 
-        {/* 최대 인원 입력 / number type은 오작동으로 사용안함 */}
-        <FloatingLabelInput
-          label="최대 인원"
+        {/* 최대 인원 입력 */}
+        <TextField label="최대 인원"
           type="text"
-          value={maxPlayers}
-          onChange={handleMaxPlayersChange}
-          inputRef={maxPlayersRef}
+          {...register('maxPlayers', { required: '최대 인원을 입력해주세요.', valueAsNumber: true })}
+          error={!!errors.maxPlayers}
+          helperText={errors.maxPlayers?.message}
+          fullWidth
+          variant="outlined"
+          margin="normal"
+          onInput={(e) => {
+            e.target.value = e.target.value.replace(/[^0-9]/g, '');
+          }}
         />
 
         {/* 방 만들기 버튼 */}
-        <button onClick={createRoom} className="bg-indigo-500 text-white px-4 py-2 rounded w-full transition-transform duration-300 hover:scale-105">
+        <Button onClick={handleSubmit(onSubmit)}
+          variant="contained"
+          color="primary"
+          fullWidth
+          sx={{ mt: 2 }}
+        >
           방 만들기
-        </button>
-      </div>
-    </div>
+        </Button>
+      </Box>
+    </Box>
   );
 }
