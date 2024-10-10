@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { TextField, Button, Select, MenuItem, InputLabel, FormControl, Backdrop, IconButton, Box, Typography } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
+import { useHideScroll } from '@/hooks/useHideScroll';
 import { setIsLoading } from '@/store/loadingSlice';
 
 export default function RoomModal({ closeModal, socket, router, dispatch, session }) {

@@ -1,4 +1,5 @@
 'use client';
+// todo : bettingTab에서 대체 이후. 해당 파일 삭제 예정
 
 import { useRef } from 'react';
 import ReactDOM from 'react-dom';
