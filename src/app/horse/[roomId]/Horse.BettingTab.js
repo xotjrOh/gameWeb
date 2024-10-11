@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect, memo, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   updateChip,
@@ -15,6 +15,7 @@ import {
   Slider,
   Typography,
   Paper,
+  TextField,
 } from '@mui/material';
 
 function BettingTab({ roomId, socket, session }) {
@@ -24,6 +25,7 @@ function BettingTab({ roomId, socket, session }) {
     (state) => state.horse.gameData
   );
   const { enqueueSnackbar } = useCustomSnackbar();
+  const betButtonRef = useRef(false);
 
   useEffect(() => {
     if (socket) {
@@ -57,6 +59,12 @@ function BettingTab({ roomId, socket, session }) {
   };
 
   const handleBet = () => {
+    if (betButtonRef.current) return;
+    betButtonRef.current = true;
+    setTimeout(() => {
+      betButtonRef.current = false;
+    }, 500); // 0.5초 동안 버튼 비활성화
+
     if (statusInfo.isBetLocked || isTimeover) {
       return enqueueSnackbar('더이상 베팅할 수 없습니다.', { variant: 'error' });
     }
@@ -82,20 +90,17 @@ function BettingTab({ roomId, socket, session }) {
     <Box sx={{ mt: 4 }}>
       {/* 베팅 섹션 */}
       <Paper elevation={3} sx={{ p: 4, textAlign: 'center' }}>
-        <Box display="flex" justifyContent="center" alignItems="baseline">
+        <Box display="flex" justifyContent="space-between" alignItems="baseline">
           <Typography variant="h5" color="primary" fontWeight="bold">
             베팅
           </Typography>
-          <Typography variant="body2" color="textSecondary" ml={2}>
-            (남은 칩 개수 : {statusInfo?.chips || 0})
+          <Typography variant="body2" color="textSecondary">
+            남은 칩 개수: {statusInfo?.chips || 0}
           </Typography>
         </Box>
-        <Typography color="error" variant="body2" mt={1}>
-          칩은 초기화되지 않으니 아껴서 베팅해주세요.
-        </Typography>
 
-        <Typography variant="caption" color="textSecondary" align="right" sx={{ display: 'block' }}>
-          수정 불가능<br/>복수 베팅 가능
+        <Typography variant="caption" color="textSecondary" align="right" sx={{ display: 'block', mt: 1 }}>
+          수정 불가능 · 복수 베팅 가능
         </Typography>
 
         {/* 말 베팅 섹션 */}
@@ -106,9 +111,6 @@ function BettingTab({ roomId, socket, session }) {
                 <Typography variant="h6" fontWeight="bold" mb={1}>
                   {horse}
                 </Typography>
-                <Typography variant="body2" color="textSecondary" mb={1}>
-                  베팅 칩 : {bets[horse] || 0}
-                </Typography>
                 <Slider
                   value={bets[horse] || 0}
                   min={0}
@@ -118,22 +120,32 @@ function BettingTab({ roomId, socket, session }) {
                   valueLabelDisplay="auto"
                   sx={{ mt: 2 }}
                 />
+                <TextField
+                  type="number"
+                  value={bets[horse] || ''}
+                  onChange={(e) => handleBetChange(horse, e.target.value)}
+                  disabled={statusInfo.isBetLocked || isTimeover}
+                  sx={{ mt: 2, width: '100%' }}
+                  label="베팅 칩"
+                  variant="outlined"
+                  InputProps={{ inputProps: { min: 0, max: statusInfo?.chips || 0 } }}
+                />
               </Paper>
             </Grid>
           ))}
         </Grid>
-
-        <Button
-          variant="contained"
-          color={statusInfo.isBetLocked || isTimeover ? 'inherit' : 'success'}
-          onClick={handleBet}
-          fullWidth
-          sx={{ mt: 3 }}
-          disabled={statusInfo.isBetLocked || isTimeover}
-        >
-          {statusInfo.isBetLocked && !isTimeover ? '베팅되었습니다' : '베팅하기'}
-        </Button>
       </Paper>
+
+      {/* 고정된 베팅 버튼 */}
+      <Button
+        variant="contained"
+        color={statusInfo.isBetLocked || isTimeover ? 'inherit' : 'success'}
+        onClick={handleBet}
+        sx={{ position: 'fixed', bottom: 16, left: 16, right: 16, zIndex: 1000 }}
+        disabled={statusInfo.isBetLocked || isTimeover}
+      >
+        {statusInfo.isBetLocked && !isTimeover ? '베팅되었습니다' : '베팅하기'}
+      </Button>
 
       {/* 베팅 내역 섹션 */}
       <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
@@ -156,7 +168,7 @@ function BettingTab({ roomId, socket, session }) {
                     {bet.horse}
                   </Typography>
                   <Typography variant="body2" color="textSecondary">
-                    칩 : {bet.chips}
+                    칩: {bet.chips}
                   </Typography>
                 </Paper>
               ))}
