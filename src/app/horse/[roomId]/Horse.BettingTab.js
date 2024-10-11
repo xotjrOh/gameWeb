@@ -141,7 +141,15 @@ function BettingTab({ roomId, socket, session }) {
         variant="contained"
         color={statusInfo.isBetLocked || isTimeover ? 'inherit' : 'success'}
         onClick={handleBet}
-        sx={{ position: 'fixed', bottom: 16, left: 16, right: 16, zIndex: 1000 }}
+        sx={{ 
+          position: 'fixed',
+          bottom: 16,
+          left: 16,
+          right: 16,
+          zIndex: 1000,
+          height: '36px', // 버튼 높이 증가
+          fontSize: '1rem', // 글자 크기 증가
+        }}
         disabled={statusInfo.isBetLocked || isTimeover}
       >
         {statusInfo.isBetLocked && !isTimeover ? '베팅되었습니다' : '베팅하기'}
