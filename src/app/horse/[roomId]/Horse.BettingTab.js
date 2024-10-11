@@ -8,6 +8,14 @@ import {
   updateIsBetLocked,
 } from '@/store/horseSlice';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
+import {
+  Box,
+  Button,
+  Grid2 as Grid,
+  Slider,
+  Typography,
+  Paper,
+} from '@mui/material';
 
 function BettingTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
@@ -71,99 +79,96 @@ function BettingTab({ roomId, socket, session }) {
   };
 
   return (
-    <div className="space-y-6">
+    <Box sx={{ mt: 4 }}>
       {/* 베팅 섹션 */}
-      <div className="text-center bg-white p-4 md:p-6 rounded-lg shadow-lg">
-        <div className="flex justify-center items-baseline">
-          <h2 className="text-xl md:text-2xl font-bold text-indigo-600">
+      <Paper elevation={3} sx={{ p: 4, textAlign: 'center' }}>
+        <Box display="flex" justifyContent="center" alignItems="baseline">
+          <Typography variant="h5" color="primary" fontWeight="bold">
             베팅
-          </h2>
-          <p className="text-sm text-gray-500 ml-2">
+          </Typography>
+          <Typography variant="body2" color="textSecondary" ml={2}>
             (남은 칩 개수 : {statusInfo?.chips || 0})
-          </p>
-        </div>
-        <p className="text-red-500 text-sm md:text-base">
-          칩은 리필되지 않으니 아껴서 베팅해주세요. <br />
-          베팅 후 수정은 불가능합니다.
-        </p>
+          </Typography>
+        </Box>
+        <Typography color="error" variant="body2" mt={1}>
+          칩은 초기화되지 않으니 아껴서 베팅해주세요.
+        </Typography>
 
-        {/* 그리드 컬럼을 1로 설정하여 한 줄에 하나씩 표시 */}
-        <div className="grid grid-cols-1 gap-4 md:gap-6 mt-4">
+        <Typography variant="caption" color="textSecondary" align="right" sx={{ display: 'block' }}>
+          수정 불가능<br/>복수 베팅 가능
+        </Typography>
+
+        {/* 말 베팅 섹션 */}
+        <Grid container spacing={2} mt={1}>
           {horses.map((horse) => (
-            <div
-              key={horse}
-              className="flex flex-col items-center bg-indigo-50 p-3 md:p-4 rounded-lg shadow-md"
-            >
-              <label className="font-semibold text-base md:text-lg mb-2">
-                {horse}
-              </label>
-              {/* 칩 개수 표시를 슬라이더 위로 이동 */}
-              <p className="text-gray-700 text-sm md:text-base mb-2">
-                베팅 칩 : {bets[horse] || 0}
-              </p>
-              {/* 슬라이더 */}
-              <input
-                type="range"
-                min="0"
-                max={statusInfo?.chips || 0}
-                value={bets[horse] || 0}
-                onChange={(e) => handleBetChange(horse, e.target.value)}
-                disabled={statusInfo.isBetLocked || isTimeover}
-                className="w-full h-6 appearance-none bg-gray-200 rounded-full outline-none slider-thumb"
-              />
-            </div>
+            <Grid size={{ xs: 12 }} key={horse}>
+              <Paper elevation={2} sx={{ p: 3, textAlign: 'center', backgroundColor: 'background.card' }}>
+                <Typography variant="h6" fontWeight="bold" mb={1}>
+                  {horse}
+                </Typography>
+                <Typography variant="body2" color="textSecondary" mb={1}>
+                  베팅 칩 : {bets[horse] || 0}
+                </Typography>
+                <Slider
+                  value={bets[horse] || 0}
+                  min={0}
+                  max={statusInfo?.chips || 0}
+                  onChange={(e, value) => handleBetChange(horse, value)}
+                  disabled={statusInfo.isBetLocked || isTimeover}
+                  valueLabelDisplay="auto"
+                  sx={{ mt: 2 }}
+                />
+              </Paper>
+            </Grid>
           ))}
-        </div>
+        </Grid>
 
-        <button
+        <Button
+          variant="contained"
+          color={statusInfo.isBetLocked || isTimeover ? 'inherit' : 'success'}
           onClick={handleBet}
-          className={`mt-4 md:mt-6 px-4 md:px-6 py-2 rounded-lg text-white font-semibold text-sm md:text-base w-full
-                ${
-                  statusInfo.isBetLocked || isTimeover
-                    ? 'bg-gray-500'
-                    : 'bg-green-500 hover:bg-green-600'
-                }`}
+          fullWidth
+          sx={{ mt: 3 }}
           disabled={statusInfo.isBetLocked || isTimeover}
         >
-          베팅하기
-        </button>
-      </div>
+          {statusInfo.isBetLocked && !isTimeover ? '베팅되었습니다' : '베팅하기'}
+        </Button>
+      </Paper>
 
       {/* 베팅 내역 섹션 */}
-      <div className="bg-white p-4 md:p-6 rounded-lg shadow-lg">
-        <h3 className="text-lg md:text-xl font-bold mb-4 text-indigo-600">
+      <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
+        <Typography variant="h6" color="primary" fontWeight="bold" mb={2}>
           내 베팅 내역
-        </h3>
+        </Typography>
         {statusInfo.rounds && statusInfo.rounds.length > 0 ? (
           statusInfo.rounds.map((round, roundIndex) => (
-            <div key={roundIndex} className="mb-4 md:mb-6">
-              <h4 className="text-base md:text-lg font-semibold mb-2">
+            <Box key={roundIndex} mb={3}>
+              <Typography variant="subtitle1" fontWeight="bold" mb={1}>
                 라운드 {roundIndex + 1}
-              </h4>
-              <div className="space-y-2">
-                {round.map((bet, betIndex) => (
-                  <div
-                    key={betIndex}
-                    className="flex justify-between items-center p-2 md:p-3 bg-indigo-50 rounded-lg shadow-sm border border-gray-300"
-                  >
-                    <span className="font-medium text-base md:text-lg">
-                      {bet.horse}
-                    </span>
-                    <span className="text-gray-600 text-sm md:text-base">
-                      칩 : {bet.chips}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
+              </Typography>
+              {round.map((bet, betIndex) => (
+                <Paper
+                  key={betIndex}
+                  elevation={1}
+                  sx={{ p: 2, mb: 1, display: 'flex', justifyContent: 'space-between', backgroundColor: 'background.card' }}
+                >
+                  <Typography variant="body1" fontWeight="medium">
+                    {bet.horse}
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    칩 : {bet.chips}
+                  </Typography>
+                </Paper>
+              ))}
+            </Box>
           ))
         ) : (
-          <p className="text-center text-gray-500 text-sm md:text-base">
+          <Typography variant="body2" color="textSecondary" textAlign="center">
             아직 베팅 기록이 없습니다.
-          </p>
+          </Typography>
         )}
-      </div>
-    </div>
+      </Paper>
+    </Box>
   );
 }
 

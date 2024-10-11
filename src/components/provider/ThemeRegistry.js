@@ -10,6 +10,7 @@ const theme = createTheme({
   palette: {
     background: {
       default: '#f0f2f5', // 원하는 배경색으로 변경
+      card: '#f0f4ff',
     },
     primary: {
       main: indigo[700], // indigo[700]으로 설정
