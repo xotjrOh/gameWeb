@@ -143,7 +143,7 @@ export default function GameRooms({ session }) {
                 <CardContent>
                   <Grid container spacing={2} alignItems="center">
                     {/* 좌측 정보 */}
-                    <Grid item size={{ xs: 12, sm: 8, md: 9 }}>
+                    <Grid size={{ xs: 12, sm: 8, md: 9 }}>
                       <Stack direction="row" alignItems="center" spacing={2}>
                         <Avatar sx={{ bgcolor: 'primary.main' }}>
                           {gameTypeIconMap[room.gameType]}
@@ -170,7 +170,7 @@ export default function GameRooms({ session }) {
                     </Grid>
 
                     {/* 우측 상태 및 인원수 */}
-                    <Grid item size={{ xs: 12, sm: 4, md: 3 }}>
+                    <Grid size={{ xs: 12, sm: 4, md: 3 }}>
                       <Stack direction="column" alignItems="flex-end">
                         <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mb: 1 }}>
                           <PeopleIcon fontSize="small" />
@@ -224,7 +224,7 @@ export default function GameRooms({ session }) {
                 <CardContent>
                   <Grid container spacing={2} alignItems="center">
                     {/* 좌측 정보 */}
-                    <Grid item size={{ xs: 12, sm: 8, md: 9 }}>
+                    <Grid size={{ xs: 12, sm: 8, md: 9 }}>
                       <Stack direction="row" alignItems="center" spacing={2}>
                         <Avatar sx={{ bgcolor: 'error.main' }}>
                           {gameTypeIconMap[room.gameType]}
@@ -251,7 +251,7 @@ export default function GameRooms({ session }) {
                     </Grid>
 
                     {/* 우측 상태 및 인원수 */}
-                    <Grid item size={{ xs: 12, sm: 4, md: 3 }}>
+                    <Grid size={{ xs: 12, sm: 4, md: 3 }}>
                       <Stack direction="column" alignItems="flex-end">
                         <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mb: 1 }}>
                           <PeopleIcon fontSize="small" />
