@@ -11,7 +11,7 @@ import BettingTab from './Horse.BettingTab';
 import VoteTab from './Horse.VoteTab';
 import ChipsTab from './Horse.ChipsTab';
 import HorsesTab from '@/components/horse/HorsesTab';
-import RoundResultModal from './Horse.RoundResultModal';
+import RoundResultModal from '@/components/horse/RoundResultModal';
 import GameEndModal from '@/components/horse/GameEndModal';
 import useRedirectIfNotHost from '@/hooks/useRedirectIfNotHost';
 import { useSocket } from '@/components/provider/SocketProvider';
