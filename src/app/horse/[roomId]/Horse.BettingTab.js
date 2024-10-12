@@ -60,7 +60,7 @@ function BettingTab({ roomId, socket, session }) {
   };
 
   return (
-    <Box sx={{ mt: 4 }}>
+    <Box sx={{ mt: 2, pb: 8 }}>
       {/* 베팅 섹션 */}
       <BettingSection
         horses={horses}
@@ -69,6 +69,9 @@ function BettingTab({ roomId, socket, session }) {
         statusInfo={statusInfo}
         isTimeover={isTimeover}
       />
+
+      {/* 베팅 내역 섹션 */}
+      <BetHistory rounds={statusInfo.rounds} />
 
       {/* 베팅 요약 섹션 */}
       <Box sx={{ position: 'fixed', bottom: 64, left: 16, right: 16, zIndex: 1000, textAlign: 'center', color: 'grey.600' }}>
@@ -93,11 +96,8 @@ function BettingTab({ roomId, socket, session }) {
         }}
         disabled={statusInfo.isBetLocked || isTimeover}
       >
-        {statusInfo.isBetLocked && !isTimeover ? '베팅되었습니다' : '베팅하기'}
+        {statusInfo.isBetLocked && !isTimeover ? '베팅하였습니다' : '베팅하기'}
       </Button>
-
-      {/* 베팅 내역 섹션 */}
-      <BetHistory statusInfo={statusInfo} />
     </Box>
   );
 }

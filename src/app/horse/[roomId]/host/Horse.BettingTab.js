@@ -56,7 +56,7 @@ function BettingTab({ roomId, socket, session }) {
   };
 
   return (
-    <div>
+    <Box sx={{ mt: 2, pb: 8 }}>
       {/* 상단 관리자용 버튼들 */}
       <AdminButtons 
         roomId={roomId}
@@ -100,7 +100,7 @@ function BettingTab({ roomId, socket, session }) {
       >
         {statusInfo.isBetLocked && !isTimeover ? '베팅되었습니다' : '베팅하기'}
       </Button>
-    </div>
+    </Box>
   );
 }
 

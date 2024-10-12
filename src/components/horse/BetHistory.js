@@ -1,13 +1,14 @@
 import { Box, Paper, Typography } from '@mui/material';
 
-function BetHistory({ statusInfo }) {
+function BetHistory({ rounds }) {
+
     return (
       <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
         <Typography variant="h6" color="primary" fontWeight="bold" mb={2}>
           내 베팅 내역
         </Typography>
-        {statusInfo.rounds && statusInfo.rounds.length > 0 ? (
-          statusInfo.rounds.map((round, roundIndex) => (
+        {rounds && rounds.length > 0 ? (
+          rounds.map((round, roundIndex) => (
             <Box key={roundIndex} mb={3}>
               <Typography variant="subtitle1" fontWeight="bold" mb={1}>
                 라운드 {roundIndex + 1}

@@ -11,27 +11,33 @@ const theme = createTheme({
     background: {
       default: '#f0f2f5', // 원하는 배경색으로 변경
       card: '#f0f4ff',
+      success: '#e8f5e9',
+      fail: '#ffffff',
+    },
+    border: {
+      success: '#4caf50',
+      fail: '#e2e8f0',
     },
     primary: {
-      main: indigo[700], // indigo[700]으로 설정
-      dark: indigo[800],
+      main: indigo[500], // indigo[700]으로 설정
+      dark: indigo[700],
     },
     secondary: {
       main: indigo[600], // 필요 시 변경
     },
     text: {
-      primary: '#212121',  // 기본 텍스트 색상 수정
-      secondary: '#757575',  // 보조 텍스트 색상 수정
+      primary: '#333333',  // 기본 텍스트 색상 수정
+      secondary: '#666666',  // 보조 텍스트 색상 수정
     },
     info: {
-      light: '#e3f2fd',
-      main: '#64b5f6',
-      dark: '#1976d2',
+      light: '#bbdefb', // 밝은 파란색
+      main: '#64b5f6', // 기본 파란색
+      dark: '#1976d2', // 어두운 파란색
     },
     error: {
-      light: '#ffebee',
-      main: red[500], // 오류 텍스트 색상 설정
-      dark: '#ba000d',
+      light: '#ffcdd2', // 밝은 빨간색
+      main: red[500], // 기본 빨간색
+      dark: '#d32f2f', // 어두운 빨간색
     },
   },
   typography: {
