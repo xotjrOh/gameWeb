@@ -17,7 +17,7 @@ import { useSession } from 'next-auth/react';
 import useUpdateSocketId from '@/hooks/useUpdateSocketId';
 import useGameData from '@/hooks/useGameData';
 import RoundResultModal from './Horse.RoundResultModal';
-import GameEndModal from './Horse.GameEndModal';
+import GameEndModal from '@/components/horse/GameEndModal';
 import useCheckVersion from '@/hooks/useCheckVersion';
 import useLeaveRoom from '@/hooks/useLeaveRoom';
 
