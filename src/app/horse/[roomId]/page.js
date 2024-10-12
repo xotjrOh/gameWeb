@@ -9,7 +9,7 @@ import TimerDisplay from '@/components/TimerDisplay';
 import BettingTab from './Horse.BettingTab';
 import VoteTab from './Horse.VoteTab';
 import ChipsTab from './Horse.ChipsTab';
-import HorsesTab from './Horse.HorsesTab';
+import HorsesTab from '@/components/horse/HorsesTab';
 import MyStatusButton from '@/components/horse/MyStatusButton';
 import useRedirectIfInvalidRoom from '@/hooks/useRedirectIfInvalidRoom';
 import { useSocket } from '@/components/provider/SocketProvider';
