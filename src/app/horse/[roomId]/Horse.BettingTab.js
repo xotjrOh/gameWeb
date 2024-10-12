@@ -119,6 +119,13 @@ function BettingTab({ roomId, socket, session }) {
         </Grid>
       </Paper>
 
+      {/* 베팅 요약 섹션 */}
+      <Box sx={{ position: 'fixed', bottom: 64, left: 16, right: 16, zIndex: 1000, textAlign: 'center', color: 'grey.600' }}>
+        <Typography variant="body2">
+          현재 베팅: {Object.keys(bets).length > 0 ? horses.map(horse => bets[horse] ? `${horse}: ${bets[horse]}` : null).filter(Boolean).join(', ') : '베팅 내역 없음'}
+        </Typography>
+      </Box>
+      
       {/* 고정된 베팅 버튼 */}
       <Button
         variant="contained"
