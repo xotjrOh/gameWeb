@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, memo, useRef } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   updateChip,
@@ -25,7 +25,6 @@ function BettingTab({ roomId, socket, session }) {
     (state) => state.horse.gameData
   );
   const { enqueueSnackbar } = useCustomSnackbar();
-  const betButtonRef = useRef(false);
 
   useEffect(() => {
     if (socket) {
@@ -59,12 +58,6 @@ function BettingTab({ roomId, socket, session }) {
   };
 
   const handleBet = () => {
-    if (betButtonRef.current) return;
-    betButtonRef.current = true;
-    setTimeout(() => {
-      betButtonRef.current = false;
-    }, 500); // 0.5초 동안 버튼 비활성화
-
     if (statusInfo.isBetLocked || isTimeover) {
       return enqueueSnackbar('더이상 베팅할 수 없습니다.', { variant: 'error' });
     }
@@ -107,9 +100,9 @@ function BettingTab({ roomId, socket, session }) {
         <Grid container spacing={2} mt={1}>
           {horses.map((horse) => (
             <Grid size={{ xs: 12 }} key={horse}>
-              <Paper elevation={2} sx={{ p: 3, textAlign: 'center', backgroundColor: 'background.card' }}>
-                <Typography variant="h6" fontWeight="bold" mb={1}>
-                  {horse}
+              <Paper elevation={2} sx={{ p: 2, textAlign: 'center', backgroundColor: 'background.card', position: 'relative', overflow: 'hidden' }}>
+                <Typography variant="h1" color="grey" fontWeight="bold" sx={{ opacity: 0.1, position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '5rem', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
+                  {horse} {bets[horse] || ''}
                 </Typography>
                 <Slider
                   value={bets[horse] || 0}
@@ -118,17 +111,7 @@ function BettingTab({ roomId, socket, session }) {
                   onChange={(e, value) => handleBetChange(horse, value)}
                   disabled={statusInfo.isBetLocked || isTimeover}
                   valueLabelDisplay="auto"
-                  sx={{ mt: 2 }}
-                />
-                <TextField
-                  type="number"
-                  value={bets[horse] || ''}
-                  onChange={(e) => handleBetChange(horse, e.target.value)}
-                  disabled={statusInfo.isBetLocked || isTimeover}
-                  sx={{ mt: 2, width: '100%' }}
-                  label="베팅 칩"
-                  variant="outlined"
-                  InputProps={{ inputProps: { min: 0, max: statusInfo?.chips || 0 } }}
+                  sx={{ mt: 1.5 }}
                 />
               </Paper>
             </Grid>
