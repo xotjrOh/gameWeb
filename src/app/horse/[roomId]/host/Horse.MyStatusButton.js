@@ -24,7 +24,7 @@ export default function MyStatusButton({ roomId, socket, session }) {
             <h3 className="text-lg md:text-2xl font-bold mb-1 text-indigo-700">내 상태</h3>
             <p className="text-sm md:text-base">익명 이름: 호스트</p>
             <p className="text-sm md:text-base">내 경주마: 없음</p>
-            <p className="text-sm md:text-base">남은 칩 개수: 20</p>
+            <p className="text-sm md:text-base">남은 칩 개수: 0</p>
             <button
               onClick={() => setShowStatus(false)}
               className="mt-4 bg-indigo-500 text-white py-2 px-3 rounded text-xs md:text-sm lg:text-lg transition-transform duration-300 hover:scale-105"
