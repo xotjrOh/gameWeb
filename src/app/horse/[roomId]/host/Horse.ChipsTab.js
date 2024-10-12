@@ -3,6 +3,12 @@
 import { useEffect, memo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { updatePlayers } from '@/store/horseSlice';
+import {
+  Box,
+  Typography,
+  Paper,
+  Divider,
+} from '@mui/material';
 
 function ChipsTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
@@ -24,19 +30,25 @@ function ChipsTab({ roomId, socket, session }) {
   }, [socket?.id, dispatch]);
 
   return (
-    <div className="bg-white p-4 md:p-6 rounded-lg shadow-lg">
-      <div className="flex items-baseline mb-2">
-        <h2 className="text-xl md:text-2xl font-bold text-indigo-600">칩 개수</h2>
-      </div>
-      <ul className="mt-4 space-y-2">
+    <Paper elevation={3} sx={{ p: { xs: 4, md: 6 }, mt: 2 }}>
+      <Typography variant="h5" color="primary" fontWeight="bold">
+        칩 개수
+      </Typography>
+      {/* 플레이어 목록 */}
+      <Box sx={{ mt: 2 }}>
         {players.map((player, index) => (
-          <li key={index} className="py-2 border-b">
-            <span className="text-sm md:text-base">{player.dummyName}: {player.chips.toString().padStart(2, '0')}개</span>
-            <span className="ml-2 text-xs md:text-sm text-gray-700">({player.horse}, {player.name}{player.isSolo ? ', 솔로' : ''}, {player.socketId})</span>
-          </li>
+          <Box key={index} sx={{ py: 1 }}>
+            <Typography variant="body1">
+              {player.dummyName}: {player.chips.toString().padStart(2, '0')}개
+              <Typography variant="caption" component="span" sx={{ ml: 1, color: 'text.secondary' }}>
+                ({player.horse}, {player.name}{player.isSolo ? ', 솔로' : ''}, {player.socketId})
+              </Typography>
+            </Typography>
+            {index < players.length - 1 && <Divider />}
+          </Box>
         ))}
-      </ul>
-    </div>
+      </Box>
+    </Paper>
   );
 }
 
