@@ -93,8 +93,11 @@ export default function MyStatusButton({ roomId, socket, session }) {
             </Typography>
             {statusInfo?.isSolo && (
               <Typography variant="body2" color="textSecondary" mt={2}>
-                당신은 팀원이 없는 솔로 플레이어입니다. 혼자서 베팅 정보를 모아
-                예측에 성공하면 칩을 더 많이 얻을 수 있습니다!
+                당신은 팀원이 없는 솔로 플레이어입니다.<br/>
+                당신에게는 2가지 혜택이 주어집니다.<br/>
+                1. 예측으로 얻는 보상이 증가합니다.<br/> (2개 {'->'} 5개)<br/>
+                2. '경주마'탭의 '라운드별 현황'에서<br/>
+                혼자만 베팅 개수를 확인할 수 있습니다.
               </Typography>
             )}
             <Button

@@ -43,7 +43,7 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
       <Backdrop open={true} onClick={closeModal} />
       
       {/* 모달 내용 */}
-      <Box sx={{ backgroundColor: 'background.default', p: 4, borderRadius: 2, boxShadow: 24, zIndex: 10, width: '80%', maxWidth: 400, position: 'relative' }}>
+      <Box sx={{ backgroundColor: 'background.card', p: 4, borderRadius: 2, boxShadow: 24, zIndex: 10, width: '80%', maxWidth: 400, position: 'relative' }}>
         <IconButton 
           sx={{ position: 'absolute', top: 16, right: 16 }} 
           onClick={closeModal}
@@ -65,6 +65,9 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
           fullWidth
           variant="outlined"
           margin="normal"
+          sx={{
+            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+          }}
         />
 
         {/* 게임 종류 선택 */}
@@ -75,6 +78,9 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
             defaultValue="horse" MenuProps={{ PaperProps: { style: { maxHeight: 200, overflowY: 'auto' } } }}
             {...register('gameType', { required: '게임 종류가 미설정된 상태입니다.' })}
             label="게임 종류"
+            sx={{
+              backgroundColor: 'rgba(255, 255, 255, 0.8)',
+            }}
           >
             <MenuItem value="horse">🏇경마게임</MenuItem>
           </Select>
@@ -91,6 +97,9 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
           margin="normal"
           onInput={(e) => {
             e.target.value = e.target.value.replace(/[^0-9]/g, '');
+          }}
+          sx={{
+            backgroundColor: 'rgba(255, 255, 255, 0.8)',
           }}
         />
 

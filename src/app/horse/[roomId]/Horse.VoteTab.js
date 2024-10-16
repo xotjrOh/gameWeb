@@ -69,9 +69,9 @@ function VoteTab({ roomId, socket, session }) {
 
       {/* 보너스 안내 */}
       {statusInfo.isSolo && (
-        <Paper elevation={3} sx={{ backgroundColor: 'success.light', p: 4, mt: 4, }}>
-          <Typography variant="body2" sx={{ color: 'success.dark', fontWeight: 'bold' }}>
-            솔로 플레이어는 투표에 성공할 경우 5개의 칩이 추가됩니다!
+        <Paper elevation={3} sx={{ backgroundColor: 'background.default', p: 4, mt: 4, }}>
+          <Typography variant="body2" sx={{ color: 'success.light', fontWeight: 'bold' }}>
+            솔로 플레이어는 예측에 성공할 경우 5개의 칩이 추가됩니다!
           </Typography>
         </Paper>
       )}

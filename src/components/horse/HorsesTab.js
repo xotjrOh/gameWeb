@@ -13,7 +13,7 @@ import { usePathname } from 'next/navigation';
 import useRaceEnd from '@/hooks/useRaceEnd';
 
 function HorsesTab({ roomId, socket, session }) {
-  const { positions, finishLine, rounds, players } = useSelector(
+  const { positions, finishLine, rounds, players, statusInfo } = useSelector(
     (state) => state.horse.gameData
   );
   const { hasRaceEnded } = useRaceEnd();
@@ -124,9 +124,18 @@ function HorsesTab({ roomId, socket, session }) {
 
       {/* 라운드별 경주마 현황 */}
       <Box mt={3}>
-        <Typography variant="h6" color="primary" fontWeight="bold" mb={4}>
+        <Typography variant="h6" color="primary" fontWeight="bold" mb={2}>
           라운드별 경주마 현황
         </Typography>
+        {(statusInfo.isSolo) && (
+          <Typography
+            variant="caption"
+            color="textSecondary"
+            fontWeight="bold"
+          >
+            여기서의 칩 개수는 솔로 플레이어에게만 보입니다.
+          </Typography>
+        )}
         {rounds && rounds.length > 0 ? (
           rounds.map((round, roundIndex) => (
             <Box key={roundIndex} mb={6}>
@@ -156,7 +165,7 @@ function HorsesTab({ roomId, socket, session }) {
                       >
                         전진: {bet.progress}
                       </Typography>
-                      {(hasRaceEnded || isHost) && (
+                      {(hasRaceEnded || isHost || statusInfo.isSolo) && (
                         <Typography
                           variant="body2"
                           color="textSecondary"
