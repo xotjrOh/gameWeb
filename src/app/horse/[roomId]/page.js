@@ -54,7 +54,7 @@ export default function HorseGamePage({ params }) {
 
   // 탭 정보 배열 정의
   const tabs = [
-    { label: '베팅' },
+    { label: '베팅', showIcon: statusInfo && !statusInfo.isBetLocked },
     { label: '예측', showIcon: statusInfo && !statusInfo.isVoteLocked },
     { label: '칩 개수' },
     { label: '경주마' },
