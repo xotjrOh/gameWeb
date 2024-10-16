@@ -2,11 +2,14 @@
 
 import { useState } from 'react';
 import { signOut } from 'next-auth/react'
+import { useDispatch } from 'react-redux';
+import { setIsLoading } from '@/store/loadingSlice';
 import { Box, IconButton, Menu, MenuItem, Backdrop, ListItemIcon } from '@mui/material';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 
 export default function UserDropdown({ session }) {
+  const dispatch = useDispatch();
   const [anchorEl, setAnchorEl] = useState(null); // 사용자 드롭다운 상태
 
   // 사용자 메뉴 열기/닫기
@@ -16,6 +19,13 @@ export default function UserDropdown({ session }) {
 
   const handleMenuClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleSignOut = () => {
+    dispatch(setIsLoading(true));
+    signOut().finally(() => {
+      dispatch(setIsLoading(false));
+    });
   };
 
   return (
@@ -52,7 +62,7 @@ export default function UserDropdown({ session }) {
         {/* <MenuItem onClick={handleMenuClose}>프로필</MenuItem>
         <MenuItem onClick={handleMenuClose}>내 계정</MenuItem> */}
         <MenuItem
-          onClick={() => signOut()}
+          onClick={handleSignOut}
           sx={{
             '&:hover': {
               backgroundColor: 'red', // 호버 시 붉은색 배경
