@@ -23,14 +23,20 @@ export default function Header({ session }) {
 
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <AppBar position="static" sx={{ backgroundColor: 'white', color: 'black' }}>
+      <AppBar position="static" sx={{ backgroundColor: 'background.default', color: 'black' }}>
         <Toolbar sx={{ justifyContent: 'space-between' }}>
           {/* 웹사이트 로고 */}
-          <Link href="/" prefetch={false} onClick={handleClick}>
-            <IconButton edge="start" color="inherit" aria-label="home" sx={{ mr: 2 }}>
-              <HomeIcon />
-            </IconButton>
-          </Link>
+          <IconButton
+            edge="start"
+            aria-label="home"
+            sx={{ mr: 2 }}
+            component={Link}
+            href="/"
+            prefetch={false}
+            onClick={handleClick}
+          >
+            <HomeIcon sx={{ color: 'black' }} />
+          </IconButton>
 
           {/* 햄버거 메뉴 */}
           <Box sx={{ flexGrow: 1 }}>

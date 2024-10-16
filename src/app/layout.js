@@ -6,7 +6,6 @@ import { SocketProvider } from '@/components/provider/SocketProvider';
 import ToastProvider from "@/components/provider/ToastProvider";
 
 import LoadingSpinner from "@/components/LoadingSpinner";
-import './toast.css';
 
 export const metadata = {
   title: "게임 웹",

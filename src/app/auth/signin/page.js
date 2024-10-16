@@ -44,25 +44,26 @@ export default function SignInPage() {
 
       {/* 룰 설명 버튼 */}
       <Box sx={{ position: 'absolute', top: 16, right: 16, zIndex: 50 }}>
-        <Link href="/games/horse" prefetch={false}>
-          <Button
-            variant="contained"
-            color="primary"
-            sx={{
-              py: 1,
-              px: 2,
-              fontWeight: 'bold',
-              borderRadius: '50px',
-              boxShadow: 3,
-              transition: '0.2s',
-              '&:hover': {
-                transform: 'scale(1.05)',
-              },
-            }}
-          >
-            룰 설명 보기
-          </Button>
-        </Link>
+        <Button
+          variant="contained"
+          color="primary"
+          component={Link}
+          href="/games/horse"
+          prefetch={false}
+          sx={{
+            py: 1,
+            px: 2,
+            fontWeight: 'bold',
+            borderRadius: '50px',
+            boxShadow: 3,
+            transition: '0.2s',
+            '&:hover': {
+              transform: 'scale(1.05)',
+            },
+          }}
+        >
+          룰 설명 보기
+        </Button>
       </Box>
 
       <Card

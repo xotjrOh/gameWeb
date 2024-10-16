@@ -44,7 +44,10 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
       
       {/* 모달 내용 */}
       <Box sx={{ backgroundColor: 'white', p: 4, borderRadius: 2, boxShadow: 24, zIndex: 10, width: '80%', maxWidth: 400, position: 'relative' }}>
-        <IconButton className="absolute top-4 right-4" onClick={closeModal}>
+        <IconButton 
+          sx={{ position: 'absolute', top: 16, right: 16 }} 
+          onClick={closeModal}
+        >
           <CloseIcon />
         </IconButton>
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 4 }}>
