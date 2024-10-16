@@ -62,7 +62,7 @@ export default function RankingPage() {
       <Box
         sx={{
           minHeight: '100vh',
-          backgroundColor: '#f5f5f5', // 단일 배경색
+          backgroundColor: 'background.default', // 단일 배경색
           py: 6,
           display: 'flex',
           justifyContent: 'center',

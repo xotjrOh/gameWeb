@@ -57,7 +57,7 @@ export default function GameRulePage() {
       <Box
         sx={{
           minHeight: '100vh',
-          background: 'linear-gradient(to bottom right, #e3f2fd, #ede7f6)', // 배경 그라데이션
+          background: 'background.default', // 배경 그라데이션
           py: 4, // 상하 패딩 줄이기
           display: 'flex',
           justifyContent: 'center',

@@ -23,7 +23,7 @@ export default function Header({ session }) {
 
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <AppBar position="static" sx={{ backgroundColor: 'background.default', color: 'black' }}>
+      <AppBar position="static" elevation={0} sx={{ backgroundColor: 'background.default', color: 'black' }}>
         <Toolbar sx={{ justifyContent: 'space-between' }}>
           {/* 웹사이트 로고 */}
           <IconButton

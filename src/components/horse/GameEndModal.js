@@ -49,7 +49,6 @@ export default function GameEndModal({ socket, roomId }) {
       open={isOpen}
       onClose={() => setIsOpen(false)}
       aria-labelledby="game-end-modal-title"
-      aria-describedby="game-end-modal-description"
       closeAfterTransition
     >
       <Fade in={isOpen}>

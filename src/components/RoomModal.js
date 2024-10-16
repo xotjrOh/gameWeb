@@ -43,7 +43,7 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
       <Backdrop open={true} onClick={closeModal} />
       
       {/* 모달 내용 */}
-      <Box sx={{ backgroundColor: 'white', p: 4, borderRadius: 2, boxShadow: 24, zIndex: 10, width: '80%', maxWidth: 400, position: 'relative' }}>
+      <Box sx={{ backgroundColor: 'background.default', p: 4, borderRadius: 2, boxShadow: 24, zIndex: 10, width: '80%', maxWidth: 400, position: 'relative' }}>
         <IconButton 
           sx={{ position: 'absolute', top: 16, right: 16 }} 
           onClick={closeModal}
