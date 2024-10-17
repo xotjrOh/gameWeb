@@ -83,6 +83,9 @@ export default function MyStatusButton({ roomId, socket, session }) {
               내 상태
             </Typography>
             <Typography variant="body1" mb={1}>
+              닉네임: {statusInfo?.name ?? '없음'}
+            </Typography>
+            <Typography variant="body1" mb={1}>
               익명 이름: {statusInfo?.dummyName ?? '없음'}
             </Typography>
             <Typography variant="body1" mb={1}>

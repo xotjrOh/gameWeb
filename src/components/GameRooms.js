@@ -16,7 +16,8 @@ import {
   Tooltip, 
   Grid2 as Grid
 } from '@mui/material';
-import RoomModal from './RoomModal';
+import RoomModal from '@/components/RoomModal';
+import NicknameModal from '@/components/NicknameModal';
 import useCheckVersion from '@/hooks/useCheckVersion';
 import useLoadingReset from '@/hooks/useLoadingReset';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
@@ -32,6 +33,8 @@ export default function GameRooms({ session }) {
   const router = useRouter();
   const dispatch = useDispatch();
   const [showModal, setShowModal] = useState(false);
+  const [showNicknameModal, setShowNicknameModal] = useState(false);
+  const [selectedRoom, setSelectedRoom] = useState(null);
   const { rooms } = useSelector((state) => state.room);
   const { enqueueSnackbar } = useCustomSnackbar();
 
@@ -44,7 +47,19 @@ export default function GameRooms({ session }) {
     setShowModal(false);
   };
 
-  const joinRoom = (roomId, gameType) => {
+  const handleRoomClick = (room) => {
+    setSelectedRoom(room);
+    setShowNicknameModal(true);
+  };
+
+  const handleNicknameSubmit = (nickname) => {
+    setShowNicknameModal(false);
+    if (selectedRoom) {
+      joinRoom(selectedRoom.roomId, selectedRoom.gameType, nickname);
+    }
+  };
+
+  const joinRoom = (roomId, gameType, nickname) => {
     if (!socket || !socket.connected) {
       return enqueueSnackbar('서버와 연결이 되어 있지 않습니다. 잠시 후 다시 시도해주세요.', { variant: 'error' });
     }
@@ -52,7 +67,7 @@ export default function GameRooms({ session }) {
     dispatch(setIsLoading(true));
     socket?.emit(
       'join-room',
-      { roomId, userName: session.user.name, sessionId: session.user.id },
+      { roomId, userName: nickname, sessionId: session.user.id },
       (response) => {
         if (!response.success) {
           enqueueSnackbar(response.message, { variant: 'error' });
@@ -123,7 +138,7 @@ export default function GameRooms({ session }) {
             {waitingRooms.map((room) => (
               <Card
                 key={room.roomId}
-                onClick={() => joinRoom(room.roomId, room.gameType)}
+                onClick={() => handleRoomClick(room)}
                 sx={{
                   p: 2,
                   mb: 4,
@@ -204,7 +219,7 @@ export default function GameRooms({ session }) {
             {playingRooms.map((room) => (
               <Card
                 key={room.roomId}
-                onClick={() => joinRoom(room.roomId, room.gameType)}
+                onClick={() => handleRoomClick(room)}
                 sx={{
                   p: 2,
                   mb: 4,
@@ -291,6 +306,15 @@ export default function GameRooms({ session }) {
           router={router}
           dispatch={dispatch}
           session={session}
+        />
+      )}
+
+      {/* 닉네임 입력 모달 */}
+      {showNicknameModal && (
+        <NicknameModal
+          isOpen={showNicknameModal}
+          onClose={() => setShowNicknameModal(false)}
+          onSubmit={handleNicknameSubmit}
         />
       )}
     </Box>
