@@ -36,17 +36,40 @@ function ChipsTab({ roomId, socket, session }) {
       </Typography>
       {/* 플레이어 목록 */}
       <Box sx={{ mt: 2 }}>
-        {players.map((player, index) => (
-          <Box key={index} sx={{ py: 1 }}>
-            <Typography variant="body1">
-              {player.dummyName}: {player.chips.toString().padStart(2, '0')}개
-              <Typography variant="caption" component="span" sx={{ ml: 1, color: 'text.secondary' }}>
-                ({player.horse}, {player.name}{player.isSolo ? ', 솔로' : ''}, {player.socketId})
+        {players.map((player, index) => {
+          const getChipDiffStyles = (chipDiff) => {
+            if (chipDiff > 0) {
+              return { color: 'error.main', arrow: '▲' }; // 양수
+            } else if (chipDiff < 0) {
+              return { color: 'primary.main', arrow: '▼' }; // 음수
+            } else {
+              return { color: 'text.primary', arrow: '' }; // 변화 없음
+            }
+          };
+          const { color, arrow } = getChipDiffStyles(player.chipDiff);
+
+          return (
+            <Box key={index} sx={{ py: 1 }}>
+              <Typography variant="body1">
+                {player.dummyName}: {player.chips.toString().padStart(2, '0')}개
+                {player.chipDiff !== 0 && (
+                  <Typography
+                    variant="body2"
+                    component="span"
+                    sx={{ ml: 1, color: color }}
+                  >
+                    ({arrow}{Math.abs(player.chipDiff)})
+                  </Typography>
+                )}
+                <Typography variant="caption" component="span" sx={{ ml: 1, color: 'text.secondary' }}>
+                  ({player.horse}, {player.name}{player.isSolo ? ', 솔로' : ''}) 
+                  {/* , {player.socketId} */}
+                </Typography>
               </Typography>
-            </Typography>
-            {index < players.length - 1 && <Divider />}
-          </Box>
-        ))}
+              {index < players.length - 1 && <Divider />}
+            </Box>
+          )
+        })}
       </Box>
     </Paper>
   );

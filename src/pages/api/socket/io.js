@@ -155,7 +155,7 @@ const ioHandler = (req, res) => {
         }
         
         room.players.push({ id: sessionId, dummyName: '할당되지않음', horse: '할당되지않음', name: userName, socketId: socket.id, 
-          chips: 0, rounds: [], voteHistory: [], isBetLocked: false, isVoteLocked: false, memo: [] });
+          chips: 0, chipDiff: 0, rounds: [], voteHistory: [], isBetLocked: false, isVoteLocked: false, memo: [] });
         socket.join(roomId.toString());
         io.emit('room-updated', rooms);
         return callback({ success: true });
@@ -223,6 +223,7 @@ const ioHandler = (req, res) => {
 
         room.status = "게임중";
 
+        // 게임 내 라운드 1회성 데이터들
         room.gameData.timeLeft = duration;
         room.gameData.rounds = room.gameData.rounds || [];
         room.gameData.bets = {}; // 라운드마다 베팅 초기화
@@ -232,6 +233,7 @@ const ioHandler = (req, res) => {
         room.players.forEach(player => {
           player.isBetLocked = false;  // 모든 플레이어의 isBetLocked를 false로 설정
           player.isVoteLocked = false;
+          player.chipDiff = 0; // caution : 이 타이밍에 emit하면 안됨
         });
         io.to(roomId).emit('update-isBetLocked', false);
         io.to(roomId).emit('update-isVoteLocked', false);
@@ -280,7 +282,9 @@ const ioHandler = (req, res) => {
               const lastVote = player.voteHistory[player.voteHistory.length - 1];  // voteHistory의 마지막 값
               if (progressTwoHorses[lastVote]) {  // progress가 2인 말에 투표했는지 확인
                 player.chips += player.isSolo ? 5 : 2; 
+                player.chipDiff += player.isSolo ? 5 : 2; 
                 io.to(player.socketId).emit('update-chip', player.chips);
+                io.to(player.socketId).emit('update-chipDiff', player.chipDiff);
               }
             });
 
@@ -367,6 +371,7 @@ const ioHandler = (req, res) => {
           player.dummyName = `player${index + 1}`;
           player.horse = randomHorses[index % numHorses];
           player.chips = 20;
+          player.chipDiff = 0;
           player.isSolo = numPlayers % 2 !== 0 && index === Math.floor(numPlayers / 2);
         });
 
@@ -382,6 +387,7 @@ const ioHandler = (req, res) => {
             dummyName: player.dummyName,
             horse: player.horse,
             chips: player.chips,
+            chipDiff: player.chipDiff,
             isSolo: player.isSolo,
             rounds: [], //player.rounds,
             voteHistory: [], //player.voteHistory,
@@ -423,6 +429,7 @@ const ioHandler = (req, res) => {
         });
 
         player.chips -= totalBets;
+        player.chipDiff -= totalBets;
         player.isBetLocked = true;
 
         // 개인용 칩사용 히스토리
@@ -525,6 +532,7 @@ const ioHandler = (req, res) => {
           player.horse = '할당되지않음';
           player.isSolo = false;
           player.chips = 0;  // 각 플레이어에게 20개의 칩 지급
+          player.chipDiff = 0;  // 각 플레이어에게 20개의 칩 지급
           player.rounds = [];  // 각 플레이어의 라운드 정보 초기화
           player.voteHistory = [];  // 투표 내역 초기화
           player.isBetLocked = false;  // 베팅 잠금 초기화

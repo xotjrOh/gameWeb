@@ -37,6 +37,7 @@ export const SocketProvider = ({children}) => {
         });
 
         newSocket.on('connect', () => {
+            console.log("client : conncect");
             setSocket(newSocket);
             setIsConnected(true);
             newSocket.emit("get-room-list"); // 서버 재시작시 방 없애기위함

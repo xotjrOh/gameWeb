@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { setGameData, updatePositions, updateRounds, updateFinishLine, updatePersonalRounds, updateVoteHistory, updateIsBetLocked, updateIsVoteLocked, updateChip } from '@/store/horseSlice'; // Redux 슬라이스에서 가져옴
+import { setGameData, updatePositions, updateRounds, updateFinishLine, updatePersonalRounds, updateVoteHistory, updateIsBetLocked, updateIsVoteLocked, updateChip, updateChipDiff } from '@/store/horseSlice'; // Redux 슬라이스에서 가져옴
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 
 const useGameData = (roomId, socket, sessionId) => {
@@ -36,6 +36,9 @@ const useGameData = (roomId, socket, sessionId) => {
         socket.on('update-chip', (data) => {
             dispatch(updateChip(data)); // Redux에 상태 저장
         });
+        socket.on('update-chipDiff', (data) => {
+            dispatch(updateChipDiff(data)); // Redux에 상태 저장
+        });
 
         // 서버에서 데이터를 받아와 Redux에 저장
         socket.emit('horse-get-game-data', { roomId, sessionId }, (response) => {
@@ -54,6 +57,7 @@ const useGameData = (roomId, socket, sessionId) => {
             socket.off('update-isBetLocked');
             socket.off('update-isVoteLocked');
             socket.off('update-chip');
+            socket.off('update-chipDiff');
         };
     }
   }, [roomId, socket?.id, sessionId, dispatch]);

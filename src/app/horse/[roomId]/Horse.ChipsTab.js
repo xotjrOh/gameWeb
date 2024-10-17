@@ -102,51 +102,74 @@ function ChipsTab({ roomId, socket, session }) {
 
       {/* 플레이어 목록 */}
       <Box sx={{ mt: 2 }}>
-        {players.map((player, index) => (
-          <Box key={index}>
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: isMobile ? 'column' : 'row', // 반응형 레이아웃 적용
-                alignItems: isMobile ? 'flex-start' : 'center',
-                py: 2,
-              }}
-            >
-              <Box sx={{ flexGrow: 1 }}>
-                <Typography variant="body1" sx={{ whiteSpace: 'nowrap', mr: isMobile ? 0 : 2 }}>
-                  {player.dummyName}: {player.chips.toString().padStart(2, '0')}개
-                  {hasRaceEnded && (
-                    <Typography
-                      variant="body2"
-                      component="span"
-                      sx={{ ml: 1, color: 'text.secondary' }}
-                    >
-                      ({player.horse}, {player.name}
-                      {player.isSolo ? ', 솔로' : ''})
-                    </Typography>
-                  )}
-                </Typography>
-              </Box>
-              <InputBase
-                value={memoState[index] || ''}
-                onChange={(e) => handleMemoChange(index, e.target.value)}
-                onBlur={() => handleBlur(index)}
-                placeholder="플레이어 정보 메모"
-                inputProps={{ maxLength: 16 }}
+        {players.map((player, index) => {
+          const getChipDiffStyles = (chipDiff) => {
+            if (chipDiff > 0) {
+              return { color: 'error.main', arrow: '▲' }; // 양수
+            } else if (chipDiff < 0) {
+              return { color: 'primary.main', arrow: '▼' }; // 음수
+            } else {
+              return { color: 'text.primary', arrow: '' }; // 변화 없음
+            }
+          };
+          const { color, arrow } = getChipDiffStyles(player.chipDiff);
+
+          return (
+            <Box key={index}>
+              <Box
                 sx={{
-                  border: '1px solid',
-                  borderColor: 'grey.400',
-                  p: 1,
-                  mt: isMobile ? 1 : 0,
-                  width: '100%',
-                  borderRadius: 1,
-                  fontSize: '1rem',
+                  display: 'flex',
+                  flexDirection: isMobile ? 'column' : 'row', // 반응형 레이아웃 적용
+                  alignItems: isMobile ? 'flex-start' : 'center',
+                  py: 2,
                 }}
-              />
+              >
+                <Box sx={{ flexGrow: 1 }}>
+                  <Typography variant="body1" sx={{ whiteSpace: 'nowrap', mr: isMobile ? 0 : 2 }}>
+                    {player.dummyName}: {player.chips.toString().padStart(2, '0')}개
+                    {/* 칩 변화량 표시 */}
+                    {player.chipDiff !== 0 && (
+                      <Typography
+                        variant="body2"
+                        component="span"
+                        sx={{ ml: 1, color: color }}
+                      >
+                        ({arrow}{Math.abs(player.chipDiff)})
+                      </Typography>
+                    )}
+                    {hasRaceEnded && (
+                      <Typography
+                        variant="body2"
+                        component="span"
+                        sx={{ ml: 1, color: 'text.secondary' }}
+                      >
+                        ({player.horse}, {player.name}
+                        {player.isSolo ? ', 솔로' : ''})
+                      </Typography>
+                    )}
+                  </Typography>
+                </Box>
+                <InputBase
+                  value={memoState[index] || ''}
+                  onChange={(e) => handleMemoChange(index, e.target.value)}
+                  onBlur={() => handleBlur(index)}
+                  placeholder="플레이어 정보 메모"
+                  inputProps={{ maxLength: 16 }}
+                  sx={{
+                    border: '1px solid',
+                    borderColor: 'grey.400',
+                    p: 1,
+                    mt: isMobile ? 1 : 0,
+                    width: '100%',
+                    borderRadius: 1,
+                    fontSize: '1rem',
+                  }}
+                />
+              </Box>
+              {index < players.length - 1 && <Divider />}
             </Box>
-            {index < players.length - 1 && <Divider />}
-          </Box>
-        ))}
+          );
+        })}
       </Box>
     </Paper>
   );
