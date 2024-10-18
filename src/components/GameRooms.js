@@ -14,7 +14,7 @@ import {
   Stack, 
   Avatar, 
   Tooltip, 
-  Grid2 as Grid
+  Grid2 as Grid,
 } from '@mui/material';
 import RoomModal from '@/components/RoomModal';
 import NicknameModal from '@/components/NicknameModal';
@@ -22,6 +22,9 @@ import useCheckVersion from '@/hooks/useCheckVersion';
 import useLoadingReset from '@/hooks/useLoadingReset';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 import PeopleIcon from '@mui/icons-material/People'; // 사람 아이콘
+import AddIcon from '@mui/icons-material/Add';
+import DoorFrontIcon from '@mui/icons-material/DoorFront'; // 귀여운 문 아이콘
+import ChairIcon from '@mui/icons-material/Chair'; // 기다리는 느낌의 의자 아이콘
 
 const gameTypeMap = {
   horse: '🏇 경마게임',
@@ -110,32 +113,55 @@ export default function GameRooms({ session }) {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        flexGrow: 1, // 남은 공간을 채움
         p: 4,
         bgcolor: 'background.default',
         minHeight: '0', // 100vh 제거
       }}
     >
-      <Typography variant="h4" component="h1" color="primary" sx={{ fontWeight: 'bold', mb: 4 }}>
-        🎮 게임 대기실
-      </Typography>
+      {/* 대기방 텍스트와 아이콘 */}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-start',
+          width: '100%',
+          paddingLeft: '16px', // 좌상단 배치
+          marginBottom: '16px', // 적당한 여백
+        }}
+      >
+        <DoorFrontIcon sx={{ fontSize: 30, color: '#333333', mr: 1 }} />  {/* 귀여운 문 아이콘 */}
+        <Typography
+          variant="h5"
+          sx={{
+            fontWeight: 'bold',
+            fontFamily: '"yeogieottae", sans-serif',
+            color: '#333333',  // 귀여운 느낌의 파스텔 색상
+          }}
+        >
+          대기방
+        </Typography>
+        <ChairIcon sx={{ fontSize: 30, color: '#333333', ml: 1 }} />  {/* 기다리는 의자 아이콘 */}
+      </Box>
 
       {/* 방 만들기 버튼 */}
       <Button
         variant="contained"
-        color="primary"
+        color="secondary"
         onClick={() => setShowModal(true)}
+        size="large"
+        startIcon={<AddIcon />}  // 아이콘 추가
         sx={{
-          mb: 4,
-          px: 4,
-          py: 2,
           borderRadius: '50px',
-          boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
-          transition: 'transform 0.3s',
+          padding: '1rem 2rem',
+          backgroundColor: '#6c5ce7', // 깔끔한 색상
+          boxShadow: '0px 10px 30px rgba(108, 92, 231, 0.3)',  // 3D 효과
           '&:hover': {
-            transform: 'scale(1.05)',
-            bgcolor: 'primary.dark',
+            backgroundColor: '#5a4bdb',
+            boxShadow: '0px 15px 40px rgba(108, 92, 231, 0.5)',  // Hover 시 강조
           },
+          position: 'fixed',
+          bottom: '2rem', // 화면 하단에 고정
+          right: '2rem',
         }}
       >
         방 만들기
