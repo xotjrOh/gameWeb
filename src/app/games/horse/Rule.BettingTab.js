@@ -12,6 +12,8 @@ export default function BettingTab() {
 
   return (
     <Box
+      id="tabpanel-2"
+      aria-labelledby="tab-2"
       sx={{
         p: 3, // 패딩: 24px
       }}

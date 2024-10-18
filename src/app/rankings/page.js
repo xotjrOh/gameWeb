@@ -127,7 +127,7 @@ export default function RankingPage() {
                       width: '15%',
                       textAlign: 'left',
                     }}
-                    aria-label={`Rank ${player.rank}`}
+                    aria-label={`랭킹 ${player.rank}위`}
                   >
                     {player.rank}위
                   </Typography>

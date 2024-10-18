@@ -28,7 +28,7 @@ export default function Header({ session }) {
           {/* 웹사이트 로고 */}
           <IconButton
             edge="start"
-            aria-label="home"
+            aria-label="홈 버튼"
             sx={{ mr: 2 }}
             component={Link}
             href="/"

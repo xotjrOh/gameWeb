@@ -12,6 +12,8 @@ export default function VoteTab() {
 
   return (
     <Box
+      id="tabpanel-3"
+      aria-labelledby="tab-3"
       sx={{
         p: 3, // 패딩: 24px
       }}

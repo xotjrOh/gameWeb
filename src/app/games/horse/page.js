@@ -91,12 +91,13 @@ export default function GameRulePage() {
           </Box>
 
           {/* 탭 전환 */}
-          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+          <Box sx={{ position: 'relative', borderBottom: 1, borderColor: 'divider', mb: 3 }}>
             <Tabs
               value={activeTabIndex}
               onChange={handleTabChange}
               variant="scrollable"
               scrollButtons="auto"
+              allowScrollButtonsMobile 
               textColor="primary"
               indicatorColor="primary"
               aria-label="게임 룰 탭"
@@ -117,7 +118,7 @@ export default function GameRulePage() {
             <Paper
               elevation={3}
               sx={{
-                padding: 3, // padding: 4에서 padding: 3으로 감소
+                padding: 3,
                 minHeight: '400px', // 레이아웃 쉬프트 방지
               }}
             >

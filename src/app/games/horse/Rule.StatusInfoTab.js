@@ -6,6 +6,8 @@ export default function StatusInfoTab() {
 
   return (
     <Box
+      id="tabpanel-1"
+      aria-labelledby="tab-1"
       sx={{
         p: 3, // 패딩: 24px (p-4)
       }}

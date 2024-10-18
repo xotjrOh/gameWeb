@@ -12,6 +12,8 @@ export default function HorsesTab() {
 
   return (
     <Box
+      id="tabpanel-5"
+      aria-labelledby="tab-5"
       sx={{
         p: 3, // 패딩: 24px
       }}

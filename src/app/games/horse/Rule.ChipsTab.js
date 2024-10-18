@@ -12,6 +12,8 @@ export default function ChipsTab() {
 
   return (
     <Box
+      id="tabpanel-4"
+      aria-labelledby="tab-4"
       sx={{
         p: 3, // 패딩: 24px
       }}

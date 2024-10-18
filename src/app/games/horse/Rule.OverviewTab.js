@@ -10,6 +10,8 @@ export default function OverviewTab() {
 
   return (
     <Box
+      id="tabpanel-0"
+      aria-labelledby="tab-0"
       sx={{
         p: 3, // 패딩: 24px
       }}
