@@ -113,7 +113,7 @@ const ioHandler = (req, res) => {
         });
       });
 
-      socket.on('join-room', ({ roomId, userName, sessionId }, callback) => {
+      socket.on('check-can-join-room', ({ roomId, sessionId }, callback) => {
         const room = rooms[roomId];
         if (!room) {
           return callback({ success: false, host: false, message: '방이 존재하지 않습니다' });
@@ -128,7 +128,6 @@ const ioHandler = (req, res) => {
             if (isPlayerInOtherRoom || isHostInOtherRoom) {
               return callback({
                 success: false,
-                host: false,
                 message: `이미 참여중인 게임방(${otherRoom.roomName})이 있습니다`
               });
             }
@@ -141,21 +140,61 @@ const ioHandler = (req, res) => {
           const player = room.players.find(player => player.id === sessionId);
           player.socketId = socket.id;
           socket.join(roomId.toString());
-          return callback({ success: true });
+          return callback({ success: true, reEnter: true });
         }
 
         if (room.players.length >= room.maxPlayers) {
           return callback({ success: false, host: false, message: '방이 가득찼습니다' });
         }
         if (room.host.id === sessionId) {
-          return callback({ success: true, host: true });
+          return callback({ success: true, reEnter: true, host: true });
         }
         if (room.status === '게임중') {
           return callback({ success: false, host: false, message: '이미 게임이 시작되었습니다' });
         }
         
-        room.players.push({ id: sessionId, dummyName: '할당되지않음', horse: '할당되지않음', name: userName, socketId: socket.id, 
-          chips: 0, chipDiff: 0, rounds: [], voteHistory: [], isBetLocked: false, isVoteLocked: false, memo: [] });
+        return callback({ success: true });
+      });
+
+      socket.on('join-room', ({ roomId, userName, sessionId }, callback) => {
+        const room = rooms[roomId];
+        if (!room) {
+          return callback({ success: false, message: '방이 존재하지 않습니다' });
+        }
+      
+        // 현재 방에서 동일한 닉네임이 있는지 확인
+        const isDuplicateName = room.players.some(player => player.name === userName) || room.host.name === userName;
+        if (isDuplicateName) {
+          return callback({
+            success: false,
+            message: '이미 사용 중인 닉네임입니다. 다른 닉네임을 선택해주세요.'
+          });
+        }
+      
+        // 닉네임 유효성 검사
+        if (!userName || userName.length > 10) {
+          return callback({
+            success: false,
+            message: '닉네임은 10자 이하로 입력해주세요.'
+          });
+        }
+      
+        // 플레이어 추가 로직
+        room.players.push({
+          id: sessionId,
+          dummyName: '할당되지않음',
+          horse: '할당되지않음',
+          name: userName,
+          socketId: socket.id,
+          chips: 0,
+          chipDiff: 0,
+          rounds: [],
+          voteHistory: [],
+          isBetLocked: false,
+          isVoteLocked: false,
+          memo: []
+        });
+      
         socket.join(roomId.toString());
         io.emit('room-updated', rooms);
         return callback({ success: true });

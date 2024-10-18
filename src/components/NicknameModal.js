@@ -33,7 +33,7 @@ export default function NicknameModal({ isOpen, onClose, onSubmit }) {
         }}
       >
         <Typography variant="h6" component="h2" gutterBottom>
-          게임에 참여하실 닉네임을 입력해주세요
+          게임에 참여하실 닉네임을 입력해주세요 (최대 10자)
         </Typography>
         <TextField
           fullWidth

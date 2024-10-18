@@ -48,8 +48,24 @@ export default function GameRooms({ session }) {
   };
 
   const handleRoomClick = (room) => {
-    setSelectedRoom(room);
-    setShowNicknameModal(true);
+    if (!socket || !socket.connected) {
+      return enqueueSnackbar('서버와 연결이 되어 있지 않습니다. 잠시 후 다시 시도해주세요.', { variant: 'error' });
+    }
+    // 서버에 방 참여 가능 여부를 확인
+    socket.emit('check-can-join-room', { roomId: room.roomId, sessionId: session.user.id }, (response) => {
+      if (!response.success) {
+        return enqueueSnackbar(response.message, { variant: 'error' });
+      }
+      // 정상 처리
+      if (!response.reEnter) {
+        setSelectedRoom(room);
+        setShowNicknameModal(true);
+        return;
+      }
+      // 이미 접속중인 경우
+      if (response.host) router.replace(`/${room.gameType}/${room.roomId}/host`);
+      else router.replace(`/${room.gameType}/${room.roomId}`);
+    });
   };
 
   const handleNicknameSubmit = (nickname) => {
@@ -59,6 +75,7 @@ export default function GameRooms({ session }) {
     }
   };
 
+  // 새로 접속하는 경우에만 호출
   const joinRoom = (roomId, gameType, nickname) => {
     if (!socket || !socket.connected) {
       return enqueueSnackbar('서버와 연결이 되어 있지 않습니다. 잠시 후 다시 시도해주세요.', { variant: 'error' });
@@ -69,13 +86,11 @@ export default function GameRooms({ session }) {
       'join-room',
       { roomId, userName: nickname, sessionId: session.user.id },
       (response) => {
-        if (!response.success) {
-          enqueueSnackbar(response.message, { variant: 'error' });
-        } else {
-          if (response.host) router.replace(`/${gameType}/${roomId}/host`);
-          else router.replace(`/${gameType}/${roomId}`);
-        }
         dispatch(setIsLoading(false));
+        if (!response.success) {
+          return enqueueSnackbar(response.message, { variant: 'error' });
+        }
+        router.replace(`/${gameType}/${roomId}`);
       }
     );
   };
