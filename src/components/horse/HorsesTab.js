@@ -133,52 +133,65 @@ function HorsesTab({ roomId, socket, session }) {
             color="textSecondary"
             fontWeight="bold"
           >
-            여기서의 칩 개수는 솔로 플레이어에게만 보입니다.
+            여기서의 베팅된 칩 개수는 솔로 플레이어에게만 보입니다.
           </Typography>
         )}
         {rounds && rounds.length > 0 ? (
-          rounds.map((round, roundIndex) => (
-            <Box key={roundIndex} mb={6}>
-              <Typography variant="subtitle1" fontWeight="bold" mb={2}>
-                라운드 {roundIndex + 1}
-              </Typography>
-              <Grid container spacing={1}>
-                {round.map((bet, betIndex) => (
-                  <Grid size={{ xs: 12 }} key={betIndex}>
-                    <Paper
-                      elevation={1}
-                      sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        p: 2,
-                        border: '1px solid',
-                        borderColor: 'grey.300',
-                      }}
-                    >
-                      <Typography variant="body1" fontWeight="medium">
-                        {bet.horse}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        color="textSecondary"
+          rounds.map((round, roundIndex) => {
+            // 조건에 따라 bet 필터링
+            const filteredRound = round.filter((bet) => {
+              if (hasRaceEnded || isHost || statusInfo.isSolo) {
+                // 조건을 만족하면 모든 bet을 포함
+                return true;
+              } else {
+                // 그렇지 않으면 progress가 0이 아닌 bet만 포함
+                return bet.progress !== 0;
+              }
+            });
+
+            return (
+              <Box key={roundIndex} mb={6}>
+                <Typography variant="subtitle1" fontWeight="bold" mb={2}>
+                  라운드 {roundIndex + 1}
+                </Typography>
+                <Grid container spacing={1}>
+                  {filteredRound.map((bet, betIndex) => (
+                    <Grid size={{ xs: 12 }} key={betIndex}>
+                      <Paper
+                        elevation={1}
+                        sx={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          p: 2,
+                          border: '1px solid',
+                          borderColor: 'grey.300',
+                        }}
                       >
-                        전진: {bet.progress}
-                      </Typography>
-                      {(hasRaceEnded || isHost || statusInfo.isSolo) && (
+                        <Typography variant="body1" fontWeight="medium">
+                          {bet.horse}
+                        </Typography>
                         <Typography
                           variant="body2"
                           color="textSecondary"
                         >
-                          칩: {bet.chips}
+                          전진: {bet.progress}
                         </Typography>
-                      )}
-                    </Paper>
-                  </Grid>
-                ))}
-              </Grid>
-            </Box>
-          ))
+                        {(hasRaceEnded || isHost || statusInfo.isSolo) && (
+                          <Typography
+                            variant="body2"
+                            color="textSecondary"
+                          >
+                            칩: {bet.chips}
+                          </Typography>
+                        )}
+                      </Paper>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Box>
+            )
+          })
         ) : (
           <Typography
             variant="body2"

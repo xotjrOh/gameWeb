@@ -43,7 +43,6 @@ export default function BettingTab() {
 
       {/* 설명 내용 */}
       <Box sx={{ maxWidth: 'md', mx: 'auto' }}>
-        {/* 첫 번째 문단 */}
         <Typography
           variant="body1"
           sx={{
@@ -59,7 +58,6 @@ export default function BettingTab() {
           각 라운드마다 플레이어는 경주마에 칩을 베팅합니다.
         </Typography>
 
-        {/* 두 번째 문단 */}
         <Typography
           variant="body1"
           sx={{
@@ -72,7 +70,7 @@ export default function BettingTab() {
             },
           }}
         >
-          라운드 종료 시 최다 득표 말은{' '}
+          라운드 종료 시 집계하여 최다 득표 말은{' '}
           <Box
             component="span"
             sx={{
@@ -95,7 +93,6 @@ export default function BettingTab() {
           전진합니다. (동률은 함께 전진)
         </Typography>
 
-        {/* 세 번째 문단 */}
         <Typography
           variant="body1"
           sx={{
@@ -111,7 +108,6 @@ export default function BettingTab() {
           하단에 라운드마다 내가 베팅했던 내역을 확인할 수 있습니다.
         </Typography>
 
-        {/* 네 번째 문단 */}
         <Typography
           variant="body1"
           sx={{
@@ -137,13 +133,12 @@ export default function BettingTab() {
           베팅은 필수가 아닙니다. 칩을 아껴 후반을 노리는 것도 좋겠죠!
         </Typography>
 
-        {/* 이미지 */}
         <Box sx={{ position: 'relative', width: '100%' }}>
           <Image
-            src="/images/rule/horse/bettingTab.avif"
+            src="/images/rule/horse/베팅탭.avif"
             alt="베팅탭 이미지"
             width={425}
-            height={714}
+            height={1338}
             quality={90}
             sizes="(max-width: 768px) 100vw, 540px"
             style={{

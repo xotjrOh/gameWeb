@@ -41,7 +41,6 @@ export default function OverviewTab() {
 
       {/* 설명 내용 */}
       <Box sx={{ maxWidth: 'md', mx: 'auto' }}>
-        {/* 첫 번째 문단 */}
         <Typography
           variant="body1"
           sx={{
@@ -54,10 +53,24 @@ export default function OverviewTab() {
             },
           }}
         >
-          경마게임은 오프라인에서 대화를 통해 진행되며, 액션 및 정보 확인은 웹에서 지원되는 하이브리드 게임입니다.
+          경마게임은 오프라인에서 대화를 통해 정보를 얻고, 폰으로는 베팅을 하면 되는 간단한 게임입니다.
+        </Typography>
+        
+        <Typography
+          variant="body1"
+          sx={{
+            mb: 2, // mb-4
+            color: theme.palette.text.primary, // theme 색상 사용
+            fontSize: {
+              xs: '1rem',    // 모바일
+              sm: '1.25rem', // 태블릿
+              md: '1.25rem', // 데스크톱 이상
+            },
+          }}
+        >
+          설명 순서는 개요에 대해 간략하게만 짚고, 이어서 화면 내의 각 탭에 대해 자세히 설명드리겠습니다.
         </Typography>
 
-        {/* 두 번째 문단 */}
         <Typography
           variant="body1"
           sx={{
@@ -70,10 +83,26 @@ export default function OverviewTab() {
             },
           }}
         >
-          게임은 2명이 1마리의 경주마를 맡아 팀전으로 진행되며 팀원은 공개되지 않고 대화를 통해 찾아야 합니다.
+          게임이 시작될 때 각자 경주마를 맡게될거에요. 라운드마다 베팅을 해서, 베팅 집계에 따라 말들이 전진하게 됩니다.
         </Typography>
 
-        {/* 세 번째 문단 */}
+        <Box sx={{ position: 'relative', width: '100%', mb: 2 }}>
+          <Image
+            src="/images/rule/horse/onlyHorses.avif"
+            alt="경주마 탭 화면"
+            width={425}
+            height={482}
+            quality={90}
+            sizes="(max-width: 768px) 100vw, 540px"
+            style={{
+              width: '100%',
+              height: 'auto',
+              borderRadius: '8px', // rounded-lg
+              boxShadow: '0px 4px 6px rgba(0,0,0,0.1)', // shadow-md
+            }}
+          />
+        </Box>
+
         <Typography
           variant="body1"
           sx={{
@@ -86,30 +115,9 @@ export default function OverviewTab() {
             },
           }}
         >
-          🤫 홀수 인원으로 게임을 진행할 경우 발생하는{' '}
-          <Box component="span" sx={{ color: theme.palette.primary.dark, fontWeight: 'bold' }}>
-            ‘솔로 플레이어’
-          </Box>
-          는 혼자만 알 수 있는 비밀 혜택이 있습니다.
+          그러다 최초로 결승선을 통과하는 말이 나오면 그 즉시 게임이 종료되며,
         </Typography>
 
-        {/* 네 번째 문단 */}
-        <Typography
-          variant="body1"
-          sx={{
-            mb: 2, // mb-4
-            color: theme.palette.text.primary,
-            fontSize: {
-              xs: '1rem',
-              sm: '1.25rem',
-              md: '1.25rem',
-            },
-          }}
-        >
-          최초로 결승선을 통과하는 말이 나오면 그 즉시 게임이 종료되며,
-        </Typography>
-
-        {/* 다섯 번째 문단 */}
         <Typography
           variant="body1"
           sx={{
@@ -125,7 +133,23 @@ export default function OverviewTab() {
           통과한 말들은 꼴등이 되고 그 당시에 결승선에 가장 가까운 말을 맡은 팀이 1등이 됩니다.
         </Typography>
 
-        {/* 여섯 번째 문단 (경고 텍스트) */}
+        <Typography
+          variant="body1"
+          sx={{
+            mb: 3, // mb-6
+            color: theme.palette.text.primary,
+            fontSize: {
+              xs: '1rem',
+              sm: '1.25rem',
+              md: '1.25rem',
+            },
+          }}
+        >
+          그리고 상단의 탭 중 처음 두 개(베팅, 예측)는 라운드마다 할 수 있는 액션에 해당하는 부분입니다. 
+          해당 라운드에 액션을 하게 되면 우측상단의 붉은 점은 사라지게 됩니다.<br/>
+          그리고 뒤의 두 개(칩개수, 경주마)의 탭은 게임 내의 진행에 참고가 될 정보를 제공하는 화면입니다.
+        </Typography>
+
         <Typography
           variant="body1"
           sx={{
@@ -146,42 +170,6 @@ export default function OverviewTab() {
           입니다.
         </Typography>
 
-        {/* 첫 번째 이미지 */}
-        <Box sx={{ position: 'relative', width: '100%', mb: 2 }}>
-          <Image
-            src="/images/rule/horse/horsesTab.avif"
-            alt="경주마 탭 화면"
-            width={425}
-            height={605}
-            quality={90}
-            sizes="(max-width: 768px) 100vw, 540px"
-            style={{
-              width: '100%',
-              height: 'auto',
-              borderRadius: '8px', // rounded-lg
-              boxShadow: '0px 4px 6px rgba(0,0,0,0.1)', // shadow-md
-            }}
-          />
-        </Box>
-
-        {/* 두 번째 이미지 */}
-        <Box sx={{ position: 'relative', width: '100%' }}>
-          <Image
-            src="/images/rule/horse/myHorseWin.avif"
-            alt="게임 종료 후 승리 화면"
-            width={425}
-            height={607}
-            quality={90}
-            sizes="(max-width: 768px) 100vw, 540px"
-            style={{
-              width: '100%',
-              height: 'auto',
-              borderRadius: '8px', // rounded-lg
-              boxShadow: '0px 4px 6px rgba(0,0,0,0.1)', // shadow-md
-              marginTop: '20px', // mt-5
-            }}
-          />
-        </Box>
       </Box>
     </Box>
   );

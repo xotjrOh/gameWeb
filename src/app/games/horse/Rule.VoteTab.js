@@ -43,7 +43,6 @@ export default function VoteTab() {
 
       {/* 설명 내용 */}
       <Box sx={{ maxWidth: 'md', mx: 'auto' }}>
-        {/* 첫 번째 문단 */}
         <Typography
           variant="body1"
           sx={{
@@ -59,7 +58,6 @@ export default function VoteTab() {
           각 라운드마다 플레이어는 최다 득표 경주마를 예측합니다.
         </Typography>
 
-        {/* 두 번째 문단 */}
         <Typography
           variant="body1"
           sx={{
@@ -85,7 +83,6 @@ export default function VoteTab() {
           를 획득합니다.
         </Typography>
 
-        {/* 세 번째 문단 */}
         <Typography
           variant="body1"
           sx={{
@@ -101,7 +98,6 @@ export default function VoteTab() {
           하단에 라운드마다 내가 예측했던 내역을 확인할 수 있습니다.
         </Typography>
 
-        {/* 네 번째 문단 */}
         <Typography
           variant="body1"
           sx={{
@@ -127,13 +123,12 @@ export default function VoteTab() {
           예측탭에는 라운드마다 반드시 투표하는 게 좋아요!
         </Typography>
 
-        {/* 이미지 */}
         <Box sx={{ position: 'relative', width: '100%', mb: 2 }}>
           <Image
-            src="/images/rule/horse/voteTab.avif"
+            src="/images/rule/horse/예측탭.avif"
             alt="예측탭 화면"
             width={425}
-            height={581}
+            height={966}
             quality={90}
             sizes="(max-width: 768px) 100vw, 540px"
             style={{

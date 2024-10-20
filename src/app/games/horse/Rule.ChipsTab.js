@@ -43,7 +43,6 @@ export default function ChipsTab() {
 
       {/* 설명 내용 */}
       <Box sx={{ maxWidth: 'md', mx: 'auto' }}>
-        {/* 첫 번째 문단 */}
         <Typography
           variant="body1"
           sx={{
@@ -59,7 +58,6 @@ export default function ChipsTab() {
           어떤 플레이어가 몇 개의 칩이 남았는지는 알 수 없습니다.
         </Typography>
 
-        {/* 두 번째 문단 */}
         <Typography
           variant="body1"
           sx={{
@@ -85,7 +83,6 @@ export default function ChipsTab() {
           을 통해 남은 칩 개수를 확인할 수 있습니다.
         </Typography>
 
-        {/* 세 번째 문단 */}
         <Typography
           variant="body1"
           sx={{
@@ -108,7 +105,7 @@ export default function ChipsTab() {
           >
             ‘익명이름’
           </Box>
-          은{' '}
+          은 우측 상단의 {' '}
           <Box
             component="span"
             sx={{
@@ -121,13 +118,12 @@ export default function ChipsTab() {
           를 통해 확인할 수 있습니다.
         </Typography>
 
-        {/* 첫 번째 이미지 */}
         <Box sx={{ position: 'relative', width: '100%', mb: 2 }}>
           <Image
-            src="/images/rule/horse/chips.avif"
+            src="/images/rule/horse/칩개수탭.avif"
             alt="칩 개수 탭 이미지"
             width={425}
-            height={581}
+            height={966}
             quality={90}
             sizes="(max-width: 768px) 100vw, 540px"
             style={{
@@ -139,24 +135,6 @@ export default function ChipsTab() {
           />
         </Box>
 
-        {/* 두 번째 이미지 */}
-        <Box sx={{ position: 'relative', width: '100%' }}>
-          <Image
-            src="/images/rule/horse/statusInfo.avif"
-            alt="내 상태 보기"
-            width={423}
-            height={580}
-            quality={90}
-            sizes="(max-width: 768px) 100vw, 540px"
-            style={{
-              width: '100%',
-              height: 'auto',
-              borderRadius: '8px', // rounded-lg
-              boxShadow: '0px 4px 6px rgba(0,0,0,0.1)', // shadow-md
-              marginTop: '20px', // mt-5
-            }}
-          />
-        </Box>
       </Box>
     </Box>
   );
