@@ -43,7 +43,7 @@ function BettingTab({ roomId, socket, session }) {
     }
 
     if (Object.keys(bets).length > 0) {
-      socket.emit('horse-bet', { roomId, bets }, (response) => {
+      socket.emit('horse-bet', { roomId, session, bets }, (response) => {
         if (response.success) {
           enqueueSnackbar('베팅이 완료되었습니다.', { variant: 'success' });
           dispatch(updateChip(response.remainChips));
