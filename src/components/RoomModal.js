@@ -68,6 +68,15 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
           sx={{
             backgroundColor: 'rgba(255, 255, 255, 0.8)',
           }}
+          slotProps={{
+            formHelperText: {
+              sx: {
+                margin: 0, 
+                paddingLeft: '12px',
+                backgroundColor: 'background.card',  // 여기서 에러 문구의 색상을 검정으로 설정
+              },
+            }
+          }}
         />
 
         {/* 게임 종류 선택 */}
@@ -100,6 +109,15 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
           }}
           sx={{
             backgroundColor: 'rgba(255, 255, 255, 0.8)',
+          }}
+          slotProps={{
+            formHelperText: {
+              sx: {
+                margin: 0, 
+                paddingLeft: '12px',
+                backgroundColor: 'background.card',  // 여기서 에러 문구의 색상을 검정으로 설정
+              },
+            }
           }}
         />
 
