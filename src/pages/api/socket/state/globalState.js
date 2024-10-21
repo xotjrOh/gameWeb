@@ -1,7 +1,7 @@
-import AsyncLock from 'async-lock';
+// import AsyncLock from 'async-lock';
 
-const Lock = new AsyncLock();
+// const Lock = new AsyncLock();
 
-export default {
-    Lock,
-};
+// export default {
+//     Lock,
+// };
