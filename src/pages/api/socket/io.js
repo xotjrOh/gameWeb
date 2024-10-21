@@ -1,5 +1,6 @@
 import { Server } from 'socket.io';
 import AsyncLock from 'async-lock';
+import { MIN_PLAYER_LENGTH, NOT_ASSIGNED, MESSAGES, GAME_STATUS, HORSE_GAME } from './utils/constants';
 
 const rooms = {};
 // roomId별 setInteval 저장할 객체
@@ -55,16 +56,16 @@ const ioHandler = (req, res) => {
 
       socket.on('create-room', ({ roomName, userName, gameType, sessionId, maxPlayers }, callback) => {
         // if (!AUTHORIZED_SESSION_IDS.includes(sessionId)) {
-        //   return callback({ success: false, message: '방을 만들기 위해서는 오태석에게 문의하세요.' });
+        //   return callback({ success: false, message: MESSAGES.CREATE_ROOM_AUTH_REQUIRED });
         // }
         if (!roomName) {
-          return callback({ success: false, message: '방이름을 정해주세요.' });
+          return callback({ success: false, message: MESSAGES.ROOM_NAME_REQUIRED });
         }
         if (!gameType) {
-          return callback({ success: false, message: '게임종류를 정해주세요.' });
+          return callback({ success: false, message: MESSAGES.GAME_TYPE_REQUIRED });
         }
-        if (!Number.isInteger(maxPlayers) || maxPlayers < 1) {
-          return callback({ success: false, message: '최대 플레이어 수는 1 이상의 정수여야 합니다.' });
+        if (!Number.isInteger(maxPlayers) || maxPlayers < MIN_PLAYER_LENGTH) {
+          return callback({ success: false, message: MESSAGES.MAX_PLAYERS_INVALID });
         }
         // **다른 방에서 이미 sessionId가 있는지 체크**
         for (const [otherRoomId, otherRoom] of Object.entries(rooms)) {
@@ -74,7 +75,7 @@ const ioHandler = (req, res) => {
           if (isPlayerInOtherRoom || isHostInOtherRoom) {
             return callback({
               success: false,
-              message: `이미 참여중인 게임방(${otherRoom.roomName})이 있습니다`
+              message: MESSAGES.ALREADY_IN_ANOTHER_ROOM(otherRoom.roomName),
             });
           }
         }
@@ -93,14 +94,14 @@ const ioHandler = (req, res) => {
             players: [],
             gameData: {
               // horse 용 설정
-              // finishLine: 9,
+              // finishLine: HORSE_GAME.DEFAULT_FINISH_LINE,
               // positions: {},
             },
-            status: '대기중',
+            status: GAME_STATUS.PENDING,
             maxPlayers,
           };
           if (gameType == "horse") {
-            rooms[roomId].gameData.finishLine = 9;
+            rooms[roomId].gameData.finishLine = HORSE_GAME.DEFAULT_FINISH_LINE;
           }
           socket.join(roomId.toString());
           callback({ success: true, roomId });
@@ -116,7 +117,7 @@ const ioHandler = (req, res) => {
       socket.on('check-can-join-room', ({ roomId, sessionId }, callback) => {
         const room = rooms[roomId];
         if (!room) {
-          return callback({ success: false, host: false, message: '방이 존재하지 않습니다' });
+          return callback({ success: false, host: false, message: MESSAGES.ROOM_NOT_FOUND });
         }
 
         // **다른 방에서 이미 sessionId가 있는지 체크**
@@ -128,7 +129,7 @@ const ioHandler = (req, res) => {
             if (isPlayerInOtherRoom || isHostInOtherRoom) {
               return callback({
                 success: false,
-                message: `이미 참여중인 게임방(${otherRoom.roomName})이 있습니다`
+                message: MESSAGES.ALREADY_IN_ANOTHER_ROOM(otherRoom.roomName)
               });
             }
           }
@@ -144,13 +145,13 @@ const ioHandler = (req, res) => {
         }
 
         if (room.players.length >= room.maxPlayers) {
-          return callback({ success: false, host: false, message: '방이 가득찼습니다' });
+          return callback({ success: false, host: false, message: MESSAGES.ROOM_FULL });
         }
         if (room.host.id === sessionId) {
           return callback({ success: true, reEnter: true, host: true });
         }
-        if (room.status === '게임중') {
-          return callback({ success: false, host: false, message: '이미 게임이 시작되었습니다' });
+        if (room.status === GAME_STATUS.IN_PROGRESS) {
+          return callback({ success: false, host: false, message: MESSAGES.GAME_ALREADY_STARTED });
         }
         
         return callback({ success: true });
@@ -159,7 +160,7 @@ const ioHandler = (req, res) => {
       socket.on('join-room', ({ roomId, userName, sessionId }, callback) => {
         const room = rooms[roomId];
         if (!room) {
-          return callback({ success: false, message: '방이 존재하지 않습니다' });
+          return callback({ success: false, message: MESSAGES.ROOM_NOT_FOUND });
         }
       
         // 현재 방에서 동일한 닉네임이 있는지 확인
@@ -167,7 +168,7 @@ const ioHandler = (req, res) => {
         if (isDuplicateName) {
           return callback({
             success: false,
-            message: '이미 사용 중인 닉네임입니다. 다른 닉네임을 선택해주세요.'
+            message: MESSAGES.NICKNAME_ALREADY_IN_USE,
           });
         }
       
@@ -175,15 +176,15 @@ const ioHandler = (req, res) => {
         if (!userName || userName.length > 10) {
           return callback({
             success: false,
-            message: '닉네임은 10자 이하로 입력해주세요.'
+            message: MESSAGES.NICKNAME_TOO_LONG,
           });
         }
       
         // 플레이어 추가 로직
         room.players.push({
           id: sessionId,
-          dummyName: '할당되지않음',
-          horse: '할당되지않음',
+          dummyName: NOT_ASSIGNED,
+          horse: NOT_ASSIGNED,
           name: userName,
           socketId: socket.id,
           chips: 0,
@@ -203,10 +204,10 @@ const ioHandler = (req, res) => {
       socket.on('leave-room', ({ roomId, sessionId }, callback) => {
         const room = rooms[roomId];
         if (!room) {
-          return callback({ success: false, message: '존재하지 않는 게임방입니다.' });
+          return callback({ success: false, message: MESSAGES.ROOM_NOT_FOUND });
         }
-        if (room.status === '게임중') {
-          return callback({ success: false, message: '게임이 진행 중입니다. 게임이 끝나기 전까지 방을 나갈 수 없습니다.' });
+        if (room.status === GAME_STATUS.IN_PROGRESS) {
+          return callback({ success: false, message: MESSAGES.CANNOT_LEAVE_DURING_GAME });
         }
       
         // 방장인지 확인
@@ -214,12 +215,12 @@ const ioHandler = (req, res) => {
       
         // 방장이 아닌 경우는 나갈 수 없음
         if (!isHost) {
-          return callback({ success: false, message: '방장만이 방을 종료할 수 있습니다.' });
+          return callback({ success: false, message: MESSAGES.ONLY_HOST_CAN_CLOSE_ROOM });
         }
       
         // 방 삭제 처리
         delete rooms[roomId];
-        io.to(roomId).emit('room-closed', { message: '방장이 방을 종료했습니다.' });
+        io.to(roomId).emit('room-closed', { message: MESSAGES.ROOM_CLOSED_BY_HOST });
       
         // 방 내 다른 플레이어들의 소켓 이벤트 해제
         io.in(roomId).socketsLeave(roomId);  // 모든 플레이어를 방에서 제거
@@ -252,15 +253,15 @@ const ioHandler = (req, res) => {
       socket.on('horse-start-round', ({ roomId, duration }, callback) => {
         const room = rooms[roomId];
         if (!room) {
-          return callback({ success: false, message: '존재하지 않는 게임방입니다.' });
+          return callback({ success: false, message: MESSAGES.ROOM_NOT_FOUND });
         }
         // room.players 중 horse 속성이 없거나 빈 값이 있으면 false 리턴
-        const hasMissingHorse = room.players.some(player => !player.horse || player.horse === '할당되지않음');
+        const hasMissingHorse = room.players.some(player => !player.horse || player.horse === NOT_ASSIGNED);
         if (hasMissingHorse) {
-          return callback({ success: false, message: '모든 플레이어에게 말이 할당되지 않았습니다.' });
+          return callback({ success: false, message: MESSAGES.NOT_ALL_PLAYERS_ASSIGNED });
         }
 
-        room.status = "게임중";
+        room.status = GAME_STATUS.IN_PROGRESS;
 
         // 게임 내 라운드 1회성 데이터들
         room.gameData.timeLeft = duration;
@@ -372,7 +373,7 @@ const ioHandler = (req, res) => {
                   playerNames: getPlayersByHorse(horse),
                 })),
               });
-              room.status = "대기중";
+              room.status = GAME_STATUS.PENDING;
             } else {
               // io.to(roomId).emit('round-ended', { players : room.players, roundResult : roundResult }); // 라운드 종료 알림
             }
@@ -387,7 +388,7 @@ const ioHandler = (req, res) => {
       socket.on('horse-assign-roles', ({ roomId }, callback) => {
         const room = rooms[roomId];
         if (!room) {
-          return callback({ success: false, message: '존재하지 않는 게임방입니다.' });
+          return callback({ success: false, message: MESSAGES.ROOM_NOT_FOUND });
         }
 
         // 플레이어와 경주마 할당 로직
@@ -446,19 +447,19 @@ const ioHandler = (req, res) => {
       socket.on('horse-bet', ({ roomId, bets }, callback) => {
         const room = rooms[roomId];
         if (!room) {
-          return callback({ success: false, message: '존재하지 않는 게임방입니다.' });
+          return callback({ success: false, message: MESSAGES.ROOM_NOT_FOUND });
         }
 
         // todo : session 비교로 바꾸고 인자로 받을것. socket은 변수가 많음
         const player = room.players.find(p => p.socketId === socket.id);
         if (!player) {
-          return callback({ success: false, message: '당신은 게임 참가자가 아닙니다.' });
+          return callback({ success: false, message: MESSAGES.NOT_A_PARTICIPANT });
         }
 
         // 플레이어가 가진 칩이 충분한지 체크
         const totalBets = Object.values(bets).reduce((sum, chips) => sum + chips, 0);
         if (player.chips < totalBets) {
-          return callback({ success: false, message: '칩이 부족합니다.' });
+          return callback({ success: false, message: MESSAGES.INSUFFICIENT_CHIPS });
         }
 
         // 베팅한 칩 기록
@@ -488,12 +489,12 @@ const ioHandler = (req, res) => {
       socket.on('horse-vote', ({ roomId, session, selectedHorse }, callback) => {
         const room = rooms[roomId];
         if (!room) {
-          return callback({ success: false, message: '존재하지 않는 게임방입니다.' });
+          return callback({ success: false, message: MESSAGES.ROOM_NOT_FOUND });
         }
 
         const player = room.players.find(p => p.id === session.user.id);
         if (!player) {
-          return callback({ success: false, message: '당신은 게임 참가자가 아닙니다.' });
+          return callback({ success: false, message: MESSAGES.NOT_A_PARTICIPANT });
         }
 
         // 투표 저장
@@ -508,7 +509,7 @@ const ioHandler = (req, res) => {
       socket.on('horse-update-settings', ({ roomId, finishLine }, callback) => {
         const room = rooms[roomId];
         if (!room) {
-          return callback({ success: false, message: '존재하지 않는 게임방입니다.' });
+          return callback({ success: false, message: MESSAGES.ROOM_NOT_FOUND });
         }
     
         // finishLine 설정 업데이트
@@ -521,7 +522,7 @@ const ioHandler = (req, res) => {
       socket.on('horse-get-game-data', ({ roomId, sessionId }, callback) => {
         console.log("server : horse-get-game-data", sessionId);
         const room = rooms[roomId];
-        if (!room) callback({ success: false, message: '존재하지 않는 게임방입니다.' });
+        if (!room) callback({ success: false, message: MESSAGES.ROOM_NOT_FOUND });
         const player = rooms[roomId].players.find(p => p.id === sessionId);
         const hasRounds = Array.isArray(room.gameData.rounds) && room.gameData.rounds.length > 0;
         const positions = room.gameData.positions || [];
@@ -548,9 +549,9 @@ const ioHandler = (req, res) => {
       socket.on('horse-new-game', ({ roomId }, callback) => {
         const room = rooms[roomId];
         if (!room) {
-          return callback({ success: false, message: '존재하지 않는 게임방입니다.' });
+          return callback({ success: false, message: MESSAGES.ROOM_NOT_FOUND });
         }
-        room.status = "대기중";
+        room.status = GAME_STATUS.PENDING;
 
         clearInterval(timers[roomId]);
         delete timers[roomId];
@@ -558,7 +559,7 @@ const ioHandler = (req, res) => {
 
         // gameData 초기화
         room.gameData = {
-          finishLine: 9,  // 기본 설정
+          finishLine: HORSE_GAME.DEFAULT_FINISH_LINE,  // 기본 설정
           horses: [],
           positions: [],  // 경주마 위치 초기화
           rounds: [],  // 라운드 초기화
@@ -567,8 +568,8 @@ const ioHandler = (req, res) => {
 
         // statusInfo 초기화
         room.players.forEach(player => {
-          player.dummyName = '할당되지않음';
-          player.horse = '할당되지않음';
+          player.dummyName = NOT_ASSIGNED;
+          player.horse = NOT_ASSIGNED;
           player.isSolo = false;
           player.chips = 0;  // 각 플레이어에게 20개의 칩 지급
           player.chipDiff = 0;  // 각 플레이어에게 20개의 칩 지급
@@ -585,7 +586,7 @@ const ioHandler = (req, res) => {
             horses: [],
             players: room.players,
             positions: [],
-            finishLine: 9,
+            finishLine: HORSE_GAME.DEFAULT_FINISH_LINE,
             statusInfo: player,
             isRoundStarted: false,
             rounds: [],
@@ -598,7 +599,7 @@ const ioHandler = (req, res) => {
           horses: [],
           players: room.players,
           positions: [],
-          finishLine: 9,
+          finishLine: HORSE_GAME.DEFAULT_FINISH_LINE,
           statusInfo: {},
           isRoundStarted: false,
           rounds: [],
@@ -613,12 +614,12 @@ const ioHandler = (req, res) => {
       socket.on('horse-update-memo', ({ roomId, index, memo, sessionId }, callback) => {
         const room = rooms[roomId];
         if (!room) {
-          return callback({ success: false, message: '존재하지 않는 게임방입니다.' });
+          return callback({ success: false, message: MESSAGES.ROOM_NOT_FOUND });
         }
 
         const player = rooms[roomId].players.find(p => p.id === sessionId); // 요청 본인
         if (!player) {
-          return callback({ success: false, message: '당신은 게임 참가자가 아닙니다.' });
+          return callback({ success: false, message: MESSAGES.NOT_A_PARTICIPANT });
         }
 
         player.memo = player.memo || [];
