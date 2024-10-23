@@ -33,6 +33,10 @@
 4. 오프라인에서 대화를 통해 게임을 진행하며, 웹 애플리케이션은 실시간으로 정보를 처리해 결과를 도출합니다.
 5. 승자가 결정되면, 웹에서 자동으로 알림을 제공합니다.
 
+| 1.방만들기 | 1.호스트 설정 | 4.플레이 영상 | 5.승리 |
+| ------ | ------ | ------ | ------ |
+| <img src="./public/images/readme/방만들기.gif" alt="방만들기" width="100" /> | <img src="./public/images/readme/설정.gif" alt="설정" width="100" /> | <img src="./public/images/readme/플레이영상.gif" alt="플레이영상" width="100" /> | <img src="./public/images/readme/승리.gif" alt="승리" width="100" /> |
+
 ## ⚙️ 기술 스택
 
 - **프론트엔드**: Next.js
@@ -101,3 +105,12 @@ npm install next socket.io
    ```
 **배포된 버전 접속**:
 로컬에서 실행하지 않고 바로 플레이하려면 아래 링크를 클릭하세요: https://gameweb-production.up.railway.app/
+
+## 📄 라이선스
+
+이 프로젝트는 [MIT 라이선스](LICENSE)를 따릅니다.
+
+## 🚀 향후 계획
+
+- **새로운 게임 모드 추가**
+- **TS로 마이그레이션**
