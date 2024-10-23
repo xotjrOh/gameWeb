@@ -168,7 +168,7 @@ export default function GameRooms({ session }) {
       </Button>
 
       {/* 방 목록 */}
-      <Box sx={{ width: '100%', maxWidth: '1000px' }}>
+      <Box sx={{ width: '100%' }}>
         {Object.values(rooms).length === 0 ? (
           <Typography variant="body1" color="textSecondary" sx={{ ml: 2 }}>
             현재 생성된 방이 없습니다.
