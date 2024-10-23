@@ -1,7 +1,7 @@
 import { GAME_STATUS } from '../utils/constants';
 
 /**
- * @see 베팅 -> {말, 전진, 칩}
+ * 베팅 -> {말, 전진, 칩}
  */
 export function calculateRoundResult(room, bets) {
     const sortedHorses = Object.entries(bets)
@@ -31,7 +31,7 @@ export function getProgressTwoHorses(roundResult) {
 }
 
 /**
- * @see 무효표 히스토리 추가, 예측 혜택 반영
+ * 무효표 히스토리 추가, 예측 혜택 반영
  */
 export function updatePlayersAfterRound(room, progressTwoHorses, io) {
     room.players.forEach(player => {
@@ -57,7 +57,7 @@ export function updatePlayersAfterRound(room, progressTwoHorses, io) {
 }
 
 /**
- * @see roundResult{말, 전진, 칩} -> horsesData{말, 위치} -> emit
+ * roundResult{말, 전진, 칩} -> horsesData{말, 위치} -> emit
  */
 export function updateHorsePositions(room, roundResult, io, roomId) {
     roundResult.forEach(({ horse, progress }) => {
@@ -73,7 +73,7 @@ export function updateHorsePositions(room, roundResult, io, roomId) {
 }
 
 /**
- * @see 결승선 통과 확인 -> 통과하면 winner loser들 emit
+ * 결승선 통과 확인 -> 통과하면 winner loser들 emit
  */
 export function checkGameEnd(room, io, roomId) {
     const horsesPositions = Object.entries(room.gameData.positions);

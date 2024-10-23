@@ -12,6 +12,7 @@ export const MESSAGES = {
     ONLY_HOST_CAN_CLOSE_ROOM: '방장만이 방을 종료할 수 있습니다.',
     ROOM_CLOSED_BY_HOST: '방장이 방을 종료했습니다.',
     NOT_ALL_PLAYERS_ASSIGNED: '모든 플레이어에게 말이 할당되지 않았습니다.',
+    NICKNAME_REQUIRED: '닉네임을 정해주세요.',
     NICKNAME_TOO_LONG: `닉네임은 ${MAX_NICKNAME_LENGTH}자 이하로 입력해주세요.`,
     NOT_A_PARTICIPANT: '당신은 게임 참가자가 아닙니다.',
     INSUFFICIENT_CHIPS: '칩이 부족합니다.',
@@ -28,9 +29,34 @@ export const GAME_STATUS = {
     IN_PROGRESS: '게임중',
 }
 
-// horse 게임
-export const HORSE_GAME = {
-    DEFAULT_FINISH_LINE : 9,
+export const DEFAULT_GAME_DATA = {
+    "horse" : {
+        finishLine: 9,
+        horses: [],
+        positions: [],
+        rounds: [],
+        isTimeover: true,
+        isRoundStarted: false,
+    },
+    "shuffle":{
+        hello : "world"
+    },
 }
 
-
+export const DEFAULT_PLAYER_DATA = {
+    "horse" : { // statusInfo 데이터
+        dummyName: NOT_ASSIGNED,
+        horse: NOT_ASSIGNED,
+        isSolo: false,
+        chips: 0,
+        chipDiff: 0,
+        rounds: [],
+        voteHistory: [],
+        isBetLocked: false,
+        isVoteLocked: false,
+        memo: [],
+    },
+    "shuffle":{
+        hello : "world"
+    },
+}

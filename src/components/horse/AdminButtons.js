@@ -65,52 +65,52 @@ function AdminButtons({ roomId, socket, session, isRoundStarted, isTimeover }) {
     <Box mt={2} mb={4}>
       <Grid container spacing={2} justifyContent="space-between" alignItems="center">
         <Grid size={{ xs: 12, sm: 3 }}>
-            <Button
+          <Button
             fullWidth
             variant="contained"
             color="primary"
             onClick={() => openModal('settings')}
             disabled={isRoundStarted}
             startIcon={<SettingsIcon />}
-            >
+          >
             설정
-            </Button>
+          </Button>
         </Grid>
         <Grid size={{ xs: 12, sm: 3 }}>
-            <Button
+          <Button
             fullWidth
             variant="contained"
             color="primary"
             onClick={assignRoles}
             disabled={isRoundStarted}
             startIcon={<AssignRolesIcon />}
-            >
+          >
             역할 할당
-            </Button>
+          </Button>
         </Grid>
 
         <Grid size={{ xs: 12, sm: 3 }}>
-            <Button
+          <Button
             fullWidth
             variant="contained"
             color="secondary"
             onClick={() => openModal('startRound')}
             disabled={!isTimeover}
             startIcon={<StartRoundIcon />}
-            >
+          >
             라운드 시작
-            </Button>
+          </Button>
         </Grid>
         <Grid size={{ xs: 12, sm: 3 }}>
-            <Button
+          <Button
             fullWidth
             variant="contained"
             color="secondary"
             onClick={() => openModal('newGame')}
             startIcon={<NewGameIcon />}
-            >
+          >
             새 게임
-            </Button>
+          </Button>
         </Grid>
 
         <Grid size={{ xs: 12 }} style={{ textAlign: 'right' }}>

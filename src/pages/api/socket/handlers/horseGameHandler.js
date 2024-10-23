@@ -1,9 +1,10 @@
+import _ from 'lodash';
 import { rooms, timers } from '../state/gameState';
-import { NOT_ASSIGNED, GAME_STATUS, HORSE_GAME } from '../utils/constants';
+import { GAME_STATUS, DEFAULT_GAME_DATA, DEFAULT_PLAYER_DATA } from '../utils/constants';
 import { validateRoom, validatePlayer, validateAssignedByHorseGame, validateChipsByHorseGame } from '../utils/validation';
 import { calculateRoundResult, getProgressTwoHorses, updatePlayersAfterRound, updateHorsePositions, checkGameEnd,
     generateHorseNames, assignRolesToPlayers, recordPlayerBets, updatePlayerChipHistory,
- } from '../services/horseGameService';
+} from '../services/horseGameService';
 
 const horseGameHandler = (io, socket) => {
     socket.on('horse-start-round', ({ roomId, duration }, callback) => {
@@ -186,59 +187,51 @@ const horseGameHandler = (io, socket) => {
     // 새로운 게임 시작을 위한 이벤트 추가
     socket.on('horse-new-game', ({ roomId }, callback) => {
         try {
+            console.log(DEFAULT_GAME_DATA, DEFAULT_PLAYER_DATA);
             const room = validateRoom(roomId);
-
+            const defaultStatusInfo = _.cloneDeep(DEFAULT_PLAYER_DATA[room.gameType]);
             room.status = GAME_STATUS.PENDING;
 
             clearInterval(timers[roomId]);
             delete timers[roomId];
             io.to(roomId).emit('update-timer', 0);
 
-            // gameData 초기화
-            room.gameData = {
-                finishLine: HORSE_GAME.DEFAULT_FINISH_LINE,  // 기본 설정
-                horses: [],
-                positions: [],  // 경주마 위치 초기화
-                rounds: [],  // 라운드 초기화
-                isTimeover: true,
-            };
+            room.gameData = _.cloneDeep(DEFAULT_GAME_DATA["horse"]);
 
+            // statusInfo 초기화
+            // 'gameData 초기화'와 병합 금지. room.players 전달때문
             room.players.forEach(player => {
-                // statusInfo 초기화
-                player.dummyName = NOT_ASSIGNED;
-                player.horse = NOT_ASSIGNED;
-                player.isSolo = false;
-                player.chips = 0;  // 각 플레이어에게 20개의 칩 지급
-                player.chipDiff = 0;  // 각 플레이어에게 20개의 칩 지급
-                player.rounds = [];  // 각 플레이어의 라운드 정보 초기화
-                player.voteHistory = [];  // 투표 내역 초기화
-                player.isBetLocked = false;  // 베팅 잠금 초기화
-                player.isVoteLocked = false;  // 투표 잠금 초기화
-                player.memo = [];
+                Object.assign(player, defaultStatusInfo);
+            });
 
-                // gameData 초기화
+            // gameData 초기화
+            room.players.forEach(player => {
                 io.to(player.socketId).emit('game-data-update', {
-                    horses: [],
                     players: room.players,
-                    positions: [],
-                    finishLine: HORSE_GAME.DEFAULT_FINISH_LINE,
+
+                    finishLine: room.gameData.finishLine,
+                    horses: room.gameData.horses,
+                    positions: room.gameData.positions,
+                    rounds: room.gameData.rounds,
+                    isTimeover: room.gameData.isTimeover,
+                    isRoundStarted: room.gameData.isRoundStarted,
+
                     statusInfo: player,
-                    isRoundStarted: false,
-                    rounds: [],
-                    isTimeover: true,
                 });
             });
 
             // host 초기화
             io.to(room.host.socketId).emit('game-data-update', {
-                horses: [],
                 players: room.players,
-                positions: [],
-                finishLine: HORSE_GAME.DEFAULT_FINISH_LINE,
+
+                finishLine: room.gameData.finishLine,
+                horses: room.gameData.horses,
+                positions: room.gameData.positions,
+                rounds: room.gameData.rounds,
+                isTimeover: room.gameData.isTimeover,
+                isRoundStarted: room.gameData.isRoundStarted,
+
                 statusInfo: {},
-                isRoundStarted: false,
-                rounds: [],
-                isTimeover: true,
             });
 
             io.emit('room-updated', rooms);
