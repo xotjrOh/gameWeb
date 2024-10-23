@@ -63,7 +63,7 @@ export function updateHorsePositions(room, roundResult, io, roomId) {
     roundResult.forEach(({ horse, progress }) => {
         room.gameData.positions[horse] = (room.gameData.positions[horse] || 0) + progress;
     });
-    
+
     const positions = room.gameData.positions || {};
     const horsesData = Object.entries(positions).map(([name, position]) => ({
         name,
@@ -106,4 +106,59 @@ export function checkGameEnd(room, io, roomId) {
 
         room.status = GAME_STATUS.PENDING;
     }
+}
+
+export function generateHorseNames(numHorses) {
+    const horses = [];
+    for (let i = 0; i < numHorses; i++) {
+        horses.push(String.fromCharCode(65 + i)); // 'A', 'B', 'C', ...
+    }
+    return horses;
+}
+
+export function assignRolesToPlayers(players, horses, io) {
+    players.sort(() => Math.random() - 0.5);
+    const randomHorses = [...horses];
+    randomHorses.sort(() => Math.random() - 0.5);
+
+    const numPlayers = players.length;
+    const numHorses = horses.length;
+
+    players.forEach((player, index) => {
+        player.dummyName = `player${index + 1}`;
+        player.horse = randomHorses[index % numHorses];
+        player.chips = 20;
+        player.chipDiff = 0;
+        player.isSolo = numPlayers % 2 !== 0 && index === Math.floor(numPlayers / 2);
+        player.rounds = [];
+        player.voteHistory = [];
+        player.isBetLocked = false;
+        player.isVoteLocked = false;
+        player.memo = [];
+
+        io.to(player.socketId).emit('status-update', player); // id, name, socketId도 함께 전달됨
+    });
+}
+
+/**
+ * 1라운드용 bets데이터 : 라운드 시작시 bets초기화, 라운드 종료시 여기서 udpate된 bets값 이용
+ */
+export function recordPlayerBets(room, bets) {
+    room.gameData.bets = room.gameData.bets || {};
+    Object.entries(bets).forEach(([horse, chips]) => {
+        room.gameData.bets[horse] = (room.gameData.bets[horse] || 0) + chips;
+    });
+}
+
+/**
+ * 플레이어의 칩 사용 히스토리를 업데이트합니다.
+ */
+export function updatePlayerChipHistory(player, bets) {
+    const sortedHorses = Object.entries(bets)
+        .sort(([, chipsA], [, chipsB]) => chipsB - chipsA);
+    const roundResult = sortedHorses.map(([horse, chips]) => ({
+        horse,
+        chips,
+    }));
+    player.rounds.push(roundResult || []);
 }

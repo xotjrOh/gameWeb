@@ -164,10 +164,10 @@ const commonHandler = (io, socket) => {
         // 플레이어 추가 로직
         room.players.push({
             id: sessionId,
-            dummyName: NOT_ASSIGNED,
-            horse: NOT_ASSIGNED,
             name: userName,
             socketId: socket.id,
+            dummyName: NOT_ASSIGNED,
+            horse: NOT_ASSIGNED,
             chips: 0,
             chipDiff: 0,
             rounds: [],

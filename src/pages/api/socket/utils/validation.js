@@ -26,3 +26,14 @@ export function validateAssignedByHorseGame(room) {
         throw new Error(MESSAGES.NOT_ALL_PLAYERS_ASSIGNED);
     }
 }
+
+/**
+ * @see 과잉 투자 체크
+ */
+export function validateChipsByHorseGame(player, bets) {
+    const totalBets = Object.values(bets).reduce((sum, chips) => sum + chips, 0);
+    if (player.chips < totalBets) {
+        return new Error(MESSAGES.INSUFFICIENT_CHIPS);
+    }
+    return totalBets;
+}
