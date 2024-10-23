@@ -39,7 +39,18 @@ export const DEFAULT_GAME_DATA = {
         isRoundStarted: false,
     },
     "shuffle":{
-        hello : "world"
+        videoUrl: 'https://youtube.com/...',
+        startTime: 30,
+        interval: 3,
+        clipCount: 4,
+        clips: [
+            // 섞인 클립 정보
+            { id: 'A', start: 30, end: 33 },
+            // ...
+        ],
+        correctOrder: ['A', 'B', 'C', 'D'],
+        currentPhase: 'waiting', // 'playing', 'answering', 'result'
+        timer: null,
     },
 }
 
@@ -57,6 +68,7 @@ export const DEFAULT_PLAYER_DATA = {
         memo: [],
     },
     "shuffle":{
-        hello : "world"
+        answer: null,
+        isAlive: true,
     },
 }

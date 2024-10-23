@@ -92,6 +92,7 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
             }}
           >
             <MenuItem value="horse">🏇경마게임</MenuItem>
+            <MenuItem value="shuffle">🔀뒤죽박죽</MenuItem>
           </Select>
         </FormControl>
 

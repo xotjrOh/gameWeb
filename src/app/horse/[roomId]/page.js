@@ -22,7 +22,7 @@ import useRedirectIfInvalidRoom from '@/hooks/useRedirectIfInvalidRoom';
 import { useSocket } from '@/components/provider/SocketProvider';
 import { useSession } from 'next-auth/react';
 import useUpdateSocketId from '@/hooks/useUpdateSocketId';
-import useGameData from '@/hooks/useGameData';
+import useHorseGameData from '@/hooks/useHorseGameData';
 import RoundResultModal from '@/components/horse/RoundResultModal';
 import GameEndModal from '@/components/horse/GameEndModal';
 import useCheckVersion from '@/hooks/useCheckVersion';
@@ -49,7 +49,7 @@ export default function HorseGamePage({ params }) {
   useCheckVersion(socket);
   useRedirectIfInvalidRoom(roomId);
   useUpdateSocketId(socket, session, roomId);
-  useGameData(roomId, socket, session?.user?.id);
+  useHorseGameData(roomId, socket, session?.user?.id);
   useLeaveRoom(socket, dispatch);
 
   // 탭 정보 배열 정의

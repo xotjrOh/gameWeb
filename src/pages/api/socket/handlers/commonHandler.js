@@ -60,12 +60,10 @@ const commonHandler = (io, socket) => {
                         socketId: socket.id,
                     },
                     players: [],
-                    gameData: {
-                    },
+                    gameData: _.cloneDeep(DEFAULT_GAME_DATA[gameType]),
                     status: GAME_STATUS.PENDING,
                     maxPlayers,
                 };
-                rooms[roomId].gameData = _.cloneDeep(DEFAULT_GAME_DATA[gameType]);
                 
                 socket.join(roomId.toString());
                 callback({ success: true, roomId });

@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { setGameData, updatePositions, updateRounds, updateFinishLine, updatePersonalRounds, updateVoteHistory, updateIsBetLocked, updateIsVoteLocked, updateChip, updateChipDiff } from '@/store/horseSlice'; // Redux 슬라이스에서 가져옴
+import { setGameData, updatePositions, updateRounds, updateFinishLine, updatePersonalRounds, 
+    updateVoteHistory, updateIsBetLocked, updateIsVoteLocked, updateChip, updateChipDiff 
+} from '@/store/horseSlice'; // Redux 슬라이스에서 가져옴
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 
-const useGameData = (roomId, socket, sessionId) => {
+const useHorseGameData = (roomId, socket, sessionId) => {
   const dispatch = useDispatch();
   const { enqueueSnackbar } = useCustomSnackbar();
 
@@ -63,4 +65,4 @@ const useGameData = (roomId, socket, sessionId) => {
   }, [roomId, socket?.id, sessionId, dispatch]);
 };
 
-export default useGameData;
+export default useHorseGameData;

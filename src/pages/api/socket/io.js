@@ -1,6 +1,7 @@
 import { Server } from 'socket.io';
 import commonHandler from './handlers/commonHandler';
 import horseGameHandler from './handlers/horseGameHandler';
+import shuffleGameHandler from './handlers/shuffleGameHandler';
 
 const ioHandler = (req, res) => {
   if (!res.socket.server.io) {
@@ -17,6 +18,7 @@ const ioHandler = (req, res) => {
 
       commonHandler(io, socket);
       horseGameHandler(io, socket);
+      shuffleGameHandler(io, socket);
 
       socket.on('disconnect', () => {
         console.log('server : A user disconnected');

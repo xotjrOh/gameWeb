@@ -187,7 +187,6 @@ const horseGameHandler = (io, socket) => {
     // 새로운 게임 시작을 위한 이벤트 추가
     socket.on('horse-new-game', ({ roomId }, callback) => {
         try {
-            console.log(DEFAULT_GAME_DATA, DEFAULT_PLAYER_DATA);
             const room = validateRoom(roomId);
             const defaultStatusInfo = _.cloneDeep(DEFAULT_PLAYER_DATA[room.gameType]);
             room.status = GAME_STATUS.PENDING;
