@@ -9,7 +9,7 @@ const shuffleSlice = createSlice({
 			isAlive: true,
 		},
 		gameData : {
-			videoUrl: 'https://youtube.com/...',
+			videoUrl: 'https://www.youtube.com/watch?v=Gh-M6yHqpDc&t=160s',
 			startTime: 30,
 			interval: 3,
 			clipCount: 4,
@@ -20,7 +20,9 @@ const shuffleSlice = createSlice({
 			],
 			correctOrder: ['A', 'B', 'C', 'D'],
 			currentPhase: 'waiting', // 'playing', 'answering', 'result'
-			timer: null,
+			isTimeover: true,
+
+			timeLeft: 0,
 		}
 	},
 	reducers : {

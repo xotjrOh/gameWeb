@@ -31,6 +31,8 @@ const horseSlice = createSlice({
 				// 	{ horse : "B", chips: 7,  progress: 0},
 				// ],
 			],
+
+			timeLeft: 0,
 		}
 	},
 	reducers : {

@@ -11,7 +11,7 @@ const useHorseGameData = (roomId, socket, sessionId) => {
 
   useEffect(() => {
     if (socket && roomId) {
-        socket.on('game-data-update', (data) => {
+        socket.on('horse-game-data-update', (data) => {
             dispatch(setGameData(data)); // Redux에 상태 저장
         });
 
@@ -51,7 +51,7 @@ const useHorseGameData = (roomId, socket, sessionId) => {
 
         // cleanup: 컴포넌트가 언마운트되거나 socket이 변경될 때 이벤트 제거
         return () => {
-            socket.off('game-data-update');
+            socket.off('horse-game-data-update');
             socket.off('update-positions');
             socket.off('update-finishLine');
             socket.off('personal-round-update');

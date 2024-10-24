@@ -168,7 +168,7 @@ const horseGameHandler = (io, socket) => {
             }));
 
             // 현재 게임 데이터를 클라이언트로 전송
-            socket.emit('game-data-update', {
+            socket.emit('horse-game-data-update', {
                 horses: room.gameData.horses || [],
                 players: room.players || [],
                 positions: horsesData,
@@ -205,7 +205,7 @@ const horseGameHandler = (io, socket) => {
 
             // gameData 초기화
             room.players.forEach(player => {
-                io.to(player.socketId).emit('game-data-update', {
+                io.to(player.socketId).emit('horse-game-data-update', {
                     players: room.players,
 
                     finishLine: room.gameData.finishLine,
@@ -216,11 +216,12 @@ const horseGameHandler = (io, socket) => {
                     isRoundStarted: room.gameData.isRoundStarted,
 
                     statusInfo: player,
+                    timeLeft: 0,
                 });
             });
 
             // host 초기화
-            io.to(room.host.socketId).emit('game-data-update', {
+            io.to(room.host.socketId).emit('horse-game-data-update', {
                 players: room.players,
 
                 finishLine: room.gameData.finishLine,
@@ -231,6 +232,7 @@ const horseGameHandler = (io, socket) => {
                 isRoundStarted: room.gameData.isRoundStarted,
 
                 statusInfo: {},
+                timeLeft: 0,
             });
 
             io.emit('room-updated', rooms);

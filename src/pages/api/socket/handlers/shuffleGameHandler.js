@@ -79,7 +79,34 @@ const shuffleGameHandler = (io, socket) => {
         }
     });
 
-    // 기타 필요한 이벤트 핸들러 추가...
+    socket.on('shuffle-get-game-data', ({ roomId, sessionId }, callback) => {
+        try {
+            console.log("server : shuffle-get-game-data", sessionId);
+            const room = validateRoom(roomId);
+
+            const player = rooms[roomId].players.find(p => p.id === sessionId);
+
+            // 현재 게임 데이터를 클라이언트로 전송
+            socket.emit('shuffle-game-data-update', {
+                gameData : {
+                    videoUrl: room.gameData.videoUrl,
+                    startTime: room.gameData.startTime,
+                    interval: room.gameData.interval,
+                    clipCount: room.gameData.clipCount,
+                    clips: room.gameData.clips,
+                    correctOrder: room.gameData.correctOrder,
+                    currentPhase: room.gameData.currentPhase,
+                    isTimeover: room.gameData.isTimeover || true,
+                    timeLeft: 0,
+                },
+                players: room.players || [],
+                statusInfo : player || { },
+            });
+            return callback({ success: true });
+        } catch (error) {
+            callback({ success: false, message: error.message });
+        }
+    });
 
 };
 
