@@ -66,23 +66,25 @@ export const SocketProvider = ({children}) => {
 
         setSocket(newSocket);
     
-        return async () => {
+        // todo : disconnect가 문제인지 테스트
+        // return async () => {
+        return () => {
           if (socket) {
-            console.log("provider에서 socket disconnect");
+            console.log("provider에서 socket disconnect 테스트 점요");
             // socket.disconnect();
-            const disconnectSocket = async () => {
-                if (socket && socket.connected) {
-                    return new Promise((resolve) => {
-                        console.log('기존 소켓 연결 해제 중...', socket.id);
-                        socket.disconnect(() => {
-                            console.log('소켓 연결이 해제되었습니다.');
-                            resolve();
-                        });
-                    });
-                }
-            };
+            // const disconnectSocket = async () => {
+            //     if (socket && socket.connected) {
+            //         return new Promise((resolve) => {
+            //             console.log('기존 소켓 연결 해제 중...', socket.id);
+            //             socket.disconnect(() => {
+            //                 console.log('소켓 연결이 해제되었습니다.');
+            //                 resolve();
+            //             });
+            //         });
+            //     }
+            // };
 
-            await disconnectSocket();
+            // await disconnectSocket();
           }
         };
     }, [socket?.id, dispatch]);

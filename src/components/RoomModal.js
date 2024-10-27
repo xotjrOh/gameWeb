@@ -2,7 +2,7 @@
 
 import { useForm } from 'react-hook-form';
 import { TextField, Button, Select, MenuItem, InputLabel, FormControl, Backdrop, IconButton, Box, Typography } from '@mui/material';
-import { Close as CloseIcon } from '@mui/icons-material';
+import { Cancel as CancelIcon } from '@mui/icons-material';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 import { useHideScroll } from '@/hooks/useHideScroll';
 import { setIsLoading } from '@/store/loadingSlice';
@@ -48,9 +48,9 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
           sx={{ position: 'absolute', top: 16, right: 16 }} 
           onClick={closeModal}
         >
-          <CloseIcon />
+          <CancelIcon />
         </IconButton>
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Typography variant="h5" color="primary" fontWeight="bold">방 만들기</Typography>
           </Box>

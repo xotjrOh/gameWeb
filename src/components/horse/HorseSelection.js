@@ -4,14 +4,14 @@ function HorseSelection({ horses, selectedHorse, setSelectedHorse, isVoteDisable
     
   return (
     <Paper elevation={3} sx={{ p: 4 }}>
-        <Typography variant="h5" color="primary" fontWeight="bold">
+        <Typography variant="h5" color="primary" fontWeight="bold" sx={{ ml: '6px' }}>
           예측
         </Typography>
-        <Typography variant="body2" color="textSecondary">
+        <Typography variant="body2" color="textSecondary" sx={{ ml: '6px', mr: '6px', mt:1 }}>
           이번 라운드의 최다 득표 말을 맞추면 칩이 2개 추가됩니다.
         </Typography>
 
-        <Typography variant="caption" color="textSecondary" align="right" sx={{ display: 'block', mt: 1 }}>
+        <Typography variant="caption" color="textSecondary" align="right" sx={{ display: 'block', mt: 1, mr:'6px' }}>
           수정 불가능 · 단일 선택 가능
         </Typography>
         

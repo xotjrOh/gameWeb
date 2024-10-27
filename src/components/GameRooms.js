@@ -23,8 +23,6 @@ import useLoadingReset from '@/hooks/useLoadingReset';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 import PeopleIcon from '@mui/icons-material/People'; // 사람 아이콘
 import AddIcon from '@mui/icons-material/Add';
-import DoorFrontIcon from '@mui/icons-material/DoorFront'; // 귀여운 문 아이콘
-import ChairIcon from '@mui/icons-material/Chair'; // 기다리는 느낌의 의자 아이콘
 
 const gameTypeMap = {
   horse: '🏇 경마게임',
@@ -129,7 +127,6 @@ export default function GameRooms({ session }) {
           marginBottom: '16px', // 적당한 여백
         }}
       >
-        <DoorFrontIcon sx={{ fontSize: 30, color: '#333333', mr: 1 }} />  {/* 귀여운 문 아이콘 */}
         <Typography
           variant="h5"
           sx={{
@@ -140,7 +137,6 @@ export default function GameRooms({ session }) {
         >
           대기방
         </Typography>
-        <ChairIcon sx={{ fontSize: 30, color: '#333333', ml: 1 }} />  {/* 기다리는 의자 아이콘 */}
       </Box>
 
       {/* 방 만들기 버튼 */}
@@ -230,8 +226,8 @@ export default function GameRooms({ session }) {
                       <Stack direction="column" alignItems="flex-end">
                         <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mb: 1 }}>
                           <PeopleIcon fontSize="small" />
-                          <Typography variant="body2" color="secondary" sx={{ whiteSpace: 'nowrap' }}>
-                            {room.players.length} / {room.maxPlayers} 명
+                          <Typography variant="body2" color="secondary" sx={{ whiteSpace: 'nowrap', pr:'6px' }}>
+                            {room.players.length} / {room.maxPlayers}
                           </Typography>
                         </Stack>
                         <Typography

@@ -4,13 +4,13 @@ function BetHistory({ rounds }) {
 
     return (
       <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
-        <Typography variant="h6" color="primary" fontWeight="bold" mb={2}>
+        <Typography variant="h6" color="primary" fontWeight="bold" mb={2} sx={{ ml: '6px' }}>
           내 베팅 내역
         </Typography>
         {rounds && rounds.length > 0 ? (
           rounds.map((round, roundIndex) => (
             <Box key={roundIndex} mb={3}>
-              <Typography variant="subtitle1" fontWeight="bold" mb={1}>
+              <Typography variant="subtitle1" fontWeight="bold" mb={1} sx={{ ml: '6px' }}>
                 라운드 {roundIndex + 1}
               </Typography>
               {round.map((bet, betIndex) => (

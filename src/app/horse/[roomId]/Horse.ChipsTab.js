@@ -89,15 +89,15 @@ function ChipsTab({ roomId, socket, session }) {
     <Paper elevation={3} sx={{ p: { xs: 4, md: 6 }, mt: 2 }}>
       {/* 헤더 */}
       <Box display="flex" alignItems="baseline" mb={2}>
-        <Typography variant="h5" color="primary" fontWeight="bold">
+        <Typography variant="h5" color="primary" fontWeight="bold" sx={{ ml: '6px' }}>
           칩 개수
         </Typography>
         <Typography variant="caption" color="textSecondary" sx={{ ml: 1 }}>
           (각 메모는 16글자 제한)
         </Typography>
       </Box>
-      <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-        플레이어 정보를 메모해 두면 기억하기 편리합니다.
+      <Typography variant="body2" color="textSecondary" sx={{ ml: '6px', mr: '6px', mt: 1 }}>
+        플레이어 정보를 메모하면 기억하기 편합니다.
       </Typography>
 
       {/* 플레이어 목록 */}
@@ -121,11 +121,11 @@ function ChipsTab({ roomId, socket, session }) {
                   display: 'flex',
                   flexDirection: isMobile ? 'column' : 'row', // 반응형 레이아웃 적용
                   alignItems: isMobile ? 'flex-start' : 'center',
-                  py: 2,
+                  py: 1,
                 }}
               >
                 <Box sx={{ flexGrow: 1 }}>
-                  <Typography variant="body1" sx={{ whiteSpace: 'nowrap', mr: isMobile ? 0 : 2 }}>
+                  <Typography variant="body1" sx={{ whiteSpace: 'nowrap', ml:'6px', mr: isMobile ? 0 : 2 }}>
                     {player.dummyName}: {player.chips.toString().padStart(2, '0')}개
                     {/* 칩 변화량 표시 */}
                     {player.chipDiff !== 0 && (
@@ -159,14 +159,13 @@ function ChipsTab({ roomId, socket, session }) {
                     border: '1px solid',
                     borderColor: 'grey.400',
                     p: 1,
-                    mt: isMobile ? 1 : 0,
+                    mt: isMobile ? 0.5 : 0,
                     width: '100%',
                     borderRadius: 1,
                     fontSize: '1rem',
                   }}
                 />
               </Box>
-              {index < players.length - 1 && <Divider />}
             </Box>
           );
         })}

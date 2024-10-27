@@ -8,12 +8,11 @@ import {
   Typography,
   IconButton,
   Modal,
-  Button,
   Fade,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import PersonIcon from '@mui/icons-material/Person';
+import { Person as PersonIcon, Cancel as CancelIcon } from '@mui/icons-material';
 
 export default function MyStatusButton({ roomId, socket, session }) {
   const dispatch = useDispatch();
@@ -64,14 +63,15 @@ export default function MyStatusButton({ roomId, socket, session }) {
               top: '50%',
               left: '50%',
               transform: 'translate(-50%, -50%)',
-              width: isMobile ? '80%' : 250,
+              width: isMobile && statusInfo?.isSolo ? '80%' : 250,
               bgcolor: 'background.paper',
               borderRadius: 2,
               boxShadow: 24,
               p: 4,
-              textAlign: 'center',
+              textAlign: 'left',
             }}
           >
+            
             <Typography
               id="status-modal-title"
               variant="h6"
@@ -80,20 +80,49 @@ export default function MyStatusButton({ roomId, socket, session }) {
               fontWeight="bold"
               mb={2}
             >
-              내 상태
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <PersonIcon color="primary" sx={{ mr: 1 }}/>
+                내 상태
+              </Box>
             </Typography>
-            <Typography variant="body1" mb={1}>
-              닉네임: {statusInfo?.name ?? '없음'}
-            </Typography>
-            <Typography variant="body1" mb={1}>
-              익명 이름: {statusInfo?.dummyName ?? '없음'}
-            </Typography>
-            <Typography variant="body1" mb={1}>
-              내 경주마: {statusInfo?.horse ?? '없음'}
-            </Typography>
-            <Typography variant="body1" mb={1}>
-              남은 칩 개수: {statusInfo?.chips ?? 0}
-            </Typography>
+            <IconButton 
+              sx={{ position: 'absolute', top: 16, right: 16 }} 
+              onClick={handleClose}
+            >
+              <CancelIcon />
+            </IconButton>
+            <Box sx={{ display: 'flex', mb: 1 }}>
+              <Typography variant="body1" fontWeight="bold" color="textPrimary" sx={{ flex: '0 0 120px' }}>
+                닉네임
+              </Typography>
+              <Typography variant="body1" color="textSecondary" sx={{ flex: 1 }}>
+                {statusInfo?.name ?? '없음'}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', mb: 1 }}>
+              <Typography variant="body1" fontWeight="bold" color="textPrimary" sx={{ flex: '0 0 120px' }}>
+                익명 이름
+              </Typography>
+              <Typography variant="body1" color="textSecondary" sx={{ flex: 1 }}>
+                {statusInfo?.dummyName ?? '없음'}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', mb: 1 }}>
+              <Typography variant="body1" fontWeight="bold" color="textPrimary" sx={{ flex: '0 0 120px' }}>
+                내 경주마
+              </Typography>
+              <Typography variant="body1" color="textSecondary" sx={{ flex: 1 }}>
+                {statusInfo?.horse ?? '없음'}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', mb: 1 }}>
+              <Typography variant="body1" fontWeight="bold" color="textPrimary" sx={{ flex: '0 0 120px' }}>
+                남은 칩 개수
+              </Typography>
+              <Typography variant="body1" color="textSecondary" sx={{ flex: 1 }}>
+                {statusInfo?.chips ?? 0}
+              </Typography>
+            </Box>
             {statusInfo?.isSolo && (
               <Typography variant="body2" color="textSecondary" mt={2}>
                 당신은 팀원이 없는 솔로 플레이어입니다.<br/>
@@ -103,14 +132,6 @@ export default function MyStatusButton({ roomId, socket, session }) {
                 혼자만 베팅 개수를 확인할 수 있습니다.
               </Typography>
             )}
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleClose}
-              sx={{ mt: 3 }}
-            >
-              닫기
-            </Button>
           </Box>
         </Fade>
       </Modal>

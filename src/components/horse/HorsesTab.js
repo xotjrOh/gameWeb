@@ -36,7 +36,7 @@ function HorsesTab({ roomId, socket, session }) {
   return (
     <Paper elevation={3} sx={{ p: { xs: 4, md: 6 }, mt: 2 }}>
       {/* 경주마 현황 제목 */}
-      <Typography variant="h5" color="primary" fontWeight="bold" mb={4}>
+      <Typography variant="h5" color="primary" fontWeight="bold" mb={4} sx={{ ml: '6px' }}>
         경주마 현황
       </Typography>
 
@@ -116,15 +116,16 @@ function HorsesTab({ roomId, socket, session }) {
       <Typography
         variant="body2"
         color="textSecondary"
-        textAlign="center"
-        mt={2}
+        textAlign="right"
+        mt={1}
+        sx={{ mr: '6px' }}
       >
         결승선: {finishLine}칸
       </Typography>
 
       {/* 라운드별 경주마 현황 */}
       <Box mt={3}>
-        <Typography variant="h6" color="primary" fontWeight="bold" mb={2}>
+        <Typography variant="h6" color="primary" fontWeight="bold" mb={2} sx={{ ml: '6px' }}>
           라운드별 경주마 현황
         </Typography>
         {(statusInfo.isSolo) && (
@@ -150,8 +151,8 @@ function HorsesTab({ roomId, socket, session }) {
             });
 
             return (
-              <Box key={roundIndex} mb={6}>
-                <Typography variant="subtitle1" fontWeight="bold" mb={2}>
+              <Box key={roundIndex} mb={3}>
+                <Typography variant="subtitle1" fontWeight="bold" mb={1} sx={{ ml: '6px' }}>
                   라운드 {roundIndex + 1}
                 </Typography>
                 <Grid container spacing={1}>

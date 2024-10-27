@@ -4,7 +4,7 @@ function VoteHistory({ voteHistory, rounds }) {
     
   return (
     <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
-      <Typography variant="h6" color="primary" fontWeight="bold" mb={2}>
+      <Typography variant="h6" color="primary" fontWeight="bold" mb={2} sx={{ ml: '6px' }}>
         내 투표 내역
       </Typography>
       {voteHistory && voteHistory.length > 0 ? (

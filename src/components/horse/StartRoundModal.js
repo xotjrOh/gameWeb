@@ -55,7 +55,7 @@ function StartRoundModal({ open, onClose, roomId, socket }) {
   return (
     <Dialog open={open} onClose={onClose}>
       <DialogTitle>
-        <Box display="flex" alignItems="center">
+        <Box display="flex" alignItems="center" sx={{ ml: '6px' }}>
           <TimerIcon sx={{ marginRight: 1 }} />
           라운드 지속 시간 설정
         </Box>
@@ -83,6 +83,11 @@ function StartRoundModal({ open, onClose, roomId, socket }) {
                     ? fieldState.error.message
                     : '플레이어들과 조율하여 라운드 시간을 정해주세요'
                 }
+                slotProps={{
+                  formHelperText : {
+                    sx : { ml: '6px' },
+                  }
+                }}
                 onChange={(e) => {
                   const value = e.target.value;
                   field.onChange(value === '' ? '' : parseInt(value, 10));
@@ -96,7 +101,7 @@ function StartRoundModal({ open, onClose, roomId, socket }) {
         <Button onClick={onClose} color="inherit">
           취소
         </Button>
-        <Button type="submit" form="start-round-form" color="primary">
+        <Button type="submit" form="start-round-form" color="primary" sx={{ mr: '6px' }}>
           확인
         </Button>
       </DialogActions>

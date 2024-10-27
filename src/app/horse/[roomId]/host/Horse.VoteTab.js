@@ -56,7 +56,7 @@ function VoteTab({ roomId, socket, session }) {
   const isVoteDisabled = statusInfo.isVoteLocked || isTimeover;
 
   return (
-    <Box sx={{ mt:2 ,pb: 8 }}>
+    <Box sx={{ mt: 2, pb: 8 }}>
       {/* 상단 카드 */}
       <HorseSelection
         horses={horses}

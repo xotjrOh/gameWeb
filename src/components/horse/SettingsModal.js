@@ -51,7 +51,7 @@ function SettingsModal({ open, onClose, roomId, socket }) {
   return (
     <Dialog open={open} onClose={onClose}>
       <DialogTitle>
-        <Box display="flex" alignItems="center">
+        <Box display="flex" alignItems="center" sx={{ ml: '6px' }}>
           <SettingsIcon sx={{ marginRight: 1 }} />
           골인지점 설정
         </Box>
@@ -80,6 +80,11 @@ function SettingsModal({ open, onClose, roomId, socket }) {
                     ? fieldState.error.message
                     : '골인지점은 5 이상 11 이하를 추천합니다.'
                 }
+                slotProps={{
+                  formHelperText : {
+                    sx : { ml: '6px' },
+                  }
+                }}
                 onChange={(e) => {
                   const value = e.target.value;
                   field.onChange(value === '' ? '' : parseInt(value, 10));
@@ -93,7 +98,7 @@ function SettingsModal({ open, onClose, roomId, socket }) {
         <Button onClick={onClose} color="inherit">
           취소
         </Button>
-        <Button type="submit" form="settings-form" color="primary">
+        <Button type="submit" form="settings-form" color="primary" sx={{ mr: '6px' }}>
           확인
         </Button>
       </DialogActions>

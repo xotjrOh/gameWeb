@@ -29,15 +29,15 @@ function BettingSection({ horses, bets, setBets, statusInfo, isTimeover }) {
   return (
     <Paper elevation={3} sx={{ p: 4, textAlign: 'center' }}>
       <Box display="flex" justifyContent="space-between" alignItems="baseline">
-        <Typography variant="h5" color="primary" fontWeight="bold">
+        <Typography variant="h5" color="primary" fontWeight="bold" sx={{ ml: '6px' }}>
           베팅
         </Typography>
-        <Typography variant="body2" color="textSecondary">
+        <Typography variant="body2" color="textSecondary" sx={{ mr: '6px' }}>
           남은 칩 개수: {statusInfo?.chips || 0}
         </Typography>
       </Box>
 
-      <Typography variant="caption" color="textSecondary" align="right" sx={{ display: 'block', mt: 1 }}>
+      <Typography variant="caption" color="textSecondary" align="right" sx={{ display: 'block', mt: 1, mr:'6px' }}>
         수정 불가능 · 복수 베팅 가능
       </Typography>
 

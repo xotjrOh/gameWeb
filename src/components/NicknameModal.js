@@ -32,8 +32,11 @@ export default function NicknameModal({ isOpen, onClose, onSubmit }) {
           borderRadius: 2,
         }}
       >
-        <Typography variant="h6" component="h2" gutterBottom>
-          게임에 참여하실 닉네임을 입력해주세요 (최대 10자)
+        <Typography variant="h6" component="h2" gutterBottom sx={{p:1}}>
+          게임에 참여하실 닉네임을 입력해주세요{' '}
+          <Box component="span" sx={{ fontSize: '0.8rem', color: 'gray' }}>
+            (최대 10자)
+          </Box>
         </Typography>
         <TextField
           fullWidth
