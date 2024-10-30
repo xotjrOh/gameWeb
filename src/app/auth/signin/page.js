@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { signIn } from 'next-auth/react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import KakaoIcon from '@/components/icon/KakaoIcon';
 import GoogleIcon from '@/components/icon/GoogleIcon';
 import Link from 'next/link';
@@ -10,6 +10,8 @@ import { Container, Box, Button, Typography, Card, CardContent } from '@mui/mate
 
 export default function SignInPage() {
   const [isKakaoBrowser, setIsKakaoBrowser] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     const userAgent = navigator.userAgent.toLowerCase();
@@ -17,6 +19,48 @@ export default function SignInPage() {
       setIsKakaoBrowser(true);
     }
   }, []);
+
+  // 팝업창에서 로그인 창으로 돌아가면 종료
+  useEffect(() => {
+    if (window.opener) window.close();
+  }, []);
+
+  const handleSignIn = (provider) => {
+    const popup = window.open(
+      `/auth/popup?provider=${provider}`,
+      'oauthPopup',
+      'width=500,height=600'
+    );
+
+    if (!popup) {
+      alert("팝업 차단을 해제해주세요.");
+      return;
+    }
+
+    // 팝업 창으로부터 메시지 수신
+    const messageHandler = (event) => {
+      const callbackUrl = searchParams.get('callbackUrl') || window.location.origin;
+      if (event.origin !== window.location.origin) return;
+      if (event.data === 'oauth:success') {
+        // 인증 성공 시 처리
+        // window.location.reload(); // 세션이 업데이트되었으므로 페이지 새로 고침
+        router.push(callbackUrl);
+      } else if (event.data === 'oauth:error') {
+        // 인증 실패 시 처리
+        alert('인증에 실패했습니다.');
+      }
+    };
+
+    window.addEventListener('message', messageHandler);
+
+    // 팝업 창이 닫혔을 때 이벤트 리스너 제거
+    const timer = setInterval(() => {
+      if (popup.closed) {
+        clearInterval(timer);
+        window.removeEventListener('message', messageHandler);
+      }
+    }, 500);
+  };
 
   return (
     <Container
@@ -104,7 +148,7 @@ export default function SignInPage() {
                 justifyContent: 'center',
                 padding: '10px 20px',
               }}
-              onClick={() => signIn('kakao', { callbackUrl: '/' })}
+              onClick={() => handleSignIn('kakao')}
             >
               <KakaoIcon sx={{ mr: 1 }} />
               <Typography
@@ -129,7 +173,7 @@ export default function SignInPage() {
                 padding: '10px 20px',
                 color: isKakaoBrowser ? 'grey.200' : 'white',
               }}
-              onClick={() => signIn('google', { callbackUrl: '/' })}
+              onClick={() => handleSignIn('google')}
             >
               <GoogleIcon sx={{ mr: 1 }} />
               {isKakaoBrowser ? (

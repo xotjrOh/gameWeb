@@ -9,10 +9,13 @@ import HomeIcon from '@mui/icons-material/Home';
 import { signIn } from "next-auth/react";
 import Hamburger from "@/components/Hamburger";
 import UserDropdown from "@/components/UserDropdown";
+import { usePathname, useSearchParams } from 'next/navigation';
 
 export default function Header({ session }) {
   const dispatch = useDispatch();
   const { socket } = useSocket();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const handleClick = () => {
     socket?.emit('get-room-list');
@@ -21,6 +24,12 @@ export default function Header({ session }) {
     // socket.connect();
   }
 
+  const handleSignIn = () => {
+    // 현재 페이지의 URL을 생성
+    const currentUrl = `${window.location.origin}${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+    // 로그인 페이지로 이동하며, 현재 URL을 callbackUrl로 전달
+    signIn(undefined, { callbackUrl: currentUrl });
+  };
   return (
     <Box sx={{ flexGrow: 1 }}>
       <AppBar position="static" elevation={0} sx={{ backgroundColor: 'background.default', color: 'black' }}>
@@ -47,7 +56,7 @@ export default function Header({ session }) {
           {session ? (
             <UserDropdown />
           ) : (
-            <Button color="inherit" onClick={() => signIn()}>로그인</Button>
+            <Button color="inherit" onClick={handleSignIn}>로그인</Button>
           )}
         </Toolbar>
       </AppBar>

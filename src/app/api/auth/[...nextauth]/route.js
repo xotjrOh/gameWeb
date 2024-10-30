@@ -32,12 +32,10 @@ export const authOptions = {
             // console.log("Session:", session);
             return session;
         },
-        callbacks: {
-            async redirect({ url, baseUrl }) {
-              console.log("Redirect callback:", { url, baseUrl });
-              return url.startsWith(baseUrl) ? url : baseUrl;
-            }
-        },
+        async redirect({ url, baseUrl }) {
+            console.log("Redirect callback:", { url, baseUrl });
+            return url.startsWith(baseUrl) ? url : baseUrl;
+        }
     }
 };
 
