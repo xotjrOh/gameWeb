@@ -1,7 +1,11 @@
 import React, { useRef, useState } from 'react';
-import { Box, Button, ButtonGroup, Select, MenuItem, FormControl, InputLabel, Typography } from '@mui/material';
+import { Box, Button, ButtonGroup, Select, MenuItem, FormControl, InputLabel, Typography, Collapse, Tooltip, IconButton } from '@mui/material';
 import YouTube from 'react-youtube';
 import { videoDataList } from '@/utils/constants';
+import {
+  ExitToApp as ExitIcon,
+} from '@mui/icons-material';
+import LeaveModal from './LeaveModal';
 
 export default function VideoPlayerTab({ roomId, socket, session }) {
   const [selectedVideoKey, setSelectedVideoKey] = useState('');
@@ -9,10 +13,26 @@ export default function VideoPlayerTab({ roomId, socket, session }) {
   const youtubeRef = useRef(null);
   const [originIds, setOriginIds] = useState([]);
   const [answer, setAnswer] = useState([]);
+  const [showAnswer, setShowAnswer] = useState(false);
+  const [disableAnimation, setDisableAnimation] = useState(false);
+  const [modals, setModals] = useState({
+    leave: false,
+  });
+
+  const openModal = (type) => {
+    setModals((prev) => ({ ...prev, [type]: true }));
+  };
+
+  const closeModal = (type) => {
+    setModals((prev) => ({ ...prev, [type]: false }));
+  };
 
   // 비디오 선택 시 처리
   const handleVideoSelect = (event) => {
-    
+    // 정답 숨기기 (애니메이션 없이)
+    setDisableAnimation(true);
+    setShowAnswer(false);
+
     const key = event.target.value;
     setSelectedVideoKey(key);
     youtubeRef.current?.stopVideo();
@@ -123,9 +143,38 @@ export default function VideoPlayerTab({ roomId, socket, session }) {
         </Select>
       </FormControl>
 
-      <Typography>
-        {answer}
-      </Typography>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          mb: 2,
+        }}
+      >
+        <Button onClick={() => setShowAnswer(!showAnswer)}>
+          {showAnswer ? '정답 숨기기' : '정답 보기'}
+        </Button>
+        <Tooltip title="나가기">
+          <IconButton
+            onClick={() => openModal('leave')}
+            color="error"
+            size="large"
+          >
+            <ExitIcon fontSize="large" />
+          </IconButton>
+        </Tooltip>
+      </Box>
+
+      {/* 정답 표시 */}
+      <Collapse
+        in={showAnswer}
+        timeout={disableAnimation ? 0 : undefined} // 애니메이션 제어
+        sx={{ mb: 2 }}
+      >
+        <Typography variant="h6">
+          정답: {answer.join(', ')}
+        </Typography>
+      </Collapse>
 
       {/* 버튼 그룹 */}
       {clips.length > 0 && (
@@ -174,6 +223,14 @@ export default function VideoPlayerTab({ roomId, socket, session }) {
           />
         </Box>
       </Box>
+
+      <LeaveModal
+        open={modals.leave}
+        onClose={() => closeModal('leave')}
+        roomId={roomId}
+        socket={socket}
+        session={session}
+      />
     </Box>
   );
 }

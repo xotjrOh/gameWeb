@@ -43,7 +43,6 @@ export default function SignInPage() {
       if (event.origin !== window.location.origin) return;
       if (event.data === 'oauth:success') {
         // 인증 성공 시 처리
-        // window.location.reload(); // 세션이 업데이트되었으므로 페이지 새로 고침
         router.replace(callbackUrl);
       } else if (event.data === 'oauth:error') {
         // 인증 실패 시 처리
