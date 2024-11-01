@@ -1,13 +1,24 @@
-import React, { useRef, useState } from 'react';
-import { Box, Button, ButtonGroup, Select, MenuItem, FormControl, InputLabel, Typography, Collapse, Tooltip, IconButton } from '@mui/material';
+import React, { useRef, useState, useMemo, memo } from 'react';
+import {
+  Box,
+  Button,
+  ButtonGroup,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Typography,
+  Collapse,
+  Tooltip,
+  IconButton,
+  Divider,
+} from '@mui/material';
 import YouTube from 'react-youtube';
 import { videoDataList } from '@/utils/constants';
-import {
-  ExitToApp as ExitIcon,
-} from '@mui/icons-material';
+import ExitIcon from '@mui/icons-material/ExitToApp';
 import LeaveModal from './LeaveModal';
 
-export default function VideoPlayerTab({ roomId, socket, session }) {
+function VideoPlayerTab({ roomId, socket, session }) {
   const [selectedVideoKey, setSelectedVideoKey] = useState('');
   const [clips, setClips] = useState([]);
   const youtubeRef = useRef(null);
@@ -27,6 +38,52 @@ export default function VideoPlayerTab({ roomId, socket, session }) {
     setModals((prev) => ({ ...prev, [type]: false }));
   };
 
+  const sortedDifficulties = ['하', '중', '상'];
+
+  // groupedVideos 메모이제이션
+  const groupedVideos = useMemo(() => {
+    return Object.keys(videoDataList).reduce((acc, key) => {
+      const difficulty = videoDataList[key].difficulty;
+      if (!acc[difficulty]) {
+        acc[difficulty] = [];
+      }
+      acc[difficulty].push(key);
+      return acc;
+    }, {});
+  }, [videoDataList]);
+
+  // menuItems 메모이제이션
+  const menuItems = useMemo(() => {
+    const items = [];
+
+    sortedDifficulties.forEach((difficulty, index) => {
+      // 난이도 헤더 추가
+      items.push(
+        <MenuItem key={`header-${difficulty}`} disabled>
+          <Typography variant="subtitle2" color="textSecondary">
+            {`난이도 ${difficulty}`}
+          </Typography>
+        </MenuItem>
+      );
+
+      // 해당 난이도의 비디오 목록 추가
+      groupedVideos[difficulty]?.forEach((key) => {
+        items.push(
+          <MenuItem key={key} value={key}>
+            {key}
+          </MenuItem>
+        );
+      });
+
+      // 난이도 그룹 사이에 Divider 추가
+      if (index < sortedDifficulties.length - 1) {
+        items.push(<Divider key={`divider-${index}`} />);
+      }
+    });
+
+    return items;
+  }, [groupedVideos, sortedDifficulties]);
+
   // 비디오 선택 시 처리
   const handleVideoSelect = (event) => {
     // 정답 숨기기 (애니메이션 없이)
@@ -41,7 +98,9 @@ export default function VideoPlayerTab({ roomId, socket, session }) {
       const videoData = videoDataList[key];
 
       // 클립에 랜덤한 id 부여
-      const ids = Array.from({ length: videoData.clips.length }, (_, i) => String.fromCharCode(65 + i));
+      const ids = Array.from({ length: videoData.clips.length }, (_, i) =>
+        String.fromCharCode(65 + i)
+      );
       setOriginIds(ids);
       const shuffledIds = [...ids].sort(() => Math.random() - 0.5);
       setAnswer(shuffledIds);
@@ -134,15 +193,24 @@ export default function VideoPlayerTab({ roomId, socket, session }) {
           value={selectedVideoKey}
           label="비디오 선택"
           onChange={handleVideoSelect}
+          renderValue={(selected) =>
+            selected ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                <Typography>{selected}</Typography>
+                <Typography variant="body2" color="textSecondary">
+                  난이도: {videoDataList[selected]?.difficulty}
+                </Typography>
+              </Box>
+            ) : (
+              '비디오 선택'
+            )
+          }
         >
-          {Object.keys(videoDataList).map((key) => (
-            <MenuItem key={key} value={key}>
-              {key}
-            </MenuItem>
-          ))}
+          {menuItems}
         </Select>
       </FormControl>
 
+      {/* 정답 보기/숨기기 버튼과 나가기 버튼 */}
       <Box
         sx={{
           display: 'flex',
@@ -168,12 +236,10 @@ export default function VideoPlayerTab({ roomId, socket, session }) {
       {/* 정답 표시 */}
       <Collapse
         in={showAnswer}
-        timeout={disableAnimation ? 0 : undefined} // 애니메이션 제어
+        timeout={disableAnimation ? 0 : undefined}
         sx={{ mb: 2 }}
       >
-        <Typography variant="h6">
-          정답: {answer.join(', ')}
-        </Typography>
+        <Typography variant="h6">정답: {answer.join(', ')}</Typography>
       </Collapse>
 
       {/* 버튼 그룹 */}
@@ -184,7 +250,7 @@ export default function VideoPlayerTab({ roomId, socket, session }) {
               {id}
             </Button>
           ))}
-          <Button key={"전체재생"} onClick={() => handlePlayFullVideo()}>
+          <Button key={'전체재생'} onClick={() => handlePlayFullVideo()}>
             전체재생
           </Button>
         </ButtonGroup>
@@ -224,6 +290,7 @@ export default function VideoPlayerTab({ roomId, socket, session }) {
         </Box>
       </Box>
 
+      {/* 나가기 모달 */}
       <LeaveModal
         open={modals.leave}
         onClose={() => closeModal('leave')}
@@ -234,3 +301,5 @@ export default function VideoPlayerTab({ roomId, socket, session }) {
     </Box>
   );
 }
+
+export default memo(VideoPlayerTab);

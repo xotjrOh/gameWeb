@@ -1,6 +1,7 @@
 export const videoDataList = {
     "끼리끼리": {
         videoId: "Gh-M6yHqpDc",
+        difficulty: '상',
         clips: [
             { start: 299, end: 302.3 },
             { start: 302.3, end: 306 },
@@ -11,6 +12,7 @@ export const videoDataList = {
     },
     "도망가": {
         videoId: "9ric2y7vr9s",
+        difficulty: '하',
         clips: [
             { start: 35, end: 39.5 },
             { start: 39.5, end: 43.8 },
@@ -21,6 +23,7 @@ export const videoDataList = {
     },
     "시카고": {
         videoId: "ZSXk6FzeWwo",
+        difficulty: '상',
         clips: [
             { start: 79.8, end: 83.5 },
             { start: 83.5, end: 86.9 },
@@ -31,6 +34,7 @@ export const videoDataList = {
     },
     "지각": {
         videoId: "aODhSiEI9qM",
+        difficulty: '중',
         clips: [
             { start: 46, end: 53.4 },
             { start: 53.4, end: 58.6 },
@@ -41,6 +45,7 @@ export const videoDataList = {
     },
     "엘빈 유가족 반응": {
         videoId: "H91TIxIHnDo",
+        difficulty: '하',
         clips: [
             { start: 0, end: 10 },
             { start: 10, end: 20 },
@@ -51,6 +56,7 @@ export const videoDataList = {
     },
     "기아차": {
         videoId: "WwYl0ik2zDI",
+        difficulty: '중',
         clips: [
             { start: 0, end: 9.3 },
             { start: 9.3, end: 21 },
@@ -60,6 +66,7 @@ export const videoDataList = {
     },
     "아싸": {
         videoId: "MKiFTdaSgN0",
+        difficulty: '하',
         clips: [
             { start: 118, end: 132.3 },
             { start: 132.3, end: 157.1 },
