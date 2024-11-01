@@ -58,7 +58,7 @@ export default function StatusInfoTab() {
 
         <Box sx={{ position: 'relative', width: '100%', mb: 2 }}>
           <Image
-            src="/images/rule/horse/내상태보기.avif"
+            src="/images/rule/horse/내상태보기.webp"
             alt="내 상태 보기"
             width={424}
             height={575}

@@ -88,7 +88,7 @@ export default function OverviewTab() {
 
         <Box sx={{ position: 'relative', width: '100%', mb: 2 }}>
           <Image
-            src="/images/rule/horse/onlyHorses.avif"
+            src="/images/rule/horse/onlyHorses.webp"
             alt="경주마 탭 화면"
             width={425}
             height={482}

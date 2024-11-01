@@ -79,7 +79,7 @@ export default function ShuffleGamePage({ params }) {
           {/* 로고 좌측 배치 */}
           <Box display="flex" alignItems="center">
             <Image
-              src="/images/shuffleLogo.avif"
+              src="/images/shuffleLogo.webp"
               alt="뒤죽박죽 게임 로고"
               width={isMobile ? 48 : 56}
               height={isMobile ? 48 : 56}

@@ -120,7 +120,7 @@ export default function ChipsTab() {
 
         <Box sx={{ position: 'relative', width: '100%', mb: 2 }}>
           <Image
-            src="/images/rule/horse/칩개수탭.avif"
+            src="/images/rule/horse/칩개수탭.webp"
             alt="칩 개수 탭 이미지"
             width={425}
             height={966}

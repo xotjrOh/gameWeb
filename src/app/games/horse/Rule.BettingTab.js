@@ -135,7 +135,7 @@ export default function BettingTab() {
 
         <Box sx={{ position: 'relative', width: '100%' }}>
           <Image
-            src="/images/rule/horse/베팅탭.avif"
+            src="/images/rule/horse/베팅탭.webp"
             alt="베팅탭 이미지"
             width={425}
             height={1338}

@@ -139,7 +139,7 @@ export default function HorsesTab() {
 
         <Box sx={{ position: 'relative', width: '100%', mb: 2 }}>
           <Image
-            src="/images/rule/horse/경주마탭.avif"
+            src="/images/rule/horse/경주마탭.webp"
             alt="경주마 탭 화면"
             width={425}
             height={1154}

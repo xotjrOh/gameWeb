@@ -69,7 +69,7 @@ export default function SignInPage() {
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundImage: 'url("/images/background-image.avif")',
+        backgroundImage: 'url("/images/background-image.webp")',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         position: 'relative',

@@ -125,7 +125,7 @@ export default function VoteTab() {
 
         <Box sx={{ position: 'relative', width: '100%', mb: 2 }}>
           <Image
-            src="/images/rule/horse/예측탭.avif"
+            src="/images/rule/horse/예측탭.webp"
             alt="예측탭 화면"
             width={425}
             height={966}

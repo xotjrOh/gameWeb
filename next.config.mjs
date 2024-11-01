@@ -9,7 +9,7 @@ const nextConfig = {
   },
   reactStrictMode: false,
   images: {
-    formats: ['image/avif', 'image/webp']
+    formats: ['image/webp'],
   },
   async headers() { // 이미지 바로 캐싱
     return [
