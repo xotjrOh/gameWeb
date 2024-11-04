@@ -29,6 +29,8 @@ const gameTypeMap = {
   shuffle: '🔀 뒤죽박죽',
 };
 
+// 배포후 작동여부 테스트용
+// @log(rooms)
 export default function GameRooms({ session }) {
   const { socket } = useSocket();
   const router = useRouter();

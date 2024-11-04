@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import { keyframes } from '@mui/system';
 
+// @log(results, hasRaceEnded, statusInfo, positions)
 export default function RoundResultModal({ socket, roomId }) {
   const [isOpen, setIsOpen] = useState(false);
   const [results, setResults] = useState([]);
@@ -24,11 +25,6 @@ export default function RoundResultModal({ socket, roomId }) {
   );
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
-  // 디버깅용
-  // useEffect(()=>{
-  //   console.log(results, hasRaceEnded, statusInfo, positions);
-  // }, [results, hasRaceEnded, statusInfo, positions])
 
   useEffect(() => {
     if (socket) {

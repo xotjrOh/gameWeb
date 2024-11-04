@@ -1,0 +1,5 @@
+{
+    "presets": ["next/babel"],
+    "plugins": ["babel-plugin-comment-log"],
+    "ignore": ["node_modules"]
+}
