@@ -89,7 +89,7 @@ export default function HorseGamePage({ params }) {
               style={{ maxHeight: '100%', height: 'auto' }}
             />
           </Box>
-          <Box sx={{ flexGrow: 1, display: 'flex',  justifyContent:"center" }}>
+          <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
             <Typography variant="body1">
               {rooms?.[roomId]?.players?.length}명
             </Typography>

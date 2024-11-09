@@ -5,15 +5,15 @@ import { useRouter } from 'next/navigation';
 import { useSelector, useDispatch } from 'react-redux';
 import { setIsLoading } from '@/store/loadingSlice';
 import { useSocket } from '@/components/provider/SocketProvider';
-import { 
-  Button, 
-  Card, 
-  CardContent, 
-  Typography, 
-  Box, 
-  Stack, 
-  Avatar, 
-  Tooltip, 
+import {
+  Button,
+  Card,
+  CardContent,
+  Typography,
+  Box,
+  Stack,
+  Avatar,
+  Tooltip,
   Grid2 as Grid,
 } from '@mui/material';
 import RoomModal from '@/components/RoomModal';
@@ -52,23 +52,31 @@ export default function GameRooms({ session }) {
 
   const handleRoomClick = (room) => {
     if (!socket || !socket.connected) {
-      return enqueueSnackbar('서버와 연결이 되어 있지 않습니다. 잠시 후 다시 시도해주세요.', { variant: 'error' });
+      return enqueueSnackbar(
+        '서버와 연결이 되어 있지 않습니다. 잠시 후 다시 시도해주세요.',
+        { variant: 'error' }
+      );
     }
     // 서버에 방 참여 가능 여부를 확인
-    socket.emit('check-can-join-room', { roomId: room.roomId, sessionId: session.user.id }, (response) => {
-      if (!response.success) {
-        return enqueueSnackbar(response.message, { variant: 'error' });
+    socket.emit(
+      'check-can-join-room',
+      { roomId: room.roomId, sessionId: session.user.id },
+      (response) => {
+        if (!response.success) {
+          return enqueueSnackbar(response.message, { variant: 'error' });
+        }
+        // 정상 처리
+        if (!response.reEnter) {
+          setSelectedRoom(room);
+          setShowNicknameModal(true);
+          return;
+        }
+        // 이미 접속중인 경우
+        if (response.host)
+          router.replace(`/${room.gameType}/${room.roomId}/host`);
+        else router.replace(`/${room.gameType}/${room.roomId}`);
       }
-      // 정상 처리
-      if (!response.reEnter) {
-        setSelectedRoom(room);
-        setShowNicknameModal(true);
-        return;
-      }
-      // 이미 접속중인 경우
-      if (response.host) router.replace(`/${room.gameType}/${room.roomId}/host`);
-      else router.replace(`/${room.gameType}/${room.roomId}`);
-    });
+    );
   };
 
   const handleNicknameSubmit = (nickname) => {
@@ -81,7 +89,10 @@ export default function GameRooms({ session }) {
   // 새로 접속하는 경우에만 호출
   const joinRoom = (roomId, gameType, nickname) => {
     if (!socket || !socket.connected) {
-      return enqueueSnackbar('서버와 연결이 되어 있지 않습니다. 잠시 후 다시 시도해주세요.', { variant: 'error' });
+      return enqueueSnackbar(
+        '서버와 연결이 되어 있지 않습니다. 잠시 후 다시 시도해주세요.',
+        { variant: 'error' }
+      );
     }
 
     dispatch(setIsLoading(true));
@@ -98,8 +109,12 @@ export default function GameRooms({ session }) {
     );
   };
 
-  const waitingRooms = Object.values(rooms).filter((room) => room.status === '대기중');
-  const playingRooms = Object.values(rooms).filter((room) => room.status === '게임중');
+  const waitingRooms = Object.values(rooms).filter(
+    (room) => room.status === '대기중'
+  );
+  const playingRooms = Object.values(rooms).filter(
+    (room) => room.status === '게임중'
+  );
 
   // 게임 타입에 따른 아이콘 매핑
   const gameTypeIconMap = {
@@ -134,7 +149,7 @@ export default function GameRooms({ session }) {
           sx={{
             fontWeight: 'bold',
             fontFamily: '"yeogieottae", sans-serif',
-            color: '#333333',  // 귀여운 느낌의 파스텔 색상
+            color: '#333333', // 귀여운 느낌의 파스텔 색상
           }}
         >
           대기방
@@ -147,15 +162,15 @@ export default function GameRooms({ session }) {
         color="secondary"
         onClick={() => setShowModal(true)}
         size="large"
-        startIcon={<AddIcon />}  // 아이콘 추가
+        startIcon={<AddIcon />} // 아이콘 추가
         sx={{
           borderRadius: '50px',
           padding: '1rem 2rem',
           backgroundColor: '#6c5ce7', // 깔끔한 색상
-          boxShadow: '0px 10px 30px rgba(108, 92, 231, 0.3)',  // 3D 효과
+          boxShadow: '0px 10px 30px rgba(108, 92, 231, 0.3)', // 3D 효과
           '&:hover': {
             backgroundColor: '#5a4bdb',
-            boxShadow: '0px 15px 40px rgba(108, 92, 231, 0.5)',  // Hover 시 강조
+            boxShadow: '0px 15px 40px rgba(108, 92, 231, 0.5)', // Hover 시 강조
           },
           position: 'fixed',
           bottom: '2rem', // 화면 하단에 고정
@@ -218,7 +233,11 @@ export default function GameRooms({ session }) {
                           </Typography>
                         </Tooltip>
                       </Stack>
-                      <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                      <Typography
+                        variant="body2"
+                        color="textSecondary"
+                        sx={{ mt: 1 }}
+                      >
                         {gameTypeMap[room.gameType]}
                       </Typography>
                     </Grid>
@@ -226,9 +245,18 @@ export default function GameRooms({ session }) {
                     {/* 우측 상태 및 인원수 */}
                     <Grid size={{ xs: 12, sm: 4, md: 3 }}>
                       <Stack direction="column" alignItems="flex-end">
-                        <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mb: 1 }}>
+                        <Stack
+                          direction="row"
+                          alignItems="center"
+                          spacing={0.5}
+                          sx={{ mb: 1 }}
+                        >
                           <PeopleIcon fontSize="small" />
-                          <Typography variant="body2" color="secondary" sx={{ whiteSpace: 'nowrap', pr:'6px' }}>
+                          <Typography
+                            variant="body2"
+                            color="secondary"
+                            sx={{ whiteSpace: 'nowrap', pr: '6px' }}
+                          >
                             {room.players.length} / {room.maxPlayers}
                           </Typography>
                         </Stack>
@@ -237,7 +265,10 @@ export default function GameRooms({ session }) {
                             px: 2,
                             py: 1,
                             borderRadius: '8px',
-                            bgcolor: room.status === '대기중' ? 'info.main' : 'error.main',
+                            bgcolor:
+                              room.status === '대기중'
+                                ? 'info.main'
+                                : 'error.main',
                             color: 'white',
                             fontWeight: 'bold',
                             textAlign: 'center',
@@ -299,7 +330,11 @@ export default function GameRooms({ session }) {
                           </Typography>
                         </Tooltip>
                       </Stack>
-                      <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                      <Typography
+                        variant="body2"
+                        color="textSecondary"
+                        sx={{ mt: 1 }}
+                      >
                         {gameTypeMap[room.gameType]}
                       </Typography>
                     </Grid>
@@ -307,9 +342,18 @@ export default function GameRooms({ session }) {
                     {/* 우측 상태 및 인원수 */}
                     <Grid size={{ xs: 12, sm: 4, md: 3 }}>
                       <Stack direction="column" alignItems="flex-end">
-                        <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mb: 1 }}>
+                        <Stack
+                          direction="row"
+                          alignItems="center"
+                          spacing={0.5}
+                          sx={{ mb: 1 }}
+                        >
                           <PeopleIcon fontSize="small" />
-                          <Typography variant="body2" color="secondary" sx={{ whiteSpace: 'nowrap' }}>
+                          <Typography
+                            variant="body2"
+                            color="secondary"
+                            sx={{ whiteSpace: 'nowrap' }}
+                          >
                             {room.players.length} / {room.maxPlayers} 명
                           </Typography>
                         </Stack>
@@ -318,7 +362,10 @@ export default function GameRooms({ session }) {
                             px: 2,
                             py: 1,
                             borderRadius: '8px',
-                            bgcolor: room.status === '대기중' ? 'info.main' : 'error.main',
+                            bgcolor:
+                              room.status === '대기중'
+                                ? 'info.main'
+                                : 'error.main',
                             color: 'white',
                             fontWeight: 'bold',
                             textAlign: 'center',

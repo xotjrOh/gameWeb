@@ -36,7 +36,13 @@ function HorsesTab({ roomId, socket, session }) {
   return (
     <Paper elevation={3} sx={{ p: { xs: 4, md: 6 }, mt: 2 }}>
       {/* 경주마 현황 제목 */}
-      <Typography variant="h5" color="primary" fontWeight="bold" mb={4} sx={{ ml: '6px' }}>
+      <Typography
+        variant="h5"
+        color="primary"
+        fontWeight="bold"
+        mb={4}
+        sx={{ ml: '6px' }}
+      >
         경주마 현황
       </Typography>
 
@@ -53,7 +59,7 @@ function HorsesTab({ roomId, socket, session }) {
             >
               <Box display="flex" alignItems="center">
                 {/* 말 이름 */}
-                <Typography variant="h6" sx={{ mr: 2, fontWeight: "bold" }}>
+                <Typography variant="h6" sx={{ mr: 2, fontWeight: 'bold' }}>
                   {horse.name}
                 </Typography>
 
@@ -61,10 +67,7 @@ function HorsesTab({ roomId, socket, session }) {
                 <Box sx={{ flexGrow: 1, position: 'relative' }}>
                   <LinearProgress
                     variant="determinate"
-                    value={Math.min(
-                      (horse.position / finishLine) * 100,
-                      100
-                    )}
+                    value={Math.min((horse.position / finishLine) * 100, 100)}
                     sx={{
                       height: 18, // 높이 증가
                       borderRadius: 5,
@@ -99,11 +102,7 @@ function HorsesTab({ roomId, socket, session }) {
 
               {/* 플레이어 이름 (경주 종료 또는 호스트일 경우 표시) */}
               {(hasRaceEnded || isHost) && (
-                <Typography
-                  variant="body2"
-                  color="textSecondary"
-                  mt={1}
-                >
+                <Typography variant="body2" color="textSecondary" mt={1}>
                   {getHorsePlayers(horse.name)}
                 </Typography>
               )}
@@ -125,15 +124,17 @@ function HorsesTab({ roomId, socket, session }) {
 
       {/* 라운드별 경주마 현황 */}
       <Box mt={3}>
-        <Typography variant="h6" color="primary" fontWeight="bold" mb={2} sx={{ ml: '6px' }}>
+        <Typography
+          variant="h6"
+          color="primary"
+          fontWeight="bold"
+          mb={2}
+          sx={{ ml: '6px' }}
+        >
           라운드별 경주마 현황
         </Typography>
-        {(statusInfo.isSolo) && (
-          <Typography
-            variant="caption"
-            color="textSecondary"
-            fontWeight="bold"
-          >
+        {statusInfo.isSolo && (
+          <Typography variant="caption" color="textSecondary" fontWeight="bold">
             여기서의 베팅된 칩 개수는 솔로 플레이어에게만 보입니다.
           </Typography>
         )}
@@ -152,7 +153,12 @@ function HorsesTab({ roomId, socket, session }) {
 
             return (
               <Box key={roundIndex} mb={3}>
-                <Typography variant="subtitle1" fontWeight="bold" mb={1} sx={{ ml: '6px' }}>
+                <Typography
+                  variant="subtitle1"
+                  fontWeight="bold"
+                  mb={1}
+                  sx={{ ml: '6px' }}
+                >
                   라운드 {roundIndex + 1}
                 </Typography>
                 <Grid container spacing={1}>
@@ -172,17 +178,11 @@ function HorsesTab({ roomId, socket, session }) {
                         <Typography variant="body1" fontWeight="medium">
                           {bet.horse}
                         </Typography>
-                        <Typography
-                          variant="body2"
-                          color="textSecondary"
-                        >
+                        <Typography variant="body2" color="textSecondary">
                           전진: {bet.progress}
                         </Typography>
                         {(hasRaceEnded || isHost || statusInfo.isSolo) && (
-                          <Typography
-                            variant="body2"
-                            color="textSecondary"
-                          >
+                          <Typography variant="body2" color="textSecondary">
                             칩: {bet.chips}
                           </Typography>
                         )}
@@ -191,14 +191,10 @@ function HorsesTab({ roomId, socket, session }) {
                   ))}
                 </Grid>
               </Box>
-            )
+            );
           })
         ) : (
-          <Typography
-            variant="body2"
-            color="textSecondary"
-            textAlign="center"
-          >
+          <Typography variant="body2" color="textSecondary" textAlign="center">
             아직 베팅 기록이 없습니다.
           </Typography>
         )}

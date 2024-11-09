@@ -18,7 +18,9 @@ function LeaveModal({ open, onClose, roomId, socket, session }) {
       { roomId, sessionId: session.user.id },
       (response) => {
         if (response.success) {
-          enqueueSnackbar('방장이 방을 나갔습니다. 방이 종료되었습니다.', { variant: 'info' });
+          enqueueSnackbar('방장이 방을 나갔습니다. 방이 종료되었습니다.', {
+            variant: 'info',
+          });
           onClose();
           window.location.replace('/');
         } else {
@@ -32,9 +34,7 @@ function LeaveModal({ open, onClose, roomId, socket, session }) {
     <Dialog open={open} onClose={onClose}>
       <DialogTitle>방 나가기</DialogTitle>
       <DialogContent>
-        <DialogContentText>
-          정말 방을 나가시겠습니까?
-        </DialogContentText>
+        <DialogContentText>정말 방을 나가시겠습니까?</DialogContentText>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} color="primary">

@@ -25,5 +25,5 @@ export function useCustomSnackbar() {
     });
   };
 
-  return { enqueueSnackbar : customEnqueueSnackbar, closeSnackbar };
+  return { enqueueSnackbar: customEnqueueSnackbar, closeSnackbar };
 }

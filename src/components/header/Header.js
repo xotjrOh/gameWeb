@@ -6,9 +6,9 @@ import { useSocket } from '@/components/provider/SocketProvider';
 import { setIsLoading } from '@/store/loadingSlice';
 import { AppBar, Box, Toolbar, IconButton, Button } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
-import { signIn } from "next-auth/react";
-import Hamburger from "@/components/Hamburger";
-import UserDropdown from "@/components/UserDropdown";
+import { signIn } from 'next-auth/react';
+import Hamburger from '@/components/Hamburger';
+import UserDropdown from '@/components/UserDropdown';
 import { usePathname, useSearchParams } from 'next/navigation';
 
 export default function Header({ session }) {
@@ -22,7 +22,7 @@ export default function Header({ session }) {
     dispatch(setIsLoading(false));
     // socket.disconnect();
     // socket.connect();
-  }
+  };
 
   const handleSignIn = () => {
     // 현재 페이지의 URL을 생성
@@ -32,7 +32,11 @@ export default function Header({ session }) {
   };
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <AppBar position="static" elevation={0} sx={{ backgroundColor: 'background.default', color: 'black' }}>
+      <AppBar
+        position="static"
+        elevation={0}
+        sx={{ backgroundColor: 'background.default', color: 'black' }}
+      >
         <Toolbar sx={{ justifyContent: 'space-between' }}>
           {/* 웹사이트 로고 */}
           <IconButton
@@ -56,7 +60,9 @@ export default function Header({ session }) {
           {session ? (
             <UserDropdown />
           ) : (
-            <Button color="inherit" onClick={handleSignIn}>로그인</Button>
+            <Button color="inherit" onClick={handleSignIn}>
+              로그인
+            </Button>
           )}
         </Toolbar>
       </AppBar>

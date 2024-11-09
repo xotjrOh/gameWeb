@@ -5,8 +5,14 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import KakaoIcon from '@/components/icon/KakaoIcon';
 import GoogleIcon from '@/components/icon/GoogleIcon';
 import Link from 'next/link';
-import { Container, Box, Button, Typography, Card, CardContent } from '@mui/material';
-
+import {
+  Container,
+  Box,
+  Button,
+  Typography,
+  Card,
+  CardContent,
+} from '@mui/material';
 
 export default function SignInPage() {
   const [isKakaoBrowser, setIsKakaoBrowser] = useState(false);
@@ -33,13 +39,14 @@ export default function SignInPage() {
     );
 
     if (!popup) {
-      alert("팝업 차단을 해제해주세요.");
+      alert('팝업 차단을 해제해주세요.');
       return;
     }
 
     // 팝업 창으로부터 메시지 수신
     const messageHandler = (event) => {
-      const callbackUrl = searchParams.get('callbackUrl') || window.location.origin;
+      const callbackUrl =
+        searchParams.get('callbackUrl') || window.location.origin;
       if (event.origin !== window.location.origin) return;
       if (event.data === 'oauth:success') {
         // 인증 성공 시 처리
@@ -123,11 +130,11 @@ export default function SignInPage() {
         }}
       >
         <CardContent>
-          <Typography 
-            variant="h4" 
-            gutterBottom 
-            sx={{ 
-              fontWeight: "bold", 
+          <Typography
+            variant="h4"
+            gutterBottom
+            sx={{
+              fontWeight: 'bold',
               color: 'text.primary',
               textAlign: 'center',
               fontFamily: '"Noto Sans KR", sans-serif',
@@ -165,7 +172,9 @@ export default function SignInPage() {
               disabled={isKakaoBrowser}
               sx={{
                 bgcolor: isKakaoBrowser ? 'grey.400' : 'error.main',
-                '&:hover': { bgcolor: isKakaoBrowser ? 'grey.500' : 'error.dark' },
+                '&:hover': {
+                  bgcolor: isKakaoBrowser ? 'grey.500' : 'error.dark',
+                },
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -176,12 +185,20 @@ export default function SignInPage() {
             >
               <GoogleIcon sx={{ mr: 1 }} />
               {isKakaoBrowser ? (
-                <Typography variant="body2" sx={{ fontWeight: 'bold', textAlign: 'center' }}>
+                <Typography
+                  variant="body2"
+                  sx={{ fontWeight: 'bold', textAlign: 'center' }}
+                >
                   구글 로그인 불가 <br />
-                  <Typography variant="caption">(카카오톡 브라우저 미지원)</Typography>
+                  <Typography variant="caption">
+                    (카카오톡 브라우저 미지원)
+                  </Typography>
                 </Typography>
               ) : (
-                <Typography variant="button" sx={{ fontWeight: 'bold', color: 'inherit' }}>
+                <Typography
+                  variant="button"
+                  sx={{ fontWeight: 'bold', color: 'inherit' }}
+                >
                   구글 로그인
                 </Typography>
               )}
@@ -189,7 +206,6 @@ export default function SignInPage() {
           </Box>
         </CardContent>
       </Card>
-
     </Container>
   );
 }

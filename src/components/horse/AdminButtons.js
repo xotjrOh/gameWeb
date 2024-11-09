@@ -1,11 +1,5 @@
 import { useState } from 'react';
-import {
-  Button,
-  IconButton,
-  Tooltip,
-  Box,
-  Grid2 as Grid,
-} from '@mui/material';
+import { Button, IconButton, Tooltip, Box, Grid2 as Grid } from '@mui/material';
 import {
   Settings as SettingsIcon,
   AssignmentInd as AssignRolesIcon,
@@ -30,7 +24,9 @@ function AdminButtons({ roomId, socket, session, isRoundStarted, isTimeover }) {
 
   const openModal = (type) => {
     if (type === 'settings' && isRoundStarted) {
-      enqueueSnackbar('라운드가 시작된 후에는 설정을 변경할 수 없습니다.', { variant: 'error' });
+      enqueueSnackbar('라운드가 시작된 후에는 설정을 변경할 수 없습니다.', {
+        variant: 'error',
+      });
       return;
     }
 
@@ -48,7 +44,9 @@ function AdminButtons({ roomId, socket, session, isRoundStarted, isTimeover }) {
 
   const assignRoles = () => {
     if (isRoundStarted) {
-      enqueueSnackbar('라운드가 시작된 후에는 역할을 할당할 수 없습니다.', { variant: 'error' });
+      enqueueSnackbar('라운드가 시작된 후에는 역할을 할당할 수 없습니다.', {
+        variant: 'error',
+      });
       return;
     }
 
@@ -56,14 +54,21 @@ function AdminButtons({ roomId, socket, session, isRoundStarted, isTimeover }) {
       if (!response.success) {
         enqueueSnackbar(response.message, { variant: 'error' });
       } else {
-        enqueueSnackbar('성공적으로 역할이 할당되었습니다.', { variant: 'success' });
+        enqueueSnackbar('성공적으로 역할이 할당되었습니다.', {
+          variant: 'success',
+        });
       }
     });
   };
 
   return (
     <Box mt={2} mb={4}>
-      <Grid container spacing={2} justifyContent="space-between" alignItems="center">
+      <Grid
+        container
+        spacing={2}
+        justifyContent="space-between"
+        alignItems="center"
+      >
         <Grid size={{ xs: 12, sm: 3 }}>
           <Button
             fullWidth

@@ -28,8 +28,8 @@ export default function HorsesTab() {
           color: theme.palette.primary.main, // 테마의 primary 색상 사용
           fontSize: {
             xs: '1.5rem', // 모바일
-            sm: '2rem',    // 태블릿
-            md: '2.5rem',  // 데스크톱 이상
+            sm: '2rem', // 태블릿
+            md: '2.5rem', // 데스크톱 이상
           },
           mb: {
             xs: 1, // 모바일
@@ -49,7 +49,7 @@ export default function HorsesTab() {
             mb: 2, // mb-4
             color: theme.palette.text.primary, // 테마의 기본 텍스트 색상 사용
             fontSize: {
-              xs: '1rem',    // 모바일
+              xs: '1rem', // 모바일
               sm: '1.25rem', // 태블릿
               md: '1.25rem', // 데스크톱 이상
             },
@@ -85,7 +85,8 @@ export default function HorsesTab() {
             },
           }}
         >
-          종료 시점에 결승선을 통과하지 않은 말 중 가장 앞선 말이 우승자가 됩니다.
+          종료 시점에 결승선을 통과하지 않은 말 중 가장 앞선 말이 우승자가
+          됩니다.
         </Typography>
 
         <Typography
@@ -148,12 +149,11 @@ export default function HorsesTab() {
             style={{
               width: '100%',
               height: 'auto',
-              borderRadius: '8px',         // rounded-lg
+              borderRadius: '8px', // rounded-lg
               boxShadow: '0px 4px 6px rgba(0,0,0,0.1)', // shadow-md
             }}
           />
         </Box>
-
       </Box>
     </Box>
   );

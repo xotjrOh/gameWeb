@@ -28,8 +28,8 @@ export default function ChipsTab() {
           color: theme.palette.primary.main, // 테마의 primary 색상 사용
           fontSize: {
             xs: '1.5rem', // 모바일
-            sm: '2rem',    // 태블릿
-            md: '2.5rem',  // 데스크톱 이상
+            sm: '2rem', // 태블릿
+            md: '2.5rem', // 데스크톱 이상
           },
           mb: {
             xs: 1, // 모바일
@@ -49,7 +49,7 @@ export default function ChipsTab() {
             mb: 2, // mb-4
             color: theme.palette.text.primary, // 테마의 기본 텍스트 색상 사용
             fontSize: {
-              xs: '1rem',    // 모바일
+              xs: '1rem', // 모바일
               sm: '1.25rem', // 태블릿
               md: '1.25rem', // 데스크톱 이상
             },
@@ -105,7 +105,7 @@ export default function ChipsTab() {
           >
             ‘익명이름’
           </Box>
-          은 우측 상단의 {' '}
+          은 우측 상단의{' '}
           <Box
             component="span"
             sx={{
@@ -134,7 +134,6 @@ export default function ChipsTab() {
             }}
           />
         </Box>
-
       </Box>
     </Box>
   );

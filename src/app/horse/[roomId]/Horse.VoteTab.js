@@ -4,19 +4,16 @@ import { useState, useEffect, memo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateVoteHistory, updateIsVoteLocked } from '@/store/horseSlice';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
-import {
-  Box,
-  Typography,
-  Button,
-  Paper,
-} from '@mui/material';
+import { Box, Typography, Button, Paper } from '@mui/material';
 import HorseSelection from '@/components/horse/HorseSelection';
 import VoteHistory from '@/components/horse/VoteHistory';
 
 function VoteTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
   const [selectedHorse, setSelectedHorse] = useState('');
-  const { horses, statusInfo, rounds, isTimeover } = useSelector((state) => state.horse.gameData);
+  const { horses, statusInfo, rounds, isTimeover } = useSelector(
+    (state) => state.horse.gameData
+  );
   const { enqueueSnackbar } = useCustomSnackbar();
 
   useEffect(() => {
@@ -36,20 +33,26 @@ function VoteTab({ roomId, socket, session }) {
 
   const handleVote = () => {
     if (statusInfo.isVoteLocked || isTimeover) {
-      return enqueueSnackbar('더 이상 투표할 수 없습니다.', { variant: 'error' });
+      return enqueueSnackbar('더 이상 투표할 수 없습니다.', {
+        variant: 'error',
+      });
     }
 
     if (selectedHorse) {
-      socket.emit('horse-vote', { roomId, session, selectedHorse }, (response) => {
-        if (response.success) {
-          enqueueSnackbar('투표가 완료되었습니다.', { variant: 'success' });
-          dispatch(updateVoteHistory(response.voteHistory));
-          dispatch(updateIsVoteLocked(response.isVoteLocked));
-          setSelectedHorse('');
-        } else {
-          enqueueSnackbar(response.message, { variant: 'error' });
+      socket.emit(
+        'horse-vote',
+        { roomId, session, selectedHorse },
+        (response) => {
+          if (response.success) {
+            enqueueSnackbar('투표가 완료되었습니다.', { variant: 'success' });
+            dispatch(updateVoteHistory(response.voteHistory));
+            dispatch(updateIsVoteLocked(response.isVoteLocked));
+            setSelectedHorse('');
+          } else {
+            enqueueSnackbar(response.message, { variant: 'error' });
+          }
         }
-      });
+      );
     } else {
       enqueueSnackbar('말을 선택해주세요.', { variant: 'error' });
     }
@@ -69,8 +72,14 @@ function VoteTab({ roomId, socket, session }) {
 
       {/* 보너스 안내 */}
       {statusInfo.isSolo && (
-        <Paper elevation={3} sx={{ backgroundColor: 'background.default', p: 4, mt: 4 }}>
-          <Typography variant="body2" sx={{ color: 'success.light', fontWeight: 'bold' }}>
+        <Paper
+          elevation={3}
+          sx={{ backgroundColor: 'background.default', p: 4, mt: 4 }}
+        >
+          <Typography
+            variant="body2"
+            sx={{ color: 'success.light', fontWeight: 'bold' }}
+          >
             솔로 플레이어는 예측에 성공할 경우 5개의 칩이 추가됩니다!
           </Typography>
         </Paper>

@@ -1,16 +1,37 @@
 'use client';
 
 import { useForm } from 'react-hook-form';
-import { TextField, Button, Select, MenuItem, InputLabel, FormControl, Backdrop, IconButton, Box, Typography } from '@mui/material';
+import {
+  TextField,
+  Button,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
+  Backdrop,
+  IconButton,
+  Box,
+  Typography,
+} from '@mui/material';
 import { Cancel as CancelIcon } from '@mui/icons-material';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 import { useHideScroll } from '@/hooks/useHideScroll';
 import { setIsLoading } from '@/store/loadingSlice';
 
-export default function RoomModal({ closeModal, socket, router, dispatch, session }) {
+export default function RoomModal({
+  closeModal,
+  socket,
+  router,
+  dispatch,
+  session,
+}) {
   const { enqueueSnackbar } = useCustomSnackbar();
 
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
     defaultValues: {
       roomName: '',
       gameType: 'horse',
@@ -20,39 +41,75 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
 
   const onSubmit = (data) => {
     if (!socket || !socket.connected || !socket.id) {
-      return enqueueSnackbar('소켓 연결 대기 중입니다.', { variant: 'warning' });
+      return enqueueSnackbar('소켓 연결 대기 중입니다.', {
+        variant: 'warning',
+      });
     }
 
     dispatch(setIsLoading(true));
-    socket.emit('create-room', { ...data, userName: session.user.name, sessionId: session.user.id }, (response) => {
-      if (!response.success) {
-        enqueueSnackbar(response.message, { variant: 'error' });
-        return dispatch(setIsLoading(false));
-      }
+    socket.emit(
+      'create-room',
+      { ...data, userName: session.user.name, sessionId: session.user.id },
+      (response) => {
+        if (!response.success) {
+          enqueueSnackbar(response.message, { variant: 'error' });
+          return dispatch(setIsLoading(false));
+        }
 
-      router.replace(`/${data.gameType}/${response.roomId}/host`);
-      dispatch(setIsLoading(false));
-    });
+        router.replace(`/${data.gameType}/${response.roomId}/host`);
+        dispatch(setIsLoading(false));
+      }
+    );
   };
 
   useHideScroll();
 
   return (
-    <Box sx={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', px: 2 }}> 
+    <Box
+      sx={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 50,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        px: 2,
+      }}
+    >
       {/* 어두운 배경 */}
       <Backdrop open={true} onClick={closeModal} />
-      
+
       {/* 모달 내용 */}
-      <Box sx={{ backgroundColor: 'background.card', p: 4, borderRadius: 2, boxShadow: 24, zIndex: 10, width: '80%', maxWidth: 400, position: 'relative' }}>
-        <IconButton 
-          sx={{ position: 'absolute', top: 16, right: 16 }} 
+      <Box
+        sx={{
+          backgroundColor: 'background.card',
+          p: 4,
+          borderRadius: 2,
+          boxShadow: 24,
+          zIndex: 10,
+          width: '80%',
+          maxWidth: 400,
+          position: 'relative',
+        }}
+      >
+        <IconButton
+          sx={{ position: 'absolute', top: 16, right: 16 }}
           onClick={closeModal}
         >
           <CancelIcon />
         </IconButton>
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 3 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            mb: 3,
+          }}
+        >
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Typography variant="h5" color="primary" fontWeight="bold">방 만들기</Typography>
+            <Typography variant="h5" color="primary" fontWeight="bold">
+              방 만들기
+            </Typography>
           </Box>
         </Box>
 
@@ -71,11 +128,11 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
           slotProps={{
             formHelperText: {
               sx: {
-                margin: 0, 
+                margin: 0,
                 paddingLeft: '12px',
-                backgroundColor: 'background.card',  // 여기서 에러 문구의 색상을 검정으로 설정
+                backgroundColor: 'background.card', // 여기서 에러 문구의 색상을 검정으로 설정
               },
-            }
+            },
           }}
         />
 
@@ -84,8 +141,13 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
           <InputLabel id="game-type-label">게임 종류</InputLabel>
           <Select
             labelId="game-type-label"
-            defaultValue="horse" MenuProps={{ PaperProps: { style: { maxHeight: 200, overflowY: 'auto' } } }}
-            {...register('gameType', { required: '게임 종류가 미설정된 상태입니다.' })}
+            defaultValue="horse"
+            MenuProps={{
+              PaperProps: { style: { maxHeight: 200, overflowY: 'auto' } },
+            }}
+            {...register('gameType', {
+              required: '게임 종류가 미설정된 상태입니다.',
+            })}
             label="게임 종류"
             sx={{
               backgroundColor: 'rgba(255, 255, 255, 0.8)',
@@ -97,9 +159,13 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
         </FormControl>
 
         {/* 최대 인원 입력 */}
-        <TextField label="최대 인원"
+        <TextField
+          label="최대 인원"
           type="text"
-          {...register('maxPlayers', { required: '최대 인원을 입력해주세요.', valueAsNumber: true })}
+          {...register('maxPlayers', {
+            required: '최대 인원을 입력해주세요.',
+            valueAsNumber: true,
+          })}
           error={!!errors.maxPlayers}
           helperText={errors.maxPlayers?.message}
           fullWidth
@@ -114,16 +180,17 @@ export default function RoomModal({ closeModal, socket, router, dispatch, sessio
           slotProps={{
             formHelperText: {
               sx: {
-                margin: 0, 
+                margin: 0,
                 paddingLeft: '12px',
-                backgroundColor: 'background.card',  // 여기서 에러 문구의 색상을 검정으로 설정
+                backgroundColor: 'background.card', // 여기서 에러 문구의 색상을 검정으로 설정
               },
-            }
+            },
           }}
         />
 
         {/* 방 만들기 버튼 */}
-        <Button onClick={handleSubmit(onSubmit)}
+        <Button
+          onClick={handleSubmit(onSubmit)}
           variant="contained"
           color="primary"
           fullWidth

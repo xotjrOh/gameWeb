@@ -73,7 +73,7 @@ export default function GameRulePage() {
               gutterBottom
               sx={{
                 fontWeight: 'bold',
-                color: theme.palette.primary.main,  // primary 색상 사용
+                color: theme.palette.primary.main, // primary 색상 사용
                 fontSize: isXs ? '1.5rem' : isSm ? '2rem' : '2.5rem',
               }}
             >
@@ -82,7 +82,7 @@ export default function GameRulePage() {
             <Typography
               variant="subtitle1"
               sx={{
-                color: theme.palette.text.primary,  // text.primary 색상 사용
+                color: theme.palette.text.primary, // text.primary 색상 사용
                 fontSize: isXs ? '1rem' : isSm ? '1.25rem' : '1.5rem',
               }}
             >
@@ -91,13 +91,20 @@ export default function GameRulePage() {
           </Box>
 
           {/* 탭 전환 */}
-          <Box sx={{ position: 'relative', borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+          <Box
+            sx={{
+              position: 'relative',
+              borderBottom: 1,
+              borderColor: 'divider',
+              mb: 3,
+            }}
+          >
             <Tabs
               value={activeTabIndex}
               onChange={handleTabChange}
               variant="scrollable"
               scrollButtons="auto"
-              allowScrollButtonsMobile 
+              allowScrollButtonsMobile
               textColor="primary"
               indicatorColor="primary"
               aria-label="게임 룰 탭"

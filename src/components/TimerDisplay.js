@@ -12,9 +12,9 @@ function TimerDisplay({ roomId, socket, dispatch }) {
       sx={{
         fontSize: {
           xs: '1.25rem',
-          md: '1.5rem'
+          md: '1.5rem',
         },
-        textAlign: 'center'
+        textAlign: 'center',
       }}
     >
       {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}

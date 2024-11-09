@@ -1,259 +1,287 @@
 import _ from 'lodash';
 import { rooms, timers } from '../state/gameState';
-import { GAME_STATUS, DEFAULT_GAME_DATA, DEFAULT_PLAYER_DATA } from '../utils/constants';
-import { validateRoom, validatePlayer, validateAssignedByHorseGame, validateChipsByHorseGame } from '../utils/validation';
-import { calculateRoundResult, getProgressTwoHorses, updatePlayersAfterRound, updateHorsePositions, checkGameEnd,
-    generateHorseNames, assignRolesToPlayers, recordPlayerBets, updatePlayerChipHistory,
+import {
+  GAME_STATUS,
+  DEFAULT_GAME_DATA,
+  DEFAULT_PLAYER_DATA,
+} from '../utils/constants';
+import {
+  validateRoom,
+  validatePlayer,
+  validateAssignedByHorseGame,
+  validateChipsByHorseGame,
+} from '../utils/validation';
+import {
+  calculateRoundResult,
+  getProgressTwoHorses,
+  updatePlayersAfterRound,
+  updateHorsePositions,
+  checkGameEnd,
+  generateHorseNames,
+  assignRolesToPlayers,
+  recordPlayerBets,
+  updatePlayerChipHistory,
 } from '../services/horseGameService';
 
 const horseGameHandler = (io, socket) => {
-    socket.on('horse-start-round', ({ roomId, duration }, callback) => {
-        try {
-            const room = validateRoom(roomId);
-            validateAssignedByHorseGame(room);
+  socket.on('horse-start-round', ({ roomId, duration }, callback) => {
+    try {
+      const room = validateRoom(roomId);
+      validateAssignedByHorseGame(room);
 
-            room.status = GAME_STATUS.IN_PROGRESS;
+      room.status = GAME_STATUS.IN_PROGRESS;
 
-            // 게임 내 라운드 1회성 데이터들
-            room.gameData.timeLeft = duration;
-            room.gameData.rounds = room.gameData.rounds || [];
-            room.gameData.bets = {}; // 라운드마다 베팅 초기화
-            room.gameData.positions = room.gameData.positions || {}; // 말들의 위치 초기화 (또는 유지)
-            
-            clearInterval(timers[roomId]);
+      // 게임 내 라운드 1회성 데이터들
+      room.gameData.timeLeft = duration;
+      room.gameData.rounds = room.gameData.rounds || [];
+      room.gameData.bets = {}; // 라운드마다 베팅 초기화
+      room.gameData.positions = room.gameData.positions || {}; // 말들의 위치 초기화 (또는 유지)
 
-            room.players.forEach(player => {
-                player.isBetLocked = false;  // 모든 플레이어의 isBetLocked를 false로 설정
-                player.isVoteLocked = false;
-                player.chipDiff = 0; // caution : 이 타이밍에 emit하면 안됨
-            });
+      clearInterval(timers[roomId]);
 
-            io.to(roomId).emit('update-isBetLocked', false);
-            io.to(roomId).emit('update-isVoteLocked', false);
+      room.players.forEach((player) => {
+        player.isBetLocked = false; // 모든 플레이어의 isBetLocked를 false로 설정
+        player.isVoteLocked = false;
+        player.chipDiff = 0; // caution : 이 타이밍에 emit하면 안됨
+      });
 
-            timers[roomId] = setInterval(() => {
-                if (room.gameData.timeLeft > 0) {
-                    room.gameData.timeLeft -= 1;
-                    io.to(roomId).emit('update-timer', room.gameData.timeLeft); // 타이머 업데이트 전송
-                } else {
-                    clearInterval(timers[roomId]);
-                    delete timers[roomId]; // 타이머 종료 시 삭제
+      io.to(roomId).emit('update-isBetLocked', false);
+      io.to(roomId).emit('update-isVoteLocked', false);
 
-                    // 베팅 결과 계산
-                    const roundResult = calculateRoundResult(room, room.gameData.bets);
+      timers[roomId] = setInterval(() => {
+        if (room.gameData.timeLeft > 0) {
+          room.gameData.timeLeft -= 1;
+          io.to(roomId).emit('update-timer', room.gameData.timeLeft); // 타이머 업데이트 전송
+        } else {
+          clearInterval(timers[roomId]);
+          delete timers[roomId]; // 타이머 종료 시 삭제
 
-                    // progress가 2인 말 목록 생성
-                    const progressTwoHorses = getProgressTwoHorses(roundResult);
+          // 베팅 결과 계산
+          const roundResult = calculateRoundResult(room, room.gameData.bets);
 
-                    // 플레이어 업데이트
-                    updatePlayersAfterRound(room, progressTwoHorses, io);
+          // progress가 2인 말 목록 생성
+          const progressTwoHorses = getProgressTwoHorses(roundResult);
 
-                    // 말의 위치 업데이트
-                    updateHorsePositions(room, roundResult, io, roomId);
+          // 플레이어 업데이트
+          updatePlayersAfterRound(room, progressTwoHorses, io);
 
-                    // 라운드 종료 알림
-                    io.to(roomId).emit('round-ended', { players: room.players, roundResult }); // 라운드 종료 알림, players 업데이트됨
+          // 말의 위치 업데이트
+          updateHorsePositions(room, roundResult, io, roomId);
 
-                    // 게임 종료 여부 확인
-                    checkGameEnd(room, io, roomId);
-                }
-            }, 1000);
+          // 라운드 종료 알림
+          io.to(roomId).emit('round-ended', {
+            players: room.players,
+            roundResult,
+          }); // 라운드 종료 알림, players 업데이트됨
 
-            io.emit('room-updated', rooms); // '게임중' 으로 변한게 체크 되어야함
-            return callback({ success: true });
-        } catch (error) {
-            callback({ success: false, message: error.message });
+          // 게임 종료 여부 확인
+          checkGameEnd(room, io, roomId);
         }
-    });
+      }, 1000);
 
-    // **추가된 역할 할당 이벤트**
-    socket.on('horse-assign-roles', ({ roomId }, callback) => {
-        try {
-            const room = validateRoom(roomId);
-            const players = room.players;
-            const numPlayers = players.length;
+      io.emit('room-updated', rooms); // '게임중' 으로 변한게 체크 되어야함
+      return callback({ success: true });
+    } catch (error) {
+      callback({ success: false, message: error.message });
+    }
+  });
 
-            // 말 이름 목록 생성
-            const numHorses = Math.ceil(numPlayers / 2);
-            const horses = generateHorseNames(numHorses);
+  // **추가된 역할 할당 이벤트**
+  socket.on('horse-assign-roles', ({ roomId }, callback) => {
+    try {
+      const room = validateRoom(roomId);
+      const players = room.players;
+      const numPlayers = players.length;
 
-            room.gameData.horses = horses;
+      // 말 이름 목록 생성
+      const numHorses = Math.ceil(numPlayers / 2);
+      const horses = generateHorseNames(numHorses);
 
-            // 플레이어에게 역할 할당
-            assignRolesToPlayers(players, horses, io);
+      room.gameData.horses = horses;
 
-            // 역할 할당 완료 알림
-            io.to(roomId).emit('roles-assigned', { success: true, horses, players });
+      // 플레이어에게 역할 할당
+      assignRolesToPlayers(players, horses, io);
 
-            return callback({ success: true });
-        } catch (error) {
-            callback({ success: false, message: error.message });
-        }
-    });
+      // 역할 할당 완료 알림
+      io.to(roomId).emit('roles-assigned', { success: true, horses, players });
 
-    // 베팅 로직 추가
-    // bets 는 { A : 3, B : 4 } 같은 객체
-    socket.on('horse-bet', ({ roomId, session, bets }, callback) => {
-        try {
-            const room = validateRoom(roomId);
-            const player = validatePlayer(room, session.user.id);
+      return callback({ success: true });
+    } catch (error) {
+      callback({ success: false, message: error.message });
+    }
+  });
 
-            // 플레이어가 가진 칩이 충분한지 체크
-            const totalBets = validateChipsByHorseGame(player, bets);
+  // 베팅 로직 추가
+  // bets 는 { A : 3, B : 4 } 같은 객체
+  socket.on('horse-bet', ({ roomId, session, bets }, callback) => {
+    try {
+      const room = validateRoom(roomId);
+      const player = validatePlayer(room, session.user.id);
 
-            // 베팅한 칩 기록
-            recordPlayerBets(room, bets);
+      // 플레이어가 가진 칩이 충분한지 체크
+      const totalBets = validateChipsByHorseGame(player, bets);
 
-            player.chips -= totalBets;
-            player.chipDiff -= totalBets;
-            player.isBetLocked = true;
+      // 베팅한 칩 기록
+      recordPlayerBets(room, bets);
 
-            // 개인용 칩사용 히스토리
-            updatePlayerChipHistory(player, bets);
+      player.chips -= totalBets;
+      player.chipDiff -= totalBets;
+      player.isBetLocked = true;
 
-            return callback({ 
-                success: true, 
-                remainChips: player.chips, 
-                personalRounds: player.rounds, 
-                isBetLocked: player.isBetLocked 
-            });
-        } catch (error) {
-            callback({ success: false, message: error.message });
-        }
-    });
+      // 개인용 칩사용 히스토리
+      updatePlayerChipHistory(player, bets);
 
-    // **말 투표 로직
-    socket.on('horse-vote', ({ roomId, session, selectedHorse }, callback) => {
-        try {
-            const room = validateRoom(roomId);
-            const player = validatePlayer(room, session.user.id);
+      return callback({
+        success: true,
+        remainChips: player.chips,
+        personalRounds: player.rounds,
+        isBetLocked: player.isBetLocked,
+      });
+    } catch (error) {
+      callback({ success: false, message: error.message });
+    }
+  });
 
-            // 투표 저장
-            player.voteHistory = player.voteHistory || [];
-            player.voteHistory.push(selectedHorse);
-            player.isVoteLocked = true;
+  // **말 투표 로직
+  socket.on('horse-vote', ({ roomId, session, selectedHorse }, callback) => {
+    try {
+      const room = validateRoom(roomId);
+      const player = validatePlayer(room, session.user.id);
 
-            return callback({ success: true, voteHistory: player.voteHistory, isVoteLocked: player.isVoteLocked });
-        } catch (error) {
-            callback({ success: false, message: error.message });
-        }
-    });
+      // 투표 저장
+      player.voteHistory = player.voteHistory || [];
+      player.voteHistory.push(selectedHorse);
+      player.isVoteLocked = true;
 
-    // **설정 업데이트 이벤트**
-    socket.on('horse-update-settings', ({ roomId, finishLine }, callback) => {
-        try {
-            const room = validateRoom(roomId);
+      return callback({
+        success: true,
+        voteHistory: player.voteHistory,
+        isVoteLocked: player.isVoteLocked,
+      });
+    } catch (error) {
+      callback({ success: false, message: error.message });
+    }
+  });
 
-            // finishLine 설정 업데이트
-            room.gameData.finishLine = finishLine;
-            io.to(roomId).emit('update-finishLine', finishLine);
+  // **설정 업데이트 이벤트**
+  socket.on('horse-update-settings', ({ roomId, finishLine }, callback) => {
+    try {
+      const room = validateRoom(roomId);
 
-            return callback({ success: true });
-        } catch (error) {
-            callback({ success: false, message: error.message });
-        }
-    });
+      // finishLine 설정 업데이트
+      room.gameData.finishLine = finishLine;
+      io.to(roomId).emit('update-finishLine', finishLine);
 
-    socket.on('horse-get-game-data', ({ roomId, sessionId }, callback) => {
-        try {
-            console.log("server : horse-get-game-data", sessionId);
-            const room = validateRoom(roomId);
+      return callback({ success: true });
+    } catch (error) {
+      callback({ success: false, message: error.message });
+    }
+  });
 
-            const player = rooms[roomId].players.find(p => p.id === sessionId);
-            const hasRounds = Array.isArray(room.gameData.rounds) && room.gameData.rounds.length > 0;
-            const positions = room.gameData.positions || [];
-            const horsesData = Object.entries(positions).map(([name, position]) => ({
-                name,
-                position
-            }));
+  socket.on('horse-get-game-data', ({ roomId, sessionId }, callback) => {
+    try {
+      console.log('server : horse-get-game-data', sessionId);
+      const room = validateRoom(roomId);
 
-            // 현재 게임 데이터를 클라이언트로 전송
-            socket.emit('horse-game-data-update', {
-                horses: room.gameData.horses || [],
-                players: room.players || [],
-                positions: horsesData,
-                finishLine: room.gameData.finishLine,
-                statusInfo: player || { memo: [] },
-                isRoundStarted: hasRounds || (room.gameData.timeLeft > 0),
-                rounds: room.gameData.rounds || [],
-                isTimeover: room.gameData.isTimeover || true,
-            });
-            return callback({ success: true });
-        } catch (error) {
-            callback({ success: false, message: error.message });
-        }
-    });
+      const player = rooms[roomId].players.find((p) => p.id === sessionId);
+      const hasRounds =
+        Array.isArray(room.gameData.rounds) && room.gameData.rounds.length > 0;
+      const positions = room.gameData.positions || [];
+      const horsesData = Object.entries(positions).map(([name, position]) => ({
+        name,
+        position,
+      }));
 
-    // 새로운 게임 시작을 위한 이벤트 추가
-    socket.on('horse-new-game', ({ roomId }, callback) => {
-        try {
-            const room = validateRoom(roomId);
-            const defaultStatusInfo = _.cloneDeep(DEFAULT_PLAYER_DATA[room.gameType]);
-            room.status = GAME_STATUS.PENDING;
+      // 현재 게임 데이터를 클라이언트로 전송
+      socket.emit('horse-game-data-update', {
+        horses: room.gameData.horses || [],
+        players: room.players || [],
+        positions: horsesData,
+        finishLine: room.gameData.finishLine,
+        statusInfo: player || { memo: [] },
+        isRoundStarted: hasRounds || room.gameData.timeLeft > 0,
+        rounds: room.gameData.rounds || [],
+        isTimeover: room.gameData.isTimeover || true,
+      });
+      return callback({ success: true });
+    } catch (error) {
+      callback({ success: false, message: error.message });
+    }
+  });
 
-            clearInterval(timers[roomId]);
-            delete timers[roomId];
-            io.to(roomId).emit('update-timer', 0);
+  // 새로운 게임 시작을 위한 이벤트 추가
+  socket.on('horse-new-game', ({ roomId }, callback) => {
+    try {
+      const room = validateRoom(roomId);
+      const defaultStatusInfo = _.cloneDeep(DEFAULT_PLAYER_DATA[room.gameType]);
+      room.status = GAME_STATUS.PENDING;
 
-            room.gameData = _.cloneDeep(DEFAULT_GAME_DATA["horse"]);
+      clearInterval(timers[roomId]);
+      delete timers[roomId];
+      io.to(roomId).emit('update-timer', 0);
 
-            // statusInfo 초기화
-            // 'gameData 초기화'와 병합 금지. room.players 전달때문
-            room.players.forEach(player => {
-                Object.assign(player, defaultStatusInfo);
-            });
+      room.gameData = _.cloneDeep(DEFAULT_GAME_DATA['horse']);
 
-            // gameData 초기화
-            room.players.forEach(player => {
-                io.to(player.socketId).emit('horse-game-data-update', {
-                    players: room.players,
+      // statusInfo 초기화
+      // 'gameData 초기화'와 병합 금지. room.players 전달때문
+      room.players.forEach((player) => {
+        Object.assign(player, defaultStatusInfo);
+      });
 
-                    finishLine: room.gameData.finishLine,
-                    horses: room.gameData.horses,
-                    positions: room.gameData.positions,
-                    rounds: room.gameData.rounds,
-                    isTimeover: room.gameData.isTimeover,
-                    isRoundStarted: room.gameData.isRoundStarted,
+      // gameData 초기화
+      room.players.forEach((player) => {
+        io.to(player.socketId).emit('horse-game-data-update', {
+          players: room.players,
 
-                    statusInfo: player,
-                    timeLeft: 0,
-                });
-            });
+          finishLine: room.gameData.finishLine,
+          horses: room.gameData.horses,
+          positions: room.gameData.positions,
+          rounds: room.gameData.rounds,
+          isTimeover: room.gameData.isTimeover,
+          isRoundStarted: room.gameData.isRoundStarted,
 
-            // host 초기화
-            io.to(room.host.socketId).emit('horse-game-data-update', {
-                players: room.players,
+          statusInfo: player,
+          timeLeft: 0,
+        });
+      });
 
-                finishLine: room.gameData.finishLine,
-                horses: room.gameData.horses,
-                positions: room.gameData.positions,
-                rounds: room.gameData.rounds,
-                isTimeover: room.gameData.isTimeover,
-                isRoundStarted: room.gameData.isRoundStarted,
+      // host 초기화
+      io.to(room.host.socketId).emit('horse-game-data-update', {
+        players: room.players,
 
-                statusInfo: {},
-                timeLeft: 0,
-            });
+        finishLine: room.gameData.finishLine,
+        horses: room.gameData.horses,
+        positions: room.gameData.positions,
+        rounds: room.gameData.rounds,
+        isTimeover: room.gameData.isTimeover,
+        isRoundStarted: room.gameData.isRoundStarted,
 
-            io.emit('room-updated', rooms);
-            return callback({ success: true });
-        } catch (error) {
-            callback({ success: false, message: error.message });
-        }
-    });
+        statusInfo: {},
+        timeLeft: 0,
+      });
 
-    socket.on('horse-update-memo', ({ roomId, index, memo, sessionId }, callback) => {
-        try {
-            const room = validateRoom(roomId);
-            const player = validatePlayer(room, sessionId);
+      io.emit('room-updated', rooms);
+      return callback({ success: true });
+    } catch (error) {
+      callback({ success: false, message: error.message });
+    }
+  });
 
-            player.memo = player.memo || [];
-            player.memo[index] = memo;
-            return callback({ success: true });
-        } catch (error) {
-            callback({ success: false, message: error.message });
-        }
-    });
+  socket.on(
+    'horse-update-memo',
+    ({ roomId, index, memo, sessionId }, callback) => {
+      try {
+        const room = validateRoom(roomId);
+        const player = validatePlayer(room, sessionId);
+
+        player.memo = player.memo || [];
+        player.memo[index] = memo;
+        return callback({ success: true });
+      } catch (error) {
+        callback({ success: false, message: error.message });
+      }
+    }
+  );
 };
 
 export default horseGameHandler;

@@ -1,10 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { signOut } from 'next-auth/react'
+import { signOut } from 'next-auth/react';
 import { useDispatch } from 'react-redux';
 import { setIsLoading } from '@/store/loadingSlice';
-import { Box, IconButton, Menu, MenuItem, Backdrop, ListItemIcon } from '@mui/material';
+import {
+  Box,
+  IconButton,
+  Menu,
+  MenuItem,
+  Backdrop,
+  ListItemIcon,
+} from '@mui/material';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 
@@ -43,7 +50,7 @@ export default function UserDropdown({ session }) {
       >
         <AccountCircle />
       </IconButton>
-      
+
       <Menu
         id="menu-appbar"
         anchorEl={anchorEl}

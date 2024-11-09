@@ -37,19 +37,17 @@ function StartRoundModal({ open, onClose, roomId, socket }) {
 
   const onSubmit = (data) => {
     const duration = data.duration;
-    socket.emit(
-      'horse-start-round',
-      { roomId, duration },
-      (response) => {
-        if (!response.success) {
-          enqueueSnackbar(response.message, { variant: 'error' });
-        } else {
-          enqueueSnackbar('라운드가 성공적으로 시작되었습니다.', { variant: 'success' });
-          dispatch(updateIsRoundStarted(true));
-          onClose();
-        }
+    socket.emit('horse-start-round', { roomId, duration }, (response) => {
+      if (!response.success) {
+        enqueueSnackbar(response.message, { variant: 'error' });
+      } else {
+        enqueueSnackbar('라운드가 성공적으로 시작되었습니다.', {
+          variant: 'success',
+        });
+        dispatch(updateIsRoundStarted(true));
+        onClose();
       }
-    );
+    });
   };
 
   return (
@@ -61,14 +59,22 @@ function StartRoundModal({ open, onClose, roomId, socket }) {
         </Box>
       </DialogTitle>
       <DialogContent>
-        <form id="start-round-form" onSubmit={handleSubmit(onSubmit)} noValidate>
+        <form
+          id="start-round-form"
+          onSubmit={handleSubmit(onSubmit)}
+          noValidate
+        >
           <Controller
             name="duration"
             control={control}
             rules={{
               required: '지속 시간을 입력해주세요.',
-              min: { value: 1, message: '지속 시간은 1 이상의 자연수여야 합니다.' },
-              validate: value => Number.isInteger(value) || '지속 시간은 자연수여야 합니다.',
+              min: {
+                value: 1,
+                message: '지속 시간은 1 이상의 자연수여야 합니다.',
+              },
+              validate: (value) =>
+                Number.isInteger(value) || '지속 시간은 자연수여야 합니다.',
             }}
             render={({ field, fieldState }) => (
               <TextField
@@ -84,9 +90,9 @@ function StartRoundModal({ open, onClose, roomId, socket }) {
                     : '플레이어들과 조율하여 라운드 시간을 정해주세요'
                 }
                 slotProps={{
-                  formHelperText : {
-                    sx : { ml: '6px' },
-                  }
+                  formHelperText: {
+                    sx: { ml: '6px' },
+                  },
                 }}
                 onChange={(e) => {
                   const value = e.target.value;
@@ -101,7 +107,12 @@ function StartRoundModal({ open, onClose, roomId, socket }) {
         <Button onClick={onClose} color="inherit">
           취소
         </Button>
-        <Button type="submit" form="start-round-form" color="primary" sx={{ mr: '6px' }}>
+        <Button
+          type="submit"
+          form="start-round-form"
+          color="primary"
+          sx={{ mr: '6px' }}
+        >
           확인
         </Button>
       </DialogActions>

@@ -150,7 +150,11 @@ export default function ShuffleGamePage({ params }) {
             <AnswerTab roomId={roomId} socket={socket} session={session} />
           </TabPanel>
           <TabPanel value={activeTab} index={2}>
-            <ParticipantsTab roomId={roomId} socket={socket} session={session} />
+            <ParticipantsTab
+              roomId={roomId}
+              socket={socket}
+              session={session}
+            />
           </TabPanel>
         </Box>
       </Box>

@@ -3,12 +3,7 @@
 import { useEffect, memo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { updatePlayers } from '@/store/horseSlice';
-import {
-  Box,
-  Typography,
-  Paper,
-  Divider,
-} from '@mui/material';
+import { Box, Typography, Paper, Divider } from '@mui/material';
 
 function ChipsTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
@@ -58,17 +53,22 @@ function ChipsTab({ roomId, socket, session }) {
                     component="span"
                     sx={{ ml: 1, color: color }}
                   >
-                    ({arrow}{Math.abs(player.chipDiff)})
+                    ({arrow}
+                    {Math.abs(player.chipDiff)})
                   </Typography>
                 )}
-                <Typography variant="caption" component="span" sx={{ ml: 1, color: 'text.secondary' }}>
-                  ({player.horse}, {player.name}{player.isSolo ? ', 솔로' : ''}) 
-                  {/* , {player.socketId} */}
+                <Typography
+                  variant="caption"
+                  component="span"
+                  sx={{ ml: 1, color: 'text.secondary' }}
+                >
+                  ({player.horse}, {player.name}
+                  {player.isSolo ? ', 솔로' : ''}){/* , {player.socketId} */}
                 </Typography>
               </Typography>
               {index < players.length - 1 && <Divider />}
             </Box>
-          )
+          );
         })}
       </Box>
     </Paper>

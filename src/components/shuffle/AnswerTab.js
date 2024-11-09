@@ -22,7 +22,11 @@ export default function AnswerTab({ roomId, socket, session }) {
       <Typography variant="h6">클립의 원래 순서를 맞춰보세요</Typography>
       {/* 순서 입력 UI */}
       {/* ... */}
-      <Button variant="contained" onClick={handleSubmit} disabled={statusInfo.answerSubmitted}>
+      <Button
+        variant="contained"
+        onClick={handleSubmit}
+        disabled={statusInfo.answerSubmitted}
+      >
         제출하기
       </Button>
     </Box>

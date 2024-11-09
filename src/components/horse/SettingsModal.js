@@ -34,18 +34,16 @@ function SettingsModal({ open, onClose, roomId, socket }) {
 
   const onSubmit = (data) => {
     const finishLine = data.finishLine;
-    socket.emit(
-      'horse-update-settings',
-      { roomId, finishLine },
-      (response) => {
-        if (!response.success) {
-          enqueueSnackbar(response.message, { variant: 'error' });
-        } else {
-          enqueueSnackbar('설정이 성공적으로 업데이트되었습니다.', { variant: 'success' });
-          onClose();
-        }
+    socket.emit('horse-update-settings', { roomId, finishLine }, (response) => {
+      if (!response.success) {
+        enqueueSnackbar(response.message, { variant: 'error' });
+      } else {
+        enqueueSnackbar('설정이 성공적으로 업데이트되었습니다.', {
+          variant: 'success',
+        });
+        onClose();
       }
-    );
+    });
   };
 
   return (
@@ -63,9 +61,16 @@ function SettingsModal({ open, onClose, roomId, socket }) {
             control={control}
             rules={{
               required: '골인지점을 입력해주세요.',
-              min: { value: 1, message: '골인지점은 1 이상의 자연수여야 합니다.' },
-              max: { value: 20, message: '골인지점은 20 이하의 자연수여야 합니다.' },
-              validate: value => Number.isInteger(value) || '골인지점은 자연수여야 합니다.',
+              min: {
+                value: 1,
+                message: '골인지점은 1 이상의 자연수여야 합니다.',
+              },
+              max: {
+                value: 20,
+                message: '골인지점은 20 이하의 자연수여야 합니다.',
+              },
+              validate: (value) =>
+                Number.isInteger(value) || '골인지점은 자연수여야 합니다.',
             }}
             render={({ field, fieldState }) => (
               <TextField
@@ -81,9 +86,9 @@ function SettingsModal({ open, onClose, roomId, socket }) {
                     : '골인지점은 5 이상 11 이하를 추천합니다.'
                 }
                 slotProps={{
-                  formHelperText : {
-                    sx : { ml: '6px' },
-                  }
+                  formHelperText: {
+                    sx: { ml: '6px' },
+                  },
                 }}
                 onChange={(e) => {
                   const value = e.target.value;
@@ -98,7 +103,12 @@ function SettingsModal({ open, onClose, roomId, socket }) {
         <Button onClick={onClose} color="inherit">
           취소
         </Button>
-        <Button type="submit" form="settings-form" color="primary" sx={{ mr: '6px' }}>
+        <Button
+          type="submit"
+          form="settings-form"
+          color="primary"
+          sx={{ mr: '6px' }}
+        >
           확인
         </Button>
       </DialogActions>

@@ -16,7 +16,9 @@ function NewGameModal({ open, onClose, roomId, socket, session }) {
       if (!response.success) {
         enqueueSnackbar(response.message, { variant: 'error' });
       } else {
-        enqueueSnackbar('새 게임이 성공적으로 시작되었습니다.', { variant: 'success' });
+        enqueueSnackbar('새 게임이 성공적으로 시작되었습니다.', {
+          variant: 'success',
+        });
         socket.emit(
           'horse-get-game-data',
           { roomId, sessionId: session.user.id },
@@ -35,9 +37,7 @@ function NewGameModal({ open, onClose, roomId, socket, session }) {
     <Dialog open={open} onClose={onClose}>
       <DialogTitle>새 게임 시작</DialogTitle>
       <DialogContent>
-        <DialogContentText>
-          정말 새 게임을 시작하시겠습니까?
-        </DialogContentText>
+        <DialogContentText>정말 새 게임을 시작하시겠습니까?</DialogContentText>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} color="primary">

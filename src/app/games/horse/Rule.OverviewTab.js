@@ -26,8 +26,8 @@ export default function OverviewTab() {
           color: theme.palette.primary.main, // theme 색상 사용
           fontSize: {
             xs: '1.5rem', // 모바일
-            sm: '2rem',    // 태블릿
-            md: '2.5rem',  // 데스크톱 이상
+            sm: '2rem', // 태블릿
+            md: '2.5rem', // 데스크톱 이상
           },
           mb: {
             xs: 1, // 모바일
@@ -47,28 +47,30 @@ export default function OverviewTab() {
             mb: 2, // mb-4
             color: theme.palette.text.primary, // theme 색상 사용
             fontSize: {
-              xs: '1rem',    // 모바일
+              xs: '1rem', // 모바일
               sm: '1.25rem', // 태블릿
               md: '1.25rem', // 데스크톱 이상
             },
           }}
         >
-          경마게임은 오프라인에서 대화를 통해 정보를 얻고, 폰으로는 베팅을 하면 되는 간단한 게임입니다.
+          경마게임은 오프라인에서 대화를 통해 정보를 얻고, 폰으로는 베팅을 하면
+          되는 간단한 게임입니다.
         </Typography>
-        
+
         <Typography
           variant="body1"
           sx={{
             mb: 2, // mb-4
             color: theme.palette.text.primary, // theme 색상 사용
             fontSize: {
-              xs: '1rem',    // 모바일
+              xs: '1rem', // 모바일
               sm: '1.25rem', // 태블릿
               md: '1.25rem', // 데스크톱 이상
             },
           }}
         >
-          설명 순서는 개요에 대해 간략하게만 짚고, 이어서 화면 내의 각 탭에 대해 자세히 설명드리겠습니다.
+          설명 순서는 개요에 대해 간략하게만 짚고, 이어서 화면 내의 각 탭에 대해
+          자세히 설명드리겠습니다.
         </Typography>
 
         <Typography
@@ -83,7 +85,8 @@ export default function OverviewTab() {
             },
           }}
         >
-          게임이 시작될 때 각자 경주마를 맡게될거에요. 라운드마다 베팅을 해서, 베팅 집계에 따라 말들이 전진하게 됩니다.
+          게임이 시작될 때 각자 경주마를 맡게될거에요. 라운드마다 베팅을 해서,
+          베팅 집계에 따라 말들이 전진하게 됩니다.
         </Typography>
 
         <Box sx={{ position: 'relative', width: '100%', mb: 2 }}>
@@ -130,7 +133,8 @@ export default function OverviewTab() {
             },
           }}
         >
-          통과한 말들은 꼴등이 되고 그 당시에 결승선에 가장 가까운 말을 맡은 팀이 1등이 됩니다.
+          통과한 말들은 꼴등이 되고 그 당시에 결승선에 가장 가까운 말을 맡은
+          팀이 1등이 됩니다.
         </Typography>
 
         <Typography
@@ -145,9 +149,12 @@ export default function OverviewTab() {
             },
           }}
         >
-          그리고 상단의 탭 중 처음 두 개(베팅, 예측)는 라운드마다 할 수 있는 액션에 해당하는 부분입니다. 
-          해당 라운드에 액션을 하게 되면 우측상단의 붉은 점은 사라지게 됩니다.<br/>
-          그리고 뒤의 두 개(칩개수, 경주마)의 탭은 게임 내의 진행에 참고가 될 정보를 제공하는 화면입니다.
+          그리고 상단의 탭 중 처음 두 개(베팅, 예측)는 라운드마다 할 수 있는
+          액션에 해당하는 부분입니다. 해당 라운드에 액션을 하게 되면 우측상단의
+          붉은 점은 사라지게 됩니다.
+          <br />
+          그리고 뒤의 두 개(칩개수, 경주마)의 탭은 게임 내의 진행에 참고가 될
+          정보를 제공하는 화면입니다.
         </Typography>
 
         <Typography
@@ -169,7 +176,6 @@ export default function OverviewTab() {
           </Box>{' '}
           입니다.
         </Typography>
-
       </Box>
     </Box>
   );

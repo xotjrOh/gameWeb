@@ -2,25 +2,21 @@
 
 import { useState, useEffect, memo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import {
-  updateChip,
-  updateIsBetLocked,
-} from '@/store/horseSlice';
+import { updateChip, updateIsBetLocked } from '@/store/horseSlice';
 import AdminButtons from '@/components/horse/AdminButtons';
 import BettingSection from '@/components/horse/BettingSection';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
-import {
-  Box,
-  Button,
-  Typography,
-} from '@mui/material';
+import { Box, Button, Typography } from '@mui/material';
 
 function BettingTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
   const [bets, setBets] = useState({});
-  const { horses = [], statusInfo, isRoundStarted, isTimeover } = useSelector(
-    (state) => state.horse.gameData
-  );
+  const {
+    horses = [],
+    statusInfo,
+    isRoundStarted,
+    isTimeover,
+  } = useSelector((state) => state.horse.gameData);
   const { enqueueSnackbar } = useCustomSnackbar();
 
   useEffect(() => {
@@ -38,7 +34,9 @@ function BettingTab({ roomId, socket, session }) {
 
   const handleBet = () => {
     if (statusInfo?.isBetLocked || isTimeover) {
-      return enqueueSnackbar('더 이상 베팅할 수 없습니다.', { variant: 'error' });
+      return enqueueSnackbar('더 이상 베팅할 수 없습니다.', {
+        variant: 'error',
+      });
     }
     if (Object.keys(bets).length > 0) {
       socket.emit('horse-bet', { roomId, session, bets }, (response) => {
@@ -58,7 +56,7 @@ function BettingTab({ roomId, socket, session }) {
   return (
     <Box sx={{ mt: 2, pb: 8 }}>
       {/* 상단 관리자용 버튼들 */}
-      <AdminButtons 
+      <AdminButtons
         roomId={roomId}
         socket={socket}
         session={session}
@@ -76,9 +74,27 @@ function BettingTab({ roomId, socket, session }) {
       />
 
       {/* 베팅 요약 섹션 */}
-      <Box sx={{ position: 'fixed', bottom: 56, left: 16, right: 16, zIndex: 1000, textAlign: 'center', color: 'grey.600' }}>
+      <Box
+        sx={{
+          position: 'fixed',
+          bottom: 56,
+          left: 16,
+          right: 16,
+          zIndex: 1000,
+          textAlign: 'center',
+          color: 'grey.600',
+        }}
+      >
         <Typography variant="body2">
-          현재 베팅: {Object.keys(bets).length > 0 ? horses.map(horse => bets[horse] ? `${horse}: ${bets[horse]}` : null).filter(Boolean).join(', ') : '베팅 내역 없음'}
+          현재 베팅:{' '}
+          {Object.keys(bets).length > 0
+            ? horses
+                .map((horse) =>
+                  bets[horse] ? `${horse}: ${bets[horse]}` : null
+                )
+                .filter(Boolean)
+                .join(', ')
+            : '베팅 내역 없음'}
         </Typography>
       </Box>
 
@@ -87,7 +103,7 @@ function BettingTab({ roomId, socket, session }) {
         variant="contained"
         color={statusInfo.isBetLocked || isTimeover ? 'inherit' : 'success'}
         onClick={handleBet}
-        sx={{ 
+        sx={{
           position: 'fixed',
           bottom: 16,
           left: 16,

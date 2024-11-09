@@ -14,7 +14,7 @@ import {
   ListItem,
   Box,
   Paper,
-  Collapse ,
+  Collapse,
 } from '@mui/material';
 
 const mockRankData = {
@@ -95,7 +95,7 @@ export default function RankingPage() {
           </FormControl>
 
           {/* 순위 리스트 with Fade */}
-          <Collapse  in={visible} timeout={200}>
+          <Collapse in={visible} timeout={200}>
             <List>
               {rankData.map((player) => (
                 <ListItem
@@ -158,7 +158,7 @@ export default function RankingPage() {
                 </ListItem>
               ))}
             </List>
-          </Collapse >
+          </Collapse>
         </Container>
       </Box>
     </>

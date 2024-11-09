@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect } from "react";
+import { useEffect } from 'react';
 import { Typography, Button, Container, Box } from '@mui/material';
 
 export default function Error({ error, reset }) {
-
   useEffect(() => {
     console.error('Error:', error.message);
   }, [error?.message]);

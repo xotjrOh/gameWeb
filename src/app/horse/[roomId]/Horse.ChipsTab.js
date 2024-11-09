@@ -45,7 +45,9 @@ function ChipsTab({ roomId, socket, session }) {
 
   const handleMemoChange = (index, newMemo) => {
     if (newMemo.length > 16) {
-      return enqueueSnackbar('메모는 최대 16자까지 입력할 수 있습니다.', { variant: 'error' });
+      return enqueueSnackbar('메모는 최대 16자까지 입력할 수 있습니다.', {
+        variant: 'error',
+      });
     }
 
     const updatedMemo = [...memoState];
@@ -57,13 +59,19 @@ function ChipsTab({ roomId, socket, session }) {
     }
 
     const timeoutId = setTimeout(() => {
-      socket.emit('horse-update-memo', { roomId, index, memo: newMemo, sessionId: session.user.id }, (response) => {
-        if (response.success) {
-          dispatch(updateMemo({ index, memo: newMemo }));
-        } else {
-          enqueueSnackbar(response.message || '메모 저장에 실패했습니다.', { variant: 'error' });
+      socket.emit(
+        'horse-update-memo',
+        { roomId, index, memo: newMemo, sessionId: session.user.id },
+        (response) => {
+          if (response.success) {
+            dispatch(updateMemo({ index, memo: newMemo }));
+          } else {
+            enqueueSnackbar(response.message || '메모 저장에 실패했습니다.', {
+              variant: 'error',
+            });
+          }
         }
-      });
+      );
     }, 600);
 
     setDebounceTimeouts((prev) => ({
@@ -75,28 +83,43 @@ function ChipsTab({ roomId, socket, session }) {
   // 포커스를 잃었을 때 바로 서버에 업데이트 요청
   const handleBlur = (index) => {
     const newMemo = memoState[index];
-    socket.emit('horse-update-memo', { roomId, index, memo: newMemo, sessionId: session.user.id }, (response) => {
-      if (response.success) {
-        clearTimeout(debounceTimeouts[index]);
-        dispatch(updateMemo({ index, memo: newMemo }));
-      } else {
-        enqueueSnackbar(response.message || '메모 저장에 실패했습니다.', { variant: 'error' });
+    socket.emit(
+      'horse-update-memo',
+      { roomId, index, memo: newMemo, sessionId: session.user.id },
+      (response) => {
+        if (response.success) {
+          clearTimeout(debounceTimeouts[index]);
+          dispatch(updateMemo({ index, memo: newMemo }));
+        } else {
+          enqueueSnackbar(response.message || '메모 저장에 실패했습니다.', {
+            variant: 'error',
+          });
+        }
       }
-    });
+    );
   };
 
   return (
     <Paper elevation={3} sx={{ p: { xs: 4, md: 6 }, mt: 2 }}>
       {/* 헤더 */}
       <Box display="flex" alignItems="baseline" mb={2}>
-        <Typography variant="h5" color="primary" fontWeight="bold" sx={{ ml: '6px' }}>
+        <Typography
+          variant="h5"
+          color="primary"
+          fontWeight="bold"
+          sx={{ ml: '6px' }}
+        >
           칩 개수
         </Typography>
         <Typography variant="caption" color="textSecondary" sx={{ ml: 1 }}>
           (각 메모는 16글자 제한)
         </Typography>
       </Box>
-      <Typography variant="body2" color="textSecondary" sx={{ ml: '6px', mr: '6px', mt: 1 }}>
+      <Typography
+        variant="body2"
+        color="textSecondary"
+        sx={{ ml: '6px', mr: '6px', mt: 1 }}
+      >
         플레이어 정보를 메모하면 기억하기 편합니다.
       </Typography>
 
@@ -125,8 +148,16 @@ function ChipsTab({ roomId, socket, session }) {
                 }}
               >
                 <Box sx={{ flexGrow: 1 }}>
-                  <Typography variant="body1" sx={{ whiteSpace: 'nowrap', ml:'6px', mr: isMobile ? 0 : 2 }}>
-                    {player.dummyName}: {player.chips.toString().padStart(2, '0')}개
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      whiteSpace: 'nowrap',
+                      ml: '6px',
+                      mr: isMobile ? 0 : 2,
+                    }}
+                  >
+                    {player.dummyName}:{' '}
+                    {player.chips.toString().padStart(2, '0')}개
                     {/* 칩 변화량 표시 */}
                     {player.chipDiff !== 0 && (
                       <Typography
@@ -134,7 +165,8 @@ function ChipsTab({ roomId, socket, session }) {
                         component="span"
                         sx={{ ml: 1, color: color }}
                       >
-                        ({arrow}{Math.abs(player.chipDiff)})
+                        ({arrow}
+                        {Math.abs(player.chipDiff)})
                       </Typography>
                     )}
                     {hasRaceEnded && (

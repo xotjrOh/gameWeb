@@ -1,7 +1,7 @@
 'use client';
 
 import { Typography, Button, Container, Paper } from '@mui/material';
-import { signIn } from "next-auth/react";
+import { signIn } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
 
 export default function ErrorPage() {

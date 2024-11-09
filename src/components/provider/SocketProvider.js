@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
@@ -7,106 +7,106 @@ import { setRooms } from '@/store/roomSlice';
 import { setIsLoading } from '@/store/loadingSlice';
 
 const SocketContext = createContext({
-    socket: null,
-    isConnected: false,
+  socket: null,
+  isConnected: false,
 });
 
 export const useSocket = () => {
-    return useContext(SocketContext);
+  return useContext(SocketContext);
 };
 
-export const SocketProvider = ({children}) => {
-    const dispatch = useDispatch();
-    const [socket, setSocket] = useState(null);
-    const [isConnected, setIsConnected] = useState(false);
-  
-    // console.log(socket, socket?.id, socket?.connected, isConnected);
-    useEffect(() => {
-        // socket이 이미 초기화되어 있는지 확인
-        if (socket && socket?.connected) {
-            return;
-        }
+export const SocketProvider = ({ children }) => {
+  const dispatch = useDispatch();
+  const [socket, setSocket] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
 
-        const newSocket = io(process.env.NEXT_PUBLIC_SITE_URL, {
-            path : "/api/socket/io",
-            addTrailingSlash: false,
-            // reconnection: true, 		// 자동 재연결 활성화
-            // reconnectionAttempts: Infinity, // 재연결 시도 횟수
-            // reconnectionDelay: 1000, // 재연결 시도 간격 (1초)
-            // forceNew: false,
-        });
+  // console.log(socket, socket?.id, socket?.connected, isConnected);
+  useEffect(() => {
+    // socket이 이미 초기화되어 있는지 확인
+    if (socket && socket?.connected) {
+      return;
+    }
 
-        newSocket.on('connect', () => {
-            console.log("client : conncect");
-            setSocket(newSocket);
-            setIsConnected(true);
-            newSocket.emit("get-room-list"); // 서버 재시작시 방 없애기위함
-            dispatch(setIsLoading(false));
-        });
+    const newSocket = io(process.env.NEXT_PUBLIC_SITE_URL, {
+      path: '/api/socket/io',
+      addTrailingSlash: false,
+      // reconnection: true, 		// 자동 재연결 활성화
+      // reconnectionAttempts: Infinity, // 재연결 시도 횟수
+      // reconnectionDelay: 1000, // 재연결 시도 간격 (1초)
+      // forceNew: false,
+    });
 
-        newSocket.on('disconnect', () => {
-            console.log("client : disconnect");
-            setIsConnected(false);
-            dispatch(setIsLoading(true));
-            // setSocket(null);
-        });
+    newSocket.on('connect', () => {
+      console.log('client : conncect');
+      setSocket(newSocket);
+      setIsConnected(true);
+      newSocket.emit('get-room-list'); // 서버 재시작시 방 없애기위함
+      dispatch(setIsLoading(false));
+    });
 
-        newSocket.on('reconnect', (attempt) => {
-            console.log(`client : reconnect (${attempt} attempts)`);
-        });
-    
-        newSocket.on('reconnect_failed', () => {
-            console.log('client : reconnect_failed');
-        });
+    newSocket.on('disconnect', () => {
+      console.log('client : disconnect');
+      setIsConnected(false);
+      dispatch(setIsLoading(true));
+      // setSocket(null);
+    });
 
-        newSocket.on("error", (err) => {
-            console.log("client : error");
-            console.error(err);
-        })
+    newSocket.on('reconnect', (attempt) => {
+      console.log(`client : reconnect (${attempt} attempts)`);
+    });
 
-        setSocket(newSocket);
-    
-        // todo : disconnect가 문제인지 테스트
-        // return async () => {
-        return () => {
-          if (socket) {
-            console.log("provider에서 socket disconnect 테스트 점요");
-            // socket.disconnect();
-            // const disconnectSocket = async () => {
-            //     if (socket && socket.connected) {
-            //         return new Promise((resolve) => {
-            //             console.log('기존 소켓 연결 해제 중...', socket.id);
-            //             socket.disconnect(() => {
-            //                 console.log('소켓 연결이 해제되었습니다.');
-            //                 resolve();
-            //             });
-            //         });
-            //     }
-            // };
+    newSocket.on('reconnect_failed', () => {
+      console.log('client : reconnect_failed');
+    });
 
-            // await disconnectSocket();
-          }
-        };
-    }, [socket?.id, dispatch]);
-    
-    useEffect(() => {
-        if (socket) {
-            const handleRoomUpdated = (updatedRooms) => {
-                dispatch(setRooms(updatedRooms));
-            };
+    newSocket.on('error', (err) => {
+      console.log('client : error');
+      console.error(err);
+    });
 
-            socket.on('room-updated', handleRoomUpdated);
-            socket.emit('get-room-list');
+    setSocket(newSocket);
 
-            return () => {
-                socket.off('room-updated', handleRoomUpdated);
-            };
-        }
-    }, [socket, socket?.id, dispatch]);
+    // todo : disconnect가 문제인지 테스트
+    // return async () => {
+    return () => {
+      if (socket) {
+        console.log('provider에서 socket disconnect 테스트 점요');
+        // socket.disconnect();
+        // const disconnectSocket = async () => {
+        //     if (socket && socket.connected) {
+        //         return new Promise((resolve) => {
+        //             console.log('기존 소켓 연결 해제 중...', socket.id);
+        //             socket.disconnect(() => {
+        //                 console.log('소켓 연결이 해제되었습니다.');
+        //                 resolve();
+        //             });
+        //         });
+        //     }
+        // };
 
-    return (
-      <SocketContext.Provider value={{ socket, isConnected }}>
-        {children}
-      </SocketContext.Provider>
-    );
+        // await disconnectSocket();
+      }
+    };
+  }, [socket?.id, dispatch]);
+
+  useEffect(() => {
+    if (socket) {
+      const handleRoomUpdated = (updatedRooms) => {
+        dispatch(setRooms(updatedRooms));
+      };
+
+      socket.on('room-updated', handleRoomUpdated);
+      socket.emit('get-room-list');
+
+      return () => {
+        socket.off('room-updated', handleRoomUpdated);
+      };
+    }
+  }, [socket, socket?.id, dispatch]);
+
+  return (
+    <SocketContext.Provider value={{ socket, isConnected }}>
+      {children}
+    </SocketContext.Provider>
+  );
 };

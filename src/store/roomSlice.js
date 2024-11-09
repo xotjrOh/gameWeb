@@ -1,4 +1,4 @@
-import { createSlice } from '@reduxjs/toolkit'
+import { createSlice } from '@reduxjs/toolkit';
 // rooms[roomName] = {
 // 	roomName,
 // 	gameType,
@@ -10,16 +10,16 @@ import { createSlice } from '@reduxjs/toolkit'
 //   };
 
 const roomSlice = createSlice({
-	name : 'room',
-	initialState: {
-		rooms: {},
-	},
-	reducers : {
-		setRooms(state, action) {
-			state.rooms = action.payload;
-		},
-	}
-})
+  name: 'room',
+  initialState: {
+    rooms: {},
+  },
+  reducers: {
+    setRooms(state, action) {
+      state.rooms = action.payload;
+    },
+  },
+});
 
-export const { setRooms } = roomSlice.actions // state 변경함수들 남음
-export default roomSlice
+export const { setRooms } = roomSlice.actions; // state 변경함수들 남음
+export default roomSlice;

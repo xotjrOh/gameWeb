@@ -6,14 +6,13 @@ import shuffleGameHandler from './handlers/shuffleGameHandler';
 const ioHandler = (req, res) => {
   if (!res.socket.server.io) {
     const io = new Server(res.socket.server, {
-      path : "/api/socket/io",
+      path: '/api/socket/io',
       addTrailingSlash: false,
     });
-    
+
     res.socket.server.io = io;
 
     io.on('connection', (socket) => {
-
       console.log('server : A user connected', socket.id);
 
       commonHandler(io, socket);
@@ -26,9 +25,8 @@ const ioHandler = (req, res) => {
       socket.on('error', (err) => {
         console.error(`Error occurred on socket ${socket.id}:`, err);
       });
-
     });
-  }  
+  }
   res.end();
 };
 

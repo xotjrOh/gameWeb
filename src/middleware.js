@@ -9,15 +9,15 @@ export async function middleware(request) {
 
   // 이미 로그인한 상태에서 로그인 페이지로 접근하면 메인 페이지로 리다이렉트
   if (session && pathname.startsWith('/auth/signin')) {
-    const redirectUrl = new URL('/', request.url);  // 메인 페이지로 리다이렉트
-    return NextResponse.redirect(redirectUrl);  // '/'를 메인 페이지나 원하는 페이지로 설정
+    const redirectUrl = new URL('/', request.url); // 메인 페이지로 리다이렉트
+    return NextResponse.redirect(redirectUrl); // '/'를 메인 페이지나 원하는 페이지로 설정
   }
 
   // 요청된 경로가 '/auth/signin'으로 시작하는 경우
   if (
-    pathname.startsWith('/auth/signin') || 
-    pathname.startsWith('/auth/popup') || 
-    pathname.startsWith('/games/horse') 
+    pathname.startsWith('/auth/signin') ||
+    pathname.startsWith('/auth/popup') ||
+    pathname.startsWith('/games/horse')
   ) {
     return NextResponse.next();
   }

@@ -16,17 +16,23 @@ const useRedirectIfNotHost = (roomId) => {
   useEffect(() => {
     if (status === 'authenticated' && socket) {
       dispatch(setIsLoading(false));
-      socket.emit('check-room-host', { roomId, sessionId: session.user.id }, (response) => {
-        if (!response.isInRoom) {
-          enqueueSnackbar('호스트가 아닙니다. 대기방으로 이동합니다.', { variant: 'error' });
-          router.replace('/');
-          socket?.emit('get-room-list');
+      socket.emit(
+        'check-room-host',
+        { roomId, sessionId: session.user.id },
+        (response) => {
+          if (!response.isInRoom) {
+            enqueueSnackbar('호스트가 아닙니다. 대기방으로 이동합니다.', {
+              variant: 'error',
+            });
+            router.replace('/');
+            socket?.emit('get-room-list');
+          }
         }
-      });
-    } else if (status === "loading") {
+      );
+    } else if (status === 'loading') {
       dispatch(setIsLoading(true));
     }
   }, [socket?.id, status, roomId, session, router, dispatch]);
-}
+};
 
 export default useRedirectIfNotHost;

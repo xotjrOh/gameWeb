@@ -26,8 +26,8 @@ const theme = createTheme({
       main: indigo[600], // 필요 시 변경
     },
     text: {
-      primary: '#333333',  // 기본 텍스트 색상 수정
-      secondary: '#666666',  // 보조 텍스트 색상 수정
+      primary: '#333333', // 기본 텍스트 색상 수정
+      secondary: '#666666', // 보조 텍스트 색상 수정
     },
     info: {
       light: '#bbdefb', // 밝은 파란색

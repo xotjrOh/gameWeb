@@ -10,11 +10,15 @@ export default function useShuffleGameData(roomId, socket, sessionId) {
   useEffect(() => {
     if (socket && roomId) {
       // 서버로부터 게임 데이터를 받아와 Redux 스토어에 저장
-      socket.emit('shuffle-get-game-data', { roomId, sessionId }, (response) => {
+      socket.emit(
+        'shuffle-get-game-data',
+        { roomId, sessionId },
+        (response) => {
           if (!response.success) {
-              enqueueSnackbar(response.message, { variant: 'error' });
+            enqueueSnackbar(response.message, { variant: 'error' });
           }
-      });
+        }
+      );
 
       // 게임 진행 중 발생하는 이벤트 처리
       socket.on('shuffle-game-data-update', (data) => {

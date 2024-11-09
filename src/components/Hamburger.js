@@ -67,9 +67,7 @@ export default function Hamburger() {
         </MenuItem> */}
 
         {/* '게임 소개' 메뉴 */}
-        <MenuItem
-          onMouseEnter={handleSubmenuOpen}
-        >
+        <MenuItem onMouseEnter={handleSubmenuOpen}>
           게임 소개
           <ArrowRightIcon />
         </MenuItem>
@@ -91,12 +89,12 @@ export default function Hamburger() {
         slotProps={{
           root: {
             sx: {
-              pointerEvents: 'none',  // 부모 요소가 클릭 이벤트를 차단하지 않도록 설정
+              pointerEvents: 'none', // 부모 요소가 클릭 이벤트를 차단하지 않도록 설정
             },
           },
           paper: {
-            sx: { 
-              pointerEvents: 'auto'
+            sx: {
+              pointerEvents: 'auto',
             },
           },
         }}

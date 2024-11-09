@@ -19,19 +19,27 @@ export default function ShuffleGame() {
     <>
       <Header session={session} />
       <Container maxWidth="sm">
-        <Paper elevation={3} sx={{ padding: 4, marginTop: 8, textAlign: 'center' }}>
+        <Paper
+          elevation={3}
+          sx={{ padding: 4, marginTop: 8, textAlign: 'center' }}
+        >
           {/* 공사 중 아이콘 */}
           <ConstructionIcon color="action" sx={{ fontSize: 60, mb: 2 }} />
 
           {/* 제목 */}
-          <Typography variant="h4" component="h1" color="textPrimary" sx={{ fontWeight: 'bold', mb: 2 }}>
+          <Typography
+            variant="h4"
+            component="h1"
+            color="textPrimary"
+            sx={{ fontWeight: 'bold', mb: 2 }}
+          >
             게임 준비 중입니다.
           </Typography>
 
           {/* 설명 문구 */}
           <Typography variant="body1" color="textSecondary" sx={{ mb: 4 }}>
-            현재 이 게임은 개발 중입니다.<br/>
-            곧 재미있는 게임으로 찾아뵙겠습니다!
+            현재 이 게임은 개발 중입니다.
+            <br />곧 재미있는 게임으로 찾아뵙겠습니다!
           </Typography>
 
           {/* 홈으로 돌아가기 버튼 */}

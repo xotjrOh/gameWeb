@@ -105,7 +105,7 @@ export default function RoundResultModal({ socket, roomId }) {
             .filter(({ progress }) => progress !== 0)
             .map(({ horse, progress }, index) => {
               const isSuccess = getPlayerSuccess(horse);
-              const horsePosition = 
+              const horsePosition =
                 positions.find((pos) => pos.name === horse)?.position || 0;
 
               return (
@@ -121,7 +121,9 @@ export default function RoundResultModal({ socket, roomId }) {
                     boxShadow: 2,
                     border: 1,
                     borderColor: isSuccess ? 'border.success' : 'grey.300',
-                    backgroundColor: isSuccess ? 'background.success' : 'background.paper',
+                    backgroundColor: isSuccess
+                      ? 'background.success'
+                      : 'background.paper',
                   }}
                 >
                   <Typography
@@ -130,8 +132,7 @@ export default function RoundResultModal({ socket, roomId }) {
                     color={isSuccess ? 'success.dark' : 'text.primary'}
                     sx={{ textAlign: 'center' }}
                   >
-                    {horse}{' '}
-                    {`(${horsePosition - progress} → ${horsePosition})`}{' '}
+                    {horse} {`(${horsePosition - progress} → ${horsePosition})`}{' '}
                     {isSuccess ? '🎉' : ''}
                   </Typography>
                   {/* 트랙 */}
@@ -202,12 +203,7 @@ export default function RoundResultModal({ socket, roomId }) {
             })}
           {results.length === 0 && (
             <Box textAlign="center" py={{ xs: 4, md: 6 }}>
-              <Typography
-                variant="h6"
-                fontWeight="bold"
-                color="error"
-                mb={4}
-              >
+              <Typography variant="h6" fontWeight="bold" color="error" mb={4}>
                 😢 아무도 베팅하지 않았습니다 😢
               </Typography>
               <Typography variant="body1" color="textSecondary">
