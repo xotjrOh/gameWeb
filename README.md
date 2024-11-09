@@ -90,29 +90,21 @@ npm install next socket.io
    NEXT_PUBLIC_SITE_URL=http://localhost:3000
    ```
 
-4. **Pre-commit Hook 설정**:
-
-   git으로 관리할 경우 .git/hooks/pre-commit 파일 생성.
-   version관리를 통한 새로고침을 유도하기 위함(잘못된 socket에 등록된 이벤트 제거를 위함)
-
-   ```bash
-   #!/bin/sh
-
-   # package.json의 버전 업데이트
-   echo "Updating package.json version..."
-   npm version patch --no-git-tag-version
-
-   # 변경된 package.json과 package-lock.json을 스테이징
-   git add package.json package-lock.json
-   ```
-
-5. **로컬 서버 실행**:
+4. **로컬 서버 실행**:
    아래 명령어로 개발 서버를 실행하고, 웹 브라우저에서 http://localhost:3000 으로 접속합니다.
    ```bash
    npm run dev
    ```
    **배포된 버전 접속**:
    로컬에서 실행하지 않고 바로 플레이하려면 아래 링크를 클릭하세요: https://gameweb-production.up.railway.app/
+
+## ⚠️ 주의사항
+
+### `.husky/pre-commit` 파일로 인해 Git 버전 충돌 가능성:
+
+- 이 프로젝트에서는 Git 훅을 사용하여 **자동으로 린팅과 버전 업데이트**를 수행합니다.
+- `.husky/pre-commit` 에서 버전을 관리하기에 팀 작업 시 버전 정보가 엉킬 수 있습니다.
+- 만약 충돌이 발생할 경우, .husky/pre-commit 파일을 적절히 조정한 후 다시 커밋하십시오.
 
 ## 📄 라이선스
 

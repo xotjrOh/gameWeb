@@ -3,6 +3,7 @@ FROM node:20.14.0-alpine
 
 # Create and set working directory
 WORKDIR /app
+ENV HUSKY=0
 
 # Copy package.json and install dependencies using npm
 COPY package.json package-lock.json ./
