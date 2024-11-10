@@ -4,6 +4,7 @@
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true, // JS 파일 허용 (점진적 마이그레이션 지원)
     "checkJs": false,
+    // TODO : 이 속성값도 제거예정
     "noImplicitAny": false,
     "skipLibCheck": true,
     // TODO : 나중에 true로
