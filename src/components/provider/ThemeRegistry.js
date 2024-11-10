@@ -4,7 +4,7 @@ import React from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Head from 'next/head';
-import { indigo, grey, red } from '@mui/material/colors'; // 색상 객체 임포트
+import { indigo, red } from '@mui/material/colors'; // 색상 객체 임포트
 
 const theme = createTheme({
   palette: {

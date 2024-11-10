@@ -4,7 +4,6 @@ import SessionProviderWrapper from '@/components/provider/SessionProviderWrapper
 import ReduxProvider from '@/components/provider/ReduxProvider';
 import { SocketProvider } from '@/components/provider/SocketProvider';
 import ToastProvider from '@/components/provider/ToastProvider';
-
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 export const metadata = {

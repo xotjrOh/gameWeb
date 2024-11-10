@@ -169,7 +169,7 @@ export default function MyStatusButton({ roomId, socket, session }) {
                 1. 예측으로 얻는 보상이 증가합니다.
                 <br /> (2개 {'->'} 5개)
                 <br />
-                2. '경주마'탭의 '라운드별 현황'에서
+                2. ‘경주마’탭의 ‘라운드별 현황’에서
                 <br />
                 혼자만 베팅 개수를 확인할 수 있습니다.
               </Typography>

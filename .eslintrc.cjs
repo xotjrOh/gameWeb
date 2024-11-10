@@ -29,6 +29,7 @@ module.exports = {
     'prettier/prettier': ['error', { endOfLine: 'auto' }],
     'react-hooks/exhaustive-deps': 'off',
     '@typescript-eslint/no-unused-vars': 'off',
+    '@next/next/no-page-custom-font': 'off',
 
     // 추가 규칙 설정 가능
     // '@typescript-eslint/explicit-module-boundary-types': 'off',
