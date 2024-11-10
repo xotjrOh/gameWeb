@@ -28,9 +28,9 @@ module.exports = {
     // 기존 규칙 유지
     'prettier/prettier': ['error', { endOfLine: 'auto' }],
     'react-hooks/exhaustive-deps': 'off',
+    '@typescript-eslint/no-unused-vars': 'off',
 
     // 추가 규칙 설정 가능
-    // '@typescript-eslint/no-unused-vars': 'warn',
     // '@typescript-eslint/explicit-module-boundary-types': 'off',
   },
   // 추가: 설정 파일에만 규칙 적용
