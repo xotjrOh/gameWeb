@@ -1,7 +1,9 @@
 /** @type {import('next').NextConfig} */
-import packageJson from './package.json' assert { type: 'json' };
 
-let serverVersion = packageJson.version || '1.0.0';
+// package.json을 require로 불러오기
+const packageJson = require('./package.json');
+
+const serverVersion = packageJson.version || '1.0.0';
 
 const nextConfig = {
   env: {
@@ -11,7 +13,8 @@ const nextConfig = {
   images: {
     formats: ['image/webp'],
   },
-  async headers() { // 이미지 바로 캐싱
+  async headers() {
+    // 이미지 바로 캐싱
     return [
       {
         source: '/images/:all*(jpg|jpeg|png|svg|webp|avif)',
@@ -26,4 +29,5 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+// CommonJS 형식으로 내보내기
+module.exports = nextConfig;
