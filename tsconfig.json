@@ -4,11 +4,8 @@
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true, // JS 파일 허용 (점진적 마이그레이션 지원)
     "checkJs": false,
-    // TODO : 이 속성값도 제거예정
-    "noImplicitAny": false,
     "skipLibCheck": true,
-    // TODO : 나중에 true로
-    "strict": false, // 엄격한 타입 검사 활성화
+    "strict": true, // 엄격한 타입 검사 활성화
     "forceConsistentCasingInFileNames": true,
     "noEmit": true, // 컴파일 결과물 생성하지 않음 (Next.js가 처리)
     "incremental": true, // 빌드 속도 향상을 위한 옵션
