@@ -8,7 +8,8 @@ ENV HUSKY=0
 # Copy package.json and install dependencies using npm
 COPY package.json package-lock.json ./
 # --only=production으로 devDependencies 제외하고 설치
-RUN npm ci --only=production
+# RUN npm ci --only=production
+RUN npm install
 
 # Copy all project files to the container
 COPY . .

@@ -1,5 +1,16 @@
 {
-    "presets": ["next/babel"],
-    "plugins": ["babel-plugin-comment-log"],
-    "ignore": ["node_modules"]
+  "presets": ["next/babel"],
+  "plugins": [
+    "babel-plugin-comment-log",
+    [
+      "module-resolver",
+      {
+        "root": ["./src"],
+        "alias": {
+          "@/*": "./*"
+        }
+      }
+    ]
+  ],
+  "ignore": ["node_modules"]
 }
