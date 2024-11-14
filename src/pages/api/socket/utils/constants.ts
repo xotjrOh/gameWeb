@@ -1,3 +1,6 @@
+import { HorseGameData, HorsePlayerData } from '@/types/horse';
+import { ShuffleGameData, ShufflePlayerData } from '@/types/shuffle';
+
 export const AUTHORIZED_SESSION_IDS = ['3624891095', '116463162791834863252'];
 export const MIN_PLAYER_LENGTH = 1;
 export const MAX_NICKNAME_LENGTH = 10;
@@ -23,7 +26,7 @@ export const MESSAGES = {
   GAME_TYPE_REQUIRED: '게임종류를 정해주세요.',
   MAX_PLAYERS_INVALID: `최대 플레이어 수는 ${MIN_PLAYER_LENGTH} 이상의 정수여야 합니다.`,
 
-  ALREADY_IN_ANOTHER_ROOM: (roomName) =>
+  ALREADY_IN_ANOTHER_ROOM: (roomName: string) =>
     `이미 참여중인 게임방(${roomName})이 있습니다.`,
 };
 
@@ -32,7 +35,10 @@ export const GAME_STATUS = {
   IN_PROGRESS: '게임중',
 };
 
-export const DEFAULT_GAME_DATA = {
+export const DEFAULT_GAME_DATA: {
+  horse: HorseGameData;
+  shuffle: ShuffleGameData;
+} = {
   horse: {
     finishLine: 9,
     horses: [],
@@ -47,21 +53,19 @@ export const DEFAULT_GAME_DATA = {
     startTime: 30,
     interval: 3,
     clipCount: 4,
-    clips: [
-      // 섞인 클립 정보
-      { id: 'A', start: 30, end: 33 },
-      // ...
-    ],
+    clips: [{ id: 'A', start: 30, end: 33 }],
     correctOrder: ['A', 'B', 'C', 'D'],
-    currentPhase: 'waiting', // 'playing', 'answering', 'result'
+    currentPhase: 'waiting',
     isTimeover: true,
     timeLeft: 0,
   },
 };
 
-export const DEFAULT_PLAYER_DATA = {
+export const DEFAULT_PLAYER_DATA: {
+  horse: HorsePlayerData;
+  shuffle: ShufflePlayerData;
+} = {
   horse: {
-    // statusInfo 데이터
     dummyName: NOT_ASSIGNED,
     horse: NOT_ASSIGNED,
     isSolo: false,

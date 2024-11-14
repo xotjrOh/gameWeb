@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "esnext",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true, // JS 파일 허용 (점진적 마이그레이션 지원)
     "checkJs": false,
@@ -13,7 +13,7 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true, // Next.js에서 필수 설정
-    "jsx": "preserve", // JSX를 그대로 유지 (Next.js가 처리)
+    "jsx": "preserve",
     "esModuleInterop": true,
     "plugins": [
       {
@@ -25,6 +25,6 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules"]
+  "include": ["**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules", "dist", ".next"]
 }
