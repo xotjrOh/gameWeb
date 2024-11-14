@@ -2,7 +2,7 @@
 
 import { useEffect, useState, memo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { updatePlayers, updateMemo } from '@/store/horseSlice';
+import { setPlayers, updateMemo } from '@/store/horseSlice';
 import useRaceEnd from '@/hooks/useRaceEnd';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 import {
@@ -10,14 +10,13 @@ import {
   Typography,
   Paper,
   InputBase,
-  Divider,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
 
 function ChipsTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
-  const { players, statusInfo } = useSelector((state) => state.horse.gameData);
+  const { players, statusInfo } = useSelector((state) => state.horse);
   const { hasRaceEnded } = useRaceEnd();
   const [memoState, setMemoState] = useState(statusInfo?.memo || []);
   const [debounceTimeouts, setDebounceTimeouts] = useState({});
@@ -28,7 +27,7 @@ function ChipsTab({ roomId, socket, session }) {
   useEffect(() => {
     if (socket) {
       const updatePlayersAfterRoundEnd = ({ players }) => {
-        dispatch(updatePlayers(players));
+        dispatch(setPlayers(players));
       };
       socket.on('round-ended', updatePlayersAfterRoundEnd);
 

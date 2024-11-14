@@ -4,10 +4,6 @@ const shuffleSlice = createSlice({
   name: 'shuffle',
   initialState: {
     players: [],
-    statusInfo: {
-      answer: null,
-      isAlive: true,
-    },
     gameData: {
       videoUrl: 'https://www.youtube.com/watch?v=Gh-M6yHqpDc&t=160s',
       startTime: 30,
@@ -24,8 +20,15 @@ const shuffleSlice = createSlice({
 
       timeLeft: 0,
     },
+    statusInfo: {
+      answer: null,
+      isAlive: true,
+    },
   },
   reducers: {
+    setPlayers(state, action) {
+      state.players = action.payload;
+    },
     setGameData(state, action) {
       state.gameData = action.payload;
     },
@@ -38,16 +41,13 @@ const shuffleSlice = createSlice({
     updateIsAlive(state, action) {
       state.statusInfo.isAlive = action.payload;
     },
-    setPlayers(state, action) {
-      state.players = action.payload;
-    },
   },
 });
 
 export const {
+  setPlayers,
   setGameData,
   setStatusInfo,
-  setPlayers,
   updateAnswer,
   updateIsAlive,
 } = shuffleSlice.actions; // state 변경함수들 남음

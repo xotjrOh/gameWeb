@@ -3,7 +3,7 @@ import {
   updateIsTimeover,
   updateHorses,
   updatePositions,
-  updatePlayers,
+  setPlayers,
 } from '@/store/horseSlice';
 
 function useTimeLeft(roomId, socket, dispatch) {
@@ -23,7 +23,7 @@ function useTimeLeft(roomId, socket, dispatch) {
         }));
         dispatch(updateHorses(horses));
         dispatch(updatePositions(positions));
-        dispatch(updatePlayers(players));
+        dispatch(setPlayers(players));
       });
 
       return () => {

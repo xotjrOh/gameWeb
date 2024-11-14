@@ -20,9 +20,8 @@ export default function RoundResultModal({ socket, roomId }) {
   const [isOpen, setIsOpen] = useState(false);
   const [results, setResults] = useState([]);
   const { hasRaceEnded } = useRaceEnd();
-  const { statusInfo, positions } = useSelector(
-    (state) => state.horse.gameData
-  );
+  const { statusInfo } = useSelector((state) => state.horse);
+  const { positions } = useSelector((state) => state.horse.gameData);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 

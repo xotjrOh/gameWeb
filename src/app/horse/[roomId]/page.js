@@ -40,7 +40,7 @@ export default function HorseGamePage({ params }) {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Redux 상태에서 statusInfo 가져오기
-  const { statusInfo } = useSelector((state) => state.horse.gameData);
+  const { statusInfo } = useSelector((state) => state.horse);
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);

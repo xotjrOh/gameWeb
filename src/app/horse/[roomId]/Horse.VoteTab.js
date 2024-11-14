@@ -11,7 +11,8 @@ import VoteHistory from '@/components/horse/VoteHistory';
 function VoteTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
   const [selectedHorse, setSelectedHorse] = useState('');
-  const { horses, statusInfo, rounds, isTimeover } = useSelector(
+  const { statusInfo } = useSelector((state) => state.horse);
+  const { horses, rounds, isTimeover } = useSelector(
     (state) => state.horse.gameData
   );
   const { enqueueSnackbar } = useCustomSnackbar();

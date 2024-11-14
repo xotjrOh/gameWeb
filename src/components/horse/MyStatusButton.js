@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { updateStatusInfo } from '@/store/horseSlice';
+import { setStatusInfo } from '@/store/horseSlice';
 import {
   Box,
   Typography,
@@ -20,14 +20,14 @@ import {
 export default function MyStatusButton({ roomId, socket, session }) {
   const dispatch = useDispatch();
   const [showStatus, setShowStatus] = useState(false);
-  const { statusInfo } = useSelector((state) => state.horse.gameData);
+  const { statusInfo } = useSelector((state) => state.horse);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   useEffect(() => {
     if (socket) {
       socket.on('status-update', (data) => {
-        dispatch(updateStatusInfo(data));
+        dispatch(setStatusInfo(data));
       });
 
       return () => {

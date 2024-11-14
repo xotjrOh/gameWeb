@@ -13,7 +13,8 @@ import { usePathname } from 'next/navigation';
 import useRaceEnd from '@/hooks/useRaceEnd';
 
 function HorsesTab({ roomId, socket, session }) {
-  const { positions, finishLine, rounds, players, statusInfo } = useSelector(
+  const { players, statusInfo } = useSelector((state) => state.horse);
+  const { positions, finishLine, rounds } = useSelector(
     (state) => state.horse.gameData
   );
   const { hasRaceEnded } = useRaceEnd();

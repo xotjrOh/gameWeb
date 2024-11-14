@@ -10,9 +10,8 @@ import HorseSelection from '@/components/horse/HorseSelection';
 function VoteTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
   const [selectedHorse, setSelectedHorse] = useState('');
-  const { horses, statusInfo, isTimeover } = useSelector(
-    (state) => state.horse.gameData
-  );
+  const { statusInfo } = useSelector((state) => state.horse);
+  const { horses, isTimeover } = useSelector((state) => state.horse.gameData);
   const { enqueueSnackbar } = useCustomSnackbar();
 
   useEffect(() => {

@@ -2,18 +2,18 @@
 
 import { useEffect, memo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { updatePlayers } from '@/store/horseSlice';
+import { setPlayers } from '@/store/horseSlice';
 import { Box, Typography, Paper, Divider } from '@mui/material';
 
 function ChipsTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
-  const { players } = useSelector((state) => state.horse.gameData);
+  const { players } = useSelector((state) => state.horse);
 
   useEffect(() => {
     if (socket) {
       // 'round-ended' 이벤트를 수신하여 칩 개수 업데이트
       const updatePlayersAfterRoundEnd = ({ players }) => {
-        dispatch(updatePlayers(players));
+        dispatch(setPlayers(players));
       };
       socket.on('round-ended', updatePlayersAfterRoundEnd);
 

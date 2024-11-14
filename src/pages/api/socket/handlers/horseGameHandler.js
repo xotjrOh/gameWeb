@@ -193,15 +193,17 @@ const horseGameHandler = (io, socket) => {
       }));
 
       // 현재 게임 데이터를 클라이언트로 전송
-      socket.emit('horse-game-data-update', {
-        horses: room.gameData.horses || [],
+      socket.emit('horse-all-data-update', {
         players: room.players || [],
-        positions: horsesData,
-        finishLine: room.gameData.finishLine,
+        gameData: {
+          horses: room.gameData.horses || [],
+          positions: horsesData,
+          finishLine: room.gameData.finishLine,
+          isRoundStarted: hasRounds || room.gameData.timeLeft > 0,
+          rounds: room.gameData.rounds || [],
+          isTimeover: room.gameData.isTimeover || true,
+        },
         statusInfo: player || { memo: [] },
-        isRoundStarted: hasRounds || room.gameData.timeLeft > 0,
-        rounds: room.gameData.rounds || [],
-        isTimeover: room.gameData.isTimeover || true,
       });
       return callback({ success: true });
     } catch (error) {
@@ -230,34 +232,34 @@ const horseGameHandler = (io, socket) => {
 
       // gameData 초기화
       room.players.forEach((player) => {
-        io.to(player.socketId).emit('horse-game-data-update', {
+        io.to(player.socketId).emit('horse-all-data-update', {
           players: room.players,
+          gameData: {
+            finishLine: room.gameData.finishLine,
+            horses: room.gameData.horses,
+            positions: room.gameData.positions,
+            rounds: room.gameData.rounds,
+            isTimeover: room.gameData.isTimeover,
+            isRoundStarted: room.gameData.isRoundStarted,
+            timeLeft: 0,
+          },
+          statusInfo: player,
+        });
+      });
 
+      // host 초기화
+      io.to(room.host.socketId).emit('horse-all-data-update', {
+        players: room.players,
+        gameData: {
           finishLine: room.gameData.finishLine,
           horses: room.gameData.horses,
           positions: room.gameData.positions,
           rounds: room.gameData.rounds,
           isTimeover: room.gameData.isTimeover,
           isRoundStarted: room.gameData.isRoundStarted,
-
-          statusInfo: player,
           timeLeft: 0,
-        });
-      });
-
-      // host 초기화
-      io.to(room.host.socketId).emit('horse-game-data-update', {
-        players: room.players,
-
-        finishLine: room.gameData.finishLine,
-        horses: room.gameData.horses,
-        positions: room.gameData.positions,
-        rounds: room.gameData.rounds,
-        isTimeover: room.gameData.isTimeover,
-        isRoundStarted: room.gameData.isRoundStarted,
-
+        },
         statusInfo: {},
-        timeLeft: 0,
       });
 
       io.emit('room-updated', rooms);

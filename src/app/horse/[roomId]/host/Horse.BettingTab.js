@@ -11,9 +11,9 @@ import { Box, Button, Typography } from '@mui/material';
 function BettingTab({ roomId, socket, session }) {
   const dispatch = useDispatch();
   const [bets, setBets] = useState({});
+  const { statusInfo } = useSelector((state) => state.horse);
   const {
     horses = [],
-    statusInfo,
     isRoundStarted,
     isTimeover,
   } = useSelector((state) => state.horse.gameData);

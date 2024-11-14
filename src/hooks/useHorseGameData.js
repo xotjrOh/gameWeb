@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import {
+  setPlayers,
   setGameData,
+  setStatusInfo,
   updatePositions,
   updateRounds,
   updateFinishLine,
@@ -20,35 +22,37 @@ const useHorseGameData = (roomId, socket, sessionId) => {
 
   useEffect(() => {
     if (socket && roomId) {
-      socket.on('horse-game-data-update', (data) => {
-        dispatch(setGameData(data)); // Redux에 상태 저장
+      socket.on('horse-all-data-update', (data) => {
+        dispatch(setPlayers(data.players));
+        dispatch(setGameData(data.gameData));
+        dispatch(setStatusInfo(data.statusInfo));
       });
 
       // 호스트를 위한 rounds 데이터
       socket.on('update-positions', ({ horsesData, rounds }) => {
-        dispatch(updatePositions(horsesData)); // Redux에 상태 저장
-        dispatch(updateRounds(rounds)); // Redux에 상태 저장
+        dispatch(updatePositions(horsesData));
+        dispatch(updateRounds(rounds));
       });
       socket.on('update-finishLine', (data) => {
-        dispatch(updateFinishLine(data)); // Redux에 상태 저장
+        dispatch(updateFinishLine(data));
       });
       socket.on('personal-round-update', (data) => {
-        dispatch(updatePersonalRounds(data)); // Redux에 상태 저장
+        dispatch(updatePersonalRounds(data));
       });
       socket.on('vote-history-update', (data) => {
-        dispatch(updateVoteHistory(data)); // Redux에 상태 저장
+        dispatch(updateVoteHistory(data));
       });
       socket.on('update-isBetLocked', (data) => {
-        dispatch(updateIsBetLocked(data)); // Redux에 상태 저장
+        dispatch(updateIsBetLocked(data));
       });
       socket.on('update-isVoteLocked', (data) => {
-        dispatch(updateIsVoteLocked(data)); // Redux에 상태 저장
+        dispatch(updateIsVoteLocked(data));
       });
       socket.on('update-chip', (data) => {
-        dispatch(updateChip(data)); // Redux에 상태 저장
+        dispatch(updateChip(data));
       });
       socket.on('update-chipDiff', (data) => {
-        dispatch(updateChipDiff(data)); // Redux에 상태 저장
+        dispatch(updateChipDiff(data));
       });
 
       // 서버에서 데이터를 받아와 Redux에 저장
@@ -60,7 +64,7 @@ const useHorseGameData = (roomId, socket, sessionId) => {
 
       // cleanup: 컴포넌트가 언마운트되거나 socket이 변경될 때 이벤트 제거
       return () => {
-        socket.off('horse-game-data-update');
+        socket.off('horse-all-data-update');
         socket.off('update-positions');
         socket.off('update-finishLine');
         socket.off('personal-round-update');
