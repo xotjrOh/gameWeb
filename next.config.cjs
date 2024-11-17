@@ -1,5 +1,3 @@
-/** @type {import('next').NextConfig} */
-
 // package.json을 require로 불러오기
 const packageJson = require('./package.json');
 

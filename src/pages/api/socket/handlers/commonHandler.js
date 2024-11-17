@@ -1,3 +1,5 @@
+import { Socket } from 'socket.io';
+import { GameType } from '@/types/room';
 import _ from 'lodash';
 import { rooms, incrementRoomId } from '../state/gameState';
 import { Lock } from '../state/globalState';
@@ -83,7 +85,7 @@ const commonHandler = (io, socket) => {
                 name: userName,
                 socketId: socket.id,
               },
-              players: [],
+              players: [], // TODO : 집어넣을때 as HorsePlayers[] 처럼 타입단언 후에 넣는거고려
               gameData: _.cloneDeep(DEFAULT_GAME_DATA[gameType]),
               status: GAME_STATUS.PENDING,
               maxPlayers,

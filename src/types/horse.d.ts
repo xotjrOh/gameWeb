@@ -23,6 +23,7 @@ export interface HorseGameData {
 }
 
 // 말 경주 플레이어 데이터 타입 정의
+// extends Player 유무는 리팩토링 이후에 결정
 export interface HorsePlayerData {
   dummyName: string;
   horse: string;

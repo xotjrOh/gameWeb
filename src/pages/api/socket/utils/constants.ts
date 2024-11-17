@@ -28,12 +28,12 @@ export const MESSAGES = {
 
   ALREADY_IN_ANOTHER_ROOM: (roomName: string) =>
     `이미 참여중인 게임방(${roomName})이 있습니다.`,
-};
+} as const;
 
 export const GAME_STATUS = {
   PENDING: '대기중',
   IN_PROGRESS: '게임중',
-};
+} as const;
 
 export const DEFAULT_GAME_DATA: {
   horse: HorseGameData;
@@ -59,7 +59,7 @@ export const DEFAULT_GAME_DATA: {
     isTimeover: true,
     timeLeft: 0,
   },
-};
+} as const;
 
 export const DEFAULT_PLAYER_DATA: {
   horse: HorsePlayerData;
@@ -81,4 +81,4 @@ export const DEFAULT_PLAYER_DATA: {
     answer: null,
     isAlive: true,
   },
-};
+} as const;
