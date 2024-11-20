@@ -1,10 +1,10 @@
-import { Socket } from 'socket.io-client';
+import { Socket as ServerSocket } from 'socket.io';
+import { Socket as ClientSocket } from 'socket.io-client';
 import { Room, Rooms, GameType } from './room';
+import { ReconnectionResult } from '../services/commonService';
 
-// Generic Response Interface
-export interface Response<T = undefined> {
+export interface Response {
   success: boolean;
-  data?: T;
   message?: string;
 }
 
@@ -14,19 +14,19 @@ export interface ClientToServerEvents {
   'get-room-list': () => void;
   'check-room': (
     data: RoomSessionData,
-    callback: (response: Response<{ isInRoom: boolean }>) => void
+    callback: (response: Response) => void
   ) => void;
   'check-room-host': (
     data: RoomSessionData,
-    callback: (response: Response<{ isHost: boolean }>) => void
+    callback: (response: Response) => void
   ) => void;
   'create-room': (
     data: CreateRoomData,
-    callback: (response: Response<{ roomId: string }>) => void
+    callback: (response: Response & { roomId?: string }) => void
   ) => void;
   'check-can-join-room': (
     data: RoomSessionData,
-    callback: (response: Response) => void
+    callback: (response: Response & ReconnectionResult) => void
   ) => void;
   'join-room': (
     data: JoinRoomData,
@@ -71,4 +71,11 @@ export interface JoinRoomData {
 }
 
 // Socket Type Definition
-export type ClientSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
+export type ClientSocketType = ClientSocket<
+  ServerToClientEvents,
+  ClientToServerEvents
+>;
+export type ServerSocketType = ServerSocket<
+  ClientToServerEvents,
+  ServerToClientEvents
+>;

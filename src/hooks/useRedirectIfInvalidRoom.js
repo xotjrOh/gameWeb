@@ -20,7 +20,7 @@ const useRedirectIfInvalidRoom = (roomId) => {
         'check-room',
         { roomId, sessionId: session.user.id },
         (response) => {
-          if (!response.isInRoom) {
+          if (!response.success) {
             enqueueSnackbar('잘못된 접근입니다. 대기방으로 이동합니다.', {
               variant: 'error',
             });

@@ -20,7 +20,7 @@ const useRedirectIfNotHost = (roomId) => {
         'check-room-host',
         { roomId, sessionId: session.user.id },
         (response) => {
-          if (!response.isInRoom) {
+          if (!response.success) {
             enqueueSnackbar('호스트가 아닙니다. 대기방으로 이동합니다.', {
               variant: 'error',
             });
