@@ -1,3 +1,9 @@
+import { Server } from 'socket.io';
+import {
+  ServerSocketType,
+  ClientToServerEvents,
+  ServerToClientEvents,
+} from '@/types/socket';
 import _ from 'lodash';
 import { rooms, timers } from '../state/gameState';
 import {
@@ -9,29 +15,32 @@ import {
 import {
   validateRoom,
   validatePlayer,
-  validateAssignedByShuffleGame,
+  // validateAssignedByShuffleGame,
 } from '../utils/validation';
 import {
-  generateClips,
   startGameTimer,
   submitAnswer,
   checkAllAnswersSubmitted,
   evaluateAnswers,
   resetPlayerStatus,
 } from '../services/shuffleGameService';
+import { Room, Player, ShuffleRoom } from '@/types/room';
+import { ShuffleGameData, ShufflePlayerData } from '@/types/shuffle';
 
-const shuffleGameHandler = (io, socket) => {
+const shuffleGameHandler = (
+  io: Server<ClientToServerEvents, ServerToClientEvents>,
+  socket: ServerSocketType
+) => {
   // 게임 시작 이벤트 (방장만)
   socket.on('shuffle-start-game', ({ roomId, settings }, callback) => {
     try {
-      const room = validateRoom(roomId);
+      const room = validateRoom(roomId) as ShuffleRoom;
 
       // 게임 설정 업데이트
       room.gameData = _.cloneDeep(DEFAULT_GAME_DATA['shuffle']);
       Object.assign(room.gameData, settings);
 
       // 클립 생성 및 섞기
-      room.gameData.clips = generateClips(room.gameData);
       room.gameData.currentPhase = 'playing';
       room.status = GAME_STATUS.IN_PROGRESS;
 
@@ -51,7 +60,7 @@ const shuffleGameHandler = (io, socket) => {
       io.emit('room-updated', rooms);
       return callback({ success: true });
     } catch (error) {
-      callback({ success: false, message: error.message });
+      callback({ success: false, message: (error as Error).message });
     }
   });
 
@@ -60,8 +69,9 @@ const shuffleGameHandler = (io, socket) => {
     'shuffle-submit-answer',
     ({ roomId, sessionId, answer }, callback) => {
       try {
-        const room = validateRoom(roomId);
-        const player = validatePlayer(room, sessionId);
+        const room = validateRoom(roomId) as Room;
+        const player = validatePlayer(room, sessionId) as Player &
+          ShufflePlayerData;
 
         submitAnswer(player, answer);
 
@@ -75,7 +85,11 @@ const shuffleGameHandler = (io, socket) => {
           });
 
           // 게임 종료 여부 확인
-          if (room.players.every((p) => !p.isAlive)) {
+          const allPlayersEliminated = room.players.every((p) => {
+            const shufflePlayer = p as Player & ShufflePlayerData;
+            return !shufflePlayer.isAlive;
+          });
+          if (allPlayersEliminated) {
             room.status = GAME_STATUS.PENDING;
             io.to(roomId).emit('shuffle-game-ended', { players: room.players });
             io.emit('room-updated', rooms);
@@ -86,7 +100,7 @@ const shuffleGameHandler = (io, socket) => {
 
         return callback({ success: true });
       } catch (error) {
-        callback({ success: false, message: error.message });
+        callback({ success: false, message: (error as Error).message });
       }
     }
   );
@@ -94,19 +108,17 @@ const shuffleGameHandler = (io, socket) => {
   socket.on('shuffle-get-game-data', ({ roomId, sessionId }, callback) => {
     try {
       console.log('server : shuffle-get-game-data', sessionId);
-      const room = validateRoom(roomId);
+      const room = validateRoom(roomId) as Room;
 
-      const player = rooms[roomId].players.find((p) => p.id === sessionId);
+      const player = rooms[roomId].players.find(
+        (p) => p.id === sessionId
+      ) as Player & ShufflePlayerData;
 
       // 현재 게임 데이터를 클라이언트로 전송
       socket.emit('shuffle-game-data-update', {
         gameData: {
-          videoUrl: room.gameData.videoUrl,
-          startTime: room.gameData.startTime,
-          interval: room.gameData.interval,
-          clipCount: room.gameData.clipCount,
-          clips: room.gameData.clips,
           correctOrder: room.gameData.correctOrder,
+          clips: room.gameData.clips,
           currentPhase: room.gameData.currentPhase,
           isTimeover: room.gameData.isTimeover || true,
           timeLeft: 0,
@@ -116,7 +128,7 @@ const shuffleGameHandler = (io, socket) => {
       });
       return callback({ success: true });
     } catch (error) {
-      callback({ success: false, message: error.message });
+      callback({ success: false, message: (error as Error).message });
     }
   });
 };

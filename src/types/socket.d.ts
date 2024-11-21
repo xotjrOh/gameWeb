@@ -9,6 +9,10 @@ import {
   HorseClientToServerEvents,
   HorseServerToClientEvents,
 } from '@/types/horse';
+import {
+  ShuffleClientToServerEvents,
+  ShuffleServerToClientEvents,
+} from '@/types/shuffle';
 
 export interface CommonResponse {
   success: boolean;
@@ -16,7 +20,9 @@ export interface CommonResponse {
 }
 
 // Client-to-Server Events
-export interface ClientToServerEvents extends HorseClientToServerEvents {
+export interface ClientToServerEvents
+  extends HorseClientToServerEvents,
+    ShuffleClientToServerEvents {
   'update-socket-id': (data: UpdateSocketIdData) => void;
   'get-room-list': () => void;
   'check-room': (
@@ -48,7 +54,9 @@ export interface ClientToServerEvents extends HorseClientToServerEvents {
 }
 
 // Server-to-Client Events
-export interface ServerToClientEvents extends HorseServerToClientEvents {
+export interface ServerToClientEvents
+  extends HorseServerToClientEvents,
+    ShuffleServerToClientEvents {
   'room-updated': (rooms: Rooms) => void;
   'room-closed': (data: { message: string }) => void;
 

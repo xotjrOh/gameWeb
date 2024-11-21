@@ -1,3 +1,5 @@
+import { CommonResponse } from '@/types/socket';
+
 // 말의 위치 정보 타입 정의
 export interface HorsePosition {
   name: string;
