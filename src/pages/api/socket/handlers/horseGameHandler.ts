@@ -29,7 +29,6 @@ import {
   ServerSocketType,
   ClientToServerEvents,
   ServerToClientEvents,
-  CommonResponse,
 } from '@/types/socket';
 
 const horseGameHandler = (

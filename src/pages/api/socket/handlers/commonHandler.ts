@@ -3,10 +3,7 @@ import {
   ServerSocketType,
   ClientToServerEvents,
   ServerToClientEvents,
-  UpdateSocketIdData,
   CommonResponse,
-  RoomSessionData,
-  CreateRoomData,
   JoinRoomData,
 } from '@/types/socket';
 import { Room } from '@/types/room';
@@ -32,73 +29,52 @@ import {
   validateCannotLeave,
   validateOnlyHostRemoveRoom,
 } from '../utils/validation';
-import {
-  handlePlayerReconnect,
-  ReconnectionResult,
-} from '../services/commonService';
+import { handlePlayerReconnect } from '../services/commonService';
 
 const commonHandler = (
   io: Server<ClientToServerEvents, ServerToClientEvents>,
   socket: ServerSocketType
 ) => {
-  socket.on(
-    'update-socket-id',
-    ({ roomId, sessionId, newSocketId }: UpdateSocketIdData) => {
-      if (!rooms[roomId]) return;
+  socket.on('update-socket-id', ({ roomId, sessionId, newSocketId }) => {
+    if (!rooms[roomId]) return;
 
-      const player = rooms[roomId].players.find((p) => p.id === sessionId);
-      if (player) {
-        player.socketId = newSocketId;
-        socket.join(roomId);
-        console.log(
-          `Updated player socketId for player ${sessionId} in room ${roomId} : ${newSocketId}`
-        );
-      }
-
-      if (rooms[roomId].host.id == sessionId) {
-        rooms[roomId].host.socketId = newSocketId;
-        socket.join(roomId);
-        console.log(
-          `Updated host socketId for player ${sessionId} in room ${roomId} : ${newSocketId}`
-        );
-      }
+    const player = rooms[roomId].players.find((p) => p.id === sessionId);
+    if (player) {
+      player.socketId = newSocketId;
+      socket.join(roomId);
+      console.log(
+        `Updated player socketId for player ${sessionId} in room ${roomId} : ${newSocketId}`
+      );
     }
-  );
+
+    if (rooms[roomId].host.id == sessionId) {
+      rooms[roomId].host.socketId = newSocketId;
+      socket.join(roomId);
+      console.log(
+        `Updated host socketId for player ${sessionId} in room ${roomId} : ${newSocketId}`
+      );
+    }
+  });
 
   socket.on('get-room-list', () => {
     socket.emit('room-updated', rooms);
   });
 
-  socket.on(
-    'check-room',
-    (
-      { roomId, sessionId }: RoomSessionData,
-      callback: (response: CommonResponse) => void
-    ) => {
-      const room = rooms[roomId];
-      const isInRoom =
-        room && room.players.some((player) => player.id === sessionId);
-      callback({ success: isInRoom });
-    }
-  );
-  socket.on(
-    'check-room-host',
-    (
-      { roomId, sessionId }: RoomSessionData,
-      callback: (response: CommonResponse) => void
-    ) => {
-      const room = rooms[roomId];
-      const isInRoom = room && room.host.id === sessionId;
-      callback({ success: isInRoom });
-    }
-  );
+  socket.on('check-room', ({ roomId, sessionId }, callback) => {
+    const room = rooms[roomId];
+    const isInRoom =
+      room && room.players.some((player) => player.id === sessionId);
+    callback({ success: isInRoom });
+  });
+  socket.on('check-room-host', ({ roomId, sessionId }, callback) => {
+    const room = rooms[roomId];
+    const isInRoom = room && room.host.id === sessionId;
+    callback({ success: isInRoom });
+  });
 
   socket.on(
     'create-room',
-    (
-      { roomName, userName, gameType, sessionId, maxPlayers }: CreateRoomData,
-      callback: (response: CommonResponse & { roomId?: string }) => void
-    ) => {
+    ({ roomName, userName, gameType, sessionId, maxPlayers }, callback) => {
       try {
         // validateCanCreateRoom(sessionId);
         validateRoomName(roomName);
@@ -144,35 +120,25 @@ const commonHandler = (
     }
   );
 
-  socket.on(
-    'check-can-join-room',
-    (
-      { roomId, sessionId }: RoomSessionData,
-      callback: (response: CommonResponse & ReconnectionResult) => void
-    ) => {
-      try {
-        const room = validateRoom(roomId);
-        validateAlreadyJoinOtherRoom(rooms, sessionId, roomId);
+  socket.on('check-can-join-room', ({ roomId, sessionId }, callback) => {
+    try {
+      const room = validateRoom(roomId);
+      validateAlreadyJoinOtherRoom(rooms, sessionId, roomId);
 
-        // 지금처럼 '재접속 로직'이 '유효성검증'보다 상단에 위치해야함
-        const reconnectResponse = handlePlayerReconnect(
-          room,
-          sessionId,
-          socket
-        );
-        if (reconnectResponse) {
-          return callback(reconnectResponse);
-        }
-
-        validateRoomFull(room);
-        validateGameAlreadyStarted(room);
-
-        return callback({ success: true });
-      } catch (error) {
-        callback({ success: false, message: (error as Error).message });
+      // 지금처럼 '재접속 로직'이 '유효성검증'보다 상단에 위치해야함
+      const reconnectResponse = handlePlayerReconnect(room, sessionId, socket);
+      if (reconnectResponse) {
+        return callback(reconnectResponse);
       }
+
+      validateRoomFull(room);
+      validateGameAlreadyStarted(room);
+
+      return callback({ success: true });
+    } catch (error) {
+      callback({ success: false, message: (error as Error).message });
     }
-  );
+  });
 
   socket.on(
     'join-room',
@@ -207,32 +173,26 @@ const commonHandler = (
     }
   );
 
-  socket.on(
-    'leave-room',
-    (
-      { roomId, sessionId }: RoomSessionData,
-      callback: (response: CommonResponse) => void
-    ) => {
-      try {
-        const room = validateRoom(roomId);
-        validateCannotLeave(room);
-        validateOnlyHostRemoveRoom(room, sessionId);
+  socket.on('leave-room', ({ roomId, sessionId }, callback) => {
+    try {
+      const room = validateRoom(roomId);
+      validateCannotLeave(room);
+      validateOnlyHostRemoveRoom(room, sessionId);
 
-        delete rooms[roomId];
-        io.to(roomId).emit('room-closed', {
-          message: MESSAGES.ROOM_CLOSED_BY_HOST,
-        });
+      delete rooms[roomId];
+      io.to(roomId).emit('room-closed', {
+        message: MESSAGES.ROOM_CLOSED_BY_HOST,
+      });
 
-        // 방 내 다른 플레이어들의 소켓 이벤트 해제
-        io.in(roomId).socketsLeave(roomId); // 모든 플레이어를 방에서 제거
-        io.emit('room-updated', rooms); // 방이 삭제되었음을 알림
+      // 방 내 다른 플레이어들의 소켓 이벤트 해제
+      io.in(roomId).socketsLeave(roomId); // 모든 플레이어를 방에서 제거
+      io.emit('room-updated', rooms); // 방이 삭제되었음을 알림
 
-        return callback({ success: true });
-      } catch (error) {
-        callback({ success: false, message: (error as Error).message });
-      }
+      return callback({ success: true });
+    } catch (error) {
+      callback({ success: false, message: (error as Error).message });
     }
-  );
+  });
 };
 
 export default commonHandler;
