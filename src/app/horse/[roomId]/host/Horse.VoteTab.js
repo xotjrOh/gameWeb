@@ -40,7 +40,7 @@ function VoteTab({ roomId, socket, session }) {
     if (selectedHorse) {
       socket.emit(
         'horse-vote',
-        { roomId, session, selectedHorse },
+        { roomId, sessionId: session.user.id, selectedHorse },
         (response) => {
           if (response.success) {
             enqueueSnackbar('투표가 완료되었습니다.', { variant: 'success' });

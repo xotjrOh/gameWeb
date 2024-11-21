@@ -22,11 +22,23 @@ import {
   recordPlayerBets,
   updatePlayerChipHistory,
 } from '../services/horseGameService';
+import { HorseRoom, Player } from '@/types/room';
+import { HorsePlayerData, HorsePosition } from '@/types/horse';
+import { Server } from 'socket.io';
+import {
+  ServerSocketType,
+  ClientToServerEvents,
+  ServerToClientEvents,
+  CommonResponse,
+} from '@/types/socket';
 
-const horseGameHandler = (io, socket) => {
+const horseGameHandler = (
+  io: Server<ClientToServerEvents, ServerToClientEvents>,
+  socket: ServerSocketType
+) => {
   socket.on('horse-start-round', ({ roomId, duration }, callback) => {
     try {
-      const room = validateRoom(roomId);
+      const room = validateRoom(roomId) as HorseRoom;
       validateAssignedByHorseGame(room);
 
       room.status = GAME_STATUS.IN_PROGRESS;
@@ -40,9 +52,10 @@ const horseGameHandler = (io, socket) => {
       clearInterval(timers[roomId]);
 
       room.players.forEach((player) => {
-        player.isBetLocked = false; // 모든 플레이어의 isBetLocked를 false로 설정
-        player.isVoteLocked = false;
-        player.chipDiff = 0; // caution : 이 타이밍에 emit하면 안됨
+        const horsePlayer = player as Player & HorsePlayerData;
+        horsePlayer.isBetLocked = false; // 모든 플레이어의 isBetLocked를 false로 설정
+        horsePlayer.isVoteLocked = false;
+        horsePlayer.chipDiff = 0; // caution : 이 타이밍에 emit하면 안됨
       });
 
       io.to(roomId).emit('update-isBetLocked', false);
@@ -82,7 +95,7 @@ const horseGameHandler = (io, socket) => {
       io.emit('room-updated', rooms); // '게임중' 으로 변한게 체크 되어야함
       return callback({ success: true });
     } catch (error) {
-      callback({ success: false, message: error.message });
+      callback({ success: false, message: (error as Error).message });
     }
   });
 
@@ -107,16 +120,17 @@ const horseGameHandler = (io, socket) => {
 
       return callback({ success: true });
     } catch (error) {
-      callback({ success: false, message: error.message });
+      callback({ success: false, message: (error as Error).message });
     }
   });
 
   // 베팅 로직 추가
   // bets 는 { A : 3, B : 4 } 같은 객체
-  socket.on('horse-bet', ({ roomId, session, bets }, callback) => {
+  socket.on('horse-bet', ({ roomId, sessionId, bets }, callback) => {
     try {
-      const room = validateRoom(roomId);
-      const player = validatePlayer(room, session.user.id);
+      const room = validateRoom(roomId) as HorseRoom;
+      const player = validatePlayer(room, sessionId) as Player &
+        HorsePlayerData;
 
       // 플레이어가 가진 칩이 충분한지 체크
       const totalBets = validateChipsByHorseGame(player, bets);
@@ -138,15 +152,16 @@ const horseGameHandler = (io, socket) => {
         isBetLocked: player.isBetLocked,
       });
     } catch (error) {
-      callback({ success: false, message: error.message });
+      callback({ success: false, message: (error as Error).message });
     }
   });
 
   // **말 투표 로직
-  socket.on('horse-vote', ({ roomId, session, selectedHorse }, callback) => {
+  socket.on('horse-vote', ({ roomId, sessionId, selectedHorse }, callback) => {
     try {
-      const room = validateRoom(roomId);
-      const player = validatePlayer(room, session.user.id);
+      const room = validateRoom(roomId) as HorseRoom;
+      const player = validatePlayer(room, sessionId) as Player &
+        HorsePlayerData;
 
       // 투표 저장
       player.voteHistory = player.voteHistory || [];
@@ -159,7 +174,7 @@ const horseGameHandler = (io, socket) => {
         isVoteLocked: player.isVoteLocked,
       });
     } catch (error) {
-      callback({ success: false, message: error.message });
+      callback({ success: false, message: (error as Error).message });
     }
   });
 
@@ -174,7 +189,7 @@ const horseGameHandler = (io, socket) => {
 
       return callback({ success: true });
     } catch (error) {
-      callback({ success: false, message: error.message });
+      callback({ success: false, message: (error as Error).message });
     }
   });
 
@@ -190,7 +205,7 @@ const horseGameHandler = (io, socket) => {
       const horsesData = Object.entries(positions).map(([name, position]) => ({
         name,
         position,
-      }));
+      })) as HorsePosition[];
 
       // 현재 게임 데이터를 클라이언트로 전송
       socket.emit('horse-all-data-update', {
@@ -202,12 +217,13 @@ const horseGameHandler = (io, socket) => {
           isRoundStarted: hasRounds || room.gameData.timeLeft > 0,
           rounds: room.gameData.rounds || [],
           isTimeover: room.gameData.isTimeover || true,
+          timeLeft: room.gameData.timeLeft || 0,
         },
         statusInfo: player || { memo: [] },
       });
       return callback({ success: true });
     } catch (error) {
-      callback({ success: false, message: error.message });
+      callback({ success: false, message: (error as Error).message });
     }
   });
 
@@ -265,7 +281,7 @@ const horseGameHandler = (io, socket) => {
       io.emit('room-updated', rooms);
       return callback({ success: true });
     } catch (error) {
-      callback({ success: false, message: error.message });
+      callback({ success: false, message: (error as Error).message });
     }
   });
 
@@ -273,14 +289,15 @@ const horseGameHandler = (io, socket) => {
     'horse-update-memo',
     ({ roomId, index, memo, sessionId }, callback) => {
       try {
-        const room = validateRoom(roomId);
-        const player = validatePlayer(room, sessionId);
+        const room = validateRoom(roomId) as HorseRoom;
+        const player = validatePlayer(room, sessionId) as Player &
+          HorsePlayerData;
 
         player.memo = player.memo || [];
         player.memo[index] = memo;
         return callback({ success: true });
       } catch (error) {
-        callback({ success: false, message: error.message });
+        callback({ success: false, message: (error as Error).message });
       }
     }
   );

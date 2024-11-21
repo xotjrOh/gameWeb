@@ -4,7 +4,7 @@ import {
   ClientToServerEvents,
   ServerToClientEvents,
   UpdateSocketIdData,
-  Response,
+  CommonResponse,
   RoomSessionData,
   CreateRoomData,
   JoinRoomData,
@@ -73,7 +73,7 @@ const commonHandler = (
     'check-room',
     (
       { roomId, sessionId }: RoomSessionData,
-      callback: (response: Response) => void
+      callback: (response: CommonResponse) => void
     ) => {
       const room = rooms[roomId];
       const isInRoom =
@@ -85,7 +85,7 @@ const commonHandler = (
     'check-room-host',
     (
       { roomId, sessionId }: RoomSessionData,
-      callback: (response: Response) => void
+      callback: (response: CommonResponse) => void
     ) => {
       const room = rooms[roomId];
       const isInRoom = room && room.host.id === sessionId;
@@ -97,7 +97,7 @@ const commonHandler = (
     'create-room',
     (
       { roomName, userName, gameType, sessionId, maxPlayers }: CreateRoomData,
-      callback: (response: Response & { roomId?: string }) => void
+      callback: (response: CommonResponse & { roomId?: string }) => void
     ) => {
       try {
         // validateCanCreateRoom(sessionId);
@@ -148,7 +148,7 @@ const commonHandler = (
     'check-can-join-room',
     (
       { roomId, sessionId }: RoomSessionData,
-      callback: (response: Response & ReconnectionResult) => void
+      callback: (response: CommonResponse & ReconnectionResult) => void
     ) => {
       try {
         const room = validateRoom(roomId);
@@ -178,7 +178,7 @@ const commonHandler = (
     'join-room',
     (
       { roomId, userName, sessionId }: JoinRoomData,
-      callback: (response: Response) => void
+      callback: (response: CommonResponse) => void
     ) => {
       try {
         const room = validateRoom(roomId);
@@ -211,7 +211,7 @@ const commonHandler = (
     'leave-room',
     (
       { roomId, sessionId }: RoomSessionData,
-      callback: (response: Response) => void
+      callback: (response: CommonResponse) => void
     ) => {
       try {
         const room = validateRoom(roomId);

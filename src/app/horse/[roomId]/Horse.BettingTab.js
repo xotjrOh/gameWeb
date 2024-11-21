@@ -40,17 +40,21 @@ function BettingTab({ roomId, socket, session }) {
     }
 
     if (Object.keys(bets).length > 0) {
-      socket.emit('horse-bet', { roomId, session, bets }, (response) => {
-        if (response.success) {
-          enqueueSnackbar('베팅이 완료되었습니다.', { variant: 'success' });
-          dispatch(updateChip(response.remainChips));
-          dispatch(updatePersonalRounds(response.personalRounds));
-          dispatch(updateIsBetLocked(response.isBetLocked));
-          setBets({});
-        } else {
-          enqueueSnackbar(response.message, { variant: 'error' });
+      socket.emit(
+        'horse-bet',
+        { roomId, sessionId: session.user.id, bets },
+        (response) => {
+          if (response.success) {
+            enqueueSnackbar('베팅이 완료되었습니다.', { variant: 'success' });
+            dispatch(updateChip(response.remainChips));
+            dispatch(updatePersonalRounds(response.personalRounds));
+            dispatch(updateIsBetLocked(response.isBetLocked));
+            setBets({});
+          } else {
+            enqueueSnackbar(response.message, { variant: 'error' });
+          }
         }
-      });
+      );
     } else {
       enqueueSnackbar('최소 하나의 말에 베팅해주세요.', { variant: 'error' });
     }

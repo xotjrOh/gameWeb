@@ -1,48 +1,57 @@
 import { Socket as ServerSocket } from 'socket.io';
 import { Socket as ClientSocket } from 'socket.io-client';
-import { Room, Rooms, GameType } from './room';
+import { Room, Rooms, GameType, Player } from './room';
 import { ReconnectionResult } from '../services/commonService';
+import {
+  RoundData,
+  HorsePosition,
+  HorsePlayerData,
+  HorseClientToServerEvents,
+  HorseServerToClientEvents,
+} from '@/types/horse';
 
-export interface Response {
+export interface CommonResponse {
   success: boolean;
   message?: string;
 }
 
 // Client-to-Server Events
-export interface ClientToServerEvents {
+export interface ClientToServerEvents extends HorseClientToServerEvents {
   'update-socket-id': (data: UpdateSocketIdData) => void;
   'get-room-list': () => void;
   'check-room': (
     data: RoomSessionData,
-    callback: (response: Response) => void
+    callback: (response: CommonResponse) => void
   ) => void;
   'check-room-host': (
     data: RoomSessionData,
-    callback: (response: Response) => void
+    callback: (response: CommonResponse) => void
   ) => void;
   'create-room': (
     data: CreateRoomData,
-    callback: (response: Response & { roomId?: string }) => void
+    callback: (response: CommonResponse & { roomId?: string }) => void
   ) => void;
   'check-can-join-room': (
     data: RoomSessionData,
-    callback: (response: Response & ReconnectionResult) => void
+    callback: (response: CommonResponse & ReconnectionResult) => void
   ) => void;
   'join-room': (
     data: JoinRoomData,
-    callback: (response: Response) => void
+    callback: (response: CommonResponse) => void
   ) => void;
   'leave-room': (
     data: RoomSessionData,
-    callback: (response: Response) => void
+    callback: (response: CommonResponse) => void
   ) => void;
+
   // ... additional events
 }
 
 // Server-to-Client Events
-export interface ServerToClientEvents {
+export interface ServerToClientEvents extends HorseServerToClientEvents {
   'room-updated': (rooms: Rooms) => void;
   'room-closed': (data: { message: string }) => void;
+
   // ... additional events
 }
 
