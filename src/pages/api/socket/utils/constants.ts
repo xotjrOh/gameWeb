@@ -49,12 +49,8 @@ export const DEFAULT_GAME_DATA: {
     timeLeft: 0,
   },
   shuffle: {
-    videoUrl: 'https://www.youtube.com/watch?v=Gh-M6yHqpDc&t=160s',
-    startTime: 30,
-    interval: 3,
-    clipCount: 4,
-    clips: [{ id: 'A', start: 30, end: 33 }],
     correctOrder: ['A', 'B', 'C', 'D'],
+    clips: [{ id: 'A', start: 30, end: 33 }],
     currentPhase: 'waiting',
     isTimeover: true,
     timeLeft: 0,
@@ -78,7 +74,7 @@ export const DEFAULT_PLAYER_DATA: {
     memo: [],
   },
   shuffle: {
-    answer: null,
+    answer: [],
     isAlive: true,
   },
 } as const;
