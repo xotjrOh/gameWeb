@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
-export async function middleware(request) {
+export async function middleware(request: NextRequest) {
   // 토큰을 가져옵니다.
   const session = await getToken({ req: request });
   const { pathname } = request.nextUrl;
