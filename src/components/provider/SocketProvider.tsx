@@ -1,24 +1,42 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from 'react';
 import { useDispatch } from 'react-redux';
 import { io } from 'socket.io-client';
 import { setRooms } from '@/store/roomSlice';
 import { setIsLoading } from '@/store/loadingSlice';
+import type { AppDispatch } from '@/store';
+import { Rooms } from '@/types/room';
+import { ClientSocketType } from '@/types/socket';
 
-const SocketContext = createContext({
+interface SocketContextType {
+  socket: ClientSocketType | null;
+  isConnected: boolean;
+}
+
+const SocketContext = createContext<SocketContextType>({
   socket: null,
   isConnected: false,
 });
 
-export const useSocket = () => {
+export const useSocket = (): SocketContextType => {
   return useContext(SocketContext);
 };
 
-export const SocketProvider = ({ children }) => {
-  const dispatch = useDispatch();
-  const [socket, setSocket] = useState(null);
-  const [isConnected, setIsConnected] = useState(false);
+interface SocketProviderProps {
+  children: ReactNode;
+}
+
+export default function SocketProvider({ children }: SocketProviderProps) {
+  const dispatch = useDispatch<AppDispatch>();
+  const [socket, setSocket] = useState<ClientSocketType | null>(null);
+  const [isConnected, setIsConnected] = useState<boolean>(false);
 
   // console.log(socket, socket?.id, socket?.connected, isConnected);
   useEffect(() => {
@@ -27,7 +45,7 @@ export const SocketProvider = ({ children }) => {
       return;
     }
 
-    const newSocket = io(process.env.NEXT_PUBLIC_SITE_URL, {
+    const newSocket: ClientSocketType = io(process.env.NEXT_PUBLIC_SITE_URL, {
       path: '/api/socket/io',
       addTrailingSlash: false,
       // reconnection: true, 		// 자동 재연결 활성화
@@ -49,19 +67,6 @@ export const SocketProvider = ({ children }) => {
       setIsConnected(false);
       dispatch(setIsLoading(true));
       // setSocket(null);
-    });
-
-    newSocket.on('reconnect', (attempt) => {
-      console.log(`client : reconnect (${attempt} attempts)`);
-    });
-
-    newSocket.on('reconnect_failed', () => {
-      console.log('client : reconnect_failed');
-    });
-
-    newSocket.on('error', (err) => {
-      console.log('client : error');
-      console.error(err);
     });
 
     setSocket(newSocket);
@@ -91,7 +96,7 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     if (socket) {
-      const handleRoomUpdated = (updatedRooms) => {
+      const handleRoomUpdated = (updatedRooms: Rooms) => {
         dispatch(setRooms(updatedRooms));
       };
 
@@ -109,4 +114,4 @@ export const SocketProvider = ({ children }) => {
       {children}
     </SocketContext.Provider>
   );
-};
+}

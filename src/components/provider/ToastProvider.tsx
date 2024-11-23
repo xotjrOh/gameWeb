@@ -1,8 +1,13 @@
 'use client';
 
 import { SnackbarProvider } from 'notistack';
+import { ReactNode } from 'react';
 
-export default function ToastProvider({ children }) {
+interface ToastProviderProps {
+  children: ReactNode;
+}
+
+export default function ToastProvider({ children }: ToastProviderProps) {
   return (
     <SnackbarProvider
       maxSnack={3}

@@ -1,10 +1,14 @@
 'use client';
 
-import React from 'react';
+import React, { ReactNode } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Head from 'next/head';
 import { indigo, red } from '@mui/material/colors'; // 색상 객체 임포트
+
+interface ThemeRegistryProps {
+  children: ReactNode;
+}
 
 const theme = createTheme({
   palette: {
@@ -45,7 +49,7 @@ const theme = createTheme({
   },
 });
 
-export default function ThemeRegistry({ children }) {
+export default function ThemeRegistry({ children }: ThemeRegistryProps) {
   return (
     <>
       {/* 구글 폰트 로드 */}
