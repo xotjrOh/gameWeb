@@ -205,6 +205,7 @@ const horseGameHandler = (
         name,
         position,
       })) as HorsePosition[];
+      const defaultStatusInfo = _.cloneDeep(DEFAULT_PLAYER_DATA['horse']);
 
       // 현재 게임 데이터를 클라이언트로 전송
       socket.emit('horse-all-data-update', {
@@ -218,7 +219,7 @@ const horseGameHandler = (
           isTimeover: room.gameData.isTimeover || true,
           timeLeft: room.gameData.timeLeft || 0,
         },
-        statusInfo: player || { memo: [] },
+        statusInfo: player || defaultStatusInfo, // TODO : 바뀐로직 에러확인
       });
       return callback({ success: true });
     } catch (error) {
@@ -230,7 +231,7 @@ const horseGameHandler = (
   socket.on('horse-new-game', ({ roomId }, callback) => {
     try {
       const room = validateRoom(roomId);
-      const defaultStatusInfo = _.cloneDeep(DEFAULT_PLAYER_DATA[room.gameType]);
+      const defaultStatusInfo = _.cloneDeep(DEFAULT_PLAYER_DATA['horse']);
       room.status = GAME_STATUS.PENDING;
 
       clearInterval(timers[roomId]);
@@ -274,7 +275,7 @@ const horseGameHandler = (
           isRoundStarted: room.gameData.isRoundStarted,
           timeLeft: 0,
         },
-        statusInfo: {},
+        statusInfo: Object.assign(room.host, defaultStatusInfo),
       });
 
       io.emit('room-updated', rooms);

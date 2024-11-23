@@ -1,11 +1,16 @@
 import { useEffect } from 'react';
+import { ClientSocketType } from '@/types/socket';
 
-export default function useCheckVersion(socket) {
+interface VersionResponse {
+  serverVersion: string;
+}
+
+export default function useCheckVersion(socket: ClientSocketType | null) {
   useEffect(() => {
     const checkServerVersion = async () => {
       try {
         const response = await fetch('/api/version');
-        const { serverVersion } = await response.json();
+        const { serverVersion }: VersionResponse = await response.json();
         const localVersion = localStorage.getItem('localVersion'); // 로컬 저장된 버전
 
         if (!localVersion) {
@@ -17,21 +22,21 @@ export default function useCheckVersion(socket) {
             `버전이 변경되었습니다: ${localVersion} -> ${serverVersion}. 새로고침합니다.`
           );
           const disconnectSocket = async () => {
-            if (socket && socket.connected) {
-              return new Promise((resolve) => {
+            return new Promise<void>((resolve) => {
+              if (socket && socket.connected) {
                 console.log('기존 소켓 연결 해제 중...', socket.id);
-                socket.disconnect(() => {
-                  console.log('소켓 연결이 해제되었습니다.');
-                  resolve();
-                });
-              });
-            }
+                // TODO : 순차적용 해제했는데 에러나는지 확인
+                socket.disconnect();
+                console.log('소켓 연결이 해제되었습니다.');
+              }
+              resolve();
+            });
           };
 
           localStorage.setItem('localVersion', serverVersion);
-          window.location.replace('/');
-
+          // TODO : 아래 두개 순서 바꾸었으니 에러 확인
           await disconnectSocket();
+          window.location.replace('/');
         }
       } catch (error) {
         console.error('서버 버전 체크 중 에러 발생:', error);

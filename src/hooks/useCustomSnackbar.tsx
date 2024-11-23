@@ -1,13 +1,20 @@
 'use client';
 
-import { useSnackbar } from 'notistack';
+import { useSnackbar, VariantType, SnackbarMessage } from 'notistack';
 import { Button } from '@mui/material';
+
+interface CustomEnqueueSnackbarOptions {
+  variant?: VariantType;
+}
 
 // snackbar에 기능 추가 : 클릭시 닫기
 export function useCustomSnackbar() {
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
 
-  const customEnqueueSnackbar = (message, options = {}) => {
+  const customEnqueueSnackbar = (
+    message: SnackbarMessage,
+    options: CustomEnqueueSnackbarOptions = {}
+  ) => {
     enqueueSnackbar(message, {
       ...options,
       action: (key) => (

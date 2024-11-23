@@ -15,9 +15,15 @@ import {
   updateChipDiff,
 } from '@/store/horseSlice'; // Redux 슬라이스에서 가져옴
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
+import { AppDispatch } from '@/store';
+import { ClientSocketType } from '@/types/socket';
 
-const useHorseGameData = (roomId, socket, sessionId) => {
-  const dispatch = useDispatch();
+const useHorseGameData = (
+  roomId: string,
+  socket: ClientSocketType,
+  sessionId: string
+) => {
+  const dispatch = useDispatch<AppDispatch>();
   const { enqueueSnackbar } = useCustomSnackbar();
 
   useEffect(() => {
