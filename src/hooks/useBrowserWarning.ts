@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
+import { AppDispatch } from '@/store'; // AppDispatch를 import
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 
-const useBrowserWarning = (dispatch) => {
+const useBrowserWarning = (dispatch: AppDispatch) => {
   const { enqueueSnackbar } = useCustomSnackbar();
 
   useEffect(() => {
