@@ -1,17 +1,25 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Box, Button, Typography } from '@mui/material';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch'; // 커스텀 훅
 import { updateAnswer } from '@/store/shuffleSlice';
+import { Session } from 'next-auth';
+import { ClientSocketType } from '@/types/socket';
 
-export default function AnswerTab({ roomId, socket, session }) {
+interface AnswerTabProps {
+  roomId: string;
+  socket: ClientSocketType | null;
+  session: Session | null;
+}
+
+export default function AnswerTab({ roomId, socket, session }: AnswerTabProps) {
   const dispatch = useAppDispatch();
   const { gameData, statusInfo } = useAppSelector((state) => state.shuffle);
-  const [answer, setAnswer] = useState([]);
+  const [answer, setAnswer] = useState<string[]>([]);
 
   const handleSubmit = () => {
     // 정답 제출 액션 디스패치
-    dispatch(updateAnswer(socket, roomId, session.user.id, answer));
+    dispatch(updateAnswer(answer));
   };
 
   // 드래그 앤 드롭 또는 입력을 통해 answer 상태를 업데이트하는 로직 구현
@@ -25,7 +33,7 @@ export default function AnswerTab({ roomId, socket, session }) {
       <Button
         variant="contained"
         onClick={handleSubmit}
-        disabled={statusInfo.answerSubmitted}
+        disabled={statusInfo.isAnswerSubmitted}
       >
         제출하기
       </Button>

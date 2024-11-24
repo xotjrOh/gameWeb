@@ -1,4 +1,6 @@
-export const videoDataList = {
+import { VideoData } from '@/types/shuffle';
+
+export const videoDataList: Record<string, VideoData> = {
   끼리끼리: {
     videoId: 'Gh-M6yHqpDc',
     difficulty: '상',

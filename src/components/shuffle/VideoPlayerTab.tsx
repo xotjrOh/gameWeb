@@ -12,29 +12,48 @@ import {
   Tooltip,
   IconButton,
   Divider,
+  SelectChangeEvent,
 } from '@mui/material';
-import YouTube from 'react-youtube';
+import YouTube, { YouTubeProps } from 'react-youtube';
 import { videoDataList } from '@/utils/constants';
 import ExitIcon from '@mui/icons-material/ExitToApp';
 import LeaveModal from './LeaveModal';
+import { ClientSocketType } from '@/types/socket';
+import { Session } from 'next-auth';
 
-function VideoPlayerTab({ roomId, socket, session }) {
-  const [selectedVideoKey, setSelectedVideoKey] = useState('');
-  const [clips, setClips] = useState([]);
-  const youtubeRef = useRef(null);
-  const [originIds, setOriginIds] = useState([]);
-  const [answer, setAnswer] = useState([]);
-  const [showAnswer, setShowAnswer] = useState(false);
-  const [disableAnimation, setDisableAnimation] = useState(false);
-  const [modals, setModals] = useState({
+interface ClipWithId {
+  start: number;
+  end: number;
+  id: string;
+}
+
+interface ModalsState {
+  leave: boolean;
+}
+
+interface VideoPlayerTabProps {
+  roomId: string;
+  socket: ClientSocketType | null;
+  session: Session | null;
+}
+
+function VideoPlayerTab({ roomId, socket, session }: VideoPlayerTabProps) {
+  const [selectedVideoKey, setSelectedVideoKey] = useState<string>('');
+  const [clips, setClips] = useState<ClipWithId[]>([]);
+  const youtubeRef = useRef<YouTube['internalPlayer'] | null>(null);
+  const [originIds, setOriginIds] = useState<string[]>([]);
+  const [answer, setAnswer] = useState<string[]>([]);
+  const [showAnswer, setShowAnswer] = useState<boolean>(false);
+  const [disableAnimation, setDisableAnimation] = useState<boolean>(false);
+  const [modals, setModals] = useState<ModalsState>({
     leave: false,
   });
 
-  const openModal = (type) => {
+  const openModal = (type: keyof ModalsState) => {
     setModals((prev) => ({ ...prev, [type]: true }));
   };
 
-  const closeModal = (type) => {
+  const closeModal = (type: keyof ModalsState) => {
     setModals((prev) => ({ ...prev, [type]: false }));
   };
 
@@ -42,19 +61,22 @@ function VideoPlayerTab({ roomId, socket, session }) {
 
   // groupedVideos 메모이제이션
   const groupedVideos = useMemo(() => {
-    return Object.keys(videoDataList).reduce((acc, key) => {
-      const difficulty = videoDataList[key].difficulty;
-      if (!acc[difficulty]) {
-        acc[difficulty] = [];
-      }
-      acc[difficulty].push(key);
-      return acc;
-    }, {});
+    return Object.keys(videoDataList).reduce(
+      (acc: Record<string, string[]>, key) => {
+        const difficulty = videoDataList[key].difficulty;
+        if (!acc[difficulty]) {
+          acc[difficulty] = [];
+        }
+        acc[difficulty].push(key);
+        return acc;
+      },
+      {}
+    );
   }, [videoDataList]);
 
   // menuItems 메모이제이션
   const menuItems = useMemo(() => {
-    const items = [];
+    const items: React.ReactNode[] = [];
 
     sortedDifficulties.forEach((difficulty, index) => {
       // 난이도 헤더 추가
@@ -85,7 +107,7 @@ function VideoPlayerTab({ roomId, socket, session }) {
   }, [groupedVideos, sortedDifficulties]);
 
   // 비디오 선택 시 처리
-  const handleVideoSelect = (event) => {
+  const handleVideoSelect = (event: SelectChangeEvent) => {
     // 정답 숨기기 (애니메이션 없이)
     setDisableAnimation(true);
     setShowAnswer(false);
@@ -113,11 +135,11 @@ function VideoPlayerTab({ roomId, socket, session }) {
     }
   };
 
-  const onReady = (event) => {
+  const onReady: YouTubeProps['onReady'] = (event) => {
     youtubeRef.current = event.target;
   };
 
-  const handlePlayClip = (id) => {
+  const handlePlayClip = (id: string) => {
     const clip = clips.find((clip) => clip.id === id);
     if (!clip) return;
 

@@ -3,8 +3,20 @@ import { IconButton, Tooltip } from '@mui/material';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
+import { ClientSocketType } from '@/types/socket';
+import { Session } from 'next-auth';
 
-export default function GameStatusButton({ roomId, socket, session }) {
+interface GameStatusButtonProps {
+  roomId: string;
+  socket: ClientSocketType | null;
+  session: Session | null;
+}
+
+export default function GameStatusButton({
+  roomId,
+  socket,
+  session,
+}: GameStatusButtonProps) {
   const { statusInfo } = useAppSelector((state) => state.shuffle);
 
   return (

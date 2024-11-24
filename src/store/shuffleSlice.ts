@@ -29,6 +29,7 @@ const initialState: ShuffleInitialState = {
 
     answer: null,
     isAlive: true,
+    isAnswerSubmitted: false,
   },
 };
 

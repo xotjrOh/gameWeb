@@ -1,5 +1,12 @@
 import { CommonResponse } from '@/types/socket';
 
+export interface VideoData {
+  difficulty: string;
+  videoId: string;
+  full: { start: number; end: number };
+  clips: { start: number; end: number }[];
+}
+
 export interface Clip {
   id: string;
   start: number;
@@ -19,6 +26,7 @@ export interface ShuffleGameData {
 export interface ShufflePlayerData {
   answer: string[] | null;
   isAlive: boolean;
+  isAnswerSubmitted: boolean;
 }
 
 export interface EvaluationResult {

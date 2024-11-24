@@ -1,8 +1,20 @@
 import React from 'react';
 import { Box, List, ListItem, ListItemText, Avatar } from '@mui/material';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { ClientSocketType } from '@/types/socket';
+import { Session } from 'next-auth';
 
-export default function ParticipantsTab({ roomId, socket, session }) {
+interface ParticipantsTabProps {
+  roomId: string;
+  socket: ClientSocketType | null;
+  session: Session | null;
+}
+
+export default function ParticipantsTab({
+  roomId,
+  socket,
+  session,
+}: ParticipantsTabProps) {
   const { players } = useAppSelector((state) => state.shuffle);
 
   return (

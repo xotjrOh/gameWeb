@@ -76,5 +76,6 @@ export const DEFAULT_PLAYER_DATA: {
   shuffle: {
     answer: [],
     isAlive: true,
+    isAnswerSubmitted: false,
   },
 } as const;
