@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
+import { AppDispatch } from '@/store';
+import { ClientSocketType } from '@/types/socket';
 
-function useLeaveRoom(socket, dispatch) {
+function useLeaveRoom(socket: ClientSocketType | null, dispatch: AppDispatch) {
   const { enqueueSnackbar } = useCustomSnackbar();
 
   useEffect(() => {

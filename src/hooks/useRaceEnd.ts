@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useAppSelector } from '@/hooks/useAppSelector';
 
 function useRaceEnd() {
   const [hasRaceEnded, setHasRaceEnded] = useState(false); // 게임 종료 여부를 상태로 관리
-  const { positions, finishLine } = useSelector(
+  const { positions, finishLine } = useAppSelector(
     (state) => state.horse.gameData
   );
 

@@ -1,14 +1,20 @@
 import { useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import { setIsLoading } from '@/store/loadingSlice';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
+import { AppDispatch } from '@/store';
+import { ClientSocketType } from '@/types/socket';
 
-function useLoadingReset(socket, dispatch) {
-  const { isLoading } = useSelector((state) => state.loading);
+function useLoadingReset(
+  socket: ClientSocketType | null,
+  dispatch: AppDispatch
+) {
+  const { isLoading } = useAppSelector((state) => state.loading);
   const { enqueueSnackbar } = useCustomSnackbar();
 
   useEffect(() => {
-    let timeoutId;
+    let timeoutId: NodeJS.Timeout;
+
     if (isLoading) {
       timeoutId = setTimeout(() => {
         if (isLoading) {

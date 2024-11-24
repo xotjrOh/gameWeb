@@ -1,15 +1,15 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { useDispatch } from 'react-redux';
+import { useAppDispatch } from '@/hooks/useAppSelector'; // 커스텀 훅
 import { setIsLoading } from '@/store/loadingSlice';
 import { useSocket } from '@/components/provider/SocketProvider';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 
-const useRedirectIfNotHost = (roomId) => {
+const useRedirectIfNotHost = (roomId: string) => {
   const { socket } = useSocket();
   const router = useRouter();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const { data: session, status } = useSession();
   const { enqueueSnackbar } = useCustomSnackbar();
 

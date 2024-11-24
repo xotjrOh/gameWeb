@@ -5,9 +5,16 @@ import {
   updatePositions,
   setPlayers,
 } from '@/store/horseSlice';
+import { AppDispatch } from '@/store';
+import { HorsePosition, HorsePlayerData } from '@/types/horse';
+import { ClientSocketType } from '@/types/socket';
 
-function useTimeLeft(roomId, socket, dispatch) {
-  const [timeLeft, setTimeLeft] = useState(0);
+function useTimeLeft(
+  roomId: string,
+  socket: ClientSocketType | null,
+  dispatch: AppDispatch
+) {
+  const [timeLeft, setTimeLeft] = useState<number>(0);
 
   useEffect(() => {
     if (socket) {
