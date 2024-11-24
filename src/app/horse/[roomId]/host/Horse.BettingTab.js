@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, memo } from 'react';
-import { useSelector } from 'react-redux';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch'; // 커스텀 훅
 import { updateChip, updateIsBetLocked } from '@/store/horseSlice';
 import AdminButtons from '@/components/horse/AdminButtons';
@@ -12,12 +12,12 @@ import { Box, Button, Typography } from '@mui/material';
 function BettingTab({ roomId, socket, session }) {
   const dispatch = useAppDispatch();
   const [bets, setBets] = useState({});
-  const { statusInfo } = useSelector((state) => state.horse);
+  const { statusInfo } = useAppSelector((state) => state.horse);
   const {
     horses = [],
     isRoundStarted,
     isTimeover,
-  } = useSelector((state) => state.horse.gameData);
+  } = useAppSelector((state) => state.horse.gameData);
   const { enqueueSnackbar } = useCustomSnackbar();
 
   useEffect(() => {

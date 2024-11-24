@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, memo } from 'react';
-import { useSelector } from 'react-redux';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch'; // 커스텀 훅
 import { updateVoteHistory, updateIsVoteLocked } from '@/store/horseSlice';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
@@ -12,8 +12,8 @@ import VoteHistory from '@/components/horse/VoteHistory';
 function VoteTab({ roomId, socket, session }) {
   const dispatch = useAppDispatch();
   const [selectedHorse, setSelectedHorse] = useState('');
-  const { statusInfo } = useSelector((state) => state.horse);
-  const { horses, rounds, isTimeover } = useSelector(
+  const { statusInfo } = useAppSelector((state) => state.horse);
+  const { horses, rounds, isTimeover } = useAppSelector(
     (state) => state.horse.gameData
   );
   const { enqueueSnackbar } = useCustomSnackbar();

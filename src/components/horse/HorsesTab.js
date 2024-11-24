@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useMemo } from 'react';
-import { useSelector } from 'react-redux';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import {
   Box,
   Typography,
@@ -13,8 +13,8 @@ import { usePathname } from 'next/navigation';
 import useRaceEnd from '@/hooks/useRaceEnd';
 
 function HorsesTab({ roomId, socket, session }) {
-  const { players, statusInfo } = useSelector((state) => state.horse);
-  const { positions, finishLine, rounds } = useSelector(
+  const { players, statusInfo } = useAppSelector((state) => state.horse);
+  const { positions, finishLine, rounds } = useAppSelector(
     (state) => state.horse.gameData
   );
   const { hasRaceEnded } = useRaceEnd();

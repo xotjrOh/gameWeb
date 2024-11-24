@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import Image from 'next/image';
 import {
   Box,
@@ -18,7 +18,7 @@ import useWindowSize from 'react-use/lib/useWindowSize';
 export default function GameEndModal({ socket, roomId }) {
   const [isOpen, setIsOpen] = useState(false);
   const [gameResult, setGameResult] = useState(null);
-  const { statusInfo } = useSelector((state) => state.horse); // 내 말 정보를 가져옴
+  const { statusInfo } = useAppSelector((state) => state.horse); // 내 말 정보를 가져옴
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { width, height } = useWindowSize();

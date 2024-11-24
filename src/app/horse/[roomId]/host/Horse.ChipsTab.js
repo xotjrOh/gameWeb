@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect, memo } from 'react';
-import { useSelector } from 'react-redux';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch'; // 커스텀 훅
 import { setPlayers } from '@/store/horseSlice';
 import { Box, Typography, Paper, Divider } from '@mui/material';
 
 function ChipsTab({ roomId, socket, session }) {
   const dispatch = useAppDispatch();
-  const { players } = useSelector((state) => state.horse);
+  const { players } = useAppSelector((state) => state.horse);
 
   useEffect(() => {
     if (socket) {

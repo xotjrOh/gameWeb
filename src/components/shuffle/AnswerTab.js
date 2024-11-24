@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Box, Button, Typography } from '@mui/material';
-import { useSelector } from 'react-redux';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch'; // 커스텀 훅
 import { updateAnswer } from '@/store/shuffleSlice';
 
 export default function AnswerTab({ roomId, socket, session }) {
   const dispatch = useAppDispatch();
-  const { gameData, statusInfo } = useSelector((state) => state.shuffle);
+  const { gameData, statusInfo } = useAppSelector((state) => state.shuffle);
   const [answer, setAnswer] = useState([]);
 
   const handleSubmit = () => {

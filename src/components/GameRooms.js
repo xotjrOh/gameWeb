@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSelector } from 'react-redux';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch'; // 커스텀 훅
 import { setIsLoading } from '@/store/loadingSlice';
 import { useSocket } from '@/components/provider/SocketProvider';
@@ -39,7 +39,7 @@ export default function GameRooms({ session }) {
   const [showModal, setShowModal] = useState(false);
   const [showNicknameModal, setShowNicknameModal] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
-  const { rooms } = useSelector((state) => state.room);
+  const { rooms } = useAppSelector((state) => state.room);
   const { enqueueSnackbar } = useCustomSnackbar();
 
   useCheckVersion(socket);

@@ -1,9 +1,9 @@
 import React from 'react';
 import { Box, List, ListItem, ListItemText, Avatar } from '@mui/material';
-import { useSelector } from 'react-redux';
+import { useAppSelector } from '@/hooks/useAppSelector';
 
 export default function ParticipantsTab({ roomId, socket, session }) {
-  const { players } = useSelector((state) => state.shuffle);
+  const { players } = useAppSelector((state) => state.shuffle);
 
   return (
     <Box>

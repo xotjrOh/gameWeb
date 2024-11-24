@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch'; // 커스텀 훅
 import { setStatusInfo } from '@/store/horseSlice';
 import {
@@ -21,7 +21,7 @@ import {
 export default function MyStatusButton({ roomId, socket, session }) {
   const dispatch = useAppDispatch();
   const [showStatus, setShowStatus] = useState(false);
-  const { statusInfo } = useSelector((state) => state.horse);
+  const { statusInfo } = useAppSelector((state) => state.horse);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 

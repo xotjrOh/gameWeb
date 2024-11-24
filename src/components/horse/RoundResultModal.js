@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import useRaceEnd from '@/hooks/useRaceEnd';
-import { useSelector } from 'react-redux';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import {
   Box,
   Typography,
@@ -19,8 +19,8 @@ export default function RoundResultModal({ socket, roomId }) {
   const [isOpen, setIsOpen] = useState(false);
   const [results, setResults] = useState([]);
   const { hasRaceEnded } = useRaceEnd();
-  const { statusInfo } = useSelector((state) => state.horse);
-  const { positions } = useSelector((state) => state.horse.gameData);
+  const { statusInfo } = useAppSelector((state) => state.horse);
+  const { positions } = useAppSelector((state) => state.horse.gameData);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 

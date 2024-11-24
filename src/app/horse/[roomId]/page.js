@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch'; // 커스텀 훅
 import {
   Box,
@@ -41,7 +41,7 @@ export default function HorseGamePage({ params }) {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Redux 상태에서 statusInfo 가져오기
-  const { statusInfo } = useSelector((state) => state.horse);
+  const { statusInfo } = useAppSelector((state) => state.horse);
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
