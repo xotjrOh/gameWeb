@@ -11,8 +11,18 @@ import {
 } from '@mui/material';
 import { usePathname } from 'next/navigation';
 import useRaceEnd from '@/hooks/useRaceEnd';
+import { ClientSocketType } from '@/types/socket';
+import { Session } from 'next-auth';
+import { HorsePlayerData } from '@/types/horse';
+import { Player } from '@/types/room';
 
-function HorsesTab({ roomId, socket, session }) {
+interface HorsesTabProps {
+  roomId: string;
+  socket: ClientSocketType | null;
+  session: Session | null;
+}
+
+function HorsesTab({ roomId, socket, session }: HorsesTabProps) {
   const { players, statusInfo } = useAppSelector((state) => state.horse);
   const { positions, finishLine, rounds } = useAppSelector(
     (state) => state.horse.gameData
@@ -20,16 +30,18 @@ function HorsesTab({ roomId, socket, session }) {
   const { hasRaceEnded } = useRaceEnd();
 
   // URL을 통해 호스트 여부 판단
-  const pathname = usePathname();
+  const pathname = usePathname() || '';
   const isHost = pathname.includes('/host');
 
   const sortedPositions = useMemo(() => {
     return [...positions].sort((a, b) => a.name.localeCompare(b.name));
   }, [positions]);
 
-  const getHorsePlayers = (horseName) => {
+  const getHorsePlayers = (horseName: string) => {
     return players
-      .filter((player) => player.horse === horseName)
+      .filter(
+        (player) => (player as Player & HorsePlayerData).horse === horseName
+      )
       .map((player) => player.name)
       .join(', ');
   };

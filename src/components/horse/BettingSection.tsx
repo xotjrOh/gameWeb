@@ -1,21 +1,38 @@
 'use client';
 
+import React from 'react';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 import { Box, Grid2 as Grid, Slider, Typography, Paper } from '@mui/material';
 
-function BettingSection({ horses, bets, setBets, statusInfo, isTimeover }) {
+interface BettingSectionProps {
+  horses: string[];
+  bets: { [key: string]: number };
+  setBets: React.Dispatch<React.SetStateAction<{ [key: string]: number }>>;
+  statusInfo: {
+    chips?: number;
+    isBetLocked?: boolean;
+  };
+  isTimeover: boolean;
+}
+
+function BettingSection({
+  horses,
+  bets,
+  setBets,
+  statusInfo,
+  isTimeover,
+}: BettingSectionProps) {
   const { enqueueSnackbar } = useCustomSnackbar();
 
-  const handleBetChange = (horse, amount) => {
-    const sanitizedAmount =
-      isNaN(amount) || amount === '' ? 0 : parseInt(amount);
-    const newBets = { ...bets, [horse]: sanitizedAmount };
+  const handleBetChange = (horse: string, amount: number) => {
+    // TODO : 문자열 거르는 로직 제거, 오류 확인 필요
+    const newBets = { ...bets, [horse]: amount };
     const totalBet = Object.values(newBets).reduce(
       (sum, chips) => sum + chips,
       0
     );
 
-    if (sanitizedAmount < 0) return; // 베팅 금액이 음수가 되지 않도록
+    if (amount < 0) return; // 베팅 금액이 음수가 되지 않도록
 
     if (totalBet <= (statusInfo?.chips || 0)) {
       setBets(newBets);
@@ -86,7 +103,7 @@ function BettingSection({ horses, bets, setBets, statusInfo, isTimeover }) {
                 value={bets[horse] || 0}
                 min={0}
                 max={statusInfo?.chips || 0}
-                onChange={(e, value) => handleBetChange(horse, value)}
+                onChange={(e, value) => handleBetChange(horse, value as number)} // TODO : number[]가 전달되는 케이스 생기나 체크필요
                 disabled={statusInfo.isBetLocked || isTimeover}
                 valueLabelDisplay="auto"
                 sx={{ mt: 1.5 }}

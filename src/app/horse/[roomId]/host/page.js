@@ -166,7 +166,7 @@ export default function HorseGamePage({ params }) {
         </Box>
       </Box>
 
-      <RoundResultModal roomId={roomId} socket={socket} />
+      <RoundResultModal roomId={roomId} socket={socket} dispatch={dispatch} />
       <GameEndModal roomId={roomId} socket={socket} />
     </Box>
   );

@@ -1,6 +1,11 @@
 import { Box, Paper, Typography } from '@mui/material';
+import { RoundData } from '@/types/horse';
 
-function BetHistory({ rounds }) {
+interface BetHistoryProps {
+  rounds: RoundData[][];
+}
+
+function BetHistory({ rounds }: BetHistoryProps) {
   return (
     <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
       <Typography

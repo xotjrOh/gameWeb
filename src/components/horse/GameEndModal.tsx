@@ -14,10 +14,21 @@ import {
 } from '@mui/material';
 import Confetti from 'react-confetti';
 import useWindowSize from 'react-use/lib/useWindowSize';
+import { ClientSocketType } from '@/types/socket';
 
-export default function GameEndModal({ socket, roomId }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [gameResult, setGameResult] = useState(null);
+interface GameResult {
+  winners: { horse: string; playerNames: string[] }[];
+  losers: { horse: string; playerNames: string[] }[];
+}
+
+interface GameEndModalProps {
+  socket: ClientSocketType | null;
+  roomId: string;
+}
+
+export default function GameEndModal({ socket, roomId }: GameEndModalProps) {
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [gameResult, setGameResult] = useState<GameResult | null>(null);
   const { statusInfo } = useAppSelector((state) => state.horse); // 내 말 정보를 가져옴
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -25,7 +36,7 @@ export default function GameEndModal({ socket, roomId }) {
 
   useEffect(() => {
     if (socket) {
-      const handleGameEnd = ({ winners, losers }) => {
+      const handleGameEnd = ({ winners, losers }: GameResult) => {
         setGameResult({ winners, losers });
         setIsOpen(true); // 게임이 끝났을 때 모달을 엶
       };

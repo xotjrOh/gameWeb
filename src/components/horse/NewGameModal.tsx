@@ -7,11 +7,42 @@ import {
   Button,
 } from '@mui/material';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
+import { ClientSocketType } from '@/types/socket';
+import { Session } from 'next-auth';
 
-function NewGameModal({ open, onClose, roomId, socket, session }) {
+interface NewGameModalProps {
+  open: boolean;
+  onClose: () => void;
+  roomId: string;
+  socket: ClientSocketType | null;
+  session: Session | null;
+}
+
+function NewGameModal({
+  open,
+  onClose,
+  roomId,
+  socket,
+  session,
+}: NewGameModalProps) {
   const { enqueueSnackbar } = useCustomSnackbar();
 
   const confirmNewGame = () => {
+    if (!socket) {
+      // socket 미연결
+      enqueueSnackbar('연결이 되지 않았습니다. 새로고침해주세요', {
+        variant: 'error',
+      });
+      return;
+    }
+    if (!session) {
+      // socket 미연결
+      enqueueSnackbar('로그인이 확인되지 않습니다.', {
+        variant: 'error',
+      });
+      return;
+    }
+
     socket.emit('horse-new-game', { roomId }, (response) => {
       if (!response.success) {
         enqueueSnackbar(response.message, { variant: 'error' });

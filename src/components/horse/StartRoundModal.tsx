@@ -8,39 +8,68 @@ import {
   Button,
   Box,
 } from '@mui/material';
+import { useAppDispatch } from '@/hooks/useAppDispatch'; // 커스텀 훅
+import { updateIsRoundStarted } from '@/store/horseSlice';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
-import { Settings as SettingsIcon } from '@mui/icons-material';
+import { Timer as TimerIcon } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
+import { ClientSocketType } from '@/types/socket';
 
-function SettingsModal({ open, onClose, roomId, socket }) {
+interface StartRoundModalProps {
+  open: boolean;
+  onClose: () => void;
+  roomId: string;
+  socket: ClientSocketType | null;
+}
+
+interface StartRoundFormValues {
+  duration: number;
+}
+
+function StartRoundModal({
+  open,
+  onClose,
+  roomId,
+  socket,
+}: StartRoundModalProps) {
   const { enqueueSnackbar } = useCustomSnackbar();
+  const dispatch = useAppDispatch();
 
   const {
     control,
     handleSubmit,
     setFocus,
     formState: { errors },
-  } = useForm({
+  } = useForm<StartRoundFormValues>({
     defaultValues: {
-      finishLine: 9,
+      duration: 300,
     },
   });
 
   useEffect(() => {
-    if (errors.finishLine) {
-      setFocus('finishLine');
+    if (errors.duration) {
+      setFocus('duration');
     }
-  }, [errors.finishLine, setFocus]);
+  }, [errors.duration, setFocus]);
 
-  const onSubmit = (data) => {
-    const finishLine = data.finishLine;
-    socket.emit('horse-update-settings', { roomId, finishLine }, (response) => {
+  const onSubmit = (data: StartRoundFormValues) => {
+    const duration = data.duration;
+    if (!socket) {
+      // socket 미연결
+      enqueueSnackbar('연결이 되지 않았습니다. 새로고침해주세요', {
+        variant: 'error',
+      });
+      return;
+    }
+
+    socket.emit('horse-start-round', { roomId, duration }, (response) => {
       if (!response.success) {
         enqueueSnackbar(response.message, { variant: 'error' });
       } else {
-        enqueueSnackbar('설정이 성공적으로 업데이트되었습니다.', {
+        enqueueSnackbar('라운드가 성공적으로 시작되었습니다.', {
           variant: 'success',
         });
+        dispatch(updateIsRoundStarted(true));
         onClose();
       }
     });
@@ -50,40 +79,40 @@ function SettingsModal({ open, onClose, roomId, socket }) {
     <Dialog open={open} onClose={onClose}>
       <DialogTitle>
         <Box display="flex" alignItems="center" sx={{ ml: '6px' }}>
-          <SettingsIcon sx={{ marginRight: 1 }} />
-          골인지점 설정
+          <TimerIcon sx={{ marginRight: 1 }} />
+          라운드 지속 시간 설정
         </Box>
       </DialogTitle>
       <DialogContent>
-        <form id="settings-form" onSubmit={handleSubmit(onSubmit)} noValidate>
+        <form
+          id="start-round-form"
+          onSubmit={handleSubmit(onSubmit)}
+          noValidate
+        >
           <Controller
-            name="finishLine"
+            name="duration"
             control={control}
             rules={{
-              required: '골인지점을 입력해주세요.',
+              required: '지속 시간을 입력해주세요.',
               min: {
                 value: 1,
-                message: '골인지점은 1 이상의 자연수여야 합니다.',
-              },
-              max: {
-                value: 20,
-                message: '골인지점은 20 이하의 자연수여야 합니다.',
+                message: '지속 시간은 1 이상의 자연수여야 합니다.',
               },
               validate: (value) =>
-                Number.isInteger(value) || '골인지점은 자연수여야 합니다.',
+                Number.isInteger(value) || '지속 시간은 자연수여야 합니다.',
             }}
             render={({ field, fieldState }) => (
               <TextField
                 {...field}
                 type="number"
-                label="골인지점"
+                label="지속 시간 (초)"
                 fullWidth
                 margin="dense"
                 error={!!fieldState.error}
                 helperText={
                   fieldState.error
                     ? fieldState.error.message
-                    : '골인지점은 5 이상 11 이하를 추천합니다.'
+                    : '플레이어들과 조율하여 라운드 시간을 정해주세요'
                 }
                 slotProps={{
                   formHelperText: {
@@ -105,7 +134,7 @@ function SettingsModal({ open, onClose, roomId, socket }) {
         </Button>
         <Button
           type="submit"
-          form="settings-form"
+          form="start-round-form"
           color="primary"
           sx={{ mr: '6px' }}
         >
@@ -116,4 +145,4 @@ function SettingsModal({ open, onClose, roomId, socket }) {
   );
 }
 
-export default SettingsModal;
+export default StartRoundModal;

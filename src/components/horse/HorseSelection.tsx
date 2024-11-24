@@ -1,11 +1,19 @@
+import React from 'react';
 import { Grid2 as Grid, ButtonBase, Typography, Paper } from '@mui/material';
+
+interface HorseSelectionProps {
+  horses: string[];
+  selectedHorse: string;
+  setSelectedHorse: React.Dispatch<React.SetStateAction<string>>;
+  isVoteDisabled: boolean;
+}
 
 function HorseSelection({
   horses,
   selectedHorse,
   setSelectedHorse,
   isVoteDisabled,
-}) {
+}: HorseSelectionProps) {
   return (
     <Paper elevation={3} sx={{ p: 4 }}>
       <Typography

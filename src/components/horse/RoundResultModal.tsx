@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import useRaceEnd from '@/hooks/useRaceEnd';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { setPlayers } from '@/store/horseSlice';
 import {
   Box,
   Typography,
@@ -14,25 +15,42 @@ import {
   useTheme,
 } from '@mui/material';
 import { keyframes } from '@mui/system';
+import { ClientSocketType } from '@/types/socket';
+import { HorsePosition, HorsePlayerData, RoundData } from '@/types/horse';
+import { Player } from '@/types/room';
+import { AppDispatch } from '@/store';
 
-export default function RoundResultModal({ socket, roomId }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [results, setResults] = useState([]);
+interface RoundResultModalProps {
+  socket: ClientSocketType | null;
+  roomId: string;
+  dispatch: AppDispatch;
+}
+
+export default function RoundResultModal({
+  socket,
+  roomId,
+  dispatch,
+}: RoundResultModalProps) {
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [results, setResults] = useState<RoundData[]>([]);
   const { hasRaceEnded } = useRaceEnd();
   const { statusInfo } = useAppSelector((state) => state.horse);
   const { positions } = useAppSelector((state) => state.horse.gameData);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // 디버깅용
-  // useEffect(()=>{
-  //   console.log(results, hasRaceEnded, statusInfo, positions);
-  // }, [results, hasRaceEnded, statusInfo, positions])
-
   useEffect(() => {
     if (socket) {
-      const setRoundResultAfterRoundEnd = ({ roundResult }) => {
+      // TODO : 전달받는 인자 변경, 이슈 생기나 확인
+      const setRoundResultAfterRoundEnd = ({
+        players,
+        roundResult,
+      }: {
+        players: (Player & HorsePlayerData)[];
+        roundResult: RoundData[];
+      }) => {
         if (!hasRaceEnded) {
+          dispatch(setPlayers(players));
           setResults(roundResult);
           setIsOpen(true);
         }
@@ -48,7 +66,7 @@ export default function RoundResultModal({ socket, roomId }) {
 
   if (!isOpen) return null;
 
-  const getPlayerSuccess = (horse) => {
+  const getPlayerSuccess = (horse: string) => {
     const lastBet =
       statusInfo?.voteHistory?.[statusInfo.voteHistory.length - 1] || 'X'; // host는 X라고 기본값 사용
     return (
@@ -102,7 +120,8 @@ export default function RoundResultModal({ socket, roomId }) {
         <Stack spacing={4}>
           {results
             .filter(({ progress }) => progress !== 0)
-            .map(({ horse, progress }, index) => {
+            .map(({ horse, progress = 0 }, index) => {
+              // TODO : progress 기본값으로 문제 생기나 확인
               const isSuccess = getPlayerSuccess(horse);
               const horsePosition =
                 positions.find((pos) => pos.name === horse)?.position || 0;

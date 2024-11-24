@@ -8,11 +8,42 @@ import {
   Button,
 } from '@mui/material';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
+import { ClientSocketType } from '@/types/socket';
+import { Session } from 'next-auth';
 
-function LeaveModal({ open, onClose, roomId, socket, session }) {
+interface LeaveModalProps {
+  open: boolean;
+  onClose: () => void;
+  roomId: string;
+  socket: ClientSocketType | null;
+  session: Session | null;
+}
+
+function LeaveModal({
+  open,
+  onClose,
+  roomId,
+  socket,
+  session,
+}: LeaveModalProps) {
   const { enqueueSnackbar } = useCustomSnackbar();
 
   const confirmLeaveRoom = () => {
+    if (!socket) {
+      // socket 미연결
+      enqueueSnackbar('연결이 되지 않았습니다. 새로고침해주세요', {
+        variant: 'error',
+      });
+      return;
+    }
+    if (!session) {
+      // socket 미연결
+      enqueueSnackbar('로그인이 확인되지 않습니다.', {
+        variant: 'error',
+      });
+      return;
+    }
+
     socket.emit(
       'leave-room',
       { roomId, sessionId: session.user.id },

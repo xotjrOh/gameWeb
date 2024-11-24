@@ -1,6 +1,12 @@
 import { Box, Typography, Paper } from '@mui/material';
+import { RoundData } from '@/types/horse';
 
-function VoteHistory({ voteHistory, rounds }) {
+interface VoteHistoryProps {
+  voteHistory: string[];
+  rounds: RoundData[][];
+}
+
+function VoteHistory({ voteHistory, rounds }: VoteHistoryProps) {
   return (
     <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
       <Typography

@@ -12,17 +12,42 @@ import StartRoundModal from './StartRoundModal';
 import SettingsModal from './SettingsModal';
 import NewGameModal from './NewGameModal';
 import LeaveModal from './LeaveModal';
+import { Session } from 'next-auth';
+import { ClientSocketType } from '@/types/socket';
 
-function AdminButtons({ roomId, socket, session, isRoundStarted, isTimeover }) {
+interface AdminButtonsProps {
+  roomId: string;
+  socket: ClientSocketType | null;
+  session: Session | null;
+  isRoundStarted: boolean;
+  isTimeover: boolean;
+}
+
+interface ModalsState {
+  startRound: boolean;
+  settings: boolean;
+  newGame: boolean;
+  leave: boolean;
+}
+
+type ModalType = keyof ModalsState;
+
+function AdminButtons({
+  roomId,
+  socket,
+  session,
+  isRoundStarted,
+  isTimeover,
+}: AdminButtonsProps) {
   const { enqueueSnackbar } = useCustomSnackbar();
-  const [modals, setModals] = useState({
+  const [modals, setModals] = useState<ModalsState>({
     startRound: false,
     settings: false,
     newGame: false,
     leave: false,
   });
 
-  const openModal = (type) => {
+  const openModal = (type: ModalType) => {
     if (type === 'settings' && isRoundStarted) {
       enqueueSnackbar('라운드가 시작된 후에는 설정을 변경할 수 없습니다.', {
         variant: 'error',
@@ -38,13 +63,21 @@ function AdminButtons({ roomId, socket, session, isRoundStarted, isTimeover }) {
     setModals((prev) => ({ ...prev, [type]: true }));
   };
 
-  const closeModal = (type) => {
+  const closeModal = (type: ModalType) => {
     setModals((prev) => ({ ...prev, [type]: false }));
   };
 
   const assignRoles = () => {
     if (isRoundStarted) {
       enqueueSnackbar('라운드가 시작된 후에는 역할을 할당할 수 없습니다.', {
+        variant: 'error',
+      });
+      return;
+    }
+
+    if (!socket) {
+      // socket 미연결
+      enqueueSnackbar('연결이 되지 않았습니다. 새로고침해주세요', {
         variant: 'error',
       });
       return;

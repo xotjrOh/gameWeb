@@ -17,16 +17,29 @@ import {
   Person as PersonIcon,
   Cancel as CancelIcon,
 } from '@mui/icons-material';
+import { ClientSocketType } from '@/types/socket';
+import { Session } from 'next-auth';
 
-export default function MyStatusButton({ roomId, socket, session }) {
+interface MyStatusButtonProps {
+  roomId: string;
+  socket: ClientSocketType;
+  session: Session;
+}
+
+export default function MyStatusButton({
+  roomId,
+  socket,
+  session,
+}: MyStatusButtonProps) {
   const dispatch = useAppDispatch();
-  const [showStatus, setShowStatus] = useState(false);
+  const [showStatus, setShowStatus] = useState<boolean>(false);
   const { statusInfo } = useAppSelector((state) => state.horse);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   useEffect(() => {
     if (socket) {
+      // TODO : 타입 명시적 규정필요한지 확인필요
       socket.on('status-update', (data) => {
         dispatch(setStatusInfo(data));
       });
