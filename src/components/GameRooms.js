@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from '@/hooks/useAppDispatch'; // 커스텀 훅
 import { setIsLoading } from '@/store/loadingSlice';
 import { useSocket } from '@/components/provider/SocketProvider';
 import {
@@ -34,7 +35,7 @@ const gameTypeMap = {
 export default function GameRooms({ session }) {
   const { socket } = useSocket();
   const router = useRouter();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const [showModal, setShowModal] = useState(false);
   const [showNicknameModal, setShowNicknameModal] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);

@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState, memo } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from '@/hooks/useAppDispatch'; // 커스텀 훅
 import { setPlayers, updateMemo } from '@/store/horseSlice';
 import useRaceEnd from '@/hooks/useRaceEnd';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
@@ -15,7 +16,7 @@ import {
 } from '@mui/material';
 
 function ChipsTab({ roomId, socket, session }) {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const { players, statusInfo } = useSelector((state) => state.horse);
   const { hasRaceEnded } = useRaceEnd();
   const [memoState, setMemoState] = useState(statusInfo?.memo || []);

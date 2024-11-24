@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useAppDispatch } from '@/hooks/useAppDispatch'; // 커스텀 훅
 import {
   Box,
   AppBar,
@@ -31,7 +32,7 @@ import useLeaveRoom from '@/hooks/useLeaveRoom';
 import Image from 'next/image';
 
 export default function ShuffleGamePage({ params }) {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const { roomId } = params;
   const { socket } = useSocket();
   const [activeTab, setActiveTab] = useState(0);

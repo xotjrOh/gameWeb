@@ -8,7 +8,7 @@ import {
   Button,
   Box,
 } from '@mui/material';
-import { useDispatch } from 'react-redux';
+import { useAppDispatch } from '@/hooks/useAppDispatch'; // 커스텀 훅
 import { updateIsRoundStarted } from '@/store/horseSlice';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 import { Timer as TimerIcon } from '@mui/icons-material';
@@ -16,7 +16,7 @@ import { useForm, Controller } from 'react-hook-form';
 
 function StartRoundModal({ open, onClose, roomId, socket }) {
   const { enqueueSnackbar } = useCustomSnackbar();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
 
   const {
     control,

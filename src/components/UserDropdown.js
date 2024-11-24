@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { signOut } from 'next-auth/react';
-import { useDispatch } from 'react-redux';
+import { useAppDispatch } from '@/hooks/useAppDispatch'; // 커스텀 훅
 import { setIsLoading } from '@/store/loadingSlice';
 import {
   Box,
@@ -16,7 +16,7 @@ import AccountCircle from '@mui/icons-material/AccountCircle';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 
 export default function UserDropdown({ session }) {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const [anchorEl, setAnchorEl] = useState(null); // 사용자 드롭다운 상태
 
   // 사용자 메뉴 열기/닫기

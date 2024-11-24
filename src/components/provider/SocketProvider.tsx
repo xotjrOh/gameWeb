@@ -7,11 +7,10 @@ import {
   useState,
   ReactNode,
 } from 'react';
-import { useDispatch } from 'react-redux';
+import { useAppDispatch } from '@/hooks/useAppDispatch'; // 커스텀 훅
 import { io } from 'socket.io-client';
 import { setRooms } from '@/store/roomSlice';
 import { setIsLoading } from '@/store/loadingSlice';
-import type { AppDispatch } from '@/store';
 import { Rooms } from '@/types/room';
 import { ClientSocketType } from '@/types/socket';
 
@@ -34,7 +33,7 @@ interface SocketProviderProps {
 }
 
 export default function SocketProvider({ children }: SocketProviderProps) {
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
   const [socket, setSocket] = useState<ClientSocketType | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
 

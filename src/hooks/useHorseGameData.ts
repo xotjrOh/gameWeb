@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useDispatch } from 'react-redux';
+import { useAppDispatch } from '@/hooks/useAppDispatch'; // 커스텀 훅
 import {
   setPlayers,
   setGameData,
@@ -15,7 +15,6 @@ import {
   updateChipDiff,
 } from '@/store/horseSlice'; // Redux 슬라이스에서 가져옴
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
-import { AppDispatch } from '@/store';
 import { ClientSocketType } from '@/types/socket';
 
 const useHorseGameData = (
@@ -23,7 +22,7 @@ const useHorseGameData = (
   socket: ClientSocketType,
   sessionId: string
 ) => {
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
   const { enqueueSnackbar } = useCustomSnackbar();
 
   useEffect(() => {
