@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useAppDispatch } from '@/hooks/useAppSelector'; // 커스텀 훅
+import { useAppDispatch } from '@/hooks/useAppDispatch'; // 커스텀 훅
 import { setGameData, setPlayers, setStatusInfo } from '@/store/shuffleSlice';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 import { ClientSocketType } from '@/types/socket';

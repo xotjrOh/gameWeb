@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { useAppDispatch } from '@/hooks/useAppSelector'; // 커스텀 훅
+import { useAppDispatch } from '@/hooks/useAppDispatch'; // 커스텀 훅
 import { setIsLoading } from '@/store/loadingSlice';
 import { useSocket } from '@/components/provider/SocketProvider';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';

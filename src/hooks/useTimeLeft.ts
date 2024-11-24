@@ -6,7 +6,6 @@ import {
   setPlayers,
 } from '@/store/horseSlice';
 import { AppDispatch } from '@/store';
-import { HorsePosition, HorsePlayerData } from '@/types/horse';
 import { ClientSocketType } from '@/types/socket';
 
 function useTimeLeft(
