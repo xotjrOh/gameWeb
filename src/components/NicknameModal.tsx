@@ -4,8 +4,18 @@ import { useState } from 'react';
 import { Box, Modal, Typography, TextField, Button } from '@mui/material';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 
-export default function NicknameModal({ isOpen, onClose, onSubmit }) {
-  const [nickname, setNickname] = useState('');
+interface NicknameModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (nickname: string) => void;
+}
+
+export default function NicknameModal({
+  isOpen,
+  onClose,
+  onSubmit,
+}: NicknameModalProps) {
+  const [nickname, setNickname] = useState<string>('');
   const { enqueueSnackbar } = useCustomSnackbar();
 
   const handleSubmit = () => {

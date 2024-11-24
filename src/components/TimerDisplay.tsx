@@ -1,7 +1,15 @@
 import { Typography } from '@mui/material';
 import useTimeLeft from '@/hooks/useTimeLeft';
+import { ClientSocketType } from '@/types/socket';
+import { AppDispatch } from '@/store';
 
-function TimerDisplay({ roomId, socket, dispatch }) {
+interface TimerDisplayProps {
+  roomId: string;
+  socket: ClientSocketType;
+  dispatch: AppDispatch;
+}
+
+function TimerDisplay({ roomId, socket, dispatch }: TimerDisplayProps) {
   const { timeLeft } = useTimeLeft(roomId, socket, dispatch);
 
   return (

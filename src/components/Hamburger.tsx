@@ -1,20 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, MouseEvent } from 'react';
 import Link from 'next/link';
 import { IconButton, Box, Menu, MenuItem, Backdrop } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
 
 export default function Hamburger() {
-  const [anchorEl, setAnchorEl] = useState(null); // 햄버거 메뉴
-  const [submenuAnchorEl, setSubmenuAnchorEl] = useState(null); // '게임 소개' 서브메뉴
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null); // 햄버거 메뉴
+  const [submenuAnchorEl, setSubmenuAnchorEl] = useState<HTMLElement | null>(
+    null
+  ); // '게임 소개' 서브메뉴
 
-  const handleMenuOpen = (event) => {
+  const handleMenuOpen = (event: MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
 
-  const handleSubmenuOpen = (event) => {
+  const handleSubmenuOpen = (event: MouseEvent<HTMLElement>) => {
     setSubmenuAnchorEl(event.currentTarget);
   };
 

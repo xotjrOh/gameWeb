@@ -24,21 +24,29 @@ import useLoadingReset from '@/hooks/useLoadingReset';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 import PeopleIcon from '@mui/icons-material/People'; // 사람 아이콘
 import AddIcon from '@mui/icons-material/Add';
+import { Session } from 'next-auth';
+import { GameType, HorseRoom, ShuffleRoom } from '@/types/room';
 
-const gameTypeMap = {
+interface GameRoomsProps {
+  session: Session | null;
+}
+
+const gameTypeMap: Record<GameType, string> = {
   horse: '🏇 경마게임',
   shuffle: '🔀 뒤죽박죽',
 };
 
 // 배포후 작동여부 테스트용
 // @log(rooms)
-export default function GameRooms({ session }) {
+export default function GameRooms({ session }: GameRoomsProps) {
   const { socket } = useSocket();
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const [showModal, setShowModal] = useState(false);
-  const [showNicknameModal, setShowNicknameModal] = useState(false);
-  const [selectedRoom, setSelectedRoom] = useState(null);
+  const [showModal, setShowModal] = useState<boolean>(false);
+  const [showNicknameModal, setShowNicknameModal] = useState<boolean>(false);
+  const [selectedRoom, setSelectedRoom] = useState<
+    HorseRoom | ShuffleRoom | null
+  >(null);
   const { rooms } = useAppSelector((state) => state.room);
   const { enqueueSnackbar } = useCustomSnackbar();
 
@@ -51,12 +59,19 @@ export default function GameRooms({ session }) {
     setShowModal(false);
   };
 
-  const handleRoomClick = (room) => {
+  const handleRoomClick = (room: HorseRoom | ShuffleRoom) => {
     if (!socket || !socket.connected) {
       return enqueueSnackbar(
         '서버와 연결이 되어 있지 않습니다. 잠시 후 다시 시도해주세요.',
         { variant: 'error' }
       );
+    }
+    if (!session) {
+      // socket 미연결
+      enqueueSnackbar('로그인이 확인되지 않습니다.', {
+        variant: 'error',
+      });
+      return;
     }
     // 서버에 방 참여 가능 여부를 확인
     socket.emit(
@@ -80,7 +95,7 @@ export default function GameRooms({ session }) {
     );
   };
 
-  const handleNicknameSubmit = (nickname) => {
+  const handleNicknameSubmit = (nickname: string) => {
     setShowNicknameModal(false);
     if (selectedRoom) {
       joinRoom(selectedRoom.roomId, selectedRoom.gameType, nickname);
@@ -88,12 +103,19 @@ export default function GameRooms({ session }) {
   };
 
   // 새로 접속하는 경우에만 호출
-  const joinRoom = (roomId, gameType, nickname) => {
+  const joinRoom = (roomId: string, gameType: GameType, nickname: string) => {
     if (!socket || !socket.connected) {
       return enqueueSnackbar(
         '서버와 연결이 되어 있지 않습니다. 잠시 후 다시 시도해주세요.',
         { variant: 'error' }
       );
+    }
+    if (!session) {
+      // socket 미연결
+      enqueueSnackbar('로그인이 확인되지 않습니다.', {
+        variant: 'error',
+      });
+      return;
     }
 
     dispatch(setIsLoading(true));

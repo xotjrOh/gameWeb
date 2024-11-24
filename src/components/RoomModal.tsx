@@ -1,6 +1,6 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, SubmitHandler } from 'react-hook-form';
 import {
   TextField,
   Button,
@@ -17,6 +17,27 @@ import { Cancel as CancelIcon } from '@mui/icons-material';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 import { useHideScroll } from '@/hooks/useHideScroll';
 import { setIsLoading } from '@/store/loadingSlice';
+import { useRouter } from 'next/navigation';
+import { Session } from 'next-auth';
+import { ClientSocketType } from '@/types/socket';
+import { AppDispatch } from '@/store';
+import { GameType } from '@/types/room';
+
+type RouterType = ReturnType<typeof useRouter>;
+
+interface RoomModalProps {
+  closeModal: () => void;
+  socket: ClientSocketType | null;
+  router: RouterType;
+  dispatch: AppDispatch;
+  session: Session | null;
+}
+
+interface FormData {
+  roomName: string;
+  gameType: GameType;
+  maxPlayers: number;
+}
 
 export default function RoomModal({
   closeModal,
@@ -24,42 +45,48 @@ export default function RoomModal({
   router,
   dispatch,
   session,
-}) {
+}: RoomModalProps) {
   const { enqueueSnackbar } = useCustomSnackbar();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm({
+  } = useForm<FormData>({
     defaultValues: {
       roomName: '',
       gameType: 'horse',
-      maxPlayers: '',
+      maxPlayers: undefined,
     },
   });
 
-  const onSubmit = (data) => {
+  const onSubmit: SubmitHandler<FormData> = (data) => {
     if (!socket || !socket.connected || !socket.id) {
       return enqueueSnackbar('소켓 연결 대기 중입니다.', {
         variant: 'warning',
       });
     }
+    if (!session) {
+      // socket 미연결
+      enqueueSnackbar('로그인이 확인되지 않습니다.', {
+        variant: 'error',
+      });
+      return;
+    }
+
+    const userName = session.user.name ?? 'Anonymous';
+    const sessionId = session.user.id;
 
     dispatch(setIsLoading(true));
-    socket.emit(
-      'create-room',
-      { ...data, userName: session.user.name, sessionId: session.user.id },
-      (response) => {
-        if (!response.success) {
-          enqueueSnackbar(response.message, { variant: 'error' });
-          return dispatch(setIsLoading(false));
-        }
-
-        router.replace(`/${data.gameType}/${response.roomId}/host`);
-        dispatch(setIsLoading(false));
+    socket.emit('create-room', { ...data, userName, sessionId }, (response) => {
+      if (!response.success) {
+        enqueueSnackbar(response.message, { variant: 'error' });
+        return dispatch(setIsLoading(false));
       }
-    );
+
+      router.replace(`/${data.gameType}/${response.roomId}/host`);
+      dispatch(setIsLoading(false));
+    });
   };
 
   useHideScroll();
@@ -172,7 +199,8 @@ export default function RoomModal({
           variant="outlined"
           margin="normal"
           onInput={(e) => {
-            e.target.value = e.target.value.replace(/[^0-9]/g, '');
+            const target = e.target as HTMLInputElement;
+            target.value = target.value.replace(/[^0-9]/g, '');
           }}
           sx={{
             backgroundColor: 'rgba(255, 255, 255, 0.8)',

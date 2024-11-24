@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, MouseEvent } from 'react';
 import { signOut } from 'next-auth/react';
 import { useAppDispatch } from '@/hooks/useAppDispatch'; // 커스텀 훅
 import { setIsLoading } from '@/store/loadingSlice';
@@ -14,13 +14,18 @@ import {
 } from '@mui/material';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
+import { Session } from 'next-auth';
 
-export default function UserDropdown({ session }) {
+interface UserDropdownProps {
+  session: Session | null;
+}
+
+export default function UserDropdown({ session }: UserDropdownProps) {
   const dispatch = useAppDispatch();
-  const [anchorEl, setAnchorEl] = useState(null); // 사용자 드롭다운 상태
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null); // 사용자 드롭다운 상태
 
   // 사용자 메뉴 열기/닫기
-  const handleMenuOpen = (event) => {
+  const handleMenuOpen = (event: MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
 
