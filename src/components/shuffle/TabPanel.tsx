@@ -2,8 +2,8 @@ import { Box, BoxProps } from '@mui/material';
 
 interface TabPanelProps extends BoxProps {
   children?: React.ReactNode;
-  index: string;
-  value: string;
+  index: number;
+  value: number;
 }
 
 export default function TabPanel(props: TabPanelProps) {

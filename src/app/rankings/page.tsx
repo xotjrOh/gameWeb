@@ -15,9 +15,17 @@ import {
   Box,
   Paper,
   Collapse,
+  SelectChangeEvent,
 } from '@mui/material';
+import { GameType } from '@/types/room';
 
-const mockRankData = {
+interface PlayerRank {
+  rank: number;
+  name: string;
+  score: number;
+}
+
+const mockRankData: Record<GameType, PlayerRank[]> = {
   horse: [
     { rank: 1, name: '오태석', score: 13 },
     { rank: 2, name: '방준성', score: 1 },
@@ -36,12 +44,14 @@ const mockRankData = {
 
 export default function RankingPage() {
   const { data: session } = useSession();
-  const [selectedGame, setSelectedGame] = useState('horse');
-  const [rankData, setRankData] = useState(mockRankData[selectedGame]);
-  const [visible, setVisible] = useState(true);
+  const [selectedGame, setSelectedGame] = useState<GameType>('horse');
+  const [rankData, setRankData] = useState<PlayerRank[]>(
+    mockRankData[selectedGame]
+  );
+  const [visible, setVisible] = useState<boolean>(true);
 
-  const handleGameChange = (e) => {
-    const game = e.target.value;
+  const handleGameChange = (e: SelectChangeEvent) => {
+    const game = e.target.value as GameType;
     setVisible(false); // Fade out
     setSelectedGame(game);
   };

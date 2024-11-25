@@ -5,7 +5,7 @@ import { AppDispatch } from '@/store';
 
 interface TimerDisplayProps {
   roomId: string;
-  socket: ClientSocketType;
+  socket: ClientSocketType | null;
   dispatch: AppDispatch;
 }
 

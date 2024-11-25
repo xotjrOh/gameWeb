@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, SyntheticEvent } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch'; // 커스텀 훅
 import {
@@ -17,8 +17,8 @@ import VideoPlayerTab from '@/components/shuffle/VideoPlayerTab';
 import AnswerTab from '@/components/shuffle/AnswerTab';
 import ParticipantsTab from '@/components/shuffle/ParticipantsTab';
 import GameStatusButton from '@/components/shuffle/GameStatusButton';
-import RoundResultModal from '@/components/shuffle/RoundResultModal';
-import GameEndModal from '@/components/shuffle/GameEndModal';
+// import RoundResultModal from '@/components/shuffle/RoundResultModal';
+// import GameEndModal from '@/components/shuffle/GameEndModal';
 import TabPanel from '@/components/shuffle/TabPanel';
 
 import TimerDisplay from '@/components/TimerDisplay';
@@ -31,32 +31,41 @@ import useCheckVersion from '@/hooks/useCheckVersion';
 import useLeaveRoom from '@/hooks/useLeaveRoom';
 import Image from 'next/image';
 
-export default function ShuffleGamePage({ params }) {
+interface ShuffleGamePageProps {
+  params: {
+    roomId: string;
+  };
+}
+
+export default function ShuffleGamePage({ params }: ShuffleGamePageProps) {
   const dispatch = useAppDispatch();
   const { roomId } = params;
   const { socket } = useSocket();
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState<number>(0);
   const { data: session } = useSession();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
+  const sessionId = session?.user?.id ?? '';
   // Redux 상태에서 statusInfo 가져오기
   const { statusInfo } = useAppSelector((state) => state.shuffle);
 
-  const handleTabChange = (event, newValue) => {
+  const handleTabChange = (event: SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
 
   useCheckVersion(socket);
   useRedirectIfNotHost(roomId);
   useUpdateSocketId(socket, session, roomId);
-  useShuffleGameData(roomId, socket, session?.user?.id);
+  useShuffleGameData(roomId, socket, sessionId);
   useLeaveRoom(socket, dispatch);
 
   // 탭 정보 배열 정의
   const tabs = [
     { label: '영상 재생', showIcon: false },
-    { label: '정답 제출', showIcon: statusInfo && !statusInfo.answerSubmitted },
+    {
+      label: '정답 제출',
+      showIcon: statusInfo && !statusInfo.isAnswerSubmitted,
+    },
     { label: '참가자 목록' },
   ];
 
@@ -160,8 +169,9 @@ export default function ShuffleGamePage({ params }) {
         </Box>
       </Box>
 
+      {/* TODO : 게임 로직 잡힌 이후에 활성화 할것
       <RoundResultModal roomId={roomId} socket={socket} />
-      <GameEndModal roomId={roomId} socket={socket} />
+      <GameEndModal roomId={roomId} socket={socket} /> */}
     </Box>
   );
 }
