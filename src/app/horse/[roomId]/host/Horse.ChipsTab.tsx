@@ -5,15 +5,29 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch'; // 커스텀 훅
 import { setPlayers } from '@/store/horseSlice';
 import { Box, Typography, Paper, Divider } from '@mui/material';
+import { ClientSocketType } from '@/types/socket';
+import { Session } from 'next-auth';
+import { Player } from '@/types/room';
+import { HorsePlayerData } from '@/types/horse';
 
-function ChipsTab({ roomId, socket, session }) {
+interface ChipsTabProps {
+  roomId: string;
+  socket: ClientSocketType | null;
+  session: Session | null;
+}
+
+function ChipsTab({ roomId, socket, session }: ChipsTabProps) {
   const dispatch = useAppDispatch();
   const { players } = useAppSelector((state) => state.horse);
 
   useEffect(() => {
     if (socket) {
       // 'round-ended' 이벤트를 수신하여 칩 개수 업데이트
-      const updatePlayersAfterRoundEnd = ({ players }) => {
+      const updatePlayersAfterRoundEnd = ({
+        players,
+      }: {
+        players: (Player & HorsePlayerData)[];
+      }) => {
         dispatch(setPlayers(players));
       };
       socket.on('round-ended', updatePlayersAfterRoundEnd);
@@ -32,8 +46,8 @@ function ChipsTab({ roomId, socket, session }) {
       </Typography>
       {/* 플레이어 목록 */}
       <Box sx={{ mt: 2 }}>
-        {players.map((player, index) => {
-          const getChipDiffStyles = (chipDiff) => {
+        {players.map((player: Player & HorsePlayerData, index) => {
+          const getChipDiffStyles = (chipDiff: number) => {
             if (chipDiff > 0) {
               return { color: 'error.main', arrow: '▲' }; // 양수
             } else if (chipDiff < 0) {

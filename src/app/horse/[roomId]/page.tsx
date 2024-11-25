@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, SyntheticEvent } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch'; // 커스텀 훅
 import {
@@ -12,7 +12,6 @@ import {
   useMediaQuery,
   useTheme,
   Badge,
-  Typography,
 } from '@mui/material';
 import BettingTab from './Horse.BettingTab';
 import VoteTab from './Horse.VoteTab';
@@ -20,7 +19,7 @@ import ChipsTab from './Horse.ChipsTab';
 import HorsesTab from '@/components/horse/HorsesTab';
 import MyStatusButton from '@/components/horse/MyStatusButton';
 import TimerDisplay from '@/components/TimerDisplay';
-import useRedirectIfNotHost from '@/hooks/useRedirectIfNotHost';
+import useRedirectIfInvalidRoom from '@/hooks/useRedirectIfInvalidRoom';
 import { useSocket } from '@/components/provider/SocketProvider';
 import { useSession } from 'next-auth/react';
 import useUpdateSocketId from '@/hooks/useUpdateSocketId';
@@ -28,31 +27,37 @@ import useHorseGameData from '@/hooks/useHorseGameData';
 import RoundResultModal from '@/components/horse/RoundResultModal';
 import GameEndModal from '@/components/horse/GameEndModal';
 import useCheckVersion from '@/hooks/useCheckVersion';
+import useLeaveRoom from '@/hooks/useLeaveRoom';
 import TabPanel from '@/components/horse/TabPanel';
 import Image from 'next/image';
 
-export default function HorseGamePage({ params }) {
+interface HorseGamePageProps {
+  params: {
+    roomId: string;
+  };
+}
+
+export default function HorseGamePage({ params }: HorseGamePageProps) {
   const dispatch = useAppDispatch();
   const { roomId } = params;
   const { socket } = useSocket();
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState<number>(0);
   const { data: session } = useSession();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
+  const sessionId = session?.user?.id ?? '';
   // Redux 상태에서 statusInfo 가져오기
   const { statusInfo } = useAppSelector((state) => state.horse);
-  const { rooms } = useAppSelector((state) => state.room);
 
-  const handleTabChange = (event, newValue) => {
+  const handleTabChange = (event: SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
 
   useCheckVersion(socket);
-  useRedirectIfNotHost(roomId);
+  useRedirectIfInvalidRoom(roomId);
   useUpdateSocketId(socket, session, roomId);
-  useHorseGameData(roomId, socket, session?.user?.id);
-  // useLeaveRoom(socket, dispatch);
+  useHorseGameData(roomId, socket, sessionId);
+  useLeaveRoom(socket, dispatch);
 
   // 탭 정보 배열 정의
   const tabs = [
@@ -90,13 +95,8 @@ export default function HorseGamePage({ params }) {
               style={{ maxHeight: '100%', height: 'auto' }}
             />
           </Box>
-          <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
-            <Typography variant="body1">
-              {rooms?.[roomId]?.players?.length}명
-            </Typography>
-          </Box>
+          <Box sx={{ flexGrow: 1 }} />
           {/* 아이콘 우측 배치 */}
-
           <TimerDisplay roomId={roomId} socket={socket} dispatch={dispatch} />
           <MyStatusButton roomId={roomId} socket={socket} session={session} />
         </Toolbar>

@@ -22,8 +22,8 @@ import { Session } from 'next-auth';
 
 interface MyStatusButtonProps {
   roomId: string;
-  socket: ClientSocketType;
-  session: Session;
+  socket: ClientSocketType | null;
+  session: Session | null;
 }
 
 export default function MyStatusButton({

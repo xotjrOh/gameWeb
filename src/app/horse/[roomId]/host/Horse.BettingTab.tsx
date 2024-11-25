@@ -3,23 +3,29 @@
 import { useState, useEffect, memo } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch'; // 커스텀 훅
-import {
-  updateChip,
-  updatePersonalRounds,
-  updateIsBetLocked,
-} from '@/store/horseSlice';
+import { updateChip, updateIsBetLocked } from '@/store/horseSlice';
+import AdminButtons from '@/components/horse/AdminButtons';
 import BettingSection from '@/components/horse/BettingSection';
-import BetHistory from '@/components/horse/BetHistory';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 import { Box, Button, Typography } from '@mui/material';
+import { ClientSocketType } from '@/types/socket';
+import { Session } from 'next-auth';
 
-function BettingTab({ roomId, socket, session }) {
+interface BettingTabProps {
+  roomId: string;
+  socket: ClientSocketType | null;
+  session: Session | null;
+}
+
+function BettingTab({ roomId, socket, session }: BettingTabProps) {
   const dispatch = useAppDispatch();
-  const [bets, setBets] = useState({});
+  const [bets, setBets] = useState<Record<string, number>>({});
   const { statusInfo } = useAppSelector((state) => state.horse);
-  const { horses, isTimeover } = useAppSelector(
-    (state) => state.horse.gameData
-  );
+  const {
+    horses = [],
+    isRoundStarted,
+    isTimeover,
+  } = useAppSelector((state) => state.horse.gameData);
   const { enqueueSnackbar } = useCustomSnackbar();
 
   useEffect(() => {
@@ -36,12 +42,25 @@ function BettingTab({ roomId, socket, session }) {
   }, [socket?.id]);
 
   const handleBet = () => {
-    if (statusInfo.isBetLocked || isTimeover) {
-      return enqueueSnackbar('더이상 베팅할 수 없습니다.', {
+    if (statusInfo?.isBetLocked || isTimeover) {
+      return enqueueSnackbar('더 이상 베팅할 수 없습니다.', {
         variant: 'error',
       });
     }
-
+    if (!socket) {
+      // socket 미연결
+      enqueueSnackbar('연결이 되지 않았습니다. 새로고침해주세요', {
+        variant: 'error',
+      });
+      return;
+    }
+    if (!session) {
+      // session 미연결
+      enqueueSnackbar('로그인이 확인되지 않습니다.', {
+        variant: 'error',
+      });
+      return;
+    }
     if (Object.keys(bets).length > 0) {
       socket.emit(
         'horse-bet',
@@ -49,10 +68,8 @@ function BettingTab({ roomId, socket, session }) {
         (response) => {
           if (response.success) {
             enqueueSnackbar('베팅이 완료되었습니다.', { variant: 'success' });
-            dispatch(updateChip(response.remainChips));
-            dispatch(updatePersonalRounds(response.personalRounds));
-            dispatch(updateIsBetLocked(response.isBetLocked));
-            setBets({});
+            dispatch(updateChip(response.remainChips!));
+            dispatch(updateIsBetLocked(response.isBetLocked!));
           } else {
             enqueueSnackbar(response.message, { variant: 'error' });
           }
@@ -65,6 +82,15 @@ function BettingTab({ roomId, socket, session }) {
 
   return (
     <Box sx={{ mt: 2, pb: 8 }}>
+      {/* 상단 관리자용 버튼들 */}
+      <AdminButtons
+        roomId={roomId}
+        socket={socket}
+        session={session}
+        isRoundStarted={isRoundStarted}
+        isTimeover={isTimeover}
+      />
+
       {/* 베팅 섹션 */}
       <BettingSection
         horses={horses}
@@ -73,9 +99,6 @@ function BettingTab({ roomId, socket, session }) {
         statusInfo={statusInfo}
         isTimeover={isTimeover}
       />
-
-      {/* 베팅 내역 섹션 */}
-      <BetHistory rounds={statusInfo.rounds} />
 
       {/* 베팅 요약 섹션 */}
       <Box
@@ -118,7 +141,7 @@ function BettingTab({ roomId, socket, session }) {
         }}
         disabled={statusInfo.isBetLocked || isTimeover}
       >
-        {statusInfo.isBetLocked && !isTimeover ? '베팅하였습니다' : '베팅하기'}
+        {statusInfo.isBetLocked && !isTimeover ? '베팅되었습니다' : '베팅하기'}
       </Button>
     </Box>
   );

@@ -19,7 +19,7 @@ import { ClientSocketType } from '@/types/socket';
 
 const useHorseGameData = (
   roomId: string,
-  socket: ClientSocketType,
+  socket: ClientSocketType | null,
   sessionId: string
 ) => {
   const dispatch = useAppDispatch();

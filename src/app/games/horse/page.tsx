@@ -15,7 +15,6 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { Session } from 'next-auth';
 
 // 동적 import로 탭 컴포넌트들을 로드 (코드 스플리팅 유지)
 const OverviewTab = dynamic(() => import('./Rule.OverviewTab'));

@@ -14,20 +14,36 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
+import { ClientSocketType } from '@/types/socket';
+import { Session } from 'next-auth';
+import { Player } from '@/types/room';
+import { HorsePlayerData } from '@/types/horse';
 
-function ChipsTab({ roomId, socket, session }) {
+interface ChipsTabProps {
+  roomId: string;
+  socket: ClientSocketType | null;
+  session: Session | null;
+}
+
+function ChipsTab({ roomId, socket, session }: ChipsTabProps) {
   const dispatch = useAppDispatch();
   const { players, statusInfo } = useAppSelector((state) => state.horse);
   const { hasRaceEnded } = useRaceEnd();
-  const [memoState, setMemoState] = useState(statusInfo?.memo || []);
-  const [debounceTimeouts, setDebounceTimeouts] = useState({});
+  const [memoState, setMemoState] = useState<string[]>(statusInfo?.memo || []);
+  const [debounceTimeouts, setDebounceTimeouts] = useState<
+    Record<number, NodeJS.Timeout>
+  >({});
   const { enqueueSnackbar } = useCustomSnackbar();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   useEffect(() => {
     if (socket) {
-      const updatePlayersAfterRoundEnd = ({ players }) => {
+      const updatePlayersAfterRoundEnd = ({
+        players,
+      }: {
+        players: (Player & HorsePlayerData)[];
+      }) => {
         dispatch(setPlayers(players));
       };
       socket.on('round-ended', updatePlayersAfterRoundEnd);
@@ -43,11 +59,25 @@ function ChipsTab({ roomId, socket, session }) {
     setMemoState(statusInfo?.memo || []);
   }, [statusInfo?.memo]);
 
-  const handleMemoChange = (index, newMemo) => {
+  const handleMemoChange = (index: number, newMemo: string) => {
     if (newMemo.length > 16) {
       return enqueueSnackbar('메모는 최대 16자까지 입력할 수 있습니다.', {
         variant: 'error',
       });
+    }
+    if (!socket) {
+      // socket 미연결
+      enqueueSnackbar('연결이 되지 않았습니다. 새로고침해주세요', {
+        variant: 'error',
+      });
+      return;
+    }
+    if (!session) {
+      // session 미연결
+      enqueueSnackbar('로그인이 확인되지 않습니다.', {
+        variant: 'error',
+      });
+      return;
     }
 
     const updatedMemo = [...memoState];
@@ -81,8 +111,22 @@ function ChipsTab({ roomId, socket, session }) {
   };
 
   // 포커스를 잃었을 때 바로 서버에 업데이트 요청
-  const handleBlur = (index) => {
+  const handleBlur = (index: number) => {
     const newMemo = memoState[index];
+    if (!socket) {
+      // socket 미연결
+      enqueueSnackbar('연결이 되지 않았습니다. 새로고침해주세요', {
+        variant: 'error',
+      });
+      return;
+    }
+    if (!session) {
+      // session 미연결
+      enqueueSnackbar('로그인이 확인되지 않습니다.', {
+        variant: 'error',
+      });
+      return;
+    }
     socket.emit(
       'horse-update-memo',
       { roomId, index, memo: newMemo, sessionId: session.user.id },
@@ -125,8 +169,8 @@ function ChipsTab({ roomId, socket, session }) {
 
       {/* 플레이어 목록 */}
       <Box sx={{ mt: 2 }}>
-        {players.map((player, index) => {
-          const getChipDiffStyles = (chipDiff) => {
+        {players.map((player: Player & HorsePlayerData, index) => {
+          const getChipDiffStyles = (chipDiff: number) => {
             if (chipDiff > 0) {
               return { color: 'error.main', arrow: '▲' }; // 양수
             } else if (chipDiff < 0) {
