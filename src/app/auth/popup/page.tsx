@@ -8,7 +8,10 @@ export default function PopupPage() {
     const urlParams = new URLSearchParams(window.location.search);
     const provider = urlParams.get('provider');
 
-    if (!provider) window.close();
+    if (!provider) {
+      window.close();
+      return;
+    }
 
     // 팝업 창에서 OAuth 인증 시작
     signIn(provider, {

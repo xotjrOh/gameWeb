@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 
 export default function SignInPage() {
-  const [isKakaoBrowser, setIsKakaoBrowser] = useState(false);
+  const [isKakaoBrowser, setIsKakaoBrowser] = useState<boolean>(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -31,7 +31,7 @@ export default function SignInPage() {
     if (window.opener) window.close();
   }, []);
 
-  const handleSignIn = (provider) => {
+  const handleSignIn = (provider: string) => {
     const popup = window.open(
       `/auth/popup?provider=${provider}`,
       'oauthPopup',
@@ -44,7 +44,7 @@ export default function SignInPage() {
     }
 
     // 팝업 창으로부터 메시지 수신
-    const messageHandler = (event) => {
+    const messageHandler = (event: MessageEvent) => {
       const callbackUrl =
         searchParams.get('callbackUrl') || window.location.origin;
       if (event.origin !== window.location.origin) return;
@@ -156,7 +156,7 @@ export default function SignInPage() {
               }}
               onClick={() => handleSignIn('kakao')}
             >
-              <KakaoIcon sx={{ mr: 1 }} />
+              <KakaoIcon />
               <Typography
                 variant="button"
                 sx={{ fontWeight: 'bold', color: 'inherit' }} // 상속된 컬러 유지
@@ -183,7 +183,7 @@ export default function SignInPage() {
               }}
               onClick={() => handleSignIn('google')}
             >
-              <GoogleIcon sx={{ mr: 1 }} />
+              <GoogleIcon />
               {isKakaoBrowser ? (
                 <Typography
                   variant="body2"

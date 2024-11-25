@@ -9,7 +9,7 @@ export default function ErrorPage() {
   const errorCode = searchParams.get('error') || 'Unknown Error';
 
   // 에러 메시지 매핑 (필요에 따라 추가)
-  const errorMessages = {
+  const errorMessages: { [key: string]: string } = {
     CredentialsSignin: '잘못된 자격 증명입니다. 다시 시도해주세요.',
     OAuthSignin: 'OAuth 로그인 중 오류가 발생했습니다.',
     OAuthCallback: 'OAuth 콜백 중 오류가 발생했습니다.',

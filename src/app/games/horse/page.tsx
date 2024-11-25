@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, SyntheticEvent } from 'react';
 import { useSession } from 'next-auth/react';
 import dynamic from 'next/dynamic';
 import Header from '@/components/header/Header';
@@ -15,6 +15,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
+import { Session } from 'next-auth';
 
 // 동적 import로 탭 컴포넌트들을 로드 (코드 스플리팅 유지)
 const OverviewTab = dynamic(() => import('./Rule.OverviewTab'));
@@ -24,9 +25,14 @@ const VoteTab = dynamic(() => import('./Rule.VoteTab'));
 const ChipsTab = dynamic(() => import('./Rule.ChipsTab'));
 const HorsesTab = dynamic(() => import('./Rule.HorsesTab'));
 
+interface TabItem {
+  label: string;
+  component: JSX.Element;
+}
+
 export default function GameRulePage() {
   const { data: session } = useSession();
-  const [activeTabIndex, setActiveTabIndex] = useState(0);
+  const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
   const theme = useTheme();
 
   // 반응형 디자인을 위한 미디어 쿼리
@@ -34,7 +40,7 @@ export default function GameRulePage() {
   const isSm = useMediaQuery(theme.breakpoints.between('sm', 'md')); // 태블릿
   // const isMdUp = useMediaQuery(theme.breakpoints.up('md')); // 데스크톱 이상
 
-  const tabs = [
+  const tabs: TabItem[] = [
     { label: '🎮 게임 개요', component: <OverviewTab /> },
     { label: '👥 내 상태 보기', component: <StatusInfoTab /> },
     { label: '💰 베팅탭 설명', component: <BettingTab /> },
@@ -43,7 +49,7 @@ export default function GameRulePage() {
     { label: '🏇 경주마 탭 설명', component: <HorsesTab /> },
   ];
 
-  const handleTabChange = (event, selectedTabIndex) => {
+  const handleTabChange = (event: SyntheticEvent, selectedTabIndex: number) => {
     setActiveTabIndex(selectedTabIndex);
   };
 
