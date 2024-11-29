@@ -6,7 +6,7 @@ WORKDIR /app
 ENV HUSKY=0
 
 # Corepack 활성화 (Yarn 사용을 위해)
-RUN corepack enable
+# RUN corepack enable
 
 # Yarn Berry 설정 파일 복사
 COPY .yarn .yarn
