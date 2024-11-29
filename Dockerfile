@@ -8,23 +8,14 @@ RUN corepack enable
 WORKDIR /app
 ENV HUSKY=0
 
+# 프로젝트 소스 코드 복사
+COPY . .
+
 # Node.js에 PnP 로더 설정
-ENV NODE_OPTIONS="--require ./.pnp.cjs"
-
-# Yarn Berry 설정 파일 및 PnP 파일 복사
-COPY .yarn/ .yarn/
-COPY .yarnrc.yml ./
-COPY .pnp.cjs ./
-COPY .pnp.loader.mjs ./
-
-# 의존성 파일 복사
-COPY package.json yarn.lock ./
+ENV NODE_OPTIONS="--require /app/.pnp.cjs"
 
 # 의존성 설치
-RUN yarn install --immutable
-
-# 프로젝트 소스 복사
-COPY . .
+RUN yarn install --immutable --inline-builds
 
 # Next.js 빌드
 RUN yarn build
