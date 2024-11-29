@@ -1,26 +1,31 @@
 # Base image - Node.js 20 사용
 FROM node:20.14.0-alpine
 
-# Create and set working directory
+# Yarn 설치
+RUN npm install -g yarn
+
+# 작업 디렉토리 설정
 WORKDIR /app
 ENV HUSKY=0
 
-# Copy Yarn Berry configuration files
+# Yarn Berry 설정 파일 복사
 COPY .yarn .yarn
 COPY .yarnrc.yml .yarnrc.yml
 
-# Copy package.json and install dependencies using Yarn
+# 의존성 파일 복사
 COPY package.json yarn.lock ./
+
+# 의존성 설치
 RUN yarn install --immutable --immutable-cache --check-cache
 
-# Copy all project files to the container
+# 프로젝트 소스 복사
 COPY . .
 
-# Build Next.js project
+# Next.js 빌드
 RUN yarn build
 
-# Expose the port (Next.js uses 3000 by default)
+# 포트 설정 (Next.js는 기본적으로 3000번 포트를 사용)
 EXPOSE 3000
 
-# Start the application
+# 애플리케이션 시작
 CMD ["yarn", "start"]

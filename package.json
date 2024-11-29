@@ -13,8 +13,8 @@
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
-      "yarn eslint --fix",
-      "yarn prettier --write"
+      "eslint --fix",
+      "prettier --write"
     ]
   },
   "dependencies": {
