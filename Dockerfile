@@ -5,20 +5,25 @@ FROM node:20.14.0-alpine
 WORKDIR /app
 ENV HUSKY=0
 
-# Copy package.json and install dependencies using npm
-COPY package.json package-lock.json ./
-# --only=production으로 devDependencies 제외하고 설치
-# RUN npm ci --only=production
-RUN npm install
+# Install Yarn
+RUN npm install -g yarn
+
+# Copy Yarn Berry configuration files
+COPY .yarn .yarn
+COPY .yarnrc.yml .yarnrc.yml
+
+# Copy package.json and install dependencies using Yarn
+COPY package.json yarn.lock ./
+RUN yarn install --immutable --immutable-cache --check-cache
 
 # Copy all project files to the container
 COPY . .
 
 # Build Next.js project
-RUN npm run build
+RUN yarn build
 
 # Expose the port (Next.js uses 3000 by default)
 EXPOSE 3000
 
 # Start the application
-CMD ["npm", "start"]
+CMD ["yarn", "start"]

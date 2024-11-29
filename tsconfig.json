@@ -24,8 +24,8 @@
     "paths": {
       "@/*": ["./*"]
     },
-    "typeRoots": ["./src/types", "./node_modules/@types"]
+    "typeRoots": ["./src/types"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", ".next"]
+  "exclude": [".next"]
 }

@@ -1,6 +1,7 @@
 {
   "presets": ["next/babel"],
   "plugins": [
+    "@babel/plugin-transform-runtime",
     "babel-plugin-comment-log",
     [
       "module-resolver",
@@ -12,5 +13,5 @@
       }
     ]
   ],
-  "ignore": ["node_modules"]
+  "ignore": []
 }
