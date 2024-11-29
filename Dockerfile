@@ -5,6 +5,9 @@ FROM node:20.14.0-alpine
 WORKDIR /app
 ENV HUSKY=0
 
+# Corepack 활성화 (Yarn 사용을 위해)
+RUN corepack enable
+
 # Yarn Berry 설정 파일 복사
 COPY .yarn .yarn
 COPY .yarnrc.yml .yarnrc.yml
@@ -13,7 +16,7 @@ COPY .yarnrc.yml .yarnrc.yml
 COPY package.json yarn.lock ./
 
 # 의존성 설치
-RUN yarn install --immutable --immutable-cache --check-cache
+RUN yarn install --immutable
 
 # 프로젝트 소스 복사
 COPY . .
