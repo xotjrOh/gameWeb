@@ -1,9 +1,6 @@
 # Base image - Node.js 20 사용
 FROM node:20.14.0-alpine
 
-# Yarn 설치
-RUN npm install -g yarn
-
 # 작업 디렉토리 설정
 WORKDIR /app
 ENV HUSKY=0
