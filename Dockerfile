@@ -1,16 +1,21 @@
 # Base image - Node.js 20 사용
 FROM node:20.14.0-alpine
 
+# Corepack 활성화 (Yarn 사용을 위해)
+RUN corepack enable
+
 # 작업 디렉토리 설정
 WORKDIR /app
 ENV HUSKY=0
 
-# Corepack 활성화 (Yarn 사용을 위해)
-# RUN corepack enable
+# Node.js에 PnP 로더 설정
+ENV NODE_OPTIONS="--require ./.pnp.cjs"
 
-# Yarn Berry 설정 파일 복사
-COPY .yarn .yarn
-COPY .yarnrc.yml .yarnrc.yml
+# Yarn Berry 설정 파일 및 PnP 파일 복사
+COPY .yarn/ .yarn/
+COPY .yarnrc.yml ./
+COPY .pnp.cjs ./
+COPY .pnp.loader.mjs ./
 
 # 의존성 파일 복사
 COPY package.json yarn.lock ./
