@@ -5,9 +5,6 @@ FROM node:20.14.0-alpine
 WORKDIR /app
 ENV HUSKY=0
 
-# Install Yarn
-RUN npm install -g yarn
-
 # Copy Yarn Berry configuration files
 COPY .yarn .yarn
 COPY .yarnrc.yml .yarnrc.yml
