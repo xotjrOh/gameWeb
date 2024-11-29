@@ -1,6 +1,6 @@
 {
   "name": "next-game-web",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "private": true,
   "scripts": {
     "prepare": "husky || true",
@@ -13,8 +13,8 @@
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
-      "eslint --fix",
-      "prettier --write"
+      "yarn eslint --fix",
+      "yarn prettier --write"
     ]
   },
   "dependencies": {
@@ -23,6 +23,7 @@
     "@emotion/styled": "^11.13.0",
     "@mui/icons-material": "^6.1.2",
     "@mui/material": "^6.1.2",
+    "@mui/system": "^6.1.9",
     "@reduxjs/toolkit": "^2.2.7",
     "async-lock": "^1.4.1",
     "babel-plugin-comment-log": "^1.0.0",

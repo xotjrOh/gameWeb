@@ -17,7 +17,9 @@
     "**/.yarn": true,
     "**/.pnp.*": true
   },
-  "eslint.workingDirectories": ["./"],
+  "eslint.workingDirectories": [
+    "./"
+  ],
   "eslint.nodePath": ".yarn/sdks",
   "prettier.prettierPath": ".yarn/sdks/prettier/index.cjs",
   "npm.packageManager": "yarn"

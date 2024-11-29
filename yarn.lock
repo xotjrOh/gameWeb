@@ -4154,6 +4154,7 @@ __metadata:
     "@emotion/styled": "npm:^11.13.0"
     "@mui/icons-material": "npm:^6.1.2"
     "@mui/material": "npm:^6.1.2"
+    "@mui/system": "npm:^6.1.9"
     "@reduxjs/toolkit": "npm:^2.2.7"
     "@types/async-lock": "npm:^1.4.2"
     "@types/babel__core": "npm:^7"

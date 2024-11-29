@@ -1,5 +1,5 @@
 # package.json의 버전 업데이트
-yarn version patch --deferred
+yarn version patch apply
 
 # 변경된 package.json 스테이징
 git add package.json
