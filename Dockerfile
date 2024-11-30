@@ -1,7 +1,7 @@
 # 빌드 단계
 FROM node:20.14.0-alpine AS builder
 
-RUN corepack enable
+# RUN corepack enable
 WORKDIR /app
 ENV HUSKY=0
 
@@ -13,7 +13,7 @@ RUN yarn build
 # 실행 단계
 FROM node:20.14.0-alpine
 
-RUN corepack enable
+# RUN corepack enable
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NODE_OPTIONS="--require /app/.pnp.cjs"
