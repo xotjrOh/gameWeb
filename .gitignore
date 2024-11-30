@@ -3,7 +3,7 @@
 # dependencies
 /node_modules
 /.pnp
-.pnp.js
+.pnp.*
 .yarn/install-state.gz
 
 # Yarn v2+ artifacts
