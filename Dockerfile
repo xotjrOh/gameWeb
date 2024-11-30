@@ -2,6 +2,8 @@
 FROM node:20.14.0-alpine AS builder
 
 # RUN corepack enable
+RUN corepack enable && corepack prepare yarn@4.5.3 --activate
+
 WORKDIR /app
 ENV HUSKY=0
 
@@ -14,6 +16,8 @@ RUN yarn build
 FROM node:20.14.0-alpine
 
 # RUN corepack enable
+RUN corepack enable && corepack prepare yarn@4.5.3 --activate
+
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NODE_OPTIONS="--require /app/.pnp.cjs"
