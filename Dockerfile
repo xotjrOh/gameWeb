@@ -8,20 +8,17 @@ RUN corepack enable
 WORKDIR /app
 ENV HUSKY=0
 
-# Yarn 노드 링크 방식 설정
-ENV YARN_NODE_LINKER=node-modules
-
-# 의존성 파일 복사
-COPY package.json yarn.lock ./
+# 프로젝트 소스 코드 및 Yarn 설정 파일 복사
+COPY . ./
 
 # 의존성 설치
 RUN yarn install --immutable --inline-builds
 
-# 프로젝트 소스 복사
-COPY . .
-
 # Next.js 빌드
 RUN yarn build
+
+# Node.js에 PnP 로더 설정
+ENV NODE_OPTIONS="--require /app/.pnp.cjs"
 
 # 포트 설정
 EXPOSE 3000
