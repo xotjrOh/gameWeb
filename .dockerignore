@@ -1,5 +1,5 @@
 # 빌드 결과물
-.next
+# .next
 
 # 의존성
 .pnp.*
@@ -19,5 +19,3 @@ Dockerfile
 .vscode
 README.md
 .DS_Store
-# .prettierrc
-# .prettierignore
