@@ -20,7 +20,7 @@ RUN corepack enable && corepack prepare yarn@4.5.3 --activate
 
 WORKDIR /app
 ENV NODE_ENV=production
-ENV NODE_OPTIONS="--require /app/.pnp.cjs"
+ENV NODE_OPTIONS="--require /app/.pnp.cjs --experimental-loader /app/.pnp.loader.mjs"
 
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/.pnp.cjs ./ 
