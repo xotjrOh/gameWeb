@@ -1,32 +1,34 @@
-# 빌드 단계
-FROM node:20.14.0-alpine AS builder
+# Base image
+FROM node:20-alpine AS base
 
-# RUN corepack enable
-RUN corepack enable && corepack prepare yarn@4.5.3 --activate
-
+# Dependencies stage
+FROM base AS deps
+RUN corepack enable && corepack prepare yarn@4.5.3
 WORKDIR /app
-ENV HUSKY=0
+COPY package.json yarn.lock .yarnrc.yml ./
+COPY .yarn/releases/yarn-4.5.3.cjs ./.yarn/releases/yarn-4.5.3.cjs
+RUN yarn install --immutable
 
-COPY . ./
-
-RUN yarn install --immutable --inline-builds
+# Builder stage
+FROM base AS builder
+RUN corepack enable && corepack prepare yarn@4.5.3
+WORKDIR /app
+COPY --from=deps /app/.yarn ./.yarn
+COPY --from=deps /app/.pnp.cjs ./.pnp.cjs
+COPY --from=deps /app/.pnp.loader.mjs ./.pnp.loader.mjs
+COPY . .
 RUN yarn build
 
-# 실행 단계
-FROM node:20.14.0-alpine
-
-# RUN corepack enable
-RUN corepack enable && corepack prepare yarn@4.5.3 --activate
-
+# Runner stage
+FROM base AS runner
 WORKDIR /app
-ENV NODE_ENV=production
-ENV NODE_OPTIONS="--require /app/.pnp.cjs --experimental-loader /app/.pnp.loader.mjs"
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.pnp.cjs ./
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/.pnp.cjs ./ 
-COPY --from=builder /app/.pnp.loader.mjs ./ 
-COPY --from=builder /app/.yarn ./.yarn
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/yarn.lock ./yarn.lock
+COPY --from=builder /app/.yarn/cache ./.yarn/cache
+COPY --from=builder /app/.yarn/releases ./.yarn/releases
 
-CMD ["yarn", "start"]
+EXPOSE 3000
+CMD ["node", "-r", "/app/.pnp.cjs", "/app/server.js"]

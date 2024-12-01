@@ -4,6 +4,7 @@ const packageJson = require('./package.json');
 const serverVersion = packageJson.version || '1.0.0';
 
 const nextConfig = {
+  output: 'standalone',
   env: {
     SERVER_VERSION: serverVersion.toString(), // 클라이언트에서도 사용할 수 있도록 설정
   },

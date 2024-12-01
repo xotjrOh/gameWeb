@@ -1,0 +1,23 @@
+# 빌드 결과물
+.next
+
+# 의존성
+.pnp.*
+.yarn/*
+!.yarn/releases/yarn-4.5.3.cjs
+
+# Docker 관련 파일
+Dockerfile
+.dockerignore
+
+# Git 관련 파일
+.git
+.github
+.gitignore
+
+# 기타 불필요한 파일
+.vscode
+README.md
+.DS_Store
+.prettierrc
+.prettierignore
