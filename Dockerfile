@@ -24,11 +24,11 @@ FROM base AS runner
 WORKDIR /app
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.pnp.cjs ./
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/.next ./.next
 
 COPY --from=builder /app/.yarn/cache ./.yarn/cache
 COPY --from=builder /app/.yarn/releases ./.yarn/releases
 
 EXPOSE 3000
-CMD ["node", "-r", "/app/.pnp.cjs", "/app/server.js"]
+# CMD ["node", "-r", "/app/.pnp.cjs", "/app/server.js"]
+CMD ["yarn", "start"]

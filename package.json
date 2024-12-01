@@ -1,12 +1,12 @@
 {
   "name": "next-game-web",
-  "version": "1.4.16",
+  "version": "1.4.17",
   "private": true,
   "scripts": {
     "prepare": "husky || true",
     "dev": "next dev",
     "build": "next build",
-    "start": "node -r ./.pnp.cjs ./.next/standalone/server.js",
+    "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "format": "prettier --write \"./**/*.{js,jsx,ts,tsx,json,css,scss,md}\""
