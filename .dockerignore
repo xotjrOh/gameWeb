@@ -19,5 +19,5 @@ Dockerfile
 .vscode
 README.md
 .DS_Store
-.prettierrc
-.prettierignore
+# .prettierrc
+# .prettierignore
