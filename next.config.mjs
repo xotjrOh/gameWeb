@@ -1,16 +1,12 @@
-import packageJson from './package.json' assert { type: 'json' };
+// import packageJson from './package.json' assert { type: 'json' };
 
-const serverVersion = packageJson.version || '1.0.0';
+// const serverVersion = packageJson.version || '1.0.0';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // output: 'standalone',
-  // experimental: {
-  //   serverComponentsExternalPackages: ['socket.io'],
+  // env: {
+  //   SERVER_VERSION: serverVersion.toString(), // 클라이언트에서도 사용할 수 있도록 설정
   // },
-  env: {
-    SERVER_VERSION: serverVersion.toString(), // 클라이언트에서도 사용할 수 있도록 설정
-  },
   reactStrictMode: false,
   images: {
     formats: ['image/webp'],
