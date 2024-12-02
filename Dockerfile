@@ -1,12 +1,13 @@
 # Base image
-FROM node:20-alpine
+FROM node:20.14.0-alpine
 
 # Set working directory
 WORKDIR /app
+ENV HUSKY=0
 
 # Copy necessary files
-COPY package.json yarn.lock .yarnrc.yml ./
-COPY .yarn/ ./.yarn/
+# COPY package.json yarn.lock .yarnrc.yml ./
+# COPY .yarn/ ./.yarn/
 COPY . .
 
 # Install dependencies
@@ -20,10 +21,10 @@ RUN yarn build
 EXPOSE 3000
 
 # Set environment variables
-ENV NODE_ENV=production
-ENV HOSTNAME=0.0.0.0
-ENV PORT=3000
-ENV NODE_OPTIONS="--require /app/.pnp.cjs"
+# ENV NODE_ENV=production
+# ENV HOSTNAME=0.0.0.0
+# ENV PORT=3000
+# ENV NODE_OPTIONS="--require /app/.pnp.cjs"
 
 # Start the application
 CMD ["yarn", "start"]
