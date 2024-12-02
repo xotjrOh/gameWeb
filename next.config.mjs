@@ -1,10 +1,13 @@
-// package.json을 require로 불러오기
-const packageJson = require('./package.json');
+import packageJson from './package.json' assert { type: 'json' };
 
 const serverVersion = packageJson.version || '1.0.0';
 
+/** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
+  // output: 'standalone',
+  // experimental: {
+  //   serverComponentsExternalPackages: ['socket.io'],
+  // },
   env: {
     SERVER_VERSION: serverVersion.toString(), // 클라이언트에서도 사용할 수 있도록 설정
   },
@@ -28,5 +31,5 @@ const nextConfig = {
   },
 };
 
-// CommonJS 형식으로 내보내기
-module.exports = nextConfig;
+// ES 모듈 형식으로 내보내기
+export default nextConfig;
