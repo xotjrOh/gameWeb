@@ -9,10 +9,10 @@ ENV YARN_NODE_LINKER=node-modules
 
 # Copy necessary files
 COPY package.json yarn.lock .yarnrc.yml ./
-# COPY .yarn/ ./.yarn/
+COPY .yarn/ ./.yarn/
 
 # Install dependencies
-RUN yarn install --immutable
+RUN yarn install --immutable --inline-builds
 COPY . .
 
 # Build the application
