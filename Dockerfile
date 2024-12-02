@@ -1,18 +1,19 @@
 # Base image
 FROM node:20.14.0-alpine
+RUN corepack enable && corepack prepare yarn@4.5.3 --activate
 
 # Set working directory
 WORKDIR /app
 ENV HUSKY=0
+ENV YARN_NODE_LINKER=node-modules
 
 # Copy necessary files
-# COPY package.json yarn.lock .yarnrc.yml ./
+COPY package.json yarn.lock .yarnrc.yml ./
 # COPY .yarn/ ./.yarn/
-COPY . .
 
 # Install dependencies
-RUN corepack enable && corepack prepare yarn@4.5.3 --activate
-RUN yarn install --immutable
+RUN yarn install --immutable --inline-builds
+COPY . .
 
 # Build the application
 RUN yarn build
@@ -23,8 +24,6 @@ EXPOSE 3000
 # Set environment variables
 # ENV NODE_ENV=production
 # ENV HOSTNAME=0.0.0.0
-# ENV PORT=3000
-# ENV NODE_OPTIONS="--require /app/.pnp.cjs"
 
 # Start the application
 CMD ["yarn", "start"]

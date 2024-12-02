@@ -96,7 +96,6 @@ function AdminButtons({
 
   return (
     <Box mt={2} mb={4}>
-      <Box>{session ? session.user.id : ''}</Box>
       <Grid
         container
         spacing={2}
