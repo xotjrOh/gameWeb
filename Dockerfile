@@ -12,7 +12,7 @@ COPY package.json yarn.lock .yarnrc.yml ./
 # COPY .yarn/ ./.yarn/
 
 # Install dependencies
-RUN yarn install --immutable --inline-builds
+RUN yarn install --immutable
 COPY . .
 
 # Build the application
