@@ -5,7 +5,7 @@ RUN corepack enable && corepack prepare yarn@4.5.3 --activate
 # Set working directory
 WORKDIR /app
 ENV HUSKY=0
-ENV YARN_NODE_LINKER=node-modules
+# ENV YARN_NODE_LINKER=node-modules
 
 # Copy necessary files
 COPY package.json yarn.lock .yarnrc.yml ./
