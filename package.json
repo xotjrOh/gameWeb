@@ -1,11 +1,11 @@
 {
   "name": "next-game-web",
-  "version": "1.4.27",
+  "version": "1.4.28",
   "private": true,
   "scripts": {
     "prepare": "husky || true",
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --no-lint",
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
