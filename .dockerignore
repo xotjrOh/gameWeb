@@ -2,8 +2,8 @@
 .next
 
 # 의존성
-.pnp.*
-.yarn/*
+# .pnp.*
+# .yarn/*
 !.yarn/releases/yarn-4.5.3.cjs
 
 # Docker 관련 파일
