@@ -1,11 +1,3 @@
-# package.json의 버전 업데이트
-
-# yarn version patch
-
-# 변경된 package.json 스테이징
-
-# git add package.json
-
 # lint-staged 실행
 
 yarn dlx lint-staged
