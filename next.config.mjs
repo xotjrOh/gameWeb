@@ -4,9 +4,9 @@
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // env: {
-  //   SERVER_VERSION: serverVersion.toString(), // 클라이언트에서도 사용할 수 있도록 설정
-  // },
+  env: {
+    SERVER_VERSION: new Date().toISOString().replace(/[-T:.Z]/g, ''),
+  },
   reactStrictMode: false,
   images: {
     formats: ['image/webp'],
