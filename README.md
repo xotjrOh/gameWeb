@@ -94,11 +94,6 @@ Yarn Berry(PnP) 기반으로 의존성을 관리하므로, npm이 아닌 yarn �
 
    Railway 등 클라우드 환경에서 Docker를 통해 배포 시에도 마찬가지로 `yarn build` 후 `yarn start`로 서비스 동작.
 
-## ⚠️ 주의사항
-
-- **Git 훅 사용**: `.husky/pre-commit` 스크립트로 커밋 시 린팅, 버전 업데이트 등을 자동화합니다.
-  팀 협업 시 버전 정보 충돌 가능성이 있으니 필요하다면 `.husky/pre-commit` 내용 조정.
-
 ## 📄 라이선스
 
 이 프로젝트는 [MIT 라이선스](LICENSE)를 따릅니다.
