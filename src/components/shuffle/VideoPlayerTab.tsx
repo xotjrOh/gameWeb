@@ -53,15 +53,15 @@ interface FullscreenableElement extends HTMLElement {
   mozRequestFullScreen?: () => Promise<void> | void;
   msRequestFullscreen?: () => Promise<void> | void;
 }
-interface FullscreenDocument extends Document {
-  webkitExitFullscreen?: () => Promise<void> | void;
-  mozCancelFullScreen?: () => Promise<void> | void;
-  msExitFullscreen?: () => Promise<void> | void;
+type FullscreenDocument = Document & {
+  webkitExitFullscreen?: () => Promise<void>;
+  mozCancelFullScreen?: () => void;
+  msExitFullscreen?: () => Promise<void>;
+
   webkitFullscreenElement?: Element | null;
   mozFullScreenElement?: Element | null;
   msFullscreenElement?: Element | null;
-}
-
+};
 interface ClipWithId {
   start: number;
   end: number;
