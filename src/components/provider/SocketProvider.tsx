@@ -25,13 +25,39 @@ const SocketContext = createContext<SocketContextType>({
 });
 
 const DEBUG = process.env.NEXT_PUBLIC_SOCKET_DEBUG === '1';
+const SOCKET_SINGLETON_FIX =
+  process.env.NEXT_PUBLIC_SOCKET_SINGLETON_FIX === '1';
 
 type DebuggableClientSocket = ClientSocketType & {
   __dbgAttached?: boolean;
+  __providerListenersAttached?: boolean;
 };
 
 let providerMountCount = 0;
 let providerUnmountCount = 0;
+let singletonSocket: ClientSocketType | null = null;
+let singletonConnectInvoked = false;
+
+const createClientSocket = (autoConnect: boolean): ClientSocketType => {
+  const baseOptions = {
+    path: '/api/socket/io',
+    addTrailingSlash: false,
+  };
+  return io(process.env.NEXT_PUBLIC_SITE_URL, {
+    ...baseOptions,
+    ...(autoConnect ? {} : { autoConnect: false }),
+  });
+};
+
+const getManagedSocket = (): ClientSocketType => {
+  if (!SOCKET_SINGLETON_FIX) {
+    return createClientSocket(true);
+  }
+  if (!singletonSocket) {
+    singletonSocket = createClientSocket(false);
+  }
+  return singletonSocket;
+};
 
 export const useSocket = (): SocketContextType => {
   return useContext(SocketContext);
@@ -119,31 +145,42 @@ export default function SocketProvider({ children }: SocketProviderProps) {
       return;
     }
 
-    const newSocket: ClientSocketType = io(process.env.NEXT_PUBLIC_SITE_URL, {
-      path: '/api/socket/io',
-      addTrailingSlash: false,
-      // reconnection: true, 		// 자동 재연결 활성화
-      // reconnectionAttempts: Infinity, // 재연결 시도 횟수
-      // reconnectionDelay: 1000, // 재연결 시도 간격 (1초)
-      // forceNew: false,
-    });
+    const nextSocket = getManagedSocket();
+    const debuggableSocket = nextSocket as DebuggableClientSocket;
+    const shouldAttachProviderListeners =
+      !SOCKET_SINGLETON_FIX || !debuggableSocket.__providerListenersAttached;
 
-    newSocket.on('connect', () => {
-      console.log('client : conncect');
-      setSocket(newSocket);
-      setIsConnected(true);
-      newSocket.emit('get-room-list'); // 서버 재시작시 방 없애기위함
-      dispatch(setIsLoading(false));
-    });
+    if (shouldAttachProviderListeners) {
+      nextSocket.on('connect', () => {
+        console.log('client : conncect');
+        setSocket(nextSocket);
+        setIsConnected(true);
+        nextSocket.emit('get-room-list'); // 서버 재시작시 방 없애기위함
+        dispatch(setIsLoading(false));
+      });
 
-    newSocket.on('disconnect', () => {
-      console.log('client : disconnect');
-      setIsConnected(false);
-      dispatch(setIsLoading(true));
-      // setSocket(null);
-    });
+      nextSocket.on('disconnect', () => {
+        console.log('client : disconnect');
+        setIsConnected(false);
+        dispatch(setIsLoading(true));
+        // setSocket(null);
+      });
 
-    setSocket(newSocket);
+      if (SOCKET_SINGLETON_FIX) {
+        debuggableSocket.__providerListenersAttached = true;
+      }
+    }
+
+    setSocket(nextSocket);
+
+    if (
+      SOCKET_SINGLETON_FIX &&
+      !singletonConnectInvoked &&
+      !nextSocket.connected
+    ) {
+      nextSocket.connect();
+      singletonConnectInvoked = true;
+    }
 
     // todo : disconnect가 문제인지 테스트
     // return async () => {

@@ -22,6 +22,7 @@ export type NextApiResponseServerIO = NextApiResponse & {
 };
 
 const DEBUG = process.env.SOCKET_DEBUG === '1';
+const SOCKET_SINGLETON_FIX = process.env.SOCKET_SINGLETON_FIX === '1';
 
 type DebuggableServerIO = ServerIO<
   ClientToServerEvents,
@@ -29,6 +30,12 @@ type DebuggableServerIO = ServerIO<
 > & {
   __dbgAttached?: boolean;
 };
+
+type GlobalWithSocket = typeof globalThis & {
+  __socketIOInstance?: ServerIO<ClientToServerEvents, ServerToClientEvents>;
+};
+
+const globalSocketStore = globalThis as GlobalWithSocket;
 
 const attachServerDebugListeners = (
   io: ServerIO<ClientToServerEvents, ServerToClientEvents>
@@ -72,44 +79,66 @@ const attachServerDebugListeners = (
 const ioHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
   if (!res.socket.server.io) {
     const httpServer: NetServer = res.socket.server as NetServer;
-    const io = new ServerIO<ClientToServerEvents, ServerToClientEvents>(
-      httpServer,
-      {
-        path: '/api/socket/io',
-        addTrailingSlash: false,
+    let io: ServerIO<ClientToServerEvents, ServerToClientEvents>;
+    let isNewInstance = false;
+
+    if (SOCKET_SINGLETON_FIX) {
+      if (globalSocketStore.__socketIOInstance) {
+        io = globalSocketStore.__socketIOInstance;
+      } else {
+        io = new ServerIO<ClientToServerEvents, ServerToClientEvents>(
+          httpServer,
+          {
+            path: '/api/socket/io',
+            addTrailingSlash: false,
+          }
+        );
+        globalSocketStore.__socketIOInstance = io;
+        isNewInstance = true;
       }
-    );
+    } else {
+      io = new ServerIO<ClientToServerEvents, ServerToClientEvents>(
+        httpServer,
+        {
+          path: '/api/socket/io',
+          addTrailingSlash: false,
+        }
+      );
+      isNewInstance = true;
+    }
 
     attachServerDebugListeners(io);
 
     res.socket.server.io = io;
 
-    io.on('connection', (socket: ServerSocketType) => {
-      console.log('server : A user connected', socket.id);
-      if (DEBUG) {
-        const transport = socket.conn.transport?.name;
-        const clientsCount = io.engine.clientsCount;
-        console.log(
-          `[socket-debug][server] connection id=${socket.id} transport=${transport} clients=${clientsCount}`
-        );
-      }
-
-      commonHandler(io, socket);
-      horseGameHandler(io, socket);
-      shuffleGameHandler(io, socket);
-
-      socket.on('disconnect', (reason) => {
-        console.log('server : A user disconnected');
+    if (!SOCKET_SINGLETON_FIX || isNewInstance) {
+      io.on('connection', (socket: ServerSocketType) => {
+        console.log('server : A user connected', socket.id);
         if (DEBUG) {
+          const transport = socket.conn.transport?.name;
+          const clientsCount = io.engine.clientsCount;
           console.log(
-            `[socket-debug][server] disconnect id=${socket.id} reason=${reason}`
+            `[socket-debug][server] connection id=${socket.id} transport=${transport} clients=${clientsCount}`
           );
         }
+
+        commonHandler(io, socket);
+        horseGameHandler(io, socket);
+        shuffleGameHandler(io, socket);
+
+        socket.on('disconnect', (reason) => {
+          console.log('server : A user disconnected');
+          if (DEBUG) {
+            console.log(
+              `[socket-debug][server] disconnect id=${socket.id} reason=${reason}`
+            );
+          }
+        });
+        socket.on('error', (err) => {
+          console.error(`Error occurred on socket ${socket.id}:`, err);
+        });
       });
-      socket.on('error', (err) => {
-        console.error(`Error occurred on socket ${socket.id}:`, err);
-      });
-    });
+    }
   }
   res.end();
 };
