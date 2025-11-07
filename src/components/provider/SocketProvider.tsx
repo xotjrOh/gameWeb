@@ -24,6 +24,15 @@ const SocketContext = createContext<SocketContextType>({
   isConnected: false,
 });
 
+const DEBUG = process.env.NEXT_PUBLIC_SOCKET_DEBUG === '1';
+
+type DebuggableClientSocket = ClientSocketType & {
+  __dbgAttached?: boolean;
+};
+
+let providerMountCount = 0;
+let providerUnmountCount = 0;
+
 export const useSocket = (): SocketContextType => {
   return useContext(SocketContext);
 };
@@ -32,10 +41,76 @@ interface SocketProviderProps {
   children: ReactNode;
 }
 
+function attachSocketDebugListeners(socket: ClientSocketType | null) {
+  if (!DEBUG || !socket) {
+    return;
+  }
+
+  const debuggableSocket = socket as DebuggableClientSocket;
+  if (debuggableSocket.__dbgAttached) {
+    return;
+  }
+  debuggableSocket.__dbgAttached = true;
+
+  const getListenerCount = () => socket.listeners('room-updated').length;
+  const engine = socket.io.engine;
+
+  socket.on('connect', () => {
+    const transport = engine?.transport?.name;
+    console.log(
+      `[socket-debug][client] connect id=${socket.id} transport=${transport} listeners(room-updated)=${getListenerCount()}`
+    );
+  });
+
+  socket.on('disconnect', (reason) => {
+    console.log(
+      `[socket-debug][client] disconnect id=${socket.id} reason=${reason} listeners(room-updated)=${getListenerCount()}`
+    );
+  });
+
+  socket.on('connect_error', (error) => {
+    console.log(
+      `[socket-debug][client] connect_error message=${error?.message ?? 'unknown'}`
+    );
+  });
+
+  socket.io.on('reconnect_attempt', (attempt) => {
+    console.log(`[socket-debug][client] reconnect_attempt #${attempt}`);
+  });
+
+  const trackedEvents = new Set(['room-updated', 'room-closed', 'error']);
+  socket.onAny((event, ...args) => {
+    if (!trackedEvents.has(event as string)) {
+      return;
+    }
+    console.log(
+      `[socket-debug][client] event=${event} payload=${JSON.stringify(args[0] ?? {})}`
+    );
+  });
+}
+
 export default function SocketProvider({ children }: SocketProviderProps) {
   const dispatch = useAppDispatch();
   const [socket, setSocket] = useState<ClientSocketType | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
+
+  useEffect(() => {
+    providerMountCount += 1;
+    if (DEBUG) {
+      console.log(
+        `[socket-debug][client] SocketProvider mount #${providerMountCount}`
+      );
+    }
+
+    return () => {
+      providerUnmountCount += 1;
+      if (DEBUG) {
+        console.log(
+          `[socket-debug][client] SocketProvider unmount #${providerUnmountCount}`
+        );
+      }
+    };
+  }, []);
 
   // console.log(socket, socket?.id, socket?.connected, isConnected);
   useEffect(() => {
@@ -107,6 +182,13 @@ export default function SocketProvider({ children }: SocketProviderProps) {
       };
     }
   }, [socket, socket?.id, dispatch]);
+
+  useEffect(() => {
+    if (!socket) {
+      return;
+    }
+    attachSocketDebugListeners(socket);
+  }, [socket]);
 
   return (
     <SocketContext.Provider value={{ socket, isConnected }}>

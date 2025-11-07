@@ -36,6 +36,8 @@ const gameTypeMap: Record<GameType, string> = {
   shuffle: '🔀 뒤죽박죽',
 };
 
+const DEBUG = process.env.NEXT_PUBLIC_SOCKET_DEBUG === '1';
+
 // 배포후 작동여부 테스트용
 // @log(rooms)
 export default function GameRooms({ session }: GameRoomsProps) {
@@ -119,11 +121,40 @@ export default function GameRooms({ session }: GameRoomsProps) {
     }
 
     dispatch(setIsLoading(true));
+    const joinStartedAt = DEBUG ? Date.now() : 0;
+    if (DEBUG) {
+      console.log(
+        `[socket-debug][client] join-room start roomId=${roomId} socketId=${socket.id}`
+      );
+    }
+    let pendingLogTimer: ReturnType<typeof setTimeout> | null = null;
+    if (DEBUG) {
+      pendingLogTimer = setTimeout(() => {
+        console.log(
+          `[socket-debug][client] join-room pending roomId=${roomId} dt=${
+            Date.now() - joinStartedAt
+          }ms`
+        );
+      }, 3000);
+    }
+
     socket?.emit(
       'join-room',
       { roomId, userName: nickname, sessionId: session.user.id },
       (response) => {
+        if (pendingLogTimer) {
+          clearTimeout(pendingLogTimer);
+        }
         dispatch(setIsLoading(false));
+        if (DEBUG) {
+          console.log(
+            `[socket-debug][client] join-room ack success=${
+              response.success
+            } dt=${joinStartedAt ? Date.now() - joinStartedAt : 0}ms msg=${
+              response.message ?? ''
+            }`
+          );
+        }
         if (!response.success) {
           return enqueueSnackbar(response.message, { variant: 'error' });
         }

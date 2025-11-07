@@ -31,6 +31,8 @@ import {
 } from '../utils/validation';
 import { handlePlayerReconnect } from '../services/commonService';
 
+const DEBUG = process.env.SOCKET_DEBUG === '1';
+
 const commonHandler = (
   io: Server<ClientToServerEvents, ServerToClientEvents>,
   socket: ServerSocketType
@@ -146,6 +148,12 @@ const commonHandler = (
       { roomId, userName, sessionId }: JoinRoomData,
       callback: (response: CommonResponse) => void
     ) => {
+      const joinStartedAt = DEBUG ? Date.now() : 0;
+      if (DEBUG) {
+        console.log(
+          `[socket-debug][server] join-room attempt roomId=${roomId} socketId=${socket.id}`
+        );
+      }
       try {
         const room = validateRoom(roomId);
         const defaultPlayerData = _.cloneDeep(
@@ -166,9 +174,37 @@ const commonHandler = (
 
         socket.join(roomId);
         io.emit('room-updated', rooms);
-        return callback({ success: true });
+        const successResponse: CommonResponse = { success: true };
+        if (DEBUG) {
+          console.log(
+            `[socket-debug][server] join-room result roomId=${roomId} success=true dt=${
+              joinStartedAt ? Date.now() - joinStartedAt : 0
+            }ms players=${room.players.length}`
+          );
+        }
+        callback(successResponse);
+        if (DEBUG) {
+          console.log(
+            `[socket-debug][server] join-room callback-dispatched roomId=${roomId}`
+          );
+        }
+        return;
       } catch (error) {
-        callback({ success: false, message: (error as Error).message });
+        const failureResponse: CommonResponse = {
+          success: false,
+          message: (error as Error).message,
+        };
+        if (DEBUG) {
+          console.log(
+            `[socket-debug][server] join-room result roomId=${roomId} success=false message=${failureResponse.message}`
+          );
+        }
+        callback(failureResponse);
+        if (DEBUG) {
+          console.log(
+            `[socket-debug][server] join-room callback-dispatched roomId=${roomId}`
+          );
+        }
       }
     }
   );
