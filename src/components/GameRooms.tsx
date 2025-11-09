@@ -26,6 +26,7 @@ import PeopleIcon from '@mui/icons-material/People'; // 사람 아이콘
 import AddIcon from '@mui/icons-material/Add';
 import { Session } from 'next-auth';
 import { GameType, HorseRoom, ShuffleRoom } from '@/types/room';
+import { CommonResponse } from '@/types/socket';
 
 interface GameRoomsProps {
   session: Session | null;
@@ -37,6 +38,7 @@ const gameTypeMap: Record<GameType, string> = {
 };
 
 const DEBUG = process.env.NEXT_PUBLIC_SOCKET_DEBUG === '1';
+const SOCKET_ACK_DEBUG = process.env.NEXT_PUBLIC_SOCKET_ACK_DEBUG === '1';
 
 // 배포후 작동여부 테스트용
 // @log(rooms)
@@ -138,29 +140,60 @@ export default function GameRooms({ session }: GameRoomsProps) {
       }, 3000);
     }
 
-    socket?.emit(
-      'join-room',
-      { roomId, userName: nickname, sessionId: session.user.id },
-      (response) => {
-        if (pendingLogTimer) {
-          clearTimeout(pendingLogTimer);
-        }
-        dispatch(setIsLoading(false));
-        if (DEBUG) {
-          console.log(
-            `[socket-debug][client] join-room ack success=${
-              response.success
-            } dt=${joinStartedAt ? Date.now() - joinStartedAt : 0}ms msg=${
-              response.message ?? ''
-            }`
-          );
-        }
-        if (!response.success) {
-          return enqueueSnackbar(response.message, { variant: 'error' });
-        }
-        router.replace(`/${gameType}/${roomId}`);
+    const payload = {
+      roomId,
+      userName: nickname,
+      sessionId: session.user.id,
+    };
+
+    const emitJoinRoom = (
+      ack: (timeoutErr: Error | null, response?: CommonResponse) => void
+    ) => {
+      if (SOCKET_ACK_DEBUG) {
+        socket
+          .timeout(3000)
+          .emit('join-room', payload, (timeoutErr, response) => {
+            ack(timeoutErr ?? null, response);
+          });
+        return;
       }
-    );
+      socket.emit('join-room', payload, (response) => {
+        ack(null, response);
+      });
+    };
+
+    emitJoinRoom((timeoutErr, response) => {
+      if (pendingLogTimer) {
+        clearTimeout(pendingLogTimer);
+      }
+      dispatch(setIsLoading(false));
+
+      if (DEBUG || SOCKET_ACK_DEBUG) {
+        console.log(
+          `[socket-debug][client] join-room ack err=${Boolean(
+            timeoutErr
+          )} success=${response?.success ?? false} dt=${
+            joinStartedAt ? Date.now() - joinStartedAt : 0
+          }ms msg=${response?.message ?? ''}`
+        );
+      }
+
+      if (timeoutErr) {
+        enqueueSnackbar(
+          '서버 응답이 지연되었습니다. 잠시 후 다시 시도해주세요.',
+          { variant: 'error' }
+        );
+        return;
+      }
+
+      if (!response || !response.success) {
+        return enqueueSnackbar(response?.message ?? '입장에 실패했습니다.', {
+          variant: 'error',
+        });
+      }
+
+      router.replace(`/${gameType}/${roomId}`);
+    });
   };
 
   const waitingRooms = Object.values(rooms).filter(

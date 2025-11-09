@@ -227,6 +227,34 @@ export default function SocketProvider({ children }: SocketProviderProps) {
     attachSocketDebugListeners(socket);
   }, [socket]);
 
+  useEffect(() => {
+    if (!DEBUG) {
+      return;
+    }
+
+    const handleVisibilityChange = () => {
+      console.log(
+        `[socket-debug][client] page visibility=${document.visibilityState}`
+      );
+    };
+    const handleFocus = () => {
+      console.log('[socket-debug][client] page focus');
+    };
+    const handleBlur = () => {
+      console.log('[socket-debug][client] page blur');
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('blur', handleBlur);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, []);
+
   return (
     <SocketContext.Provider value={{ socket, isConnected }}>
       {children}
