@@ -23,6 +23,8 @@ export type NextApiResponseServerIO = NextApiResponse & {
 
 const DEBUG = process.env.SOCKET_DEBUG === '1';
 const SOCKET_SINGLETON_FIX = process.env.SOCKET_SINGLETON_FIX === '1';
+const SOCKET_ENFORCE_VERSION = process.env.SOCKET_ENFORCE_VERSION === '1';
+const SERVER_APP_VERSION = process.env.APP_VERSION ?? 'dev';
 
 type DebuggableServerIO = ServerIO<
   ClientToServerEvents,
@@ -37,6 +39,35 @@ type GlobalWithSocket = typeof globalThis & {
 };
 
 const globalSocketStore = globalThis as GlobalWithSocket;
+
+const extractClientVersion = (socket: ServerSocketType): string | undefined => {
+  const authVersion = socket.handshake.auth?.ver;
+  if (typeof authVersion === 'string') {
+    return authVersion;
+  }
+
+  const query = socket.handshake.query as Record<
+    string,
+    string | string[] | undefined
+  >;
+  const queryVersion = query?.v;
+  if (Array.isArray(queryVersion)) {
+    return queryVersion[0];
+  }
+  if (typeof queryVersion === 'string') {
+    return queryVersion;
+  }
+
+  const headerVersion = socket.handshake.headers?.['x-app-version'];
+  if (Array.isArray(headerVersion)) {
+    return headerVersion[0];
+  }
+  if (typeof headerVersion === 'string') {
+    return headerVersion;
+  }
+
+  return undefined;
+};
 
 const attachServerDebugListeners = (
   io: ServerIO<ClientToServerEvents, ServerToClientEvents>
@@ -87,6 +118,20 @@ const attachConnectionHandlers = (
   debuggableIo.__connectionHandlersAttached = true;
 
   io.on('connection', (socket: ServerSocketType) => {
+    if (SOCKET_ENFORCE_VERSION) {
+      const clientVersion = extractClientVersion(socket);
+      if (clientVersion !== SERVER_APP_VERSION) {
+        socket.emit('server-version', { version: SERVER_APP_VERSION });
+        socket.disconnect(true);
+        if (DEBUG) {
+          console.log(
+            `[socket-debug][server] version-mismatch id=${socket.id} client=${clientVersion} server=${SERVER_APP_VERSION}`
+          );
+        }
+        return;
+      }
+    }
+
     console.log('server : A user connected', socket.id);
     if (DEBUG) {
       const transport = socket.conn.transport?.name;

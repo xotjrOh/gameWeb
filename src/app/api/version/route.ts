@@ -9,6 +9,7 @@ export async function GET(request: Request) {
     });
   }
 
-  const serverVersion = process.env.SERVER_VERSION || '1.0.0';
+  const serverVersion =
+    process.env.APP_VERSION ?? process.env.SERVER_VERSION ?? 'dev';
   return NextResponse.json({ serverVersion });
 }

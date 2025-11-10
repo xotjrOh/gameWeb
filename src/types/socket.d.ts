@@ -59,6 +59,7 @@ export interface ServerToClientEvents
     ShuffleServerToClientEvents {
   'room-updated': (rooms: Rooms) => void;
   'room-closed': (data: { message: string }) => void;
+  'server-version': (payload: { version: string }) => void;
 
   // ... additional events
 }
