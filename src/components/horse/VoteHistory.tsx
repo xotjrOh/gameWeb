@@ -8,7 +8,17 @@ interface VoteHistoryProps {
 
 function VoteHistory({ voteHistory, rounds }: VoteHistoryProps) {
   return (
-    <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
+    <Paper
+      elevation={0}
+      sx={{
+        p: 4,
+        mt: 4,
+        borderRadius: 3,
+        border: '1px solid rgba(15,23,42,0.08)',
+        backgroundColor: 'rgba(255,255,255,0.9)',
+        boxShadow: '0 12px 28px rgba(15,23,42,0.08)',
+      }}
+    >
       <Typography
         variant="h6"
         color="primary"
@@ -34,8 +44,8 @@ function VoteHistory({ voteHistory, rounds }: VoteHistoryProps) {
                 alignItems: 'center',
                 p: 2,
                 mb: 1,
-                borderRadius: 1,
-                boxShadow: 1,
+                borderRadius: 2,
+                boxShadow: '0 8px 18px rgba(15,23,42,0.06)',
                 border: '1px solid',
                 borderColor: isSuccessful ? 'border.success' : 'border.fail',
                 backgroundColor: isSuccessful

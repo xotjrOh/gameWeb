@@ -103,25 +103,36 @@ function BettingTab({ roomId, socket, session }: BettingTabProps) {
       <Box
         sx={{
           position: 'fixed',
-          bottom: 56,
+          bottom: 68,
           left: 16,
           right: 16,
           zIndex: 1000,
-          textAlign: 'center',
-          color: 'grey.600',
         }}
       >
-        <Typography variant="body2">
-          현재 베팅:{' '}
-          {Object.keys(bets).length > 0
-            ? horses
-                .map((horse) =>
-                  bets[horse] ? `${horse}: ${bets[horse]}` : null
-                )
-                .filter(Boolean)
-                .join(', ')
-            : '베팅 내역 없음'}
-        </Typography>
+        <Box
+          sx={{
+            px: 2,
+            py: 1,
+            borderRadius: 999,
+            backgroundColor: 'rgba(255,255,255,0.9)',
+            border: '1px solid rgba(15,23,42,0.08)',
+            boxShadow: '0 8px 24px rgba(15,23,42,0.12)',
+            backdropFilter: 'blur(8px)',
+            textAlign: 'center',
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            현재 베팅:{' '}
+            {Object.keys(bets).length > 0
+              ? horses
+                  .map((horse) =>
+                    bets[horse] ? `${horse}: ${bets[horse]}` : null
+                  )
+                  .filter(Boolean)
+                  .join(', ')
+              : '베팅 내역 없음'}
+          </Typography>
+        </Box>
       </Box>
 
       {/* 고정된 베팅 버튼 */}
@@ -135,8 +146,12 @@ function BettingTab({ roomId, socket, session }: BettingTabProps) {
           left: 16,
           right: 16,
           zIndex: 1000,
-          height: '36px', // 버튼 높이 증가
+          height: '44px', // 버튼 높이 증가
           fontSize: '1rem', // 글자 크기 증가
+          borderRadius: 999,
+          fontWeight: 700,
+          textTransform: 'none',
+          boxShadow: '0 10px 28px rgba(16, 185, 129, 0.35)',
         }}
         disabled={statusInfo.isBetLocked || isTimeover}
       >

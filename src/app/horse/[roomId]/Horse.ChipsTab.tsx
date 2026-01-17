@@ -144,7 +144,17 @@ function ChipsTab({ roomId, socket, session }: ChipsTabProps) {
   };
 
   return (
-    <Paper elevation={3} sx={{ p: { xs: 4, md: 6 }, mt: 2 }}>
+    <Paper
+      elevation={0}
+      sx={{
+        p: { xs: 4, md: 6 },
+        mt: 2,
+        borderRadius: 3,
+        border: '1px solid rgba(15,23,42,0.08)',
+        backgroundColor: 'rgba(255,255,255,0.9)',
+        boxShadow: '0 12px 28px rgba(15,23,42,0.08)',
+      }}
+    >
       {/* 헤더 */}
       <Box display="flex" alignItems="baseline" mb={2}>
         <Typography
@@ -236,12 +246,14 @@ function ChipsTab({ roomId, socket, session }: ChipsTabProps) {
                   inputProps={{ maxLength: 16 }}
                   sx={{
                     border: '1px solid',
-                    borderColor: 'grey.400',
+                    borderColor: 'rgba(15,23,42,0.12)',
+                    backgroundColor: 'rgba(255,255,255,0.95)',
                     p: 1,
                     width: '100%',
                     borderRadius: 1,
                     fontSize: '1rem',
                     minWidth: 0,
+                    boxShadow: 'inset 0 1px 2px rgba(15,23,42,0.06)',
                   }}
                 />
               </Box>

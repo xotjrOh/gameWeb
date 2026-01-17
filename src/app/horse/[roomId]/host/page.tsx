@@ -13,6 +13,8 @@ import {
   useTheme,
   Badge,
   Typography,
+  Paper,
+  Chip,
 } from '@mui/material';
 import BettingTab from './Horse.BettingTab';
 import VoteTab from './Horse.VoteTab';
@@ -72,7 +74,8 @@ export default function HorseGamePage({ params }: HorseGamePageProps) {
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(to bottom, #ebf4ff, #c3dafe)',
+        backgroundImage:
+          'radial-gradient(1200px 400px at 0% -10%, rgba(59,130,246,0.18), transparent 60%), radial-gradient(800px 400px at 100% -20%, rgba(16,185,129,0.12), transparent 60%), linear-gradient(180deg, #eef5ff 0%, #dbeafe 45%, #c7d2fe 100%)',
         display: 'flex',
         flexDirection: 'column',
       }}
@@ -84,9 +87,15 @@ export default function HorseGamePage({ params }: HorseGamePageProps) {
         elevation={0}
         sx={{ backgroundColor: 'transparent' }}
       >
-        <Toolbar variant="dense">
+        <Toolbar
+          variant="dense"
+          sx={{
+            px: { xs: 1.5, md: 3 },
+            py: 1,
+          }}
+        >
           {/* 로고 좌측 배치 */}
-          <Box display="flex" alignItems="center">
+          <Box display="flex" alignItems="center" gap={1.5}>
             <Image
               src="/images/horseLogo.webp"
               alt="경마게임 로고"
@@ -95,68 +104,122 @@ export default function HorseGamePage({ params }: HorseGamePageProps) {
               priority
               style={{ maxHeight: '100%', height: 'auto' }}
             />
+            <Chip
+              size="small"
+              label={`ROOM ${roomId}`}
+              sx={{
+                borderRadius: 999,
+                fontWeight: 600,
+                backgroundColor: 'rgba(255,255,255,0.8)',
+                border: '1px solid rgba(15,23,42,0.12)',
+              }}
+            />
           </Box>
           <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
-            <Typography variant="body1">
-              {rooms?.[roomId]?.players?.length}명
-            </Typography>
+            <Chip
+              size="small"
+              label={`${rooms?.[roomId]?.players?.length ?? 0}명`}
+              sx={{
+                borderRadius: 999,
+                fontWeight: 600,
+                backgroundColor: 'rgba(255,255,255,0.8)',
+                border: '1px solid rgba(15,23,42,0.12)',
+              }}
+            />
           </Box>
           {/* 아이콘 우측 배치 */}
-
-          <TimerDisplay roomId={roomId} socket={socket} dispatch={dispatch} />
+          <Box
+            sx={{
+              px: 1.2,
+              py: 0.25,
+              borderRadius: 999,
+              backgroundColor: 'rgba(59,130,246,0.12)',
+              border: '1px solid rgba(59,130,246,0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              mr: 1,
+            }}
+          >
+            <TimerDisplay roomId={roomId} socket={socket} dispatch={dispatch} />
+          </Box>
           <MyStatusButton roomId={roomId} socket={socket} session={session} />
         </Toolbar>
       </AppBar>
 
       {/* 탭 네비게이션과 컨텐츠 영역 */}
-      <Box sx={{ flexGrow: 1 }}>
-        <Tabs
-          value={activeTab}
-          onChange={handleTabChange}
-          variant="fullWidth"
-          TabIndicatorProps={{ style: { display: 'none' } }}
-          sx={{ minHeight: '48px' }}
+      <Box sx={{ flexGrow: 1, px: { xs: 1.5, md: 3 }, pb: 3 }}>
+        <Paper
+          elevation={0}
+          sx={{
+            mt: 1,
+            p: 0.5,
+            borderRadius: 999,
+            border: '1px solid rgba(15,23,42,0.08)',
+            backgroundColor: 'rgba(255,255,255,0.75)',
+            boxShadow: '0 10px 30px rgba(15,23,42,0.08)',
+            backdropFilter: 'blur(8px)',
+          }}
         >
-          {tabs.map((tab, index) => (
-            <Tab
-              key={index}
-              label={
-                tab.showIcon ? (
-                  <Badge
-                    variant="dot"
-                    color="error"
-                    sx={{
-                      '& .MuiBadge-badge': {
-                        right: -6,
-                        top: 3,
-                        minWidth: 6,
-                        height: 6,
-                        borderRadius: '50%',
-                      },
-                    }}
-                  >
-                    {tab.label}
-                  </Badge>
-                ) : (
-                  tab.label
-                )
-              }
-              id={`tab-${index}`}
-              aria-controls={`tabpanel-${index}`}
-              sx={{
-                minHeight: 'auto',
-                py: 1,
-                '&.Mui-selected': {
-                  fontWeight: 'bold',
-                  color: theme.palette.primary.main,
-                },
-              }}
-            />
-          ))}
-        </Tabs>
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            variant="fullWidth"
+            TabIndicatorProps={{ style: { display: 'none' } }}
+            sx={{
+              minHeight: '44px',
+              '& .MuiTabs-flexContainer': {
+                gap: 1,
+              },
+              '& .MuiTab-root': {
+                minHeight: '40px',
+                borderRadius: 999,
+                textTransform: 'none',
+                fontWeight: 600,
+                color: 'text.secondary',
+                backgroundColor: 'rgba(15,23,42,0.04)',
+                border: '1px solid transparent',
+              },
+              '& .MuiTab-root.Mui-selected': {
+                color: theme.palette.primary.main,
+                backgroundColor: 'common.white',
+                borderColor: 'rgba(15,23,42,0.08)',
+                boxShadow: '0 6px 16px rgba(15,23,42,0.12)',
+              },
+            }}
+          >
+            {tabs.map((tab, index) => (
+              <Tab
+                key={index}
+                label={
+                  tab.showIcon ? (
+                    <Badge
+                      variant="dot"
+                      color="error"
+                      sx={{
+                        '& .MuiBadge-badge': {
+                          right: -6,
+                          top: 3,
+                          minWidth: 6,
+                          height: 6,
+                          borderRadius: '50%',
+                        },
+                      }}
+                    >
+                      {tab.label}
+                    </Badge>
+                  ) : (
+                    tab.label
+                  )
+                }
+                id={`tab-${index}`}
+                aria-controls={`tabpanel-${index}`}
+              />
+            ))}
+          </Tabs>
+        </Paper>
 
         {/* 모든 탭 컨텐츠를 렌더링하고, 활성화된 탭만 보이도록 처리 */}
-        <Box sx={{ p: 2 }}>
+        <Box sx={{ pt: 2 }}>
           <TabPanel value={activeTab} index={0}>
             <BettingTab roomId={roomId} socket={socket} session={session} />
           </TabPanel>

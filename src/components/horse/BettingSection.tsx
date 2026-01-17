@@ -2,7 +2,14 @@
 
 import React from 'react';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
-import { Box, Grid2 as Grid, Slider, Typography, Paper } from '@mui/material';
+import {
+  Box,
+  Grid2 as Grid,
+  Slider,
+  Typography,
+  Paper,
+  Chip,
+} from '@mui/material';
 
 interface BettingSectionProps {
   horses: string[];
@@ -44,8 +51,18 @@ function BettingSection({
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 4, textAlign: 'center' }}>
-      <Box display="flex" justifyContent="space-between" alignItems="baseline">
+    <Paper
+      elevation={0}
+      sx={{
+        p: 4,
+        textAlign: 'center',
+        borderRadius: 3,
+        border: '1px solid rgba(15,23,42,0.08)',
+        backgroundColor: 'rgba(255,255,255,0.9)',
+        boxShadow: '0 12px 28px rgba(15,23,42,0.08)',
+      }}
+    >
+      <Box display="flex" justifyContent="space-between" alignItems="center">
         <Typography
           variant="h5"
           color="primary"
@@ -54,9 +71,16 @@ function BettingSection({
         >
           베팅
         </Typography>
-        <Typography variant="body2" color="textSecondary" sx={{ mr: '6px' }}>
-          남은 칩 개수: {statusInfo?.chips || 0}
-        </Typography>
+        <Chip
+          size="small"
+          label={`남은 칩 ${statusInfo?.chips || 0}`}
+          sx={{
+            fontWeight: 600,
+            borderRadius: 999,
+            backgroundColor: 'rgba(37,99,235,0.12)',
+            border: '1px solid rgba(37,99,235,0.2)',
+          }}
+        />
       </Box>
 
       <Typography
@@ -73,13 +97,16 @@ function BettingSection({
         {horses.map((horse) => (
           <Grid size={{ xs: 12 }} key={horse}>
             <Paper
-              elevation={2}
+              elevation={0}
               sx={{
                 p: 2,
                 textAlign: 'center',
-                backgroundColor: 'background.card',
+                backgroundColor: 'rgba(248,250,255,0.9)',
                 position: 'relative',
                 overflow: 'hidden',
+                borderRadius: 2,
+                border: '1px solid rgba(15,23,42,0.08)',
+                boxShadow: '0 8px 18px rgba(15,23,42,0.06)',
               }}
             >
               <Typography
@@ -106,7 +133,18 @@ function BettingSection({
                 onChange={(e, value) => handleBetChange(horse, value as number)} // TODO : number[]가 전달되는 케이스 생기나 체크필요
                 disabled={statusInfo.isBetLocked || isTimeover}
                 valueLabelDisplay="auto"
-                sx={{ mt: 1.5 }}
+                sx={{
+                  mt: 1.5,
+                  '& .MuiSlider-thumb': {
+                    boxShadow: '0 6px 16px rgba(37,99,235,0.25)',
+                  },
+                  '& .MuiSlider-track': {
+                    backgroundColor: 'primary.main',
+                  },
+                  '& .MuiSlider-rail': {
+                    backgroundColor: 'rgba(37,99,235,0.15)',
+                  },
+                }}
               />
             </Paper>
           </Grid>

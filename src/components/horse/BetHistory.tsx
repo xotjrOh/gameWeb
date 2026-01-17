@@ -7,7 +7,17 @@ interface BetHistoryProps {
 
 function BetHistory({ rounds }: BetHistoryProps) {
   return (
-    <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
+    <Paper
+      elevation={0}
+      sx={{
+        p: 4,
+        mt: 4,
+        borderRadius: 3,
+        border: '1px solid rgba(15,23,42,0.08)',
+        backgroundColor: 'rgba(255,255,255,0.9)',
+        boxShadow: '0 12px 28px rgba(15,23,42,0.08)',
+      }}
+    >
       <Typography
         variant="h6"
         color="primary"
@@ -31,13 +41,15 @@ function BetHistory({ rounds }: BetHistoryProps) {
             {round.map((bet, betIndex) => (
               <Paper
                 key={betIndex}
-                elevation={1}
+                elevation={0}
                 sx={{
                   p: 2,
                   mb: 1,
                   display: 'flex',
                   justifyContent: 'space-between',
-                  backgroundColor: 'background.card',
+                  backgroundColor: 'rgba(248,250,255,0.9)',
+                  borderRadius: 2,
+                  border: '1px solid rgba(15,23,42,0.08)',
                 }}
               >
                 <Typography variant="body1" fontWeight="medium">

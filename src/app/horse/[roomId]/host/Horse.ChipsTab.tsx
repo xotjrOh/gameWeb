@@ -40,7 +40,17 @@ function ChipsTab({ roomId, socket, session }: ChipsTabProps) {
   }, [socket?.id, dispatch]);
 
   return (
-    <Paper elevation={3} sx={{ p: { xs: 4, md: 6 }, mt: 2 }}>
+    <Paper
+      elevation={0}
+      sx={{
+        p: { xs: 4, md: 6 },
+        mt: 2,
+        borderRadius: 3,
+        border: '1px solid rgba(15,23,42,0.08)',
+        backgroundColor: 'rgba(255,255,255,0.9)',
+        boxShadow: '0 12px 28px rgba(15,23,42,0.08)',
+      }}
+    >
       <Typography variant="h5" color="primary" fontWeight="bold">
         칩 개수
       </Typography>

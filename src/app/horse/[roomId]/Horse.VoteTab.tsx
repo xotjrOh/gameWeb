@@ -98,11 +98,18 @@ function VoteTab({ roomId, socket, session }: VoteTabProps) {
       {statusInfo.isSolo && (
         <Paper
           elevation={3}
-          sx={{ backgroundColor: 'background.default', p: 4, mt: 4 }}
+          sx={{
+            backgroundColor: 'rgba(16, 185, 129, 0.08)',
+            border: '1px solid rgba(16, 185, 129, 0.2)',
+            boxShadow: '0 8px 24px rgba(16, 185, 129, 0.15)',
+            p: 3,
+            mt: 3,
+            borderRadius: 3,
+          }}
         >
           <Typography
             variant="body2"
-            sx={{ color: 'success.light', fontWeight: 'bold' }}
+            sx={{ color: 'success.dark', fontWeight: 700 }}
           >
             솔로 플레이어는 예측에 성공할 경우 5개의 칩이 추가됩니다!
           </Typography>
@@ -124,8 +131,12 @@ function VoteTab({ roomId, socket, session }: VoteTabProps) {
           left: 16,
           right: 16,
           zIndex: 1000,
-          height: '36px',
+          height: '44px',
           fontSize: '1rem',
+          borderRadius: 999,
+          fontWeight: 700,
+          textTransform: 'none',
+          boxShadow: '0 10px 28px rgba(16, 185, 129, 0.35)',
         }}
       >
         {statusInfo.isVoteLocked && !isTimeover ? '투표하였습니다' : '투표하기'}

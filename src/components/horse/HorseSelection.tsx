@@ -15,7 +15,16 @@ function HorseSelection({
   isVoteDisabled,
 }: HorseSelectionProps) {
   return (
-    <Paper elevation={3} sx={{ p: 4 }}>
+    <Paper
+      elevation={0}
+      sx={{
+        p: 4,
+        borderRadius: 3,
+        border: '1px solid rgba(15,23,42,0.08)',
+        backgroundColor: 'rgba(255,255,255,0.9)',
+        boxShadow: '0 12px 28px rgba(15,23,42,0.08)',
+      }}
+    >
       <Typography
         variant="h5"
         color="primary"
@@ -55,23 +64,30 @@ function HorseSelection({
                 alignItems: 'center',
                 width: '100%',
                 p: 2,
-                borderRadius: 1,
-                boxShadow: 1,
+                borderRadius: 2,
+                boxShadow: '0 10px 24px rgba(15,23,42,0.08)',
                 border: '1px solid',
                 borderColor:
                   selectedHorse === horse ? 'primary.main' : 'grey.300',
                 backgroundColor:
-                  selectedHorse === horse ? 'info.light' : 'white',
+                  selectedHorse === horse
+                    ? 'rgba(37,99,235,0.12)'
+                    : 'rgba(248,250,255,0.9)',
                 '&:hover': {
                   backgroundColor:
-                    selectedHorse === horse ? 'info.main' : 'action.hover',
+                    selectedHorse === horse
+                      ? 'rgba(37,99,235,0.2)'
+                      : 'rgba(226,232,255,0.8)',
                 },
                 '&.Mui-disabled': {
                   backgroundColor: 'grey.100',
                   borderColor: 'grey.300',
                   color: 'text.disabled',
                 },
-                transition: 'background-color 0.3s',
+                transition: 'background-color 0.3s, transform 0.2s',
+                '&:active': {
+                  transform: 'scale(0.98)',
+                },
               }}
               disabled={isVoteDisabled}
             >

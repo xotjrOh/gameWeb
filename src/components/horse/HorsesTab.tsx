@@ -48,7 +48,17 @@ function HorsesTab({ roomId, socket, session }: HorsesTabProps) {
   };
 
   return (
-    <Paper elevation={3} sx={{ p: { xs: 4, md: 6 }, mt: 2 }}>
+    <Paper
+      elevation={0}
+      sx={{
+        p: { xs: 4, md: 6 },
+        mt: 2,
+        borderRadius: 3,
+        border: '1px solid rgba(15,23,42,0.08)',
+        backgroundColor: 'rgba(255,255,255,0.9)',
+        boxShadow: '0 12px 28px rgba(15,23,42,0.08)',
+      }}
+    >
       {/* 경주마 현황 제목 */}
       <Typography
         variant="h5"
@@ -65,10 +75,13 @@ function HorsesTab({ roomId, socket, session }: HorsesTabProps) {
         {sortedPositions.map((horse, index) => (
           <Grid size={{ xs: 12 }} key={index}>
             <Paper
-              elevation={2}
+              elevation={0}
               sx={{
                 p: 2,
-                backgroundColor: 'background.card', // 이전 디자인 색상 반영
+                backgroundColor: 'rgba(248,250,255,0.9)',
+                borderRadius: 2,
+                border: '1px solid rgba(15,23,42,0.08)',
+                boxShadow: '0 8px 18px rgba(15,23,42,0.06)',
               }}
             >
               <Box display="flex" alignItems="center">
@@ -83,11 +96,12 @@ function HorsesTab({ roomId, socket, session }: HorsesTabProps) {
                     variant="determinate"
                     value={Math.min((horse.position / finishLine) * 100, 100)}
                     sx={{
-                      height: 18, // 높이 증가
-                      borderRadius: 5,
-                      backgroundColor: 'grey.300',
+                      height: 16,
+                      borderRadius: 999,
+                      backgroundColor: 'rgba(37,99,235,0.15)',
                       '& .MuiLinearProgress-bar': {
-                        backgroundColor: 'info.dark', // 진행 바 색상 조정
+                        background:
+                          'linear-gradient(90deg, rgba(37,99,235,0.9) 0%, rgba(14,165,233,0.9) 100%)',
                       },
                     }}
                   />
