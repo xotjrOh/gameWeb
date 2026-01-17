@@ -17,7 +17,12 @@ import {
   Collapse,
   SelectChangeEvent,
 } from '@mui/material';
-import { GameType } from '@/types/room';
+import {
+  DEFAULT_GAME_ID,
+  GAME_CATALOG,
+  GameId,
+  isGameId,
+} from '@/lib/gameCatalog';
 
 interface PlayerRank {
   rank: number;
@@ -25,46 +30,61 @@ interface PlayerRank {
   score: number;
 }
 
-const mockRankData: Record<GameType, PlayerRank[]> = {
-  horse: [
-    { rank: 1, name: '오태석', score: 13 },
-    { rank: 2, name: '방준성', score: 1 },
-    { rank: 3, name: '안민우', score: 0 },
-    { rank: 4, name: '이승현', score: 0 },
-    { rank: 5, name: '김주희', score: 0 },
-  ],
-  shuffle: [
-    { rank: 1, name: '안민우', score: 0 },
-    { rank: 2, name: '방준성', score: 0 },
-    { rank: 3, name: '오태석', score: 0 },
-    { rank: 4, name: '이승현', score: 0 },
-    { rank: 5, name: '이다솜', score: 0 },
-  ],
-};
+interface RankingResponse {
+  game: string;
+  updatedAt: string;
+  rankings: Array<{ rank: number; name: string; wins: number }>;
+}
 
 export default function RankingPage() {
   const { data: session } = useSession();
-  const [selectedGame, setSelectedGame] = useState<GameType>('horse');
-  const [rankData, setRankData] = useState<PlayerRank[]>(
-    mockRankData[selectedGame]
-  );
+  const [selectedGame, setSelectedGame] = useState<GameId>(DEFAULT_GAME_ID);
+  const [rankData, setRankData] = useState<PlayerRank[]>([]);
   const [visible, setVisible] = useState<boolean>(true);
 
   const handleGameChange = (e: SelectChangeEvent) => {
-    const game = e.target.value as GameType;
+    const value = String(e.target.value);
+    const game = isGameId(value) ? value : DEFAULT_GAME_ID;
     setVisible(false); // Fade out
     setSelectedGame(game);
   };
 
   useEffect(() => {
-    if (!visible) {
-      const timer = setTimeout(() => {
-        setRankData(mockRankData[selectedGame]);
-        setVisible(true); // Fade in
-      }, 300); // Duration matches Fade timeout
-      return () => clearTimeout(timer);
-    }
-  }, [visible, selectedGame]);
+    let isActive = true;
+
+    const loadRankings = async () => {
+      try {
+        const response = await fetch(`/api/rankings?game=${selectedGame}`, {
+          cache: 'no-store',
+        });
+        if (!response.ok) {
+          throw new Error('Failed to load rankings');
+        }
+        const data: RankingResponse = await response.json();
+        if (!isActive) return;
+
+        const normalized = (data.rankings ?? []).map((item) => ({
+          rank: item.rank,
+          name: item.name,
+          score: item.wins,
+        }));
+        setRankData(normalized);
+      } catch (error) {
+        if (isActive) {
+          setRankData([]);
+        }
+      } finally {
+        if (isActive) {
+          setVisible(true); // Fade in
+        }
+      }
+    };
+
+    loadRankings();
+    return () => {
+      isActive = false;
+    };
+  }, [selectedGame]);
 
   return (
     <>
@@ -99,8 +119,11 @@ export default function RankingPage() {
               label="게임 선택"
               sx={{ bgcolor: 'white' }}
             >
-              <MenuItem value="horse">🐎 경마게임</MenuItem>
-              <MenuItem value="shuffle">🔀 뒤죽박죽</MenuItem>
+              {GAME_CATALOG.map((game) => (
+                <MenuItem key={game.id} value={game.id}>
+                  {game.label}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
 

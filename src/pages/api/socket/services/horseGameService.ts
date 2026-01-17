@@ -3,6 +3,7 @@ import { HorseRoom, Player } from '@/types/room';
 import { RoundData, HorsePlayerData, HorsePosition } from '@/types/horse';
 import { Server } from 'socket.io';
 import { ClientToServerEvents, ServerToClientEvents } from '@/types/socket';
+import { recordGameWinners } from '../state/leaderboardState';
 
 /**
  * 베팅 -> {말, 전진, 칩}
@@ -157,6 +158,15 @@ export function checkGameEnd(
         playerNames: getPlayersByHorse(horse),
       })),
     });
+
+    const winnerPlayerNames = winners
+      .flatMap(([horse]) => getPlayersByHorse(horse))
+      .filter((name) => name);
+    try {
+      recordGameWinners('horse', winnerPlayerNames);
+    } catch (error) {
+      console.error('[leaderboard] failed to record winners', error);
+    }
 
     room.status = GAME_STATUS.PENDING;
   }

@@ -185,19 +185,22 @@ function ChipsTab({ roomId, socket, session }: ChipsTabProps) {
             <Box key={index}>
               <Box
                 sx={{
-                  display: 'flex',
-                  flexDirection: isMobile ? 'column' : 'row', // 반응형 레이아웃 적용
+                  display: 'grid',
+                  gridTemplateColumns: isMobile ? '1fr' : '190px 1fr',
+                  columnGap: isMobile ? 0 : 2,
+                  rowGap: isMobile ? 0.5 : 0,
                   alignItems: isMobile ? 'flex-start' : 'center',
                   py: 1,
                 }}
               >
-                <Box sx={{ flexGrow: 1 }}>
+                <Box sx={{ minWidth: 0 }}>
                   <Typography
                     variant="body1"
                     sx={{
-                      whiteSpace: 'nowrap',
+                      whiteSpace: isMobile ? 'normal' : 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
                       ml: '6px',
-                      mr: isMobile ? 0 : 2,
                     }}
                   >
                     {player.dummyName}:{' '}
@@ -235,10 +238,10 @@ function ChipsTab({ roomId, socket, session }: ChipsTabProps) {
                     border: '1px solid',
                     borderColor: 'grey.400',
                     p: 1,
-                    mt: isMobile ? 0.5 : 0,
                     width: '100%',
                     borderRadius: 1,
                     fontSize: '1rem',
+                    minWidth: 0,
                   }}
                 />
               </Box>

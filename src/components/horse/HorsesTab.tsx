@@ -32,6 +32,7 @@ function HorsesTab({ roomId, socket, session }: HorsesTabProps) {
   // URL을 통해 호스트 여부 판단
   const pathname = usePathname() || '';
   const isHost = pathname.includes('/host');
+  const isSoloOnlyView = statusInfo.isSolo && !hasRaceEnded && !isHost;
 
   const sortedPositions = useMemo(() => {
     return [...positions].sort((a, b) => a.name.localeCompare(b.name));
@@ -147,7 +148,16 @@ function HorsesTab({ roomId, socket, session }: HorsesTabProps) {
           라운드별 경주마 현황
         </Typography>
         {statusInfo.isSolo && (
-          <Typography variant="caption" color="textSecondary" fontWeight="bold">
+          <Typography
+            variant="caption"
+            sx={{
+              display: 'inline-block',
+              color: isSoloOnlyView ? 'warning.main' : 'textSecondary',
+              fontWeight: 'bold',
+              ml: '6px',
+              mb: 1,
+            }}
+          >
             여기서의 베팅된 칩 개수는 솔로 플레이어에게만 보입니다.
           </Typography>
         )}
@@ -195,7 +205,12 @@ function HorsesTab({ roomId, socket, session }: HorsesTabProps) {
                           전진: {bet.progress}
                         </Typography>
                         {(hasRaceEnded || isHost || statusInfo.isSolo) && (
-                          <Typography variant="body2" color="textSecondary">
+                          <Typography
+                            variant="body2"
+                            color={
+                              isSoloOnlyView ? 'warning.main' : 'textSecondary'
+                            }
+                          >
                             칩: {bet.chips}
                           </Typography>
                         )}
