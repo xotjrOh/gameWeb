@@ -12,9 +12,14 @@ export function calculateRoundResult(
   room: HorseRoom,
   bets: { [horse: string]: number }
 ): RoundData[] {
-  const sortedHorses = Object.entries(bets).sort(
-    ([, chipsA], [, chipsB]) => chipsB - chipsA
-  );
+  const sortedHorses = Object.entries(bets)
+    .filter(([, chips]) => chips > 0)
+    .sort(([, chipsA], [, chipsB]) => chipsB - chipsA);
+
+  if (sortedHorses.length === 0) {
+    room.gameData.rounds.push([]);
+    return [];
+  }
 
   const maxChips = sortedHorses?.[0]?.[1] || -1;
   const secondMaxChips =
@@ -162,8 +167,16 @@ export function checkGameEnd(
     const winnerPlayerNames = winners
       .flatMap(([horse]) => getPlayersByHorse(horse))
       .filter((name) => name);
+    const fallbackWinnerNames =
+      winnerPlayerNames.length === 0 && room.players.length === 1
+        ? losers
+            .flatMap(([horse]) => getPlayersByHorse(horse))
+            .filter((name) => name)
+        : winnerPlayerNames;
     try {
-      recordGameWinners('horse', winnerPlayerNames);
+      if (fallbackWinnerNames.length > 0) {
+        recordGameWinners('horse', fallbackWinnerNames);
+      }
     } catch (error) {
       console.error('[leaderboard] failed to record winners', error);
     }
@@ -220,6 +233,7 @@ export function recordPlayerBets(
 ) {
   room.gameData.bets = room.gameData.bets || {};
   Object.entries(bets).forEach(([horse, chips]) => {
+    if (chips <= 0) return;
     room.gameData.bets[horse] = (room.gameData.bets[horse] || 0) + chips;
   });
 }
@@ -231,9 +245,9 @@ export function updatePlayerChipHistory(
   player: Player & HorsePlayerData,
   bets: { [horse: string]: number }
 ) {
-  const sortedHorses = Object.entries(bets).sort(
-    ([, chipsA], [, chipsB]) => chipsB - chipsA
-  );
+  const sortedHorses = Object.entries(bets)
+    .filter(([, chips]) => chips > 0)
+    .sort(([, chipsA], [, chipsB]) => chipsB - chipsA);
   const roundResult = sortedHorses.map(([horse, chips]) => ({
     horse,
     chips,

@@ -131,18 +131,29 @@ const horseGameHandler = (
       const player = validatePlayer(room, sessionId) as Player &
         HorsePlayerData;
 
+      const sanitizedBets = Object.fromEntries(
+        Object.entries(bets).filter(([, chips]) => chips > 0)
+      );
+
+      if (Object.keys(sanitizedBets).length === 0) {
+        return callback({
+          success: false,
+          message: '베팅 금액을 입력해주세요.',
+        });
+      }
+
       // 플레이어가 가진 칩이 충분한지 체크
-      const totalBets = validateChipsByHorseGame(player, bets);
+      const totalBets = validateChipsByHorseGame(player, sanitizedBets);
 
       // 베팅한 칩 기록
-      recordPlayerBets(room, bets);
+      recordPlayerBets(room, sanitizedBets);
 
       player.chips -= totalBets;
       player.chipDiff -= totalBets;
       player.isBetLocked = true;
 
       // 개인용 칩사용 히스토리
-      updatePlayerChipHistory(player, bets);
+      updatePlayerChipHistory(player, sanitizedBets);
 
       return callback({
         success: true,

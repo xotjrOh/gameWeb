@@ -33,7 +33,12 @@ function BettingSection({
 
   const handleBetChange = (horse: string, amount: number) => {
     // TODO : 문자열 거르는 로직 제거, 오류 확인 필요
-    const newBets = { ...bets, [horse]: amount };
+    const newBets = { ...bets };
+    if (amount === 0) {
+      delete newBets[horse];
+    } else {
+      newBets[horse] = amount;
+    }
     const totalBet = Object.values(newBets).reduce(
       (sum, chips) => sum + chips,
       0
