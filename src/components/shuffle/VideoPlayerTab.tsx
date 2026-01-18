@@ -34,6 +34,7 @@ import LeaveModal from './LeaveModal';
 import { videoDataList } from '@/utils/constants';
 import { ClientSocketType } from '@/types/socket';
 import { Session } from 'next-auth';
+import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 
 /** react-youtube의 target이 구현하는 최소 API */
 interface YTPlayer {
@@ -89,6 +90,7 @@ function VideoPlayerTab({ roomId, socket, session }: VideoPlayerTabProps) {
   const playerRef = useRef<YTPlayer | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const answerWinRef = useRef<Window | null>(null);
+  const { enqueueSnackbar } = useCustomSnackbar();
 
   const openModal = (type: keyof ModalsState) =>
     setModals((prev) => ({ ...prev, [type]: true }));
@@ -294,6 +296,29 @@ function VideoPlayerTab({ roomId, socket, session }: VideoPlayerTabProps) {
         id: shuffled[index],
       }));
       setClips(clipsWithId);
+
+      if (socket) {
+        socket.emit(
+          'shuffle-start-game',
+          {
+            roomId,
+            settings: {
+              clips: clipsWithId,
+              correctOrder: shuffled,
+              currentPhase: 'answering',
+            },
+          },
+          (response) => {
+            if (!response.success) {
+              enqueueSnackbar(response.message ?? '게임 시작에 실패했습니다.', {
+                variant: 'error',
+              });
+            }
+          }
+        );
+      } else {
+        enqueueSnackbar('소켓 연결이 필요합니다.', { variant: 'error' });
+      }
     }
   };
 

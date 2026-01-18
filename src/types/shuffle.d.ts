@@ -27,17 +27,23 @@ export interface ShufflePlayerData {
   answer: string[] | null;
   isAlive: boolean;
   isAnswerSubmitted: boolean;
+  score: number;
 }
 
 export interface EvaluationResult {
   id: string;
   name: string;
-  isAlive: boolean;
+  roundScore: number;
+  totalScore: number;
 }
 
 export interface ShuffleClientToServerEvents {
   'shuffle-start-game': (
     data: { roomId: string; settings: Partial<ShuffleGameData> },
+    callback: (response: CommonResponse) => void
+  ) => void;
+  'shuffle-end-round': (
+    data: { roomId: string; sessionId: string },
     callback: (response: CommonResponse) => void
   ) => void;
   'shuffle-submit-answer': (
@@ -55,7 +61,8 @@ export interface ShuffleServerToClientEvents {
   'shuffle-start-answering': () => void;
   'shuffle-round-results': (data: {
     results: EvaluationResult[];
-    correctOrder: string;
+    correctOrder: string[];
+    players: (Player & ShufflePlayerData)[];
   }) => void;
   'shuffle-game-started': (data: {
     clips: Clip[];

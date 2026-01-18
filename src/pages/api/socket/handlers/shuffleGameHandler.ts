@@ -77,25 +77,20 @@ const shuffleGameHandler = (
 
         // 모든 답안 제출 여부 확인
         if (checkAllAnswersSubmitted(room)) {
+          if (timers[roomId]) {
+            clearTimeout(timers[roomId]);
+            delete timers[roomId];
+          }
           // 답안 평가 및 결과 전송
           const results = evaluateAnswers(room);
           io.to(roomId).emit('shuffle-round-results', {
             results,
             correctOrder: room.gameData.correctOrder,
+            players: room.players,
           });
 
-          // 게임 종료 여부 확인
-          const allPlayersEliminated = room.players.every((p) => {
-            const shufflePlayer = p as Player & ShufflePlayerData;
-            return !shufflePlayer.isAlive;
-          });
-          if (allPlayersEliminated) {
-            room.status = GAME_STATUS.PENDING;
-            io.to(roomId).emit('shuffle-game-ended', { players: room.players });
-            io.emit('room-updated', rooms);
-          } else {
-            // 다음 라운드 진행 로직 추가 가능
-          }
+          room.status = GAME_STATUS.PENDING;
+          io.emit('room-updated', rooms);
         }
 
         return callback({ success: true });
@@ -104,6 +99,34 @@ const shuffleGameHandler = (
       }
     }
   );
+
+  socket.on('shuffle-end-round', ({ roomId, sessionId }, callback) => {
+    try {
+      const room = validateRoom(roomId) as Room;
+      if (room.host.id !== sessionId) {
+        throw new Error('방장만 라운드를 종료할 수 있습니다.');
+      }
+
+      if (timers[roomId]) {
+        clearTimeout(timers[roomId]);
+        delete timers[roomId];
+      }
+
+      room.gameData.currentPhase = 'result';
+      const results = evaluateAnswers(room);
+      io.to(roomId).emit('shuffle-round-results', {
+        results,
+        correctOrder: room.gameData.correctOrder,
+        players: room.players,
+      });
+
+      room.status = GAME_STATUS.PENDING;
+      io.emit('room-updated', rooms);
+      return callback({ success: true });
+    } catch (error) {
+      callback({ success: false, message: (error as Error).message });
+    }
+  });
 
   socket.on('shuffle-get-game-data', ({ roomId, sessionId }, callback) => {
     try {

@@ -1,6 +1,12 @@
 import { useEffect } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch'; // 커스텀 훅
-import { setGameData, setPlayers, setStatusInfo } from '@/store/shuffleSlice';
+import {
+  setGameData,
+  setPlayers,
+  setStatusInfo,
+  setLastRoundResults,
+  setLastRoundCorrectOrder,
+} from '@/store/shuffleSlice';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 import { ClientSocketType } from '@/types/socket';
 
@@ -32,9 +38,36 @@ export default function useShuffleGameData(
         dispatch(setPlayers(data.players));
         dispatch(setStatusInfo(data.statusInfo));
       });
+      socket.on('shuffle-game-started', (data) => {
+        if (data?.gameData) {
+          dispatch(setGameData(data.gameData));
+        }
+        if (Array.isArray(data?.players)) {
+          dispatch(setPlayers(data.players));
+        }
+        dispatch(setLastRoundResults([]));
+        dispatch(setLastRoundCorrectOrder([]));
+      });
+      socket.on('shuffle-round-results', (data) => {
+        if (Array.isArray(data?.players)) {
+          dispatch(setPlayers(data.players));
+          const myInfo = data.players.find((player) => player.id === sessionId);
+          if (myInfo) {
+            dispatch(setStatusInfo(myInfo));
+          }
+        }
+        if (Array.isArray(data?.results)) {
+          dispatch(setLastRoundResults(data.results));
+        }
+        if (Array.isArray(data?.correctOrder)) {
+          dispatch(setLastRoundCorrectOrder(data.correctOrder));
+        }
+      });
 
       return () => {
         socket.off('shuffle-game-data-update');
+        socket.off('shuffle-game-started');
+        socket.off('shuffle-round-results');
       };
     }
   }, [roomId, socket?.id, sessionId, dispatch]);

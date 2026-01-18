@@ -74,8 +74,9 @@ export const DEFAULT_PLAYER_DATA: {
     memo: [],
   },
   shuffle: {
-    answer: [],
+    answer: null,
     isAlive: true,
     isAnswerSubmitted: false,
+    score: 0,
   },
 } as const;

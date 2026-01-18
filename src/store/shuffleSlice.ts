@@ -1,11 +1,17 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { Player } from '@/types/room';
-import { ShufflePlayerData, ShuffleGameData } from '@/types/shuffle';
+import {
+  ShufflePlayerData,
+  ShuffleGameData,
+  EvaluationResult,
+} from '@/types/shuffle';
 
 interface ShuffleInitialState {
   players: (Player & ShufflePlayerData)[];
   gameData: ShuffleGameData;
   statusInfo: Player & ShufflePlayerData;
+  lastRoundResults: EvaluationResult[];
+  lastRoundCorrectOrder: string[];
 }
 
 const initialState: ShuffleInitialState = {
@@ -30,7 +36,10 @@ const initialState: ShuffleInitialState = {
     answer: null,
     isAlive: true,
     isAnswerSubmitted: false,
+    score: 0,
   },
+  lastRoundResults: [],
+  lastRoundCorrectOrder: [],
 };
 
 const shuffleSlice = createSlice({
@@ -38,13 +47,19 @@ const shuffleSlice = createSlice({
   initialState,
   reducers: {
     setPlayers(state, action: PayloadAction<(Player & ShufflePlayerData)[]>) {
-      state.players = action.payload;
+      state.players = action.payload ?? [];
     },
     setGameData(state, action: PayloadAction<ShuffleGameData>) {
       state.gameData = action.payload;
     },
     setStatusInfo(state, action: PayloadAction<Player & ShufflePlayerData>) {
       state.statusInfo = action.payload;
+    },
+    setLastRoundResults(state, action: PayloadAction<EvaluationResult[]>) {
+      state.lastRoundResults = action.payload ?? [];
+    },
+    setLastRoundCorrectOrder(state, action: PayloadAction<string[]>) {
+      state.lastRoundCorrectOrder = action.payload ?? [];
     },
     updateAnswer(state, action: PayloadAction<string[] | null>) {
       state.statusInfo.answer = action.payload;
@@ -59,6 +74,8 @@ export const {
   setPlayers,
   setGameData,
   setStatusInfo,
+  setLastRoundResults,
+  setLastRoundCorrectOrder,
   updateAnswer,
   updateIsAlive,
 } = shuffleSlice.actions; // state 변경함수들 남음

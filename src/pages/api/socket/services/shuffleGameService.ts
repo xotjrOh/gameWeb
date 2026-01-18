@@ -4,7 +4,6 @@ import { Room, Player } from '@/types/room';
 import { ShufflePlayerData, EvaluationResult } from '@/types/shuffle';
 import { Server } from 'socket.io';
 import { ClientToServerEvents, ServerToClientEvents } from '@/types/socket';
-import _ from 'lodash';
 
 // 게임 타이머 시작
 export function startGameTimer(
@@ -17,19 +16,12 @@ export function startGameTimer(
 
   // 답안 제출 제한 시간 타이머 설정 (예: 60초)
   timers[roomId] = setTimeout(() => {
-    // 제한 시간 내에 제출하지 않은 플레이어는 탈락 처리
-    room.players.forEach((player) => {
-      const shufflePlayer = player as Player & ShufflePlayerData;
-      if (shufflePlayer.isAlive && shufflePlayer.answer === null) {
-        shufflePlayer.isAlive = false;
-      }
-    });
-
     // 답안 평가 및 결과 전송
     const results = evaluateAnswers(room);
     io.to(roomId).emit('shuffle-round-results', {
       results,
       correctOrder: room.gameData.correctOrder,
+      players: room.players,
     });
 
     // 게임 상태 업데이트
@@ -44,6 +36,10 @@ export function resetPlayerStatus(players: Player[]): void {
     const shufflePlayer = player as Player & ShufflePlayerData;
     shufflePlayer.answer = null;
     shufflePlayer.isAlive = true;
+    shufflePlayer.isAnswerSubmitted = false;
+    if (typeof shufflePlayer.score !== 'number') {
+      shufflePlayer.score = 0;
+    }
   });
 }
 
@@ -52,17 +48,15 @@ export function submitAnswer(
   player: Player & ShufflePlayerData,
   answer: string[]
 ): void {
-  if (!player.isAlive) {
-    throw new Error('이미 탈락한 플레이어입니다.');
-  }
   player.answer = answer;
+  player.isAnswerSubmitted = true;
 }
 
 // 모든 답안 제출 여부 확인
 export function checkAllAnswersSubmitted(room: Room) {
   return room.players.every((player) => {
     const shufflePlayer = player as Player & ShufflePlayerData;
-    return !shufflePlayer.isAlive || shufflePlayer.answer !== null;
+    return shufflePlayer.answer !== null;
   });
 }
 
@@ -72,21 +66,18 @@ export function evaluateAnswers(room: Room): EvaluationResult[] {
 
   return room.players.map((player) => {
     const shufflePlayer = player as Player & ShufflePlayerData;
-    if (!shufflePlayer.isAlive) {
-      return {
-        id: shufflePlayer.id,
-        name: shufflePlayer.name,
-        isAlive: false,
-      };
-    }
-
-    const isCorrect = _.isEqual(shufflePlayer.answer, correctOrder);
-    shufflePlayer.isAlive = isCorrect;
-
+    const answer = shufflePlayer.answer ?? [];
+    const roundScore = answer.reduce(
+      (score, value, index) => score + (value === correctOrder[index] ? 1 : 0),
+      0
+    );
+    shufflePlayer.score = (shufflePlayer.score ?? 0) + roundScore;
+    shufflePlayer.isAlive = true;
     return {
       id: shufflePlayer.id,
       name: shufflePlayer.name,
-      isAlive: shufflePlayer.isAlive,
+      roundScore,
+      totalScore: shufflePlayer.score ?? 0,
     };
   });
 }
