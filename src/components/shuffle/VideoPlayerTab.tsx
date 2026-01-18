@@ -305,6 +305,7 @@ function VideoPlayerTab({ roomId, socket, session }: VideoPlayerTabProps) {
             settings: {
               clips: clipsWithId,
               correctOrder: shuffled,
+              difficulty: videoData.difficulty,
               currentPhase: 'answering',
             },
           },

@@ -6,7 +6,7 @@ import {
   CommonResponse,
   JoinRoomData,
 } from '@/types/socket';
-import { Room } from '@/types/room';
+import { Room, Player } from '@/types/room';
 import _ from 'lodash';
 import { rooms, incrementRoomId } from '../state/gameState';
 import { Lock } from '../state/globalState';
@@ -16,6 +16,7 @@ import {
   DEFAULT_GAME_DATA,
   DEFAULT_PLAYER_DATA,
 } from '../utils/constants';
+import { ShufflePlayerData } from '@/types/shuffle';
 import {
   validateRoomName,
   validateGameType,
@@ -55,6 +56,23 @@ const commonHandler = (
       console.log(
         `Updated host socketId for player ${sessionId} in room ${roomId} : ${newSocketId}`
       );
+
+      const room = rooms[roomId];
+      if (
+        room.gameType === 'shuffle' &&
+        room.status !== GAME_STATUS.IN_PROGRESS
+      ) {
+        room.gameData = _.cloneDeep(DEFAULT_GAME_DATA['shuffle']);
+        room.players.forEach((p) => {
+          const shufflePlayer = p as Player & ShufflePlayerData;
+          shufflePlayer.answer = null;
+          shufflePlayer.isAnswerSubmitted = false;
+        });
+        io.to(roomId).emit('shuffle-round-reset', {
+          gameData: room.gameData,
+          players: room.players,
+        });
+      }
     }
   });
 

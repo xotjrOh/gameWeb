@@ -49,8 +49,9 @@ export const DEFAULT_GAME_DATA: {
     timeLeft: 0,
   },
   shuffle: {
-    correctOrder: ['A', 'B', 'C', 'D'],
-    clips: [{ id: 'A', start: 30, end: 33 }],
+    correctOrder: [],
+    clips: [],
+    difficulty: undefined,
     currentPhase: 'waiting',
     isTimeover: true,
     timeLeft: 0,

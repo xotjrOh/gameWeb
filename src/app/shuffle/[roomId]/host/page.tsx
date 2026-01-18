@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch'; // 커스텀 훅
 import {
   Box,
@@ -42,6 +43,31 @@ export default function ShuffleGamePage({ params }: ShuffleGamePageProps) {
   useUpdateSocketId(socket, session, roomId);
   useShuffleGameData(roomId, socket, sessionId);
   useLeaveRoom(socket, dispatch);
+
+  const didAutoResetRef = useRef(false);
+  useEffect(() => {
+    if (!socket || !session?.user?.id || didAutoResetRef.current) {
+      return;
+    }
+    didAutoResetRef.current = true;
+    socket.emit(
+      'shuffle-reset-round',
+      { roomId, sessionId: session.user.id },
+      () => {}
+    );
+  }, [socket?.id, session?.user?.id, roomId]);
+
+  useEffect(() => {
+    if (!socket || !session?.user?.id) return;
+    const intervalId = setInterval(() => {
+      socket.emit(
+        'shuffle-get-game-data',
+        { roomId, sessionId: session.user.id },
+        () => {}
+      );
+    }, 2000);
+    return () => clearInterval(intervalId);
+  }, [socket?.id, session?.user?.id, roomId]);
 
   return (
     <Box

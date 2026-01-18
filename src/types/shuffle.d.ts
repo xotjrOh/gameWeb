@@ -17,6 +17,7 @@ export interface Clip {
 export interface ShuffleGameData {
   correctOrder: string[];
   clips: Clip[];
+  difficulty?: '하' | '중' | '상';
   currentPhase: 'waiting' | 'playing' | 'answering' | 'result';
   isTimeover?: boolean;
   timeLeft?: number;
@@ -42,6 +43,10 @@ export interface ShuffleClientToServerEvents {
     data: { roomId: string; settings: Partial<ShuffleGameData> },
     callback: (response: CommonResponse) => void
   ) => void;
+  'shuffle-reset-round': (
+    data: { roomId: string; sessionId: string },
+    callback: (response: CommonResponse) => void
+  ) => void;
   'shuffle-end-round': (
     data: { roomId: string; sessionId: string },
     callback: (response: CommonResponse) => void
@@ -59,10 +64,18 @@ export interface ShuffleClientToServerEvents {
 
 export interface ShuffleServerToClientEvents {
   'shuffle-start-answering': () => void;
+  'shuffle-players-update': (data: {
+    players: (Player & ShufflePlayerData)[];
+  }) => void;
+  'shuffle-round-reset': (data: {
+    gameData: ShuffleGameData;
+    players: (Player & ShufflePlayerData)[];
+  }) => void;
   'shuffle-round-results': (data: {
     results: EvaluationResult[];
     correctOrder: string[];
     players: (Player & ShufflePlayerData)[];
+    gameData: ShuffleGameData;
   }) => void;
   'shuffle-game-started': (data: {
     clips: Clip[];

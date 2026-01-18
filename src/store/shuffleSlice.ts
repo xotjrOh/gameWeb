@@ -17,12 +17,9 @@ interface ShuffleInitialState {
 const initialState: ShuffleInitialState = {
   players: [],
   gameData: {
-    correctOrder: ['A', 'B', 'C', 'D'],
-    clips: [
-      // 섞인 클립 정보
-      { id: 'A', start: 30, end: 33 },
-      // ...
-    ],
+    correctOrder: [],
+    clips: [],
+    difficulty: undefined,
     currentPhase: 'waiting', // 'playing', 'answering', 'result'
     isTimeover: true,
 

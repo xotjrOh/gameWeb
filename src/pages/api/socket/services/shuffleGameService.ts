@@ -22,6 +22,7 @@ export function startGameTimer(
       results,
       correctOrder: room.gameData.correctOrder,
       players: room.players,
+      gameData: room.gameData,
     });
 
     // 게임 상태 업데이트
@@ -62,15 +63,16 @@ export function checkAllAnswersSubmitted(room: Room) {
 
 // 답안 평가
 export function evaluateAnswers(room: Room): EvaluationResult[] {
-  const { correctOrder } = room.gameData;
+  const { correctOrder, difficulty } = room.gameData;
 
   return room.players.map((player) => {
     const shufflePlayer = player as Player & ShufflePlayerData;
     const answer = shufflePlayer.answer ?? [];
-    const roundScore = answer.reduce(
-      (score, value, index) => score + (value === correctOrder[index] ? 1 : 0),
-      0
-    );
+    const isPerfect =
+      answer.length === correctOrder.length &&
+      answer.every((value, index) => value === correctOrder[index]);
+    const weight = difficulty === '상' ? 2 : 1;
+    const roundScore = isPerfect ? weight : 0;
     shufflePlayer.score = (shufflePlayer.score ?? 0) + roundScore;
     shufflePlayer.isAlive = true;
     return {

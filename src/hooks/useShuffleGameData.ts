@@ -20,16 +20,21 @@ export default function useShuffleGameData(
 
   useEffect(() => {
     if (socket && roomId) {
-      // 서버로부터 게임 데이터를 받아와 Redux 스토어에 저장
-      socket.emit(
-        'shuffle-get-game-data',
-        { roomId, sessionId },
-        (response) => {
-          if (!response.success) {
-            enqueueSnackbar(response.message, { variant: 'error' });
+      const requestGameData = () => {
+        socket.emit(
+          'shuffle-get-game-data',
+          { roomId, sessionId },
+          (response) => {
+            if (!response.success) {
+              enqueueSnackbar(response.message, { variant: 'error' });
+            }
           }
-        }
-      );
+        );
+      };
+
+      // 서버로부터 게임 데이터를 받아와 Redux 스토어에 저장
+      requestGameData();
+      socket.on('connect', requestGameData);
 
       // 게임 진행 중 발생하는 이벤트 처리
       // TODO : 에러 발생시 타입 명시적으로 표현
@@ -62,12 +67,41 @@ export default function useShuffleGameData(
         if (Array.isArray(data?.correctOrder)) {
           dispatch(setLastRoundCorrectOrder(data.correctOrder));
         }
+        if (data?.gameData) {
+          dispatch(setGameData(data.gameData));
+        }
+      });
+      socket.on('shuffle-players-update', (data) => {
+        if (Array.isArray(data?.players)) {
+          dispatch(setPlayers(data.players));
+          const myInfo = data.players.find((player) => player.id === sessionId);
+          if (myInfo) {
+            dispatch(setStatusInfo(myInfo));
+          }
+        }
+      });
+      socket.on('shuffle-round-reset', (data) => {
+        if (data?.gameData) {
+          dispatch(setGameData(data.gameData));
+        }
+        if (Array.isArray(data?.players)) {
+          dispatch(setPlayers(data.players));
+          const myInfo = data.players.find((player) => player.id === sessionId);
+          if (myInfo) {
+            dispatch(setStatusInfo(myInfo));
+          }
+        }
+        dispatch(setLastRoundResults([]));
+        dispatch(setLastRoundCorrectOrder([]));
       });
 
       return () => {
         socket.off('shuffle-game-data-update');
         socket.off('shuffle-game-started');
         socket.off('shuffle-round-results');
+        socket.off('shuffle-players-update');
+        socket.off('shuffle-round-reset');
+        socket.off('connect', requestGameData);
       };
     }
   }, [roomId, socket?.id, sessionId, dispatch]);

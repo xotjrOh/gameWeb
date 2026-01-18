@@ -18,9 +18,7 @@ import {
   // validateAssignedByShuffleGame,
 } from '../utils/validation';
 import {
-  startGameTimer,
   submitAnswer,
-  checkAllAnswersSubmitted,
   evaluateAnswers,
   resetPlayerStatus,
 } from '../services/shuffleGameService';
@@ -41,7 +39,7 @@ const shuffleGameHandler = (
       Object.assign(room.gameData, settings);
 
       // 클립 생성 및 섞기
-      room.gameData.currentPhase = 'playing';
+      room.gameData.currentPhase = 'answering';
       room.status = GAME_STATUS.IN_PROGRESS;
 
       // 플레이어 상태 초기화
@@ -54,8 +52,7 @@ const shuffleGameHandler = (
         players: room.players,
       });
 
-      // 게임 타이머 시작
-      startGameTimer(roomId, room, io);
+      // 게임 타이머는 수동 종료 방식에서는 사용하지 않음
 
       io.emit('room-updated', rooms);
       return callback({ success: true });
@@ -74,24 +71,9 @@ const shuffleGameHandler = (
           ShufflePlayerData;
 
         submitAnswer(player, answer);
-
-        // 모든 답안 제출 여부 확인
-        if (checkAllAnswersSubmitted(room)) {
-          if (timers[roomId]) {
-            clearTimeout(timers[roomId]);
-            delete timers[roomId];
-          }
-          // 답안 평가 및 결과 전송
-          const results = evaluateAnswers(room);
-          io.to(roomId).emit('shuffle-round-results', {
-            results,
-            correctOrder: room.gameData.correctOrder,
-            players: room.players,
-          });
-
-          room.status = GAME_STATUS.PENDING;
-          io.emit('room-updated', rooms);
-        }
+        io.to(roomId).emit('shuffle-players-update', {
+          players: room.players,
+        });
 
         return callback({ success: true });
       } catch (error) {
@@ -118,6 +100,7 @@ const shuffleGameHandler = (
         results,
         correctOrder: room.gameData.correctOrder,
         players: room.players,
+        gameData: room.gameData,
       });
 
       room.status = GAME_STATUS.PENDING;
@@ -128,10 +111,45 @@ const shuffleGameHandler = (
     }
   });
 
+  socket.on('shuffle-reset-round', ({ roomId, sessionId }, callback) => {
+    try {
+      const room = validateRoom(roomId) as Room;
+      if (room.host.id !== sessionId) {
+        throw new Error('방장만 초기화할 수 있습니다.');
+      }
+
+      if (timers[roomId]) {
+        clearTimeout(timers[roomId]);
+        delete timers[roomId];
+      }
+
+      room.gameData.currentPhase = 'waiting';
+      room.gameData.clips = [];
+      room.gameData.correctOrder = [];
+      room.gameData.isTimeover = true;
+      room.gameData.timeLeft = 0;
+      room.status = GAME_STATUS.PENDING;
+      room.players.forEach((player) => {
+        const shufflePlayer = player as Player & ShufflePlayerData;
+        shufflePlayer.answer = null;
+        shufflePlayer.isAnswerSubmitted = false;
+      });
+
+      io.to(roomId).emit('shuffle-round-reset', {
+        gameData: room.gameData,
+        players: room.players,
+      });
+      return callback({ success: true });
+    } catch (error) {
+      callback({ success: false, message: (error as Error).message });
+    }
+  });
+
   socket.on('shuffle-get-game-data', ({ roomId, sessionId }, callback) => {
     try {
       console.log('server : shuffle-get-game-data', sessionId);
       const room = validateRoom(roomId) as Room;
+      socket.join(roomId);
 
       const player = rooms[roomId].players.find(
         (p) => p.id === sessionId

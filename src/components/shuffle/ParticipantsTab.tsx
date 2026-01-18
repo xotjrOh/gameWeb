@@ -27,6 +27,7 @@ export default function ParticipantsTab({
   session,
 }: ParticipantsTabProps) {
   const players = useAppSelector((state) => state.shuffle.players) ?? [];
+  const gameData = useAppSelector((state) => state.shuffle.gameData);
   const lastRoundResults = useAppSelector(
     (state) => state.shuffle.lastRoundResults
   );
@@ -40,6 +41,15 @@ export default function ParticipantsTab({
     });
     return map;
   }, [lastRoundResults]);
+
+  const submittedCount = useMemo(
+    () => players.filter((player) => player.isAnswerSubmitted).length,
+    [players]
+  );
+
+  const canEndRound =
+    gameData?.currentPhase === 'answering' &&
+    (gameData?.clips?.length ?? 0) > 0;
 
   const gainedPlayers = useMemo(
     () => (lastRoundResults ?? []).filter((result) => result.roundScore > 0),
@@ -85,7 +95,7 @@ export default function ParticipantsTab({
             variant="contained"
             color="error"
             onClick={handleEndRound}
-            disabled={isEnding}
+            disabled={isEnding || !canEndRound}
           >
             라운드 종료
           </Button>
@@ -94,6 +104,12 @@ export default function ParticipantsTab({
           <Chip
             label={`득점자 ${gainedPlayers.length}/${players.length}`}
             color={gainedPlayers.length ? 'success' : 'default'}
+            variant="outlined"
+            size="small"
+          />
+          <Chip
+            label={`제출 ${submittedCount}/${players.length}`}
+            color={submittedCount === players.length ? 'primary' : 'default'}
             variant="outlined"
             size="small"
           />
@@ -123,7 +139,9 @@ export default function ParticipantsTab({
               backgroundColor:
                 (roundScoreMap.get(player.id) ?? 0) > 0
                   ? 'rgba(76, 175, 80, 0.12)'
-                  : 'transparent',
+                  : player.isAnswerSubmitted
+                    ? 'rgba(25, 118, 210, 0.08)'
+                    : 'transparent',
             }}
             secondaryAction={
               <Stack direction="row" spacing={1} alignItems="center">
@@ -149,7 +167,19 @@ export default function ParticipantsTab({
             }
           >
             <Avatar>{player.name.charAt(0)}</Avatar>
-            <ListItemText primary={player.name} secondary="진행 중" />
+            <ListItemText
+              primary={player.name}
+              secondary={
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Chip
+                    label={player.isAnswerSubmitted ? '제출 완료' : '미제출'}
+                    color={player.isAnswerSubmitted ? 'success' : 'default'}
+                    size="small"
+                    variant="outlined"
+                  />
+                </Stack>
+              }
+            />
           </ListItem>
         ))}
       </List>
