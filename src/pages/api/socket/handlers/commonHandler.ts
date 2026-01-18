@@ -62,7 +62,19 @@ const commonHandler = (
         room.gameType === 'shuffle' &&
         room.status !== GAME_STATUS.IN_PROGRESS
       ) {
-        room.gameData = _.cloneDeep(DEFAULT_GAME_DATA['shuffle']);
+        const baseGameData = _.cloneDeep(DEFAULT_GAME_DATA['shuffle']);
+        const prevGameData = room.gameData ?? baseGameData;
+        room.gameData = {
+          ...baseGameData,
+          rankingRoundsTotal: prevGameData.rankingRoundsTotal ?? 0,
+          roundIndex: prevGameData.roundIndex ?? 0,
+          rankingLocked: prevGameData.rankingLocked ?? false,
+          rankingWinners: prevGameData.rankingWinners ?? [],
+        };
+        room.gameData.currentPhase = 'waiting';
+        room.gameData.clips = [];
+        room.gameData.correctOrder = [];
+        room.gameData.difficulty = undefined;
         room.players.forEach((p) => {
           const shufflePlayer = p as Player & ShufflePlayerData;
           shufflePlayer.answer = null;

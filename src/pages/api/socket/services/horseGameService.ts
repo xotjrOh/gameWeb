@@ -122,10 +122,18 @@ export function checkGameEnd(
   io: Server<ClientToServerEvents, ServerToClientEvents>,
   roomId: string
 ) {
-  const horsesPositions = Object.entries(room.gameData.positions) as [
-    string,
-    number,
-  ][];
+  const positionsMap = Array.isArray(room.gameData.positions)
+    ? (Object.fromEntries(
+        Object.entries(room.gameData.positions) as [string, number][]
+      ) as Record<string, number>)
+    : (room.gameData.positions as Record<string, number>) || {};
+  const horseNames =
+    room.gameData.horses && room.gameData.horses.length > 0
+      ? room.gameData.horses
+      : Object.keys(positionsMap);
+  const horsesPositions = horseNames.map(
+    (horse) => [horse, positionsMap[horse] ?? 0] as [string, number]
+  );
 
   // 결승선을 넘은 말들을 찾음 (losers)
   const losers = horsesPositions.filter(
@@ -164,21 +172,24 @@ export function checkGameEnd(
       })),
     });
 
-    const winnerPlayerNames = winners
-      .flatMap(([horse]) => getPlayersByHorse(horse))
-      .filter((name) => name);
-    const fallbackWinnerNames =
-      winnerPlayerNames.length === 0 && room.players.length === 1
-        ? losers
-            .flatMap(([horse]) => getPlayersByHorse(horse))
-            .filter((name) => name)
-        : winnerPlayerNames;
-    try {
-      if (fallbackWinnerNames.length > 0) {
-        recordGameWinners('horse', fallbackWinnerNames);
+    if (!room.gameData.rankingLocked) {
+      const winnerPlayerNames = winners
+        .flatMap(([horse]) => getPlayersByHorse(horse))
+        .filter((name) => name);
+      const fallbackWinnerNames =
+        winnerPlayerNames.length === 0 && room.players.length === 1
+          ? losers
+              .flatMap(([horse]) => getPlayersByHorse(horse))
+              .filter((name) => name)
+          : winnerPlayerNames;
+      try {
+        if (fallbackWinnerNames.length > 0) {
+          recordGameWinners('horse', fallbackWinnerNames);
+        }
+      } catch (error) {
+        console.error('[leaderboard] failed to record winners', error);
       }
-    } catch (error) {
-      console.error('[leaderboard] failed to record winners', error);
+      room.gameData.rankingLocked = true;
     }
 
     room.status = GAME_STATUS.PENDING;

@@ -18,6 +18,10 @@ export interface ShuffleGameData {
   correctOrder: string[];
   clips: Clip[];
   difficulty?: '하' | '중' | '상';
+  roundIndex?: number;
+  rankingRoundsTotal?: number;
+  rankingLocked?: boolean;
+  rankingWinners?: string[];
   currentPhase: 'waiting' | 'playing' | 'answering' | 'result';
   isTimeover?: boolean;
   timeLeft?: number;
@@ -43,7 +47,15 @@ export interface ShuffleClientToServerEvents {
     data: { roomId: string; settings: Partial<ShuffleGameData> },
     callback: (response: CommonResponse) => void
   ) => void;
+  'shuffle-set-round-limit': (
+    data: { roomId: string; sessionId: string; totalRounds: number },
+    callback: (response: CommonResponse) => void
+  ) => void;
   'shuffle-reset-round': (
+    data: { roomId: string; sessionId: string },
+    callback: (response: CommonResponse) => void
+  ) => void;
+  'shuffle-new-game': (
     data: { roomId: string; sessionId: string },
     callback: (response: CommonResponse) => void
   ) => void;

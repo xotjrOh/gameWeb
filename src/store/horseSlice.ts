@@ -23,6 +23,7 @@ const initialState: HorseInitialState = {
     isRoundStarted: false,
     rounds: [],
     timeLeft: 0,
+    rankingLocked: false,
   },
   statusInfo: {
     id: 'sessionId',

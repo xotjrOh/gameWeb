@@ -229,6 +229,7 @@ const horseGameHandler = (
           rounds: room.gameData.rounds || [],
           isTimeover: room.gameData.isTimeover || true,
           timeLeft: room.gameData.timeLeft || 0,
+          rankingLocked: room.gameData.rankingLocked ?? false,
         },
         statusInfo: player || defaultStatusInfo, // TODO : 바뀐로직 에러확인
       });

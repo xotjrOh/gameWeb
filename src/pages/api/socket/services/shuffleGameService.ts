@@ -16,6 +16,7 @@ export function startGameTimer(
 
   // 답안 제출 제한 시간 타이머 설정 (예: 60초)
   timers[roomId] = setTimeout(() => {
+    room.gameData.currentPhase = 'result';
     // 답안 평가 및 결과 전송
     const results = evaluateAnswers(room);
     io.to(roomId).emit('shuffle-round-results', {

@@ -20,6 +20,10 @@ const initialState: ShuffleInitialState = {
     correctOrder: [],
     clips: [],
     difficulty: undefined,
+    roundIndex: 0,
+    rankingRoundsTotal: 0,
+    rankingLocked: false,
+    rankingWinners: [],
     currentPhase: 'waiting', // 'playing', 'answering', 'result'
     isTimeover: true,
 

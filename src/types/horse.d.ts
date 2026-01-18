@@ -22,6 +22,7 @@ export interface HorseGameData {
   isTimeover: boolean;
   isRoundStarted: boolean;
   timeLeft: number;
+  rankingLocked?: boolean;
 }
 
 // 말 경주 플레이어 데이터 타입 정의
