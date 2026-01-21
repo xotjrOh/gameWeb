@@ -36,7 +36,7 @@ const gameTypeMap: Record<GameType, string> = {
   horse: '🏇 경마게임',
   shuffle: '🔀 뒤죽박죽',
   animal: '🦁 동물 능력전',
-  jamo: '🔤 자모 토의 단어게임',
+  jamo: '🔤 단어게임',
 };
 
 const DEBUG = process.env.NEXT_PUBLIC_SOCKET_DEBUG === '1';

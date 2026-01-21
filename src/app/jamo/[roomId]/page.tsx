@@ -199,7 +199,7 @@ export default function JamoGamePage({ params }: JamoGamePageProps) {
           alignItems={{ xs: 'flex-start', md: 'center' }}
         >
           <Typography variant="h4" fontWeight={700}>
-            🔤 자모 토의 단어게임
+            🔤단어게임
           </Typography>
           <Chip label={`ROOM ${roomId}`} sx={{ fontWeight: 600 }} />
           <Chip label={phaseLabels[gameData.phase] ?? gameData.phase} />

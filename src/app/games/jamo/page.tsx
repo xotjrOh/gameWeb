@@ -28,7 +28,7 @@ export default function JamoRulePage() {
         <Container maxWidth="md">
           <Paper sx={{ p: 3, borderRadius: 4 }}>
             <Typography variant="h4" fontWeight={700} gutterBottom>
-              🔤 자모 토의 단어게임 룰 요약
+              🔤단어게임 룰 요약
             </Typography>
             <Stack spacing={2}>
               <Typography>
