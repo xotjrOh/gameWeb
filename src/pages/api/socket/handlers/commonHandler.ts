@@ -83,6 +83,12 @@ const buildRoom = ({
         gameType: 'animal',
         gameData: _.cloneDeep(DEFAULT_GAME_DATA.animal),
       };
+    case 'jamo':
+      return {
+        ...baseRoom,
+        gameType: 'jamo',
+        gameData: _.cloneDeep(DEFAULT_GAME_DATA.jamo),
+      };
     default:
       return {
         ...baseRoom,

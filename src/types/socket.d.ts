@@ -17,6 +17,10 @@ import {
   AnimalClientToServerEvents,
   AnimalServerToClientEvents,
 } from '@/types/animal';
+import {
+  JamoClientToServerEvents,
+  JamoServerToClientEvents,
+} from '@/types/jamo';
 
 export interface CommonResponse {
   success: boolean;
@@ -27,7 +31,8 @@ export interface CommonResponse {
 export interface ClientToServerEvents
   extends HorseClientToServerEvents,
     ShuffleClientToServerEvents,
-    AnimalClientToServerEvents {
+    AnimalClientToServerEvents,
+    JamoClientToServerEvents {
   'update-socket-id': (data: UpdateSocketIdData) => void;
   'get-room-list': () => void;
   'check-room': (
@@ -62,7 +67,8 @@ export interface ClientToServerEvents
 export interface ServerToClientEvents
   extends HorseServerToClientEvents,
     ShuffleServerToClientEvents,
-    AnimalServerToClientEvents {
+    AnimalServerToClientEvents,
+    JamoServerToClientEvents {
   'room-updated': (rooms: Rooms) => void;
   'room-closed': (data: { message: string }) => void;
   'server-version': (payload: { version: string }) => void;

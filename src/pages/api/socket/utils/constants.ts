@@ -1,6 +1,7 @@
 import { HorseGameData, HorsePlayerData } from '@/types/horse';
 import { ShuffleGameData, ShufflePlayerData } from '@/types/shuffle';
 import { AnimalGameData, AnimalPlayerData } from '@/types/animal';
+import { JamoGameData, JamoPlayerData } from '@/types/jamo';
 
 export const AUTHORIZED_SESSION_IDS = ['3624891095', '116463162791834863252'];
 export const MIN_PLAYER_LENGTH = 1;
@@ -40,6 +41,7 @@ export const DEFAULT_GAME_DATA: {
   horse: HorseGameData;
   shuffle: ShuffleGameData;
   animal: AnimalGameData;
+  jamo: JamoGameData;
 } = {
   horse: {
     finishLine: 9,
@@ -96,12 +98,26 @@ export const DEFAULT_GAME_DATA: {
     hiddenRoleByPlayerId: {},
     privateIntelByPlayerId: {},
   },
+  jamo: {
+    phase: 'waiting',
+    roundNo: 0,
+    roundDuration: 180,
+    timeLeft: 0,
+    endsAt: null,
+    board: {},
+    assignmentsByPlayerId: {},
+    submissionCounts: {},
+    usedWords: {},
+    successLog: [],
+    chatLog: [],
+  },
 } as const;
 
 export const DEFAULT_PLAYER_DATA: {
   horse: HorsePlayerData;
   shuffle: ShufflePlayerData;
   animal: AnimalPlayerData;
+  jamo: JamoPlayerData;
 } = {
   horse: {
     dummyName: NOT_ASSIGNED,
@@ -136,5 +152,10 @@ export const DEFAULT_PLAYER_DATA: {
       remainingUses: {},
     },
     pendingEatTargetId: null,
+  },
+  jamo: {
+    score: 0,
+    successCount: 0,
+    firstSuccessAt: null,
   },
 } as const;

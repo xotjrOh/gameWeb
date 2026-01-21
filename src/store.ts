@@ -4,6 +4,7 @@ import roomSlice from './store/roomSlice';
 import horseSlice from './store/horseSlice';
 import shuffleSlice from './store/shuffleSlice';
 import animalSlice from './store/animalSlice';
+import jamoSlice from './store/jamoSlice';
 
 const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ const store = configureStore({
     horse: horseSlice.reducer,
     shuffle: shuffleSlice.reducer,
     animal: animalSlice.reducer,
+    jamo: jamoSlice.reducer,
   },
   devTools: true,
 });

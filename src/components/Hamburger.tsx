@@ -110,6 +110,9 @@ export default function Hamburger() {
         <MenuItem component={Link} href="/games/animal">
           🦁 동물 능력전
         </MenuItem>
+        <MenuItem component={Link} href="/games/jamo">
+          🔤 자모 토의 단어게임
+        </MenuItem>
       </Menu>
     </Box>
   );
