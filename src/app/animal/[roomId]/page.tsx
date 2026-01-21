@@ -14,7 +14,6 @@ import {
   Select,
 } from '@mui/material';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import { useSocket } from '@/components/provider/SocketProvider';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -58,7 +57,6 @@ export default function AnimalGamePage({ params }: AnimalGamePageProps) {
   const dispatch = useAppDispatch();
   const { socket } = useSocket();
   const { data: session } = useSession();
-  const router = useRouter();
   const { enqueueSnackbar } = useCustomSnackbar();
   const sessionId = session?.user?.id ?? '';
 
@@ -215,21 +213,6 @@ export default function AnimalGamePage({ params }: AnimalGamePageProps) {
       you.pendingEatTargetId)
     : null;
 
-  const handleLeaveRoom = () => {
-    if (!socket || !sessionId) {
-      return;
-    }
-    socket.emit('leave-room', { roomId, sessionId }, (response) => {
-      if (!response.success) {
-        enqueueSnackbar(response.message ?? '방 나가기에 실패했습니다.', {
-          variant: 'error',
-        });
-        return;
-      }
-      router.replace('/');
-    });
-  };
-
   const canUseAbility = (abilityId: string) => {
     if (!you || !roleCard) {
       return false;
@@ -284,14 +267,6 @@ export default function AnimalGamePage({ params }: AnimalGamePageProps) {
             label={`남은 시간 ${formatTime(gameData.timeLeft)}`}
             color="primary"
           />
-          <Button
-            variant="outlined"
-            color="inherit"
-            onClick={handleLeaveRoom}
-            disabled={gameData.phase === 'running'}
-          >
-            나가기
-          </Button>
         </Stack>
 
         <Paper sx={{ p: 2, borderRadius: 3 }}>
