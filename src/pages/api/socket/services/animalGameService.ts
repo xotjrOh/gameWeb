@@ -853,12 +853,14 @@ export const resolveRound = (room: AnimalRoom): AnimalRoundResult => {
 
     const targetBuffs = (target.buffs ?? {}) as PlayerBuffs;
     const predatorBuffs = (predator.buffs ?? {}) as PlayerBuffs;
-    const hasShield = targetBuffs.eatShield?.charges > 0;
+    const hasShield = (targetBuffs.eatShield?.charges ?? 0) > 0;
     const canPierce = Boolean(predatorBuffs.pierceEat?.active);
 
     if (hasShield && !canPierce) {
-      targetBuffs.eatShield.charges -= 1;
-      target.buffs = targetBuffs;
+      if (targetBuffs.eatShield) {
+        targetBuffs.eatShield.charges -= 1;
+        target.buffs = targetBuffs;
+      }
       sparedIds.push(target.id);
       return;
     }
@@ -881,9 +883,11 @@ export const resolveRound = (room: AnimalRoom): AnimalRoundResult => {
     if (candidates.length > capacity) {
       candidates.forEach((player) => {
         const buffs = (player.buffs ?? {}) as PlayerBuffs;
-        if (buffs.starvationShield?.charges > 0) {
-          buffs.starvationShield.charges -= 1;
-          player.buffs = buffs;
+        if ((buffs.starvationShield?.charges ?? 0) > 0) {
+          if (buffs.starvationShield) {
+            buffs.starvationShield.charges -= 1;
+            player.buffs = buffs;
+          }
           sparedIds.push(player.id);
           return;
         }
