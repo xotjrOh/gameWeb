@@ -1,7 +1,7 @@
 import { CommonResponse } from '@/types/socket';
 
 export interface VideoData {
-  difficulty: string;
+  difficulty: '하' | '중' | '상';
   videoId: string;
   full: { start: number; end: number };
   clips: { start: number; end: number }[];

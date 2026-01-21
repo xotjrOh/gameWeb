@@ -1,6 +1,6 @@
 import { timers, rooms } from '../state/gameState';
 import { GAME_STATUS } from '../utils/constants';
-import { Room, Player } from '@/types/room';
+import { Player, ShuffleRoom } from '@/types/room';
 import { ShufflePlayerData, EvaluationResult } from '@/types/shuffle';
 import { Server } from 'socket.io';
 import { ClientToServerEvents, ServerToClientEvents } from '@/types/socket';
@@ -8,7 +8,7 @@ import { ClientToServerEvents, ServerToClientEvents } from '@/types/socket';
 // 게임 타이머 시작
 export function startGameTimer(
   roomId: string,
-  room: Room,
+  room: ShuffleRoom,
   io: Server<ClientToServerEvents, ServerToClientEvents>
 ) {
   room.gameData.currentPhase = 'answering';
@@ -55,7 +55,7 @@ export function submitAnswer(
 }
 
 // 모든 답안 제출 여부 확인
-export function checkAllAnswersSubmitted(room: Room) {
+export function checkAllAnswersSubmitted(room: ShuffleRoom) {
   return room.players.every((player) => {
     const shufflePlayer = player as Player & ShufflePlayerData;
     return shufflePlayer.answer !== null;
@@ -63,7 +63,7 @@ export function checkAllAnswersSubmitted(room: Room) {
 }
 
 // 답안 평가
-export function evaluateAnswers(room: Room): EvaluationResult[] {
+export function evaluateAnswers(room: ShuffleRoom): EvaluationResult[] {
   const { correctOrder, difficulty } = room.gameData;
 
   return room.players.map((player) => {

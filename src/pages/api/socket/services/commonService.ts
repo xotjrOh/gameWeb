@@ -10,6 +10,16 @@ export function handlePlayerReconnect(
   sessionId: string,
   socket: Socket
 ): ReconnectionResult | null {
+  if (room.host.id === sessionId) {
+    const player = room.players.find((p) => p.id === sessionId);
+    if (player) {
+      player.socketId = socket.id;
+    }
+    room.host.socketId = socket.id;
+    socket.join(room.roomId);
+    return { success: true, reEnter: true, host: true };
+  }
+
   // 플레이어가 이미 방에 존재하는지 확인
   const playerExists = room.players.some((player) => player.id === sessionId);
   if (playerExists) {

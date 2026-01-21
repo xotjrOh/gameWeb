@@ -6,7 +6,7 @@ import {
   CommonResponse,
   JoinRoomData,
 } from '@/types/socket';
-import { Room, Player } from '@/types/room';
+import { Room, Player, GameType } from '@/types/room';
 import _ from 'lodash';
 import { rooms, incrementRoomId } from '../state/gameState';
 import { Lock } from '../state/globalState';
@@ -33,6 +33,64 @@ import {
 import { handlePlayerReconnect } from '../services/commonService';
 
 const DEBUG = process.env.SOCKET_DEBUG === '1';
+
+const buildRoom = ({
+  roomId,
+  roomName,
+  gameType,
+  sessionId,
+  userName,
+  socketId,
+  maxPlayers,
+}: {
+  roomId: string;
+  roomName: string;
+  gameType: GameType;
+  sessionId: string;
+  userName: string;
+  socketId: string;
+  maxPlayers: number;
+}): Room => {
+  const baseRoom = {
+    roomId,
+    roomName,
+    host: {
+      id: sessionId,
+      name: userName,
+      socketId,
+    },
+    players: [] as Player[],
+    status: GAME_STATUS.PENDING,
+    maxPlayers,
+  };
+
+  switch (gameType) {
+    case 'horse':
+      return {
+        ...baseRoom,
+        gameType: 'horse',
+        gameData: _.cloneDeep(DEFAULT_GAME_DATA.horse),
+      };
+    case 'shuffle':
+      return {
+        ...baseRoom,
+        gameType: 'shuffle',
+        gameData: _.cloneDeep(DEFAULT_GAME_DATA.shuffle),
+      };
+    case 'animal':
+      return {
+        ...baseRoom,
+        gameType: 'animal',
+        gameData: _.cloneDeep(DEFAULT_GAME_DATA.animal),
+      };
+    default:
+      return {
+        ...baseRoom,
+        gameType: 'horse',
+        gameData: _.cloneDeep(DEFAULT_GAME_DATA.horse),
+      };
+  }
+};
 
 const commonHandler = (
   io: Server<ClientToServerEvents, ServerToClientEvents>,
@@ -118,20 +176,15 @@ const commonHandler = (
           'rooms',
           (done) => {
             const roomId = incrementRoomId();
-            const newRoom: Room = {
+            const newRoom = buildRoom({
               roomId,
               roomName,
               gameType,
-              host: {
-                id: sessionId,
-                name: userName,
-                socketId: socket.id,
-              },
-              players: [], // TODO : 집어넣을때 as HorsePlayers[] 처럼 타입단언 후에 넣는거고려
-              gameData: _.cloneDeep(DEFAULT_GAME_DATA[gameType]),
-              status: GAME_STATUS.PENDING,
+              sessionId,
+              userName,
+              socketId: socket.id,
               maxPlayers,
-            };
+            });
 
             rooms[roomId] = newRoom;
 

@@ -107,6 +107,9 @@ export default function Hamburger() {
         <MenuItem component={Link} href="/games/shuffle">
           🔀 뒤죽박죽
         </MenuItem>
+        <MenuItem component={Link} href="/games/animal">
+          🦁 동물 능력전
+        </MenuItem>
       </Menu>
     </Box>
   );

@@ -5,6 +5,7 @@ import { Server as ServerIO } from 'socket.io';
 import commonHandler from './handlers/commonHandler';
 import horseGameHandler from './handlers/horseGameHandler';
 import shuffleGameHandler from './handlers/shuffleGameHandler';
+import animalGameHandler from './handlers/animalGameHandler';
 import {
   ClientToServerEvents,
   ServerToClientEvents,
@@ -144,6 +145,7 @@ const attachConnectionHandlers = (
     commonHandler(io, socket);
     horseGameHandler(io, socket);
     shuffleGameHandler(io, socket);
+    animalGameHandler(io, socket);
 
     socket.on('disconnect', (reason) => {
       console.log('server : A user disconnected');

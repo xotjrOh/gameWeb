@@ -25,7 +25,7 @@ import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 import PeopleIcon from '@mui/icons-material/People'; // 사람 아이콘
 import AddIcon from '@mui/icons-material/Add';
 import { Session } from 'next-auth';
-import { GameType, HorseRoom, ShuffleRoom } from '@/types/room';
+import { GameType, Room } from '@/types/room';
 import { CommonResponse } from '@/types/socket';
 
 interface GameRoomsProps {
@@ -35,6 +35,7 @@ interface GameRoomsProps {
 const gameTypeMap: Record<GameType, string> = {
   horse: '🏇 경마게임',
   shuffle: '🔀 뒤죽박죽',
+  animal: '🦁 동물 능력전',
 };
 
 const DEBUG = process.env.NEXT_PUBLIC_SOCKET_DEBUG === '1';
@@ -48,9 +49,7 @@ export default function GameRooms({ session }: GameRoomsProps) {
   const dispatch = useAppDispatch();
   const [showModal, setShowModal] = useState<boolean>(false);
   const [showNicknameModal, setShowNicknameModal] = useState<boolean>(false);
-  const [selectedRoom, setSelectedRoom] = useState<
-    HorseRoom | ShuffleRoom | null
-  >(null);
+  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const { rooms } = useAppSelector((state) => state.room);
   const { enqueueSnackbar } = useCustomSnackbar();
 
@@ -63,7 +62,7 @@ export default function GameRooms({ session }: GameRoomsProps) {
     setShowModal(false);
   };
 
-  const handleRoomClick = (room: HorseRoom | ShuffleRoom) => {
+  const handleRoomClick = (room: Room) => {
     if (!socket || !socket.connected) {
       return enqueueSnackbar(
         '서버와 연결이 되어 있지 않습니다. 잠시 후 다시 시도해주세요.',
@@ -207,6 +206,7 @@ export default function GameRooms({ session }: GameRoomsProps) {
   const gameTypeIconMap = {
     horse: '🐎', // 말 이모지
     shuffle: '🔀', // 뒤죽박죽 이모지
+    animal: '🦁', // 동물 능력전 이모지
   };
 
   return (

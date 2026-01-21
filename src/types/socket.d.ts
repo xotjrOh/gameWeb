@@ -1,6 +1,6 @@
 import { Socket as ServerSocket } from 'socket.io';
 import { Socket as ClientSocket } from 'socket.io-client';
-import { Room, Rooms, GameType, Player } from './room';
+import { Room, Rooms, GameType } from './room';
 import { ReconnectionResult } from '../services/commonService';
 import {
   RoundData,
@@ -13,6 +13,10 @@ import {
   ShuffleClientToServerEvents,
   ShuffleServerToClientEvents,
 } from '@/types/shuffle';
+import {
+  AnimalClientToServerEvents,
+  AnimalServerToClientEvents,
+} from '@/types/animal';
 
 export interface CommonResponse {
   success: boolean;
@@ -22,7 +26,8 @@ export interface CommonResponse {
 // Client-to-Server Events
 export interface ClientToServerEvents
   extends HorseClientToServerEvents,
-    ShuffleClientToServerEvents {
+    ShuffleClientToServerEvents,
+    AnimalClientToServerEvents {
   'update-socket-id': (data: UpdateSocketIdData) => void;
   'get-room-list': () => void;
   'check-room': (
@@ -56,7 +61,8 @@ export interface ClientToServerEvents
 // Server-to-Client Events
 export interface ServerToClientEvents
   extends HorseServerToClientEvents,
-    ShuffleServerToClientEvents {
+    ShuffleServerToClientEvents,
+    AnimalServerToClientEvents {
   'room-updated': (rooms: Rooms) => void;
   'room-closed': (data: { message: string }) => void;
   'server-version': (payload: { version: string }) => void;

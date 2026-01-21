@@ -1,5 +1,6 @@
 import { HorseGameData, HorsePlayerData } from '@/types/horse';
 import { ShuffleGameData, ShufflePlayerData } from '@/types/shuffle';
+import { AnimalGameData, AnimalPlayerData } from '@/types/animal';
 
 export const AUTHORIZED_SESSION_IDS = ['3624891095', '116463162791834863252'];
 export const MIN_PLAYER_LENGTH = 1;
@@ -38,12 +39,14 @@ export const GAME_STATUS = {
 export const DEFAULT_GAME_DATA: {
   horse: HorseGameData;
   shuffle: ShuffleGameData;
+  animal: AnimalGameData;
 } = {
   horse: {
     finishLine: 9,
     horses: [],
     positions: [],
     rounds: [],
+    bets: {},
     isTimeover: true,
     isRoundStarted: false,
     timeLeft: 0,
@@ -61,11 +64,44 @@ export const DEFAULT_GAME_DATA: {
     isTimeover: true,
     timeLeft: 0,
   },
+  animal: {
+    phase: 'ready',
+    roundNo: 0,
+    totalRounds: 3,
+    timeLeft: 0,
+    roundDuration: 180,
+    endsAt: null,
+    placeCapacities: {
+      A: 1,
+      B: 1,
+      C: 1,
+      D: 1,
+    },
+    eventLog: [],
+    baseCapacities: {
+      A: 1,
+      B: 1,
+      C: 1,
+      D: 1,
+    },
+    capacityModifiers: {
+      A: 0,
+      B: 0,
+      C: 0,
+      D: 0,
+    },
+    processedReqIds: {},
+    eatIntents: {},
+    fakePlaceByPlayerId: {},
+    hiddenRoleByPlayerId: {},
+    privateIntelByPlayerId: {},
+  },
 } as const;
 
 export const DEFAULT_PLAYER_DATA: {
   horse: HorsePlayerData;
   shuffle: ShufflePlayerData;
+  animal: AnimalPlayerData;
 } = {
   horse: {
     dummyName: NOT_ASSIGNED,
@@ -84,5 +120,21 @@ export const DEFAULT_PLAYER_DATA: {
     isAlive: true,
     isAnswerSubmitted: false,
     score: 0,
+  },
+  animal: {
+    roleId: null,
+    speciesType: 'unknown',
+    placeId: null,
+    locked: false,
+    isAlive: true,
+    score: 0,
+    eatenCountTotal: 0,
+    eatenCountThisRound: 0,
+    abilityState: {
+      usedThisRound: false,
+      cooldowns: {},
+      remainingUses: {},
+    },
+    pendingEatTargetId: null,
   },
 } as const;

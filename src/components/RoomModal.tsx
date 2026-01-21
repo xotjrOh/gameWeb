@@ -182,6 +182,7 @@ export default function RoomModal({
           >
             <MenuItem value="horse">🏇경마게임</MenuItem>
             <MenuItem value="shuffle">🔀뒤죽박죽</MenuItem>
+            <MenuItem value="animal">🦁동물 능력전</MenuItem>
           </Select>
         </FormControl>
 

@@ -19,6 +19,7 @@ export interface HorseGameData {
   horses: string[];
   positions: HorsePosition[]; // 말의 위치 정보를 가진 배열
   rounds: RoundData[][]; // 각 라운드별 데이터 배열
+  bets: { [horse: string]: number };
   isTimeover: boolean;
   isRoundStarted: boolean;
   timeLeft: number;

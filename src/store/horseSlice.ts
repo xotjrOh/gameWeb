@@ -22,6 +22,7 @@ const initialState: HorseInitialState = {
     isTimeover: true,
     isRoundStarted: false,
     rounds: [],
+    bets: {},
     timeLeft: 0,
     rankingLocked: false,
   },

@@ -18,7 +18,7 @@ import {
   evaluateAnswers,
   resetPlayerStatus,
 } from '../services/shuffleGameService';
-import { Room, Player, ShuffleRoom } from '@/types/room';
+import { Player, ShuffleRoom } from '@/types/room';
 import { ShuffleGameData, ShufflePlayerData } from '@/types/shuffle';
 
 const shuffleGameHandler = (
@@ -29,6 +29,9 @@ const shuffleGameHandler = (
   socket.on('shuffle-start-game', ({ roomId, settings }, callback) => {
     try {
       const room = validateRoom(roomId) as ShuffleRoom;
+      if (room.gameType !== 'shuffle') {
+        throw new Error('뒤죽박죽 게임방이 아닙니다.');
+      }
 
       const baseGameData = _.cloneDeep(DEFAULT_GAME_DATA['shuffle']);
       const prevGameData = room.gameData ?? baseGameData;
@@ -81,7 +84,10 @@ const shuffleGameHandler = (
     'shuffle-submit-answer',
     ({ roomId, sessionId, answer }, callback) => {
       try {
-        const room = validateRoom(roomId) as Room;
+        const room = validateRoom(roomId) as ShuffleRoom;
+        if (room.gameType !== 'shuffle') {
+          throw new Error('뒤죽박죽 게임방이 아닙니다.');
+        }
         const player = validatePlayer(room, sessionId) as Player &
           ShufflePlayerData;
 
@@ -99,7 +105,10 @@ const shuffleGameHandler = (
 
   socket.on('shuffle-end-round', ({ roomId, sessionId }, callback) => {
     try {
-      const room = validateRoom(roomId) as Room;
+      const room = validateRoom(roomId) as ShuffleRoom;
+      if (room.gameType !== 'shuffle') {
+        throw new Error('뒤죽박죽 게임방이 아닙니다.');
+      }
       if (room.host.id !== sessionId) {
         throw new Error('방장만 라운드를 종료할 수 있습니다.');
       }
@@ -158,7 +167,10 @@ const shuffleGameHandler = (
 
   socket.on('shuffle-reset-round', ({ roomId, sessionId }, callback) => {
     try {
-      const room = validateRoom(roomId) as Room;
+      const room = validateRoom(roomId) as ShuffleRoom;
+      if (room.gameType !== 'shuffle') {
+        throw new Error('뒤죽박죽 게임방이 아닙니다.');
+      }
       if (room.host.id !== sessionId) {
         throw new Error('방장만 초기화할 수 있습니다.');
       }
@@ -193,7 +205,10 @@ const shuffleGameHandler = (
 
   socket.on('shuffle-new-game', ({ roomId, sessionId }, callback) => {
     try {
-      const room = validateRoom(roomId) as Room;
+      const room = validateRoom(roomId) as ShuffleRoom;
+      if (room.gameType !== 'shuffle') {
+        throw new Error('뒤죽박죽 게임방이 아닙니다.');
+      }
       if (room.host.id !== sessionId) {
         throw new Error('방장만 새 게임을 시작할 수 있습니다.');
       }
@@ -228,7 +243,10 @@ const shuffleGameHandler = (
     'shuffle-set-round-limit',
     ({ roomId, sessionId, totalRounds }, callback) => {
       try {
-        const room = validateRoom(roomId) as Room;
+        const room = validateRoom(roomId) as ShuffleRoom;
+        if (room.gameType !== 'shuffle') {
+          throw new Error('뒤죽박죽 게임방이 아닙니다.');
+        }
         if (room.host.id !== sessionId) {
           throw new Error('방장만 라운드 수를 설정할 수 있습니다.');
         }
@@ -274,7 +292,10 @@ const shuffleGameHandler = (
   socket.on('shuffle-get-game-data', ({ roomId, sessionId }, callback) => {
     try {
       console.log('server : shuffle-get-game-data', sessionId);
-      const room = validateRoom(roomId) as Room;
+      const room = validateRoom(roomId) as ShuffleRoom;
+      if (room.gameType !== 'shuffle') {
+        throw new Error('뒤죽박죽 게임방이 아닙니다.');
+      }
       socket.join(roomId);
 
       const player = rooms[roomId].players.find(

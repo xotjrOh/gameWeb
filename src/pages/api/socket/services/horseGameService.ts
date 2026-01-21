@@ -98,18 +98,26 @@ export function updateHorsePositions(
   io: Server<ClientToServerEvents, ServerToClientEvents>,
   roomId: string
 ) {
+  const positions = Array.isArray(room.gameData.positions)
+    ? [...room.gameData.positions]
+    : Object.entries(room.gameData.positions ?? {}).map(([name, position]) => ({
+        name,
+        position: Number(position) || 0,
+      }));
+
   roundResult.forEach(({ horse, progress }) => {
-    room.gameData.positions[horse] =
-      (room.gameData.positions[horse] || 0) + progress;
+    const delta = progress ?? 0;
+    const target = positions.find((item) => item.name === horse);
+    if (target) {
+      target.position += delta;
+    } else {
+      positions.push({ name: horse, position: delta });
+    }
   });
 
-  const positions = room.gameData.positions || {};
-  const horsesData = Object.entries(positions).map(([name, position]) => ({
-    name,
-    position,
-  })) as HorsePosition[];
+  room.gameData.positions = positions;
   io.to(roomId).emit('update-positions', {
-    horsesData,
+    horsesData: positions,
     rounds: room.gameData.rounds,
   });
 }
@@ -123,9 +131,13 @@ export function checkGameEnd(
   roomId: string
 ) {
   const positionsMap = Array.isArray(room.gameData.positions)
-    ? (Object.fromEntries(
-        Object.entries(room.gameData.positions) as [string, number][]
-      ) as Record<string, number>)
+    ? room.gameData.positions.reduce(
+        (acc, item) => {
+          acc[item.name] = item.position;
+          return acc;
+        },
+        {} as Record<string, number>
+      )
     : (room.gameData.positions as Record<string, number>) || {};
   const horseNames =
     room.gameData.horses && room.gameData.horses.length > 0

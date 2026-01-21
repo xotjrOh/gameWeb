@@ -1,4 +1,7 @@
 import { GAME_STATUS } from '@/pages/api/socket/utils/constants';
+import { HorseGameData } from '@/types/horse';
+import { ShuffleGameData } from '@/types/shuffle';
+import { AnimalGameData } from '@/types/animal';
 
 export type GameStatus = (typeof GAME_STATUS)[keyof typeof GAME_STATUS];
 
@@ -27,7 +30,12 @@ export interface ShuffleRoom extends BaseRoom {
   gameData: ShuffleGameData;
 }
 
-export type Room = HorseRoom | ShuffleRoom;
+export interface AnimalRoom extends BaseRoom {
+  gameType: 'animal';
+  gameData: AnimalGameData;
+}
+
+export type Room = HorseRoom | ShuffleRoom | AnimalRoom;
 
 export type GameType = Room['gameType'];
 

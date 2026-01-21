@@ -46,7 +46,7 @@ const horseGameHandler = (
       room.gameData.timeLeft = duration;
       room.gameData.rounds = room.gameData.rounds || [];
       room.gameData.bets = {}; // 라운드마다 베팅 초기화
-      room.gameData.positions = room.gameData.positions || {}; // 말들의 위치 초기화 (또는 유지)
+      room.gameData.positions = room.gameData.positions || []; // 말들의 위치 초기화 (또는 유지)
 
       clearInterval(timers[roomId]);
 
@@ -101,7 +101,10 @@ const horseGameHandler = (
   // **추가된 역할 할당 이벤트**
   socket.on('horse-assign-roles', ({ roomId }, callback) => {
     try {
-      const room = validateRoom(roomId);
+      const room = validateRoom(roomId) as HorseRoom;
+      if (room.gameType !== 'horse') {
+        throw new Error('경마 게임방이 아닙니다.');
+      }
       const players = room.players;
       const numPlayers = players.length;
 
@@ -191,7 +194,10 @@ const horseGameHandler = (
   // **설정 업데이트 이벤트**
   socket.on('horse-update-settings', ({ roomId, finishLine }, callback) => {
     try {
-      const room = validateRoom(roomId);
+      const room = validateRoom(roomId) as HorseRoom;
+      if (room.gameType !== 'horse') {
+        throw new Error('경마 게임방이 아닙니다.');
+      }
 
       // finishLine 설정 업데이트
       room.gameData.finishLine = finishLine;
@@ -206,16 +212,21 @@ const horseGameHandler = (
   socket.on('horse-get-game-data', ({ roomId, sessionId }, callback) => {
     try {
       console.log('server : horse-get-game-data', sessionId);
-      const room = validateRoom(roomId);
+      const room = validateRoom(roomId) as HorseRoom;
+      if (room.gameType !== 'horse') {
+        throw new Error('경마 게임방이 아닙니다.');
+      }
 
       const player = rooms[roomId].players.find((p) => p.id === sessionId);
       const hasRounds =
         Array.isArray(room.gameData.rounds) && room.gameData.rounds.length > 0;
       const positions = room.gameData.positions || [];
-      const horsesData = Object.entries(positions).map(([name, position]) => ({
-        name,
-        position,
-      })) as HorsePosition[];
+      const horsesData = Array.isArray(positions)
+        ? positions
+        : (Object.entries(positions).map(([name, position]) => ({
+            name,
+            position: Number(position) || 0,
+          })) as HorsePosition[]);
       const defaultStatusInfo = _.cloneDeep(DEFAULT_PLAYER_DATA['horse']);
 
       // 현재 게임 데이터를 클라이언트로 전송
@@ -227,6 +238,7 @@ const horseGameHandler = (
           finishLine: room.gameData.finishLine,
           isRoundStarted: hasRounds || room.gameData.timeLeft > 0,
           rounds: room.gameData.rounds || [],
+          bets: room.gameData.bets || {},
           isTimeover: room.gameData.isTimeover || true,
           timeLeft: room.gameData.timeLeft || 0,
           rankingLocked: room.gameData.rankingLocked ?? false,
@@ -242,7 +254,10 @@ const horseGameHandler = (
   // 새로운 게임 시작을 위한 이벤트 추가
   socket.on('horse-new-game', ({ roomId }, callback) => {
     try {
-      const room = validateRoom(roomId);
+      const room = validateRoom(roomId) as HorseRoom;
+      if (room.gameType !== 'horse') {
+        throw new Error('경마 게임방이 아닙니다.');
+      }
       const defaultStatusInfo = _.cloneDeep(DEFAULT_PLAYER_DATA['horse']);
       room.status = GAME_STATUS.PENDING;
 
@@ -267,6 +282,7 @@ const horseGameHandler = (
             horses: room.gameData.horses,
             positions: room.gameData.positions,
             rounds: room.gameData.rounds,
+            bets: room.gameData.bets,
             isTimeover: room.gameData.isTimeover,
             isRoundStarted: room.gameData.isRoundStarted,
             timeLeft: 0,
@@ -283,6 +299,7 @@ const horseGameHandler = (
           horses: room.gameData.horses,
           positions: room.gameData.positions,
           rounds: room.gameData.rounds,
+          bets: room.gameData.bets,
           isTimeover: room.gameData.isTimeover,
           isRoundStarted: room.gameData.isRoundStarted,
           timeLeft: 0,
