@@ -106,10 +106,11 @@ export const DEFAULT_GAME_DATA: {
     endsAt: null,
     board: {},
     assignmentsByPlayerId: {},
-    submissionCounts: {},
-    usedWords: {},
+    ownershipByNumber: {},
+    draftByPlayerId: {},
+    wordFirstByPlayerId: {},
     successLog: [],
-    chatLog: [],
+    lastRoundResult: undefined,
   },
 } as const;
 

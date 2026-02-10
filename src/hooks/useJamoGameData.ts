@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
-  appendChatMessage,
+  setDraftSaved,
+  upsertSubmissionDebug,
   setRoundResult,
   setSnapshot,
   updatePhase,
@@ -30,8 +31,12 @@ const useJamoGameData = (
       dispatch(updatePhase(data));
     });
 
-    socket.on('jamo_chat_message', (data) => {
-      dispatch(appendChatMessage(data));
+    socket.on('jamo_draft_saved', (data) => {
+      dispatch(setDraftSaved(data.submittedAt));
+    });
+
+    socket.on('jamo_submission_debug', (data) => {
+      dispatch(upsertSubmissionDebug(data));
     });
 
     socket.on('jamo_round_result', (data) => {
@@ -49,7 +54,8 @@ const useJamoGameData = (
     return () => {
       socket.off('jamo_state_snapshot');
       socket.off('jamo_round_phase_changed');
-      socket.off('jamo_chat_message');
+      socket.off('jamo_draft_saved');
+      socket.off('jamo_submission_debug');
       socket.off('jamo_round_result');
     };
   }, [roomId, socket?.id, sessionId, dispatch, enqueueSnackbar]);

@@ -1,6 +1,6 @@
 import { CommonResponse } from '@/types/socket';
 
-export type JamoPhase = 'waiting' | 'discuss' | 'result';
+export type JamoPhase = 'waiting' | 'discuss' | 'ended';
 
 export interface JamoGameData {
   phase: JamoPhase;
@@ -11,10 +11,10 @@ export interface JamoGameData {
   // Internal server-side fields (optional for client)
   board?: Record<number, string>;
   assignmentsByPlayerId?: Record<string, number[]>;
-  submissionCounts?: Record<string, number>;
-  usedWords?: Record<string, true>;
+  ownershipByNumber?: JamoOwnershipMap;
+  draftByPlayerId?: Record<string, JamoDraftSubmission>;
+  wordFirstByPlayerId?: Record<string, Record<string, number>>;
   successLog?: JamoSuccessEntry[];
-  chatLog?: JamoChatMessage[];
   lastRoundResult?: JamoRoundResult;
 }
 
@@ -47,17 +47,33 @@ export interface JamoSuccessEntry {
   submittedAt: number;
 }
 
-export interface JamoChatMessage {
-  id: string;
+export interface JamoDraftSubmission {
   playerId: string;
   playerName: string;
-  message: string;
-  sentAt: number;
+  raw: string;
+  numbers: number[];
+  jamos: string[];
+  word: string | null;
+  dictOk: boolean | null;
+  score: number;
+  submittedAt: number;
+  parsedOk: boolean;
+}
+
+export interface JamoOwnershipMap {
+  [index: number]: { playerId: string; playerName: string } | null;
+}
+
+export interface JamoAssignmentSummary {
+  playerId: string;
+  playerName: string;
+  numbers: number[];
+  jamos: string[];
 }
 
 export interface JamoRoundResult {
   roundNo: number;
-  successPlayerCount: number;
+  successCount: number;
   winner: { playerId: string; playerName: string; score: number } | null;
   successes: JamoSuccessEntry[];
 }
@@ -66,14 +82,20 @@ export interface JamoStateSnapshot {
   you: JamoSelfView;
   players: JamoPlayerView[];
   board: Record<number, string | null>;
+  ownership?: JamoOwnershipMap;
+  assignments?: JamoAssignmentSummary[];
+  draftSubmissions?: Record<string, JamoDraftSubmission>;
+  draftSubmittedAt?: number | null;
   gameData: JamoGameData;
   successLog: JamoSuccessEntry[];
-  chatLog: JamoChatMessage[];
-  submissionLimit: number;
   isHostView: boolean;
 }
 
 export interface JamoClientToServerEvents {
+  jamo_host_distribute: (
+    data: { roomId: string; sessionId: string },
+    callback: (response: CommonResponse) => void
+  ) => void;
   jamo_set_round_time: (
     data: { roomId: string; sessionId: string; duration: number },
     callback: (response: CommonResponse) => void
@@ -86,12 +108,12 @@ export interface JamoClientToServerEvents {
     data: { roomId: string; sessionId: string },
     callback: (response: CommonResponse) => void
   ) => void;
-  jamo_submit_numbers: (
-    data: { roomId: string; sessionId: string; numbers: string },
+  jamo_reset_round: (
+    data: { roomId: string; sessionId: string },
     callback: (response: CommonResponse) => void
   ) => void;
-  jamo_send_chat: (
-    data: { roomId: string; sessionId: string; message: string },
+  jamo_submit_draft: (
+    data: { roomId: string; sessionId: string; raw: string },
     callback: (response: CommonResponse) => void
   ) => void;
   jamo_get_state: (
@@ -109,6 +131,7 @@ export interface JamoServerToClientEvents {
     roundNo: number;
     roundDuration: number;
   }) => void;
-  jamo_chat_message: (data: JamoChatMessage) => void;
+  jamo_draft_saved: (data: { submittedAt: number }) => void;
+  jamo_submission_debug: (data: JamoDraftSubmission) => void;
   jamo_round_result: (data: JamoRoundResult) => void;
 }

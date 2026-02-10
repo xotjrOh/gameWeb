@@ -8,11 +8,23 @@ import {
   Paper,
   Button,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   TextField,
   Divider,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from '@mui/material';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Confetti from 'react-confetti';
+import useWindowSize from 'react-use/lib/useWindowSize';
 import { useSocket } from '@/components/provider/SocketProvider';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -24,7 +36,7 @@ import useLeaveRoom from '@/hooks/useLeaveRoom';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 import JamoBoard from '@/components/jamo/JamoBoard';
 import JamoMemoGrid from '@/components/jamo/JamoMemoGrid';
-import JamoChatPanel from '@/components/jamo/JamoChatPanel';
+import { playFanfare } from '@/lib/playFanfare';
 
 interface JamoGamePageProps {
   params: {
@@ -34,8 +46,8 @@ interface JamoGamePageProps {
 
 const phaseLabels: Record<string, string> = {
   waiting: '대기',
-  discuss: '토의',
-  result: '결과',
+  discuss: '진행',
+  ended: '종료',
 };
 
 const formatTime = (timeLeft: number) => {
@@ -60,16 +72,8 @@ export default function JamoGamePage({ params }: JamoGamePageProps) {
   const { enqueueSnackbar } = useCustomSnackbar();
   const sessionId = session?.user?.id ?? '';
 
-  const {
-    players,
-    you,
-    gameData,
-    board,
-    successLog,
-    chatLog,
-    roundResult,
-    submissionLimit,
-  } = useAppSelector((state) => state.jamo);
+  const { you, gameData, board, roundResult, draftSubmittedAt } =
+    useAppSelector((state) => state.jamo);
 
   useCheckVersion(socket);
   useRedirectIfInvalidRoom(roomId);
@@ -78,19 +82,36 @@ export default function JamoGamePage({ params }: JamoGamePageProps) {
   useLeaveRoom(socket, dispatch);
 
   const [numbersInput, setNumbersInput] = useState('');
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'fail'>(
-    'idle'
-  );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [resultDialogOpen, setResultDialogOpen] = useState(false);
+  const { width, height } = useWindowSize();
 
   useEffect(() => {
-    setSubmitStatus('idle');
     setIsSubmitting(false);
   }, [gameData.roundNo, gameData.phase]);
 
   useEffect(() => {
     setNumbersInput('');
   }, [gameData.roundNo]);
+
+  useEffect(() => {
+    if (!roundResult) {
+      setShowConfetti(false);
+      return;
+    }
+    const isWinner = roundResult.winner?.playerId === you?.id;
+    setShowConfetti(isWinner);
+    if (isWinner) {
+      playFanfare();
+    }
+  }, [roundResult, you?.id]);
+
+  useEffect(() => {
+    if (roundResult) {
+      setResultDialogOpen(true);
+    }
+  }, [roundResult?.roundNo]);
 
   const storageKey = useMemo(() => {
     if (!sessionId) {
@@ -133,30 +154,12 @@ export default function JamoGamePage({ params }: JamoGamePageProps) {
     }
     setIsSubmitting(true);
     socket.emit(
-      'jamo_submit_numbers',
-      { roomId, sessionId, numbers: numbersInput },
+      'jamo_submit_draft',
+      { roomId, sessionId, raw: numbersInput },
       (response) => {
         setIsSubmitting(false);
         if (!response.success) {
-          setSubmitStatus('fail');
-          return;
-        }
-        setSubmitStatus('success');
-        setNumbersInput('');
-      }
-    );
-  };
-
-  const handleSendChat = (message: string) => {
-    if (!socket || !sessionId) {
-      return;
-    }
-    socket.emit(
-      'jamo_send_chat',
-      { roomId, sessionId, message },
-      (response) => {
-        if (!response.success) {
-          enqueueSnackbar(response.message ?? '메시지 전송 실패', {
+          enqueueSnackbar('제출 저장에 실패했습니다.', {
             variant: 'error',
           });
         }
@@ -179,8 +182,16 @@ export default function JamoGamePage({ params }: JamoGamePageProps) {
     });
   };
 
-  const mySuccesses = successLog.filter((entry) => entry.playerId === you?.id);
-  const remainingSubmits = submissionLimit - (you?.submissionCount ?? 0);
+  const submitLabel = draftSubmittedAt ? '제출 변경' : '제출';
+  const canSubmit =
+    gameData.phase === 'discuss' &&
+    numbersInput.trim().length > 0 &&
+    !isSubmitting;
+  const winnerId = roundResult?.winner?.playerId ?? null;
+  const mySuccess = roundResult?.successes.find(
+    (entry) => entry.playerId === you?.id
+  );
+  const hasSubmitted = Boolean(draftSubmittedAt);
 
   return (
     <Box
@@ -192,6 +203,14 @@ export default function JamoGamePage({ params }: JamoGamePageProps) {
         py: 3,
       }}
     >
+      {showConfetti && (
+        <Confetti
+          width={width}
+          height={height}
+          numberOfPieces={200}
+          recycle={false}
+        />
+      )}
       <Stack spacing={3}>
         <Stack
           direction={{ xs: 'column', md: 'row' }}
@@ -221,7 +240,7 @@ export default function JamoGamePage({ params }: JamoGamePageProps) {
         <Paper sx={{ p: 2, borderRadius: 3 }}>
           <JamoBoard board={board} title="내 보드" />
           <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-            공개된 칸만 자모가 보입니다. 나머지는 추측해서 제출할 수 있습니다.
+            배정받은 칸만 자모가 표시되며, 나머지는 추측해서 제출합니다.
           </Typography>
         </Paper>
 
@@ -233,105 +252,39 @@ export default function JamoGamePage({ params }: JamoGamePageProps) {
             <Stack spacing={1.5}>
               <TextField
                 value={numbersInput}
-                onChange={(event) => {
-                  setNumbersInput(event.target.value);
-                  if (submitStatus !== 'idle') {
-                    setSubmitStatus('idle');
-                  }
-                }}
+                onChange={(event) => setNumbersInput(event.target.value)}
                 placeholder="예: 1,3,11,7,19"
                 size="small"
-                disabled={
-                  gameData.phase !== 'discuss' ||
-                  isSubmitting ||
-                  remainingSubmits <= 0
-                }
+                disabled={gameData.phase !== 'discuss' || isSubmitting}
               />
               <Stack direction="row" spacing={1} alignItems="center">
                 <Button
                   variant="contained"
                   onClick={handleSubmit}
-                  disabled={
-                    gameData.phase !== 'discuss' ||
-                    isSubmitting ||
-                    remainingSubmits <= 0 ||
-                    numbersInput.trim().length === 0
-                  }
+                  disabled={!canSubmit}
                 >
-                  제출
+                  {submitLabel}
                 </Button>
-                <Chip
-                  label={`남은 제출 ${Math.max(0, remainingSubmits)}회`}
-                  size="small"
-                  color={remainingSubmits <= 3 ? 'warning' : 'default'}
-                />
-                {submitStatus !== 'idle' && (
+                {draftSubmittedAt && (
                   <Chip
-                    label={submitStatus === 'success' ? '성공' : '실패'}
-                    color={submitStatus === 'success' ? 'success' : 'default'}
+                    label={`저장됨 ${formatTimestamp(draftSubmittedAt)}`}
                     size="small"
+                    color="success"
+                    variant="outlined"
                   />
                 )}
               </Stack>
               <Typography variant="caption" color="textSecondary">
-                중복 번호는 불가하며, 성공/실패만 표시됩니다.
+                라운드 종료 전까지 제출을 변경할 수 있으며, 정답/오답 피드백은
+                제공되지 않습니다.
               </Typography>
             </Stack>
           </Paper>
 
           <Paper sx={{ p: 2, borderRadius: 3, flex: 1 }}>
-            <Typography variant="h6" fontWeight={700} gutterBottom>
-              내 성공 목록
-            </Typography>
-            {mySuccesses.length === 0 ? (
-              <Typography color="textSecondary">
-                아직 성공 기록이 없습니다.
-              </Typography>
-            ) : (
-              <Stack spacing={1}>
-                {mySuccesses.map((entry) => (
-                  <Paper key={entry.id} variant="outlined" sx={{ p: 1.5 }}>
-                    <Typography fontWeight={600}>{entry.word}</Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      점수 {entry.score} · 번호 {entry.numbers.join(', ')}
-                    </Typography>
-                    <Typography variant="caption" color="textSecondary">
-                      제출 {formatTimestamp(entry.submittedAt)}
-                    </Typography>
-                  </Paper>
-                ))}
-              </Stack>
-            )}
+            <JamoMemoGrid memo={memo} onChange={handleMemoChange} />
           </Paper>
         </Stack>
-
-        <Paper sx={{ p: 2, borderRadius: 3 }}>
-          <Typography variant="h6" fontWeight={700} gutterBottom>
-            참가자 점수
-          </Typography>
-          <Stack spacing={1}>
-            {players.map((player) => (
-              <Stack
-                key={player.id}
-                direction="row"
-                alignItems="center"
-                justifyContent="space-between"
-              >
-                <Typography fontWeight={600}>{player.name}</Typography>
-                <Stack direction="row" spacing={1}>
-                  <Chip label={`점수 ${player.score}`} size="small" />
-                  <Chip label={`성공 ${player.successCount}`} size="small" />
-                </Stack>
-              </Stack>
-            ))}
-          </Stack>
-        </Paper>
-
-        <Paper sx={{ p: 2, borderRadius: 3 }}>
-          <JamoMemoGrid memo={memo} onChange={handleMemoChange} />
-        </Paper>
-
-        <JamoChatPanel messages={chatLog} onSend={handleSendChat} />
 
         {roundResult && (
           <Paper sx={{ p: 2, borderRadius: 3 }}>
@@ -339,9 +292,7 @@ export default function JamoGamePage({ params }: JamoGamePageProps) {
               라운드 {roundResult.roundNo} 결과
             </Typography>
             <Stack spacing={1}>
-              <Typography>
-                성공자 수: {roundResult.successPlayerCount}명
-              </Typography>
+              <Typography>성공자 수: {roundResult.successCount}명</Typography>
               <Typography>
                 우승:{' '}
                 {roundResult.winner
@@ -350,33 +301,78 @@ export default function JamoGamePage({ params }: JamoGamePageProps) {
               </Typography>
             </Stack>
             <Divider sx={{ my: 2 }} />
-            <Typography variant="subtitle1" fontWeight={600}>
-              전체 성공 목록
+            <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+              성공 순위표
             </Typography>
             {roundResult.successes.length === 0 ? (
               <Typography color="textSecondary">
                 성공 기록이 없습니다.
               </Typography>
             ) : (
-              <Stack spacing={1} sx={{ mt: 1 }}>
-                {roundResult.successes.map((entry) => (
-                  <Paper key={entry.id} variant="outlined" sx={{ p: 1.5 }}>
-                    <Typography fontWeight={600}>
-                      {entry.playerName} · {entry.word}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      점수 {entry.score} · 번호 {entry.numbers.join(', ')}
-                    </Typography>
-                    <Typography variant="caption" color="textSecondary">
-                      제출 {formatTimestamp(entry.submittedAt)}
-                    </Typography>
-                  </Paper>
-                ))}
-              </Stack>
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>순위</TableCell>
+                      <TableCell>플레이어</TableCell>
+                      <TableCell>단어</TableCell>
+                      <TableCell align="right">점수</TableCell>
+                      <TableCell>제출시각</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {roundResult.successes.map((entry, index) => (
+                      <TableRow
+                        key={entry.id}
+                        sx={{
+                          backgroundColor:
+                            entry.playerId === winnerId
+                              ? 'rgba(34,197,94,0.15)'
+                              : undefined,
+                        }}
+                      >
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>{entry.playerName}</TableCell>
+                        <TableCell>{entry.word}</TableCell>
+                        <TableCell align="right">{entry.score}</TableCell>
+                        <TableCell>
+                          {formatTimestamp(entry.submittedAt)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             )}
           </Paper>
         )}
       </Stack>
+
+      <Dialog
+        open={resultDialogOpen}
+        onClose={() => setResultDialogOpen(false)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>{mySuccess ? '🎉 성공!' : '아쉽게 실패'}</DialogTitle>
+        <DialogContent>
+          {mySuccess ? (
+            <Stack spacing={1} sx={{ mt: 1 }}>
+              <Typography>단어: {mySuccess.word}</Typography>
+              <Typography>점수: {mySuccess.score}점</Typography>
+            </Stack>
+          ) : (
+            <Typography sx={{ mt: 1 }}>
+              {hasSubmitted
+                ? '이번 라운드 제출은 성공하지 못했습니다.'
+                : '이번 라운드에 제출하지 않았습니다.'}
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setResultDialogOpen(false)}>확인</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

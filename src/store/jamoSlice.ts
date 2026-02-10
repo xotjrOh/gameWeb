@@ -1,7 +1,9 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import {
-  JamoChatMessage,
+  JamoAssignmentSummary,
+  JamoDraftSubmission,
   JamoGameData,
+  JamoOwnershipMap,
   JamoRoundResult,
   JamoStateSnapshot,
   JamoSuccessEntry,
@@ -14,10 +16,12 @@ interface JamoState {
   you: JamoSelfView | null;
   gameData: JamoGameData;
   board: Record<number, string | null>;
+  ownership: JamoOwnershipMap;
+  assignments: JamoAssignmentSummary[];
+  draftSubmissions: Record<string, JamoDraftSubmission>;
+  draftSubmittedAt: number | null;
   successLog: JamoSuccessEntry[];
-  chatLog: JamoChatMessage[];
   roundResult: JamoRoundResult | null;
-  submissionLimit: number;
 }
 
 const initialState: JamoState = {
@@ -31,10 +35,12 @@ const initialState: JamoState = {
     endsAt: null,
   },
   board: {},
+  ownership: {},
+  assignments: [],
+  draftSubmissions: {},
+  draftSubmittedAt: null,
   successLog: [],
-  chatLog: [],
   roundResult: null,
-  submissionLimit: 10,
 };
 
 const jamoSlice = createSlice({
@@ -45,13 +51,18 @@ const jamoSlice = createSlice({
       if (state.gameData.roundNo !== action.payload.gameData.roundNo) {
         state.roundResult = null;
       }
+      if (action.payload.gameData.phase !== 'ended') {
+        state.roundResult = null;
+      }
       state.players = action.payload.players ?? [];
       state.you = action.payload.you ?? null;
       state.gameData = action.payload.gameData;
       state.board = action.payload.board ?? {};
+      state.ownership = action.payload.ownership ?? {};
+      state.assignments = action.payload.assignments ?? [];
+      state.draftSubmissions = action.payload.draftSubmissions ?? {};
+      state.draftSubmittedAt = action.payload.draftSubmittedAt ?? null;
       state.successLog = action.payload.successLog ?? [];
-      state.chatLog = action.payload.chatLog ?? [];
-      state.submissionLimit = action.payload.submissionLimit ?? 10;
     },
     updatePhase(
       state,
@@ -69,11 +80,11 @@ const jamoSlice = createSlice({
       state.gameData.roundNo = action.payload.roundNo;
       state.gameData.roundDuration = action.payload.roundDuration;
     },
-    appendChatMessage(state, action: PayloadAction<JamoChatMessage>) {
-      state.chatLog.push(action.payload);
-      if (state.chatLog.length > 200) {
-        state.chatLog = state.chatLog.slice(-200);
-      }
+    setDraftSaved(state, action: PayloadAction<number>) {
+      state.draftSubmittedAt = action.payload;
+    },
+    upsertSubmissionDebug(state, action: PayloadAction<JamoDraftSubmission>) {
+      state.draftSubmissions[action.payload.playerId] = action.payload;
     },
     setRoundResult(state, action: PayloadAction<JamoRoundResult | null>) {
       state.roundResult = action.payload;
@@ -87,7 +98,8 @@ const jamoSlice = createSlice({
 export const {
   setSnapshot,
   updatePhase,
-  appendChatMessage,
+  setDraftSaved,
+  upsertSubmissionDebug,
   setRoundResult,
   clearRoundResult,
 } = jamoSlice.actions;

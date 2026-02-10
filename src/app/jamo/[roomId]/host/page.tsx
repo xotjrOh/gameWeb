@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Typography,
@@ -8,11 +8,23 @@ import {
   Paper,
   Button,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   TextField,
   Divider,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from '@mui/material';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Confetti from 'react-confetti';
+import useWindowSize from 'react-use/lib/useWindowSize';
 import { useSocket } from '@/components/provider/SocketProvider';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -23,7 +35,7 @@ import useCheckVersion from '@/hooks/useCheckVersion';
 import useLeaveRoom from '@/hooks/useLeaveRoom';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 import JamoBoard from '@/components/jamo/JamoBoard';
-import JamoChatPanel from '@/components/jamo/JamoChatPanel';
+import { playFanfare } from '@/lib/playFanfare';
 
 interface JamoHostPageProps {
   params: {
@@ -33,8 +45,8 @@ interface JamoHostPageProps {
 
 const phaseLabels: Record<string, string> = {
   waiting: '대기',
-  discuss: '토의',
-  result: '결과',
+  discuss: '진행',
+  ended: '종료',
 };
 
 const formatTime = (timeLeft: number) => {
@@ -59,20 +71,37 @@ export default function JamoHostPage({ params }: JamoHostPageProps) {
   const { enqueueSnackbar } = useCustomSnackbar();
   const sessionId = session?.user?.id ?? '';
 
-  const { players, gameData, board, chatLog, roundResult } = useAppSelector(
-    (state) => state.jamo
-  );
+  const {
+    players,
+    gameData,
+    board,
+    ownership,
+    assignments,
+    draftSubmissions,
+    roundResult,
+  } = useAppSelector((state) => state.jamo);
 
-  const startLabel =
-    gameData.phase === 'result' ? '다음 라운드' : '라운드 시작';
-
-  const [duration, setDuration] = useState<number>(
+  const [startDialogOpen, setStartDialogOpen] = useState(false);
+  const [startDuration, setStartDuration] = useState<number>(
     gameData.roundDuration || 180
   );
+  const [showConfetti, setShowConfetti] = useState(false);
+  const { width, height } = useWindowSize();
 
   useEffect(() => {
-    setDuration(gameData.roundDuration || 180);
+    setStartDuration(gameData.roundDuration || 180);
   }, [gameData.roundDuration]);
+
+  useEffect(() => {
+    if (!roundResult) {
+      setShowConfetti(false);
+      return;
+    }
+    if (roundResult.winner) {
+      setShowConfetti(true);
+      playFanfare();
+    }
+  }, [roundResult]);
 
   useCheckVersion(socket);
   useRedirectIfNotHost(roomId);
@@ -80,34 +109,82 @@ export default function JamoHostPage({ params }: JamoHostPageProps) {
   useJamoGameData(roomId, socket, sessionId);
   useLeaveRoom(socket, dispatch);
 
-  const handleSetRoundTime = () => {
+  const handleDistribute = () => {
     if (!socket) {
+      return;
+    }
+    socket.emit('jamo_host_distribute', { roomId, sessionId }, (response) => {
+      if (!response.success) {
+        enqueueSnackbar(response.message ?? '분배에 실패했습니다.', {
+          variant: 'error',
+        });
+        return;
+      }
+      enqueueSnackbar('분배가 완료되었습니다.', { variant: 'success' });
+    });
+  };
+
+  const handleResetRound = () => {
+    if (!socket) {
+      return;
+    }
+    socket.emit('jamo_reset_round', { roomId, sessionId }, (response) => {
+      if (!response.success) {
+        enqueueSnackbar(response.message ?? '라운드 초기화 실패', {
+          variant: 'error',
+        });
+        return;
+      }
+      enqueueSnackbar('라운드를 초기화했습니다.', {
+        variant: 'success',
+      });
+    });
+  };
+
+  const handleOpenStartDialog = () => {
+    setStartDuration(gameData.roundDuration || 180);
+    setStartDialogOpen(true);
+  };
+
+  const handleCloseStartDialog = () => {
+    setStartDialogOpen(false);
+  };
+
+  const handleConfirmStart = () => {
+    if (!socket) {
+      return;
+    }
+    const nextDuration = Number(startDuration);
+    if (!Number.isFinite(nextDuration) || nextDuration < 10) {
+      enqueueSnackbar('라운드 시간을 확인해주세요.', {
+        variant: 'error',
+      });
       return;
     }
     socket.emit(
       'jamo_set_round_time',
-      { roomId, sessionId, duration },
+      { roomId, sessionId, duration: nextDuration },
       (response) => {
         if (!response.success) {
           enqueueSnackbar(response.message ?? '시간 설정 실패', {
             variant: 'error',
           });
+          return;
         }
-      }
-    );
-  };
-
-  const handleStartRound = () => {
-    if (!socket) {
-      return;
-    }
-    socket.emit('jamo_start_round', { roomId, sessionId }, (response) => {
-      if (!response.success) {
-        enqueueSnackbar(response.message ?? '라운드 시작 실패', {
-          variant: 'error',
+        socket.emit('jamo_start_round', { roomId, sessionId }, (startRes) => {
+          if (!startRes.success) {
+            enqueueSnackbar(startRes.message ?? '라운드 시작 실패', {
+              variant: 'error',
+            });
+            return;
+          }
+          enqueueSnackbar('라운드가 시작되었습니다.', {
+            variant: 'success',
+          });
+          setStartDialogOpen(false);
         });
       }
-    });
+    );
   };
 
   const handleEndRound = () => {
@@ -121,23 +198,6 @@ export default function JamoHostPage({ params }: JamoHostPageProps) {
         });
       }
     });
-  };
-
-  const handleSendChat = (message: string) => {
-    if (!socket || !sessionId) {
-      return;
-    }
-    socket.emit(
-      'jamo_send_chat',
-      { roomId, sessionId, message },
-      (response) => {
-        if (!response.success) {
-          enqueueSnackbar(response.message ?? '메시지 전송 실패', {
-            variant: 'error',
-          });
-        }
-      }
-    );
   };
 
   const handleLeaveRoom = () => {
@@ -155,6 +215,16 @@ export default function JamoHostPage({ params }: JamoHostPageProps) {
     });
   };
 
+  const startLabel = gameData.phase === 'ended' ? '다음 라운드' : '라운드 시작';
+  const submissions = useMemo(
+    () =>
+      Object.values(draftSubmissions ?? {}).sort(
+        (a, b) => b.submittedAt - a.submittedAt
+      ),
+    [draftSubmissions]
+  );
+  const winnerId = roundResult?.winner?.playerId ?? null;
+
   return (
     <Box
       sx={{
@@ -165,6 +235,14 @@ export default function JamoHostPage({ params }: JamoHostPageProps) {
         py: 3,
       }}
     >
+      {showConfetti && roundResult?.winner && (
+        <Confetti
+          width={width}
+          height={height}
+          numberOfPieces={220}
+          recycle={false}
+        />
+      )}
       <Stack spacing={3}>
         <Stack
           direction={{ xs: 'column', md: 'row' }}
@@ -196,21 +274,26 @@ export default function JamoHostPage({ params }: JamoHostPageProps) {
             라운드 제어
           </Typography>
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-            <TextField
-              label="라운드 시간(초)"
-              type="number"
-              value={duration}
-              onChange={(event) => setDuration(Number(event.target.value))}
-              sx={{ width: 180 }}
-              inputProps={{ min: 10 }}
-            />
-            <Button variant="outlined" onClick={handleSetRoundTime}>
-              시간 적용
+            <Button
+              variant="contained"
+              color="secondary"
+              onClick={handleDistribute}
+              disabled={gameData.phase === 'discuss'}
+            >
+              분배
+            </Button>
+            <Button
+              variant="outlined"
+              color="inherit"
+              onClick={handleResetRound}
+              disabled={gameData.phase === 'discuss'}
+            >
+              라운드 리셋
             </Button>
             <Button
               variant="contained"
               color="success"
-              onClick={handleStartRound}
+              onClick={handleOpenStartDialog}
               disabled={gameData.phase === 'discuss'}
             >
               {startLabel}
@@ -222,7 +305,99 @@ export default function JamoHostPage({ params }: JamoHostPageProps) {
         </Paper>
 
         <Paper sx={{ p: 2, borderRadius: 3 }}>
-          <JamoBoard board={board} title="전체 보드" />
+          <JamoBoard
+            board={board}
+            ownerByNumber={ownership}
+            title="전체 보드"
+          />
+        </Paper>
+
+        <Paper sx={{ p: 2, borderRadius: 3 }}>
+          <Typography variant="h6" fontWeight={700} gutterBottom>
+            분배 요약
+          </Typography>
+          {assignments.length === 0 ? (
+            <Typography color="textSecondary">
+              아직 분배가 진행되지 않았습니다.
+            </Typography>
+          ) : (
+            <TableContainer component={Paper} variant="outlined">
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>playerId</TableCell>
+                    <TableCell>닉네임</TableCell>
+                    <TableCell>배정칸</TableCell>
+                    <TableCell>배정 자모</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {assignments.map((entry) => (
+                    <TableRow key={entry.playerId}>
+                      <TableCell>{entry.playerId}</TableCell>
+                      <TableCell>{entry.playerName}</TableCell>
+                      <TableCell>{entry.numbers.join(', ') || '-'}</TableCell>
+                      <TableCell>{entry.jamos.join(', ') || '-'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </Paper>
+
+        <Paper sx={{ p: 2, borderRadius: 3 }}>
+          <Typography variant="h6" fontWeight={700} gutterBottom>
+            제출 현황(실시간)
+          </Typography>
+          {submissions.length === 0 ? (
+            <Typography color="textSecondary">제출 내역이 없습니다.</Typography>
+          ) : (
+            <TableContainer component={Paper} variant="outlined">
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>playerId</TableCell>
+                    <TableCell>닉네임</TableCell>
+                    <TableCell>제출</TableCell>
+                    <TableCell>파싱 번호</TableCell>
+                    <TableCell>자모열</TableCell>
+                    <TableCell>조합단어</TableCell>
+                    <TableCell>조합성공</TableCell>
+                    <TableCell>사전여부</TableCell>
+                    <TableCell align="right">점수</TableCell>
+                    <TableCell>제출시각</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {submissions.map((entry) => (
+                    <TableRow key={entry.playerId}>
+                      <TableCell>{entry.playerId}</TableCell>
+                      <TableCell>{entry.playerName}</TableCell>
+                      <TableCell>{entry.raw}</TableCell>
+                      <TableCell>{entry.numbers.join(', ') || '-'}</TableCell>
+                      <TableCell>{entry.jamos.join(', ') || '-'}</TableCell>
+                      <TableCell>{entry.word ?? '-'}</TableCell>
+                      <TableCell>{entry.parsedOk ? 'O' : 'X'}</TableCell>
+                      <TableCell>
+                        {entry.parsedOk
+                          ? entry.dictOk === null
+                            ? '-'
+                            : entry.dictOk
+                              ? 'O'
+                              : 'X'
+                          : '-'}
+                      </TableCell>
+                      <TableCell align="right">{entry.score}</TableCell>
+                      <TableCell>
+                        {formatTimestamp(entry.submittedAt)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
         </Paper>
 
         <Paper sx={{ p: 2, borderRadius: 3 }}>
@@ -249,17 +424,13 @@ export default function JamoHostPage({ params }: JamoHostPageProps) {
           </Stack>
         </Paper>
 
-        <JamoChatPanel messages={chatLog} onSend={handleSendChat} />
-
         {roundResult && (
           <Paper sx={{ p: 2, borderRadius: 3 }}>
             <Typography variant="h6" fontWeight={700} gutterBottom>
               라운드 {roundResult.roundNo} 결과
             </Typography>
             <Stack spacing={1}>
-              <Typography>
-                성공자 수: {roundResult.successPlayerCount}명
-              </Typography>
+              <Typography>성공자 수: {roundResult.successCount}명</Typography>
               <Typography>
                 우승:{' '}
                 {roundResult.winner
@@ -268,33 +439,78 @@ export default function JamoHostPage({ params }: JamoHostPageProps) {
               </Typography>
             </Stack>
             <Divider sx={{ my: 2 }} />
-            <Typography variant="subtitle1" fontWeight={600}>
-              전체 성공 목록
+            <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+              성공 순위표
             </Typography>
             {roundResult.successes.length === 0 ? (
               <Typography color="textSecondary">
                 성공 기록이 없습니다.
               </Typography>
             ) : (
-              <Stack spacing={1} sx={{ mt: 1 }}>
-                {roundResult.successes.map((entry) => (
-                  <Paper key={entry.id} variant="outlined" sx={{ p: 1.5 }}>
-                    <Typography fontWeight={600}>
-                      {entry.playerName} · {entry.word}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      점수 {entry.score} · 번호 {entry.numbers.join(', ')}
-                    </Typography>
-                    <Typography variant="caption" color="textSecondary">
-                      제출 {formatTimestamp(entry.submittedAt)}
-                    </Typography>
-                  </Paper>
-                ))}
-              </Stack>
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>순위</TableCell>
+                      <TableCell>플레이어</TableCell>
+                      <TableCell>단어</TableCell>
+                      <TableCell align="right">점수</TableCell>
+                      <TableCell>제출시각</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {roundResult.successes.map((entry, index) => (
+                      <TableRow
+                        key={entry.id}
+                        sx={{
+                          backgroundColor:
+                            entry.playerId === winnerId
+                              ? 'rgba(34,197,94,0.15)'
+                              : undefined,
+                        }}
+                      >
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>{entry.playerName}</TableCell>
+                        <TableCell>{entry.word}</TableCell>
+                        <TableCell align="right">{entry.score}</TableCell>
+                        <TableCell>
+                          {formatTimestamp(entry.submittedAt)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             )}
           </Paper>
         )}
       </Stack>
+
+      <Dialog
+        open={startDialogOpen}
+        onClose={handleCloseStartDialog}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>라운드 시간 설정</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="라운드 시간(초)"
+            type="number"
+            value={startDuration}
+            onChange={(event) => setStartDuration(Number(event.target.value))}
+            fullWidth
+            inputProps={{ min: 10 }}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseStartDialog}>취소</Button>
+          <Button variant="contained" onClick={handleConfirmStart}>
+            시작
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

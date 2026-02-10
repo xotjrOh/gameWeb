@@ -5,12 +5,15 @@ import { validateRoom, validatePlayer } from '../utils/validation';
 import { JamoRoom, Player } from '@/types/room';
 import { JamoPlayerData } from '@/types/jamo';
 import {
-  appendChatMessage,
   buildJamoSnapshot,
+  distributeJamoBoard,
   emitJamoPhaseUpdate,
   emitJamoSnapshots,
   endJamoRound,
-  processSubmission,
+  isDictionaryEnabled,
+  recordDraftSubmission,
+  resolveDictionaryResult,
+  resetJamoRound,
   startJamoRound,
 } from '../services/jamoGameService';
 import {
@@ -34,7 +37,7 @@ const jamoGameHandler = (
     if (room.gameData.phase !== 'discuss') {
       return;
     }
-    room.gameData.phase = 'result';
+    room.gameData.phase = 'ended';
     room.gameData.timeLeft = 0;
     room.gameData.endsAt = null;
     room.status = GAME_STATUS.PENDING;
@@ -46,6 +49,32 @@ const jamoGameHandler = (
     emitJamoSnapshots(room, io);
     io.emit('room-updated', rooms);
   };
+
+  socket.on('jamo_host_distribute', ({ roomId, sessionId }, callback) => {
+    try {
+      const room = validateRoom(roomId) as JamoRoom;
+      if (room.gameType !== 'jamo') {
+        throw new Error('자모 게임방이 아닙니다.');
+      }
+      if (room.host.id !== sessionId) {
+        throw new Error('방장만 분배할 수 있습니다.');
+      }
+      if (room.gameData.phase === 'discuss') {
+        throw new Error('라운드 진행 중에는 분배할 수 없습니다.');
+      }
+      if (room.players.length === 0) {
+        throw new Error('참가자가 없습니다.');
+      }
+
+      distributeJamoBoard(room);
+      emitJamoSnapshots(room, io);
+      emitJamoPhaseUpdate(room, io);
+      io.emit('room-updated', rooms);
+      return callback({ success: true });
+    } catch (error) {
+      return callback({ success: false, message: (error as Error).message });
+    }
+  });
 
   socket.on(
     'jamo_set_round_time',
@@ -86,6 +115,18 @@ const jamoGameHandler = (
       }
       if (room.players.length === 0) {
         throw new Error('참가자가 없습니다.');
+      }
+      if (
+        !room.gameData.board ||
+        Object.keys(room.gameData.board).length === 0
+      ) {
+        throw new Error('분배를 먼저 진행해주세요.');
+      }
+      if (
+        !room.gameData.assignmentsByPlayerId ||
+        Object.keys(room.gameData.assignmentsByPlayerId).length === 0
+      ) {
+        throw new Error('분배를 먼저 진행해주세요.');
       }
 
       room.host.socketId = socket.id;
@@ -129,9 +170,32 @@ const jamoGameHandler = (
     }
   });
 
+  socket.on('jamo_reset_round', ({ roomId, sessionId }, callback) => {
+    try {
+      const room = validateRoom(roomId) as JamoRoom;
+      if (room.gameType !== 'jamo') {
+        throw new Error('자모 게임방이 아닙니다.');
+      }
+      if (room.host.id !== sessionId) {
+        throw new Error('방장만 라운드를 초기화할 수 있습니다.');
+      }
+      if (room.gameData.phase === 'discuss') {
+        throw new Error('라운드 진행 중에는 초기화할 수 없습니다.');
+      }
+
+      resetJamoRound(room);
+      emitJamoSnapshots(room, io);
+      emitJamoPhaseUpdate(room, io);
+      io.emit('room-updated', rooms);
+      return callback({ success: true });
+    } catch (error) {
+      return callback({ success: false, message: (error as Error).message });
+    }
+  });
+
   socket.on(
-    'jamo_submit_numbers',
-    async ({ roomId, sessionId, numbers }, callback) => {
+    'jamo_submit_draft',
+    async ({ roomId, sessionId, raw }, callback) => {
       try {
         const room = validateRoom(roomId) as JamoRoom;
         if (room.gameType !== 'jamo') {
@@ -140,35 +204,48 @@ const jamoGameHandler = (
         const player = validatePlayer(room, sessionId) as Player &
           JamoPlayerData;
 
-        const result = await processSubmission(room, player, numbers);
-        emitJamoSnapshots(room, io);
-        return callback({ success: result.accepted });
+        const result = await recordDraftSubmission(room, player, raw);
+        if (!result.accepted || !result.draft) {
+          return callback({ success: false });
+        }
+
+        if (room.host.socketId) {
+          io.to(room.host.socketId).emit('jamo_submission_debug', result.draft);
+        }
+        io.to(player.socketId).emit('jamo_draft_saved', {
+          submittedAt: result.draft.submittedAt,
+        });
+
+        if (
+          isDictionaryEnabled &&
+          result.draft.word &&
+          result.draft.word.length >= 2 &&
+          result.draft.dictOk === null
+        ) {
+          const submittedAt = result.draft.submittedAt;
+          const word = result.draft.word;
+          void resolveDictionaryResult(word).then((exists) => {
+            const current = room.gameData.draftByPlayerId?.[player.id];
+            if (
+              !current ||
+              current.submittedAt !== submittedAt ||
+              current.word !== word
+            ) {
+              return;
+            }
+            current.dictOk = exists;
+            if (room.host.socketId) {
+              io.to(room.host.socketId).emit('jamo_submission_debug', current);
+            }
+          });
+        }
+
+        return callback({ success: true });
       } catch (error) {
         return callback({ success: false });
       }
     }
   );
-
-  socket.on('jamo_send_chat', ({ roomId, sessionId, message }, callback) => {
-    try {
-      const room = validateRoom(roomId) as JamoRoom;
-      if (room.gameType !== 'jamo') {
-        throw new Error('자모 게임방이 아닙니다.');
-      }
-      const isHost = room.host.id === sessionId;
-      const player = isHost ? room.host : validatePlayer(room, sessionId);
-      const trimmed = (message ?? '').trim();
-      if (!trimmed) {
-        throw new Error('메시지가 비어 있습니다.');
-      }
-
-      const entry = appendChatMessage(room, player, trimmed.slice(0, 200));
-      io.to(room.roomId).emit('jamo_chat_message', entry);
-      return callback({ success: true });
-    } catch (error) {
-      return callback({ success: false, message: (error as Error).message });
-    }
-  });
 
   socket.on('jamo_get_state', ({ roomId, sessionId }, callback) => {
     try {
@@ -185,7 +262,7 @@ const jamoGameHandler = (
       const isHostView = room.host.id === sessionId;
       const snapshot = buildJamoSnapshot(room, sessionId, isHostView);
       socket.emit('jamo_state_snapshot', snapshot);
-      if (room.gameData.phase === 'result' && room.gameData.lastRoundResult) {
+      if (room.gameData.phase === 'ended' && room.gameData.lastRoundResult) {
         socket.emit('jamo_round_result', room.gameData.lastRoundResult);
       }
       return callback({ success: true });

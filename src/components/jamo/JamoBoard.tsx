@@ -4,10 +4,18 @@ import { Box, Paper, Typography } from '@mui/material';
 
 interface JamoBoardProps {
   board: Record<number, string | null>;
+  ownerByNumber?: Record<
+    number,
+    { playerId: string; playerName: string } | null
+  >;
   title?: string;
 }
 
-export default function JamoBoard({ board, title }: JamoBoardProps) {
+export default function JamoBoard({
+  board,
+  ownerByNumber,
+  title,
+}: JamoBoardProps) {
   return (
     <Box>
       {title && (
@@ -24,6 +32,7 @@ export default function JamoBoard({ board, title }: JamoBoardProps) {
       >
         {Array.from({ length: 24 }, (_, index) => index + 1).map((num) => {
           const value = board[num];
+          const owner = ownerByNumber?.[num];
           return (
             <Paper
               key={num}
@@ -47,6 +56,11 @@ export default function JamoBoard({ board, title }: JamoBoardProps) {
               <Typography variant="h5" fontWeight={700}>
                 {value ?? '??'}
               </Typography>
+              {ownerByNumber && (
+                <Typography variant="caption" color="textSecondary">
+                  {owner ? owner.playerName : '미배정'}
+                </Typography>
+              )}
             </Paper>
           );
         })}

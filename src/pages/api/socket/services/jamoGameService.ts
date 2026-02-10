@@ -3,7 +3,9 @@ import { Server } from 'socket.io';
 import { GAME_STATUS } from '../utils/constants';
 import { JamoRoom, Player } from '@/types/room';
 import {
-  JamoChatMessage,
+  JamoAssignmentSummary,
+  JamoDraftSubmission,
+  JamoOwnershipMap,
   JamoPlayerData,
   JamoRoundResult,
   JamoStateSnapshot,
@@ -40,7 +42,6 @@ const JAMO_VOWELS = [
   'ㅣ',
 ];
 const JAMO_POOL = [...JAMO_CONSONANTS, ...JAMO_VOWELS];
-const JAMO_SUBMISSION_LIMIT = 10;
 const DICT_CACHE_TTL_MS = 10 * 60 * 1000;
 
 const INITIAL_INDEX: Record<string, number> = {
@@ -92,10 +93,12 @@ const FINAL_INDEX: Record<string, number> = {
 
 const DICT_API_KEY =
   process.env.OPENDICT_API_KEY ?? process.env.DICT_API_KEY ?? '';
+const DICT_API_ENABLED = Boolean(DICT_API_KEY);
 const DICT_API_URL = 'https://krdict.korean.go.kr/api/search';
 
 type WordCacheEntry = { exists: boolean; expiresAt: number };
 const wordCache = new Map<string, WordCacheEntry>();
+const wordInflight = new Map<string, Promise<boolean>>();
 let dictKeyWarned = false;
 
 const makeId = () =>
@@ -104,10 +107,10 @@ const makeId = () =>
 const ensureGameData = (room: JamoRoom) => {
   room.gameData.board ??= {};
   room.gameData.assignmentsByPlayerId ??= {};
-  room.gameData.submissionCounts ??= {};
-  room.gameData.usedWords ??= {};
+  room.gameData.ownershipByNumber ??= {};
+  room.gameData.draftByPlayerId ??= {};
+  room.gameData.wordFirstByPlayerId ??= {};
   room.gameData.successLog ??= [];
-  room.gameData.chatLog ??= [];
 };
 
 const isConsonant = (char: string) =>
@@ -249,6 +252,33 @@ export const checkDictionary = async (word: string): Promise<boolean> => {
   return exists;
 };
 
+export const isDictionaryEnabled = DICT_API_ENABLED;
+
+export const getCachedDictionaryResult = (word: string): boolean | null => {
+  const cached = wordCache.get(word);
+  const now = Date.now();
+  if (cached && cached.expiresAt > now) {
+    return cached.exists;
+  }
+  return null;
+};
+
+export const resolveDictionaryResult = (word: string): Promise<boolean> => {
+  const cached = getCachedDictionaryResult(word);
+  if (cached !== null) {
+    return Promise.resolve(cached);
+  }
+  const inflight = wordInflight.get(word);
+  if (inflight) {
+    return inflight;
+  }
+  const promise = checkDictionary(word).finally(() => {
+    wordInflight.delete(word);
+  });
+  wordInflight.set(word, promise);
+  return promise;
+};
+
 export const createJamoBoard = () => {
   const shuffled = _.shuffle(JAMO_POOL);
   const board: Record<number, string> = {};
@@ -258,19 +288,67 @@ export const createJamoBoard = () => {
   return board;
 };
 
+export const distributeJamoBoard = (room: JamoRoom) => {
+  ensureGameData(room);
+  const board = createJamoBoard();
+  const { assignments, ownership, perPlayer } = assignJamoToPlayers(room);
+
+  room.gameData.board = board;
+  room.gameData.assignmentsByPlayerId = assignments;
+  room.gameData.ownershipByNumber = ownership;
+  room.gameData.draftByPlayerId = {};
+  room.gameData.wordFirstByPlayerId = {};
+  room.gameData.successLog = [];
+  room.gameData.lastRoundResult = undefined;
+  room.gameData.timeLeft = 0;
+  room.gameData.endsAt = null;
+  room.gameData.phase = 'waiting';
+  room.status = GAME_STATUS.PENDING;
+
+  return { perPlayer };
+};
+
+export const resetJamoRound = (room: JamoRoom) => {
+  ensureGameData(room);
+  room.gameData.phase = 'waiting';
+  room.gameData.timeLeft = 0;
+  room.gameData.endsAt = null;
+  room.status = GAME_STATUS.PENDING;
+
+  room.gameData.draftByPlayerId = {};
+  room.gameData.wordFirstByPlayerId = {};
+  room.gameData.successLog = [];
+  room.gameData.lastRoundResult = undefined;
+
+  room.players.forEach((player) => {
+    const jamoPlayer = player as Player & JamoPlayerData;
+    jamoPlayer.score = 0;
+    jamoPlayer.successCount = 0;
+    jamoPlayer.firstSuccessAt = null;
+  });
+};
+
 export const assignJamoToPlayers = (room: JamoRoom) => {
   const playerCount = room.players.length;
   const perPlayer = playerCount > 0 ? Math.floor(24 / playerCount) : 0;
   const positions = _.shuffle(Array.from({ length: 24 }, (_, i) => i + 1));
   const assignments: Record<string, number[]> = {};
+  const ownership: JamoOwnershipMap = {};
+
+  for (let index = 1; index <= 24; index += 1) {
+    ownership[index] = null;
+  }
 
   room.players.forEach((player, index) => {
     const start = index * perPlayer;
     const assigned = positions.slice(start, start + perPlayer);
     assignments[player.id] = assigned;
+    assigned.forEach((num) => {
+      ownership[num] = { playerId: player.id, playerName: player.name };
+    });
   });
 
-  return assignments;
+  return { assignments, ownership, perPlayer };
 };
 
 export const startJamoRound = (room: JamoRoom, duration: number) => {
@@ -283,12 +361,9 @@ export const startJamoRound = (room: JamoRoom, duration: number) => {
   room.gameData.endsAt = Date.now() + nextDuration * 1000;
 
   ensureGameData(room);
-  room.gameData.board = createJamoBoard();
-  room.gameData.assignmentsByPlayerId = assignJamoToPlayers(room);
-  room.gameData.submissionCounts = {};
-  room.gameData.usedWords = {};
+  room.gameData.draftByPlayerId = {};
+  room.gameData.wordFirstByPlayerId = {};
   room.gameData.successLog = [];
-  room.gameData.chatLog = [];
   room.gameData.lastRoundResult = undefined;
 
   room.players.forEach((player) => {
@@ -300,43 +375,94 @@ export const startJamoRound = (room: JamoRoom, duration: number) => {
 };
 
 export const endJamoRound = (room: JamoRoom): JamoRoundResult => {
+  ensureGameData(room);
   const players = room.players as (Player & JamoPlayerData)[];
-  const successPlayers = players.filter((player) => player.successCount > 0);
-  const successPlayerCount = successPlayers.length;
+  const drafts = room.gameData.draftByPlayerId ?? {};
+  const wordFirstByPlayerId = room.gameData.wordFirstByPlayerId ?? {};
+  const candidatesByWord = new Map<
+    string,
+    Array<{ draft: JamoDraftSubmission; firstSubmittedAt: number }>
+  >();
 
-  let winner: {
-    playerId: string;
-    playerName: string;
-    score: number;
-    firstSuccessAt: number;
-  } | null = null;
-  successPlayers.forEach((player) => {
-    const playerTime = player.firstSuccessAt ?? Number.MAX_SAFE_INTEGER;
+  players.forEach((player) => {
+    const draft = drafts[player.id];
     if (
-      !winner ||
-      player.score > winner.score ||
-      (player.score === winner.score && playerTime < winner.firstSuccessAt)
+      !draft ||
+      !draft.word ||
+      draft.word.length < 2 ||
+      !draft.dictOk ||
+      !draft.parsedOk
     ) {
-      winner = {
-        playerId: player.id,
-        playerName: player.name,
-        score: player.score,
-        firstSuccessAt: playerTime,
-      };
+      player.score = 0;
+      player.successCount = 0;
+      player.firstSuccessAt = null;
+      return;
     }
+
+    const firstSubmittedAt =
+      wordFirstByPlayerId[player.id]?.[draft.word] ?? draft.submittedAt;
+    const list = candidatesByWord.get(draft.word) ?? [];
+    list.push({ draft, firstSubmittedAt });
+    candidatesByWord.set(draft.word, list);
   });
+
+  const successes: JamoSuccessEntry[] = [];
+  candidatesByWord.forEach((list, word) => {
+    const sorted = [...list].sort(
+      (a, b) => a.firstSubmittedAt - b.firstSubmittedAt
+    );
+    const winnerCandidate = sorted[0];
+    if (!winnerCandidate) {
+      return;
+    }
+    successes.push({
+      id: makeId(),
+      playerId: winnerCandidate.draft.playerId,
+      playerName: winnerCandidate.draft.playerName,
+      word,
+      numbers: winnerCandidate.draft.numbers,
+      score: winnerCandidate.draft.score,
+      submittedAt: winnerCandidate.firstSubmittedAt,
+    });
+  });
+
+  const sortedSuccesses = successes.sort((a, b) => {
+    if (b.score !== a.score) {
+      return b.score - a.score;
+    }
+    return a.submittedAt - b.submittedAt;
+  });
+
+  players.forEach((player) => {
+    const winnerEntry = sortedSuccesses.find(
+      (entry) => entry.playerId === player.id
+    );
+    if (!winnerEntry) {
+      player.score = 0;
+      player.successCount = 0;
+      player.firstSuccessAt = null;
+      return;
+    }
+    player.score = winnerEntry.score;
+    player.successCount = 1;
+    player.firstSuccessAt = winnerEntry.submittedAt;
+  });
+
+  room.gameData.successLog = sortedSuccesses;
+
+  const winner = sortedSuccesses[0]
+    ? {
+        playerId: sortedSuccesses[0].playerId,
+        playerName: sortedSuccesses[0].playerName,
+        score: sortedSuccesses[0].score,
+      }
+    : null;
 
   return {
     roundNo: room.gameData.roundNo,
-    successPlayerCount,
-    winner: winner
-      ? {
-          playerId: winner.playerId,
-          playerName: winner.playerName,
-          score: winner.score,
-        }
-      : null,
-    successes: room.gameData.successLog ?? [],
+    successCount: sortedSuccesses.length,
+    winner,
+    successes: sortedSuccesses,
   };
 };
 
@@ -352,17 +478,17 @@ export const buildJamoSnapshot = (
   const assignedNumbers = [...(assignments[viewerId] ?? [])].sort(
     (a, b) => a - b
   );
-  const submissionCounts: Record<string, number> =
-    room.gameData.submissionCounts ?? {};
+  const draftByPlayerId = room.gameData.draftByPlayerId ?? {};
   const playersView = room.players.map((player) => {
     const jamoPlayer = player as Player & JamoPlayerData;
+    const hasDraft = Boolean(draftByPlayerId[player.id]);
     return {
       id: player.id,
       name: player.name,
       socketId: player.socketId,
       score: jamoPlayer.score ?? 0,
       successCount: jamoPlayer.successCount ?? 0,
-      submissionCount: submissionCounts[player.id] ?? 0,
+      submissionCount: hasDraft ? 1 : 0,
     };
   });
 
@@ -374,7 +500,7 @@ export const buildJamoSnapshot = (
       socketId: room.host.socketId,
       score: 0,
       successCount: 0,
-      submissionCount: submissionCounts[viewerId] ?? 0,
+      submissionCount: draftByPlayerId[viewerId] ? 1 : 0,
     } as const);
 
   const boardView: Record<number, string | null> = {};
@@ -386,6 +512,24 @@ export const buildJamoSnapshot = (
     }
   }
 
+  const ownershipByNumber = room.gameData.ownershipByNumber ?? {};
+  const assignmentsSummary: JamoAssignmentSummary[] = room.players.map(
+    (player) => {
+      const numbers = [...(assignments[player.id] ?? [])].sort((a, b) => a - b);
+      const jamos = numbers
+        .map((num) => board[num])
+        .filter(Boolean) as string[];
+      return {
+        playerId: player.id,
+        playerName: player.name,
+        numbers,
+        jamos,
+      };
+    }
+  );
+
+  const draftSubmittedAt = draftByPlayerId[viewerId]?.submittedAt ?? null;
+
   return {
     you: {
       ...you,
@@ -393,6 +537,10 @@ export const buildJamoSnapshot = (
     },
     players: playersView,
     board: boardView,
+    ownership: isHostView ? ownershipByNumber : undefined,
+    assignments: isHostView ? assignmentsSummary : undefined,
+    draftSubmissions: isHostView ? draftByPlayerId : undefined,
+    draftSubmittedAt,
     gameData: {
       phase: room.gameData.phase,
       roundNo: room.gameData.roundNo,
@@ -401,8 +549,6 @@ export const buildJamoSnapshot = (
       endsAt: room.gameData.endsAt ?? null,
     },
     successLog: room.gameData.successLog ?? [],
-    chatLog: room.gameData.chatLog ?? [],
-    submissionLimit: JAMO_SUBMISSION_LIMIT,
     isHostView,
   };
 };
@@ -422,95 +568,60 @@ export const emitJamoSnapshots = (
   }
 };
 
-export const appendChatMessage = (
-  room: JamoRoom,
-  player: Player,
-  message: string
-) => {
-  ensureGameData(room);
-  const entry: JamoChatMessage = {
-    id: makeId(),
-    playerId: player.id,
-    playerName: player.name,
-    message,
-    sentAt: Date.now(),
-  };
-  room.gameData.chatLog?.push(entry);
-  if ((room.gameData.chatLog?.length ?? 0) > 200) {
-    room.gameData.chatLog = room.gameData.chatLog?.slice(-200) ?? [];
-  }
-  return entry;
-};
-
-export const processSubmission = async (
+export const recordDraftSubmission = async (
   room: JamoRoom,
   player: Player & JamoPlayerData,
-  numbersInput: string
-): Promise<{ accepted: boolean; entry?: JamoSuccessEntry }> => {
+  rawInput: string
+): Promise<{ accepted: boolean; draft?: JamoDraftSubmission }> => {
   ensureGameData(room);
   if (room.gameData.phase !== 'discuss') {
     return { accepted: false };
   }
 
-  const submissionCounts = room.gameData.submissionCounts ?? {};
-  const currentCount = submissionCounts[player.id] ?? 0;
-  if (currentCount >= JAMO_SUBMISSION_LIMIT) {
-    return { accepted: false };
-  }
-  submissionCounts[player.id] = currentCount + 1;
-  room.gameData.submissionCounts = submissionCounts;
-
-  const numbers = parseNumberList(numbersInput);
-  if (!numbers) {
+  const submittedAt = Date.now();
+  const trimmed = rawInput?.trim() ?? '';
+  if (!trimmed) {
     return { accepted: false };
   }
 
   const board: Record<number, string> = room.gameData.board ?? {};
-  const jamos = numbers.map((num) => board[num]).filter(Boolean) as string[];
-  if (jamos.length !== numbers.length) {
-    return { accepted: false };
-  }
+  const numbers = parseNumberList(trimmed);
+  const parsedOk = Boolean(numbers);
+  const parsedNumbers = numbers ?? [];
+  const jamos = parsedOk
+    ? parsedNumbers.map((num) => board[num]).filter(Boolean)
+    : [];
+  const jamosOk = parsedOk && jamos.length === parsedNumbers.length;
+  const word = jamosOk ? composeWordFromJamo(jamos as string[]) : null;
+  const score = parsedOk ? parsedNumbers.reduce((sum, num) => sum + num, 0) : 0;
+  const dictOk =
+    word && word.length >= 2 ? getCachedDictionaryResult(word) : false;
 
-  const word = composeWordFromJamo(jamos);
-  if (!word || word.length < 2) {
-    return { accepted: false };
-  }
-
-  if (room.gameData.usedWords?.[word]) {
-    return { accepted: false };
-  }
-
-  const exists = await checkDictionary(word);
-  if (!exists) {
-    return { accepted: false };
-  }
-
-  room.gameData.usedWords ??= {};
-  room.gameData.usedWords[word] = true;
-
-  const score = numbers.reduce((sum, num) => sum + num, 0);
-  const submittedAt = Date.now();
-
-  const entry: JamoSuccessEntry = {
-    id: makeId(),
+  const draft: JamoDraftSubmission = {
     playerId: player.id,
     playerName: player.name,
+    raw: trimmed,
+    numbers: parsedNumbers,
+    jamos: jamosOk ? (jamos as string[]) : [],
     word,
-    numbers,
+    dictOk,
     score,
     submittedAt,
+    parsedOk: parsedOk && jamosOk,
   };
 
-  room.gameData.successLog ??= [];
-  room.gameData.successLog.push(entry);
+  room.gameData.draftByPlayerId ??= {};
+  room.gameData.draftByPlayerId[player.id] = draft;
 
-  player.score += score;
-  player.successCount += 1;
-  if (!player.firstSuccessAt) {
-    player.firstSuccessAt = submittedAt;
+  if (word) {
+    room.gameData.wordFirstByPlayerId ??= {};
+    room.gameData.wordFirstByPlayerId[player.id] ??= {};
+    if (!room.gameData.wordFirstByPlayerId[player.id][word]) {
+      room.gameData.wordFirstByPlayerId[player.id][word] = submittedAt;
+    }
   }
 
-  return { accepted: true, entry };
+  return { accepted: true, draft };
 };
 
 export const emitJamoPhaseUpdate = (
