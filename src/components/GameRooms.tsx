@@ -37,6 +37,7 @@ const gameTypeMap: Record<GameType, string> = {
   shuffle: '🔀 뒤죽박죽',
   animal: '🦁 동물 능력전',
   jamo: '🔤 단어게임',
+  murder_mystery: '🕵️ 반장을 죽였다',
 };
 
 const DEBUG = process.env.NEXT_PUBLIC_SOCKET_DEBUG === '1';
@@ -204,11 +205,21 @@ export default function GameRooms({ session }: GameRoomsProps) {
   );
 
   // 게임 타입에 따른 아이콘 매핑
-  const gameTypeIconMap = {
+  const gameTypeIconMap: Record<GameType, string> = {
     horse: '🐎', // 말 이모지
     shuffle: '🔀', // 뒤죽박죽 이모지
     animal: '🦁', // 동물 능력전 이모지
     jamo: '🔤', // 자모 게임 이모지
+    murder_mystery: '🕵️',
+  };
+
+  const getRoomGameTypeLabel = (room: Room) => {
+    if (room.gameType !== 'murder_mystery') {
+      return gameTypeMap[room.gameType];
+    }
+    const scenarioLabel =
+      room.gameData.scenarioRoomDisplayName || '반장을 죽였다';
+    return `🕵️ ${scenarioLabel}`;
   };
 
   return (
@@ -327,7 +338,7 @@ export default function GameRooms({ session }: GameRoomsProps) {
                         color="textSecondary"
                         sx={{ mt: 1 }}
                       >
-                        {gameTypeMap[room.gameType]}
+                        {getRoomGameTypeLabel(room)}
                       </Typography>
                     </Grid>
 
@@ -424,7 +435,7 @@ export default function GameRooms({ session }: GameRoomsProps) {
                         color="textSecondary"
                         sx={{ mt: 1 }}
                       >
-                        {gameTypeMap[room.gameType]}
+                        {getRoomGameTypeLabel(room)}
                       </Typography>
                     </Grid>
 

@@ -1,7 +1,7 @@
 import { Socket as ServerSocket } from 'socket.io';
 import { Socket as ClientSocket } from 'socket.io-client';
 import { Room, Rooms, GameType } from './room';
-import { ReconnectionResult } from '../services/commonService';
+import { ReconnectionResult } from '@/pages/api/socket/services/commonService';
 import {
   RoundData,
   HorsePosition,
@@ -21,6 +21,10 @@ import {
   JamoClientToServerEvents,
   JamoServerToClientEvents,
 } from '@/types/jamo';
+import {
+  MurderMysteryClientToServerEvents,
+  MurderMysteryServerToClientEvents,
+} from '@/types/murderMystery';
 
 export interface CommonResponse {
   success: boolean;
@@ -32,7 +36,8 @@ export interface ClientToServerEvents
   extends HorseClientToServerEvents,
     ShuffleClientToServerEvents,
     AnimalClientToServerEvents,
-    JamoClientToServerEvents {
+    JamoClientToServerEvents,
+    MurderMysteryClientToServerEvents {
   'update-socket-id': (data: UpdateSocketIdData) => void;
   'get-room-list': () => void;
   'check-room': (
@@ -68,7 +73,8 @@ export interface ServerToClientEvents
   extends HorseServerToClientEvents,
     ShuffleServerToClientEvents,
     AnimalServerToClientEvents,
-    JamoServerToClientEvents {
+    JamoServerToClientEvents,
+    MurderMysteryServerToClientEvents {
   'room-updated': (rooms: Rooms) => void;
   'room-closed': (data: { message: string }) => void;
   'server-version': (payload: { version: string }) => void;
@@ -92,6 +98,7 @@ export interface CreateRoomData {
   gameType: GameType;
   sessionId: string;
   maxPlayers: number;
+  scenarioId?: string;
 }
 
 export interface JoinRoomData {

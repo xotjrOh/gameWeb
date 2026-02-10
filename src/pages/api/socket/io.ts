@@ -7,6 +7,7 @@ import horseGameHandler from './handlers/horseGameHandler';
 import shuffleGameHandler from './handlers/shuffleGameHandler';
 import animalGameHandler from './handlers/animalGameHandler';
 import jamoGameHandler from './handlers/jamoGameHandler';
+import murderMysteryGameHandler from './handlers/murderMysteryGameHandler';
 import {
   ClientToServerEvents,
   ServerToClientEvents,
@@ -148,6 +149,7 @@ const attachConnectionHandlers = (
     shuffleGameHandler(io, socket);
     animalGameHandler(io, socket);
     jamoGameHandler(io, socket);
+    murderMysteryGameHandler(io, socket);
 
     socket.on('disconnect', (reason) => {
       console.log('server : A user disconnected');

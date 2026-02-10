@@ -6,7 +6,7 @@ import { setIsLoading } from '@/store/loadingSlice';
 import { useSocket } from '@/components/provider/SocketProvider';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 
-const useRedirectIfInvalidRoom = (roomId: string) => {
+const useRedirectIfInvalidRoom = (roomId: string, enabled = true) => {
   const { socket } = useSocket();
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -14,6 +14,10 @@ const useRedirectIfInvalidRoom = (roomId: string) => {
   const { enqueueSnackbar } = useCustomSnackbar();
 
   useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
     if (status === 'authenticated' && socket && session) {
       dispatch(setIsLoading(false));
       socket.emit(
@@ -32,7 +36,7 @@ const useRedirectIfInvalidRoom = (roomId: string) => {
     } else if (status === 'loading') {
       dispatch(setIsLoading(true));
     }
-  }, [socket?.id, status, roomId, session, router, dispatch]);
+  }, [enabled, socket?.id, status, roomId, session, router, dispatch]);
 };
 
 export default useRedirectIfInvalidRoom;

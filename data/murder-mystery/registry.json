@@ -1,0 +1,9 @@
+{
+  "defaultScenarioId": "banjang-killer",
+  "scenarios": [
+    {
+      "id": "banjang-killer",
+      "file": "banjang-killer.json"
+    }
+  ]
+}

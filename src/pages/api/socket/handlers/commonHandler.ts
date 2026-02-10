@@ -17,6 +17,8 @@ import {
   DEFAULT_PLAYER_DATA,
 } from '../utils/constants';
 import { ShufflePlayerData } from '@/types/shuffle';
+import { createMurderMysteryGameData } from '../services/murderMysteryStateMachine';
+import { getMurderMysteryScenario } from '../services/murderMysteryScenarioService';
 import {
   validateRoomName,
   validateGameType,
@@ -42,6 +44,7 @@ const buildRoom = ({
   userName,
   socketId,
   maxPlayers,
+  scenarioId,
 }: {
   roomId: string;
   roomName: string;
@@ -50,6 +53,7 @@ const buildRoom = ({
   userName: string;
   socketId: string;
   maxPlayers: number;
+  scenarioId?: string;
 }): Room => {
   const baseRoom = {
     roomId,
@@ -88,6 +92,12 @@ const buildRoom = ({
         ...baseRoom,
         gameType: 'jamo',
         gameData: _.cloneDeep(DEFAULT_GAME_DATA.jamo),
+      };
+    case 'murder_mystery':
+      return {
+        ...baseRoom,
+        gameType: 'murder_mystery',
+        gameData: createMurderMysteryGameData(scenarioId),
       };
     default:
       return {
@@ -170,13 +180,28 @@ const commonHandler = (
 
   socket.on(
     'create-room',
-    ({ roomName, userName, gameType, sessionId, maxPlayers }, callback) => {
+    (
+      { roomName, userName, gameType, sessionId, maxPlayers, scenarioId },
+      callback
+    ) => {
       try {
         // validateCanCreateRoom(sessionId);
         validateRoomName(roomName);
         validateGameType(gameType);
         validateMaxPlayers(maxPlayers);
         validateAlreadyJoinOtherRoom(rooms, sessionId);
+
+        if (gameType === 'murder_mystery') {
+          const scenario = getMurderMysteryScenario(scenarioId);
+          if (
+            maxPlayers < scenario.players.min ||
+            maxPlayers > scenario.players.max
+          ) {
+            throw new Error(
+              `이 시나리오의 최대 인원은 ${scenario.players.min}~${scenario.players.max}명으로 설정해야 합니다.`
+            );
+          }
+        }
 
         Lock.acquire(
           'rooms',
@@ -190,6 +215,7 @@ const commonHandler = (
               userName,
               socketId: socket.id,
               maxPlayers,
+              scenarioId,
             });
 
             rooms[roomId] = newRoom;

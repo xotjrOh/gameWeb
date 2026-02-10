@@ -91,8 +91,7 @@ const FINAL_INDEX: Record<string, number> = {
   ㅎ: 27,
 };
 
-const DICT_API_KEY =
-  process.env.OPENDICT_API_KEY ?? process.env.DICT_API_KEY ?? '';
+const DICT_API_KEY = process.env.OPENDICT_API_KEY ?? '';
 const DICT_API_ENABLED = Boolean(DICT_API_KEY);
 const DICT_API_URL = 'https://krdict.korean.go.kr/api/search';
 

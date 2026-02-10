@@ -8,6 +8,5 @@ namespace NodeJS {
     NEXTAUTH_URL: string;
     NEXT_PUBLIC_SITE_URL: string;
     OPENDICT_API_KEY?: string;
-    DICT_API_KEY?: string;
   }
 }

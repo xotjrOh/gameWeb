@@ -3,6 +3,7 @@ import { HorseGameData } from '@/types/horse';
 import { ShuffleGameData } from '@/types/shuffle';
 import { AnimalGameData } from '@/types/animal';
 import { JamoGameData } from '@/types/jamo';
+import { MurderMysteryGameData } from '@/types/murderMystery';
 
 export type GameStatus = (typeof GAME_STATUS)[keyof typeof GAME_STATUS];
 
@@ -41,7 +42,17 @@ export interface JamoRoom extends BaseRoom {
   gameData: JamoGameData;
 }
 
-export type Room = HorseRoom | ShuffleRoom | AnimalRoom | JamoRoom;
+export interface MurderMysteryRoom extends BaseRoom {
+  gameType: 'murder_mystery';
+  gameData: MurderMysteryGameData;
+}
+
+export type Room =
+  | HorseRoom
+  | ShuffleRoom
+  | AnimalRoom
+  | JamoRoom
+  | MurderMysteryRoom;
 
 export type GameType = Room['gameType'];
 

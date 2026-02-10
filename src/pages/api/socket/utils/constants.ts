@@ -2,6 +2,10 @@ import { HorseGameData, HorsePlayerData } from '@/types/horse';
 import { ShuffleGameData, ShufflePlayerData } from '@/types/shuffle';
 import { AnimalGameData, AnimalPlayerData } from '@/types/animal';
 import { JamoGameData, JamoPlayerData } from '@/types/jamo';
+import {
+  MurderMysteryGameData,
+  MurderMysteryPlayerData,
+} from '@/types/murderMystery';
 
 export const AUTHORIZED_SESSION_IDS = ['3624891095', '116463162791834863252'];
 export const MIN_PLAYER_LENGTH = 1;
@@ -42,6 +46,7 @@ export const DEFAULT_GAME_DATA: {
   shuffle: ShuffleGameData;
   animal: AnimalGameData;
   jamo: JamoGameData;
+  murder_mystery: MurderMysteryGameData;
 } = {
   horse: {
     finishLine: 9,
@@ -112,6 +117,23 @@ export const DEFAULT_GAME_DATA: {
     successLog: [],
     lastRoundResult: undefined,
   },
+  murder_mystery: {
+    scenarioId: '',
+    scenarioTitle: '',
+    scenarioRoomDisplayName: '반장을 죽였다',
+    phase: 'LOBBY',
+    roleByPlayerId: {},
+    roleDisplayNameByPlayerId: {},
+    investigationUsedByPlayerId: {},
+    pendingInvestigations: [],
+    revealedCardsByPlayerId: {},
+    revealedPartIds: [],
+    voteByPlayerId: {},
+    finalVoteResult: null,
+    endbookVariant: null,
+    announcements: [],
+    appliedDynamicRuleIds: {},
+  },
 } as const;
 
 export const DEFAULT_PLAYER_DATA: {
@@ -119,6 +141,7 @@ export const DEFAULT_PLAYER_DATA: {
   shuffle: ShufflePlayerData;
   animal: AnimalPlayerData;
   jamo: JamoPlayerData;
+  murder_mystery: MurderMysteryPlayerData;
 } = {
   horse: {
     dummyName: NOT_ASSIGNED,
@@ -158,5 +181,8 @@ export const DEFAULT_PLAYER_DATA: {
     score: 0,
     successCount: 0,
     firstSuccessAt: null,
+  },
+  murder_mystery: {
+    statusText: '감시',
   },
 } as const;

@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import {
   TextField,
@@ -12,6 +13,7 @@ import {
   IconButton,
   Box,
   Typography,
+  FormHelperText,
 } from '@mui/material';
 import { Cancel as CancelIcon } from '@mui/icons-material';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
@@ -37,6 +39,17 @@ interface FormData {
   roomName: string;
   gameType: GameType;
   maxPlayers: number;
+  scenarioId: string;
+}
+
+interface MurderMysteryScenarioOption {
+  id: string;
+  title: string;
+  roomDisplayName: string;
+  players: {
+    min: number;
+    max: number;
+  };
 }
 
 export default function RoomModal({
@@ -47,18 +60,87 @@ export default function RoomModal({
   session,
 }: RoomModalProps) {
   const { enqueueSnackbar } = useCustomSnackbar();
+  const [scenarioOptions, setScenarioOptions] = useState<
+    MurderMysteryScenarioOption[]
+  >([]);
+  const [isScenarioLoading, setIsScenarioLoading] = useState(false);
 
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<FormData>({
     defaultValues: {
       roomName: '',
       gameType: 'horse',
       maxPlayers: undefined,
+      scenarioId: '',
     },
   });
+  const selectedGameType = watch('gameType');
+  const selectedScenarioId = watch('scenarioId');
+
+  const selectedScenario = useMemo(
+    () =>
+      scenarioOptions.find((scenario) => scenario.id === selectedScenarioId) ??
+      null,
+    [scenarioOptions, selectedScenarioId]
+  );
+  const isFixedMurderPlayerCount =
+    selectedGameType === 'murder_mystery' &&
+    Boolean(selectedScenario) &&
+    selectedScenario?.players.min === selectedScenario?.players.max;
+
+  useEffect(() => {
+    if (selectedGameType !== 'murder_mystery') {
+      setValue('scenarioId', '');
+      return;
+    }
+    if (scenarioOptions.length > 0 || isScenarioLoading) {
+      return;
+    }
+
+    setIsScenarioLoading(true);
+    fetch('/api/murder-mystery/scenarios', {
+      cache: 'no-store',
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error('시나리오 목록을 불러오지 못했습니다.');
+        }
+        const data = (await response.json()) as {
+          scenarios?: MurderMysteryScenarioOption[];
+        };
+        const nextScenarios = Array.isArray(data.scenarios)
+          ? data.scenarios
+          : [];
+        setScenarioOptions(nextScenarios);
+        if (nextScenarios.length > 0) {
+          setValue('scenarioId', nextScenarios[0].id, {
+            shouldValidate: true,
+          });
+          setValue('maxPlayers', nextScenarios[0].players.max, {
+            shouldValidate: true,
+          });
+        }
+      })
+      .catch((error) => {
+        enqueueSnackbar((error as Error).message, {
+          variant: 'error',
+        });
+      })
+      .finally(() => {
+        setIsScenarioLoading(false);
+      });
+  }, [
+    selectedGameType,
+    scenarioOptions,
+    isScenarioLoading,
+    setValue,
+    enqueueSnackbar,
+  ]);
 
   const onSubmit: SubmitHandler<FormData> = (data) => {
     if (!socket || !socket.connected || !socket.id) {
@@ -77,8 +159,39 @@ export default function RoomModal({
     const userName = session.user.name ?? 'Anonymous';
     const sessionId = session.user.id;
 
+    if (data.gameType === 'murder_mystery') {
+      if (!data.scenarioId) {
+        return enqueueSnackbar('머더미스터리 시나리오를 선택해주세요.', {
+          variant: 'error',
+        });
+      }
+      if (
+        selectedScenario &&
+        (data.maxPlayers < selectedScenario.players.min ||
+          data.maxPlayers > selectedScenario.players.max)
+      ) {
+        return enqueueSnackbar(
+          `이 시나리오는 ${selectedScenario.players.min}~${selectedScenario.players.max}명 설정만 가능합니다.`,
+          {
+            variant: 'error',
+          }
+        );
+      }
+    }
+
+    const payload =
+      data.gameType === 'murder_mystery'
+        ? { ...data, userName, sessionId }
+        : {
+            roomName: data.roomName,
+            gameType: data.gameType,
+            maxPlayers: data.maxPlayers,
+            userName,
+            sessionId,
+          };
+
     dispatch(setIsLoading(true));
-    socket.emit('create-room', { ...data, userName, sessionId }, (response) => {
+    socket.emit('create-room', payload, (response) => {
       if (!response.success) {
         enqueueSnackbar(response.message, { variant: 'error' });
         return dispatch(setIsLoading(false));
@@ -184,8 +297,60 @@ export default function RoomModal({
             <MenuItem value="shuffle">🔀뒤죽박죽</MenuItem>
             <MenuItem value="animal">🦁동물 능력전</MenuItem>
             <MenuItem value="jamo">🔤단어게임</MenuItem>
+            <MenuItem value="murder_mystery">🕵️반장을 죽였다</MenuItem>
           </Select>
         </FormControl>
+
+        {selectedGameType === 'murder_mystery' && (
+          <FormControl
+            fullWidth
+            margin="normal"
+            error={Boolean(errors.scenarioId)}
+            disabled={isScenarioLoading}
+          >
+            <InputLabel id="scenario-id-label">
+              머더미스터리 시나리오
+            </InputLabel>
+            <Select
+              labelId="scenario-id-label"
+              defaultValue=""
+              label="머더미스터리 시나리오"
+              sx={{
+                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+              }}
+              {...register('scenarioId', {
+                validate: (value) =>
+                  selectedGameType !== 'murder_mystery' ||
+                  value.length > 0 ||
+                  '시나리오를 선택해주세요.',
+              })}
+              onChange={(event) => {
+                const value = String(event.target.value);
+                setValue('scenarioId', value, { shouldValidate: true });
+                const foundScenario = scenarioOptions.find(
+                  (scenario) => scenario.id === value
+                );
+                if (foundScenario) {
+                  setValue('maxPlayers', foundScenario.players.max, {
+                    shouldValidate: true,
+                  });
+                }
+              }}
+            >
+              {scenarioOptions.map((scenario) => (
+                <MenuItem key={scenario.id} value={scenario.id}>
+                  {scenario.roomDisplayName}
+                </MenuItem>
+              ))}
+            </Select>
+            <FormHelperText>
+              {errors.scenarioId?.message ??
+                (selectedScenario
+                  ? `${selectedScenario.players.min}~${selectedScenario.players.max}명 플레이`
+                  : '시나리오를 불러오는 중입니다.')}
+            </FormHelperText>
+          </FormControl>
+        )}
 
         {/* 최대 인원 입력 */}
         <TextField
@@ -200,6 +365,7 @@ export default function RoomModal({
           fullWidth
           variant="outlined"
           margin="normal"
+          disabled={isFixedMurderPlayerCount}
           onInput={(e) => {
             const target = e.target as HTMLInputElement;
             target.value = target.value.replace(/[^0-9]/g, '');

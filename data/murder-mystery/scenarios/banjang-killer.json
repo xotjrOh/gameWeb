@@ -1,0 +1,289 @@
+{
+  "id": "banjang-killer",
+  "title": "반장을 죽였다: 뗏목 위의 야간 심문",
+  "roomDisplayName": "반장을 죽였다",
+  "players": {
+    "min": 5,
+    "max": 5
+  },
+  "intro": {
+    "readAloud": "폭우가 멎은 뒤, 임시 대피소에 도착한 다섯 명은 1차 사건의 범인을 찾기 위한 공동 조사에 들어간다. 오늘 밤 안에 결론을 내리지 못하면 모두가 위험해진다."
+  },
+  "roles": [
+    {
+      "id": "guide",
+      "displayName": "가이드",
+      "publicText": "대피 경로와 생존 규칙을 잘 아는 안내자다.",
+      "secretText": "1차 사건 직전, 반장이 남긴 마지막 메모를 본 유일한 인물이다.",
+      "dynamicDisplayNameRules": [
+        {
+          "id": "guide_reveal_by_dog_tag",
+          "trigger": {
+            "type": "cardRevealed",
+            "cardId": "card_dog_tag",
+            "round": 2
+          },
+          "newDisplayName": "연새사리 누도만쳐사라"
+        }
+      ]
+    },
+    {
+      "id": "temporary_leader",
+      "displayName": "가므정겨 려돼",
+      "publicText": "임시반장 역할을 맡아 토론을 정리한다.",
+      "secretText": "질서를 지키기 위해 과감한 결정을 주도한다."
+    },
+    {
+      "id": "stalker",
+      "displayName": "스 토크어",
+      "publicText": "말수가 적고 항상 주변을 관찰한다.",
+      "secretText": "1차 사건 현장에서 결정적인 흔적을 남겼다."
+    },
+    {
+      "id": "mechanic",
+      "displayName": "정비반",
+      "publicText": "도구와 구조물 상태를 빠르게 파악한다.",
+      "secretText": "뗏목 재료의 진짜 용도를 추적하고 있다."
+    },
+    {
+      "id": "scribe",
+      "displayName": "기록반",
+      "publicText": "모든 진술을 시간순으로 정리한다.",
+      "secretText": "모순된 진술 두 개를 이미 확보했다."
+    }
+  ],
+  "parts": [
+    {
+      "id": "part_rope",
+      "name": "굵은 밧줄",
+      "source": "ship_storage",
+      "note": "뗏목 골조 고정용"
+    },
+    {
+      "id": "part_nails",
+      "name": "방수 못 세트",
+      "source": "archive_tent",
+      "note": "연결부 보강용"
+    },
+    {
+      "id": "part_oar_handle",
+      "name": "노 손잡이",
+      "source": "forest_edge",
+      "note": "추진 보조"
+    },
+    {
+      "id": "part_tar_sheet",
+      "name": "타르 코팅 천",
+      "source": "collapsed_boat",
+      "note": "틈새 방수용"
+    },
+    {
+      "id": "part_float_drum",
+      "name": "부력 드럼",
+      "source": "shoreline",
+      "note": "부력 확보용"
+    }
+  ],
+  "investigations": {
+    "deliveryMode": "auto",
+    "rounds": [
+      {
+        "round": 1,
+        "targets": [
+          {
+            "id": "ship_storage",
+            "label": "선창 보관함",
+            "description": "비에 젖은 장비와 끊긴 줄이 널려 있다.",
+            "cardPool": ["card_rope", "card_oil_log", "card_glove_mark"]
+          },
+          {
+            "id": "forest_edge",
+            "label": "숲 가장자리",
+            "description": "급히 지나간 발자국이 겹쳐 있다.",
+            "cardPool": [
+              "card_oar_handle",
+              "card_footprint",
+              "card_whisper_note"
+            ]
+          },
+          {
+            "id": "archive_tent",
+            "label": "기록 천막",
+            "description": "젖은 장부와 봉인 상자가 남아 있다.",
+            "cardPool": ["card_nails", "card_rain_log", "card_torn_list"]
+          }
+        ]
+      },
+      {
+        "round": 2,
+        "targets": [
+          {
+            "id": "collapsed_boat",
+            "label": "무너진 보트 선체",
+            "description": "금속 파편과 코팅 천이 끼어 있다.",
+            "cardPool": ["card_tar_sheet", "card_metal_scratch", "card_dog_tag"]
+          },
+          {
+            "id": "medical_box",
+            "label": "응급 상자",
+            "description": "붕대와 소독 도구가 정리되어 있다.",
+            "cardPool": [
+              "card_bandage_count",
+              "card_sedative_empty",
+              "card_wrist_tape"
+            ]
+          },
+          {
+            "id": "shoreline",
+            "label": "해안 부표 지점",
+            "description": "파도에 떠밀린 드럼과 로프가 걸려 있다.",
+            "cardPool": [
+              "card_float_drum",
+              "card_tide_table",
+              "card_signal_light"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "cards": [
+    {
+      "id": "card_rope",
+      "title": "굵은 밧줄 묶음",
+      "text": "절단 흔적이 없는 굵은 밧줄이 발견되었다.",
+      "effects": [
+        {
+          "type": "addPart",
+          "partId": "part_rope"
+        }
+      ]
+    },
+    {
+      "id": "card_oil_log",
+      "title": "기름 사용 장부",
+      "text": "사건 직전 시간대에 기름 사용량이 비정상적으로 늘어 있다."
+    },
+    {
+      "id": "card_glove_mark",
+      "title": "장갑 자국",
+      "text": "오른손 장갑 끝부분이 찢긴 흔적이 남아 있다."
+    },
+    {
+      "id": "card_oar_handle",
+      "title": "노 손잡이",
+      "text": "급히 분리된 노 손잡이가 발견되었다.",
+      "effects": [
+        {
+          "type": "addPart",
+          "partId": "part_oar_handle"
+        }
+      ]
+    },
+    {
+      "id": "card_footprint",
+      "title": "겹친 발자국",
+      "text": "두 사람이 같은 방향으로 뛰어간 발자국이 겹쳐 있다."
+    },
+    {
+      "id": "card_whisper_note",
+      "title": "짧은 메모",
+      "text": "“회의 전에 반드시 확인”이라는 문장이 적혀 있다."
+    },
+    {
+      "id": "card_nails",
+      "title": "방수 못 세트",
+      "text": "방수 처리된 못 세트가 봉인 상자에서 나왔다.",
+      "effects": [
+        {
+          "type": "addPart",
+          "partId": "part_nails"
+        }
+      ]
+    },
+    {
+      "id": "card_rain_log",
+      "title": "강우 기록지",
+      "text": "사건 시점의 강우량이 예상보다 낮아 시야가 완전히 가려지진 않았다."
+    },
+    {
+      "id": "card_torn_list",
+      "title": "찢긴 출입 명단",
+      "text": "한 사람의 이름이 의도적으로 지워진 흔적이 보인다."
+    },
+    {
+      "id": "card_tar_sheet",
+      "title": "타르 코팅 천",
+      "text": "방수 처리가 된 코팅 천 조각이 발견되었다.",
+      "effects": [
+        {
+          "type": "addPart",
+          "partId": "part_tar_sheet"
+        }
+      ]
+    },
+    {
+      "id": "card_metal_scratch",
+      "title": "금속 긁힘",
+      "text": "아주 얇은 날이 스치고 지나간 듯한 흠집이 남아 있다."
+    },
+    {
+      "id": "card_dog_tag",
+      "title": "군번줄",
+      "text": "녹슨 군번줄 한 개가 구조물 틈에서 발견되었다.",
+      "effects": [
+        {
+          "type": "revealRoleName",
+          "roleId": "guide",
+          "newDisplayName": "연새사리 누도만쳐사라"
+        }
+      ]
+    },
+    {
+      "id": "card_bandage_count",
+      "title": "붕대 수량표",
+      "text": "응급 붕대가 한 묶음만 비어 있다."
+    },
+    {
+      "id": "card_sedative_empty",
+      "title": "진정제 빈 포장",
+      "text": "진정제 포장 하나가 빈 채로 접혀 있다."
+    },
+    {
+      "id": "card_wrist_tape",
+      "title": "손목 고정 테이프",
+      "text": "강하게 잡아당긴 자국이 남은 테이프다."
+    },
+    {
+      "id": "card_float_drum",
+      "title": "부력 드럼",
+      "text": "실사용 가능한 부력 드럼이 확보되었다.",
+      "effects": [
+        {
+          "type": "addPart",
+          "partId": "part_float_drum"
+        }
+      ]
+    },
+    {
+      "id": "card_tide_table",
+      "title": "조수 간만 표",
+      "text": "새벽 직전 파고가 낮아지는 구간이 표시되어 있다."
+    },
+    {
+      "id": "card_signal_light",
+      "title": "신호등 커버",
+      "text": "손으로 가려 쥘 수 있는 작은 금속 커버가 떨어져 있다."
+    }
+  ],
+  "finalVote": {
+    "question": "1차 사건의 범인은 누구인가?",
+    "correctRoleId": "stalker"
+  },
+  "endbook": {
+    "common": "결국 “가므정겨 려돼”가 임시반장처럼 중심이 된 상태로 밤을 맞이한다.",
+    "variantMatched": "플레이어들의 지목은 1차 사건의 범인을 맞혔다. 그러나 긴장은 조금도 풀리지 않는다.",
+    "variantNotMatched": "플레이어들의 지목은 1차 사건의 범인을 놓쳤다. 불신은 더 짙어지고 공기는 무거워진다.",
+    "closingLine": "그 순간 “스 토크어”가 소매 안쪽의 얇은 금속 날 조각으로 목덜미 근처를 찔러 쓰러뜨린다."
+  }
+}
