@@ -23,25 +23,33 @@ const useJamoGameData = (
       return;
     }
 
-    socket.on('jamo_state_snapshot', (data) => {
+    const handleSnapshot = (data: Parameters<typeof setSnapshot>[0]) => {
       dispatch(setSnapshot(data));
-    });
+    };
 
-    socket.on('jamo_round_phase_changed', (data) => {
+    const handlePhase = (data: Parameters<typeof updatePhase>[0]) => {
       dispatch(updatePhase(data));
-    });
+    };
 
-    socket.on('jamo_draft_saved', (data) => {
+    const handleDraftSaved = (data: { submittedAt: number }) => {
       dispatch(setDraftSaved(data.submittedAt));
-    });
+    };
 
-    socket.on('jamo_submission_debug', (data) => {
+    const handleSubmissionDebug = (
+      data: Parameters<typeof upsertSubmissionDebug>[0]
+    ) => {
       dispatch(upsertSubmissionDebug(data));
-    });
+    };
 
-    socket.on('jamo_round_result', (data) => {
+    const handleRoundResult = (data: Parameters<typeof setRoundResult>[0]) => {
       dispatch(setRoundResult(data));
-    });
+    };
+
+    socket.on('jamo_state_snapshot', handleSnapshot);
+    socket.on('jamo_round_phase_changed', handlePhase);
+    socket.on('jamo_draft_saved', handleDraftSaved);
+    socket.on('jamo_submission_debug', handleSubmissionDebug);
+    socket.on('jamo_round_result', handleRoundResult);
 
     socket.emit('jamo_get_state', { roomId, sessionId }, (response) => {
       if (!response.success) {
@@ -52,13 +60,13 @@ const useJamoGameData = (
     });
 
     return () => {
-      socket.off('jamo_state_snapshot');
-      socket.off('jamo_round_phase_changed');
-      socket.off('jamo_draft_saved');
-      socket.off('jamo_submission_debug');
-      socket.off('jamo_round_result');
+      socket.off('jamo_state_snapshot', handleSnapshot);
+      socket.off('jamo_round_phase_changed', handlePhase);
+      socket.off('jamo_draft_saved', handleDraftSaved);
+      socket.off('jamo_submission_debug', handleSubmissionDebug);
+      socket.off('jamo_round_result', handleRoundResult);
     };
-  }, [roomId, socket?.id, sessionId, dispatch, enqueueSnackbar]);
+  }, [dispatch, enqueueSnackbar, roomId, sessionId, socket]);
 };
 
 export default useJamoGameData;

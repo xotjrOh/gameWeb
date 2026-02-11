@@ -5,6 +5,7 @@ export type JamoPhase = 'waiting' | 'discuss' | 'ended';
 export interface JamoGameData {
   phase: JamoPhase;
   roundNo: number;
+  maxRounds: number;
   roundDuration: number;
   timeLeft: number;
   endsAt: number | null;
@@ -16,19 +17,21 @@ export interface JamoGameData {
   wordFirstByPlayerId?: Record<string, Record<string, number>>;
   successLog?: JamoSuccessEntry[];
   lastRoundResult?: JamoRoundResult;
+  roundHistory?: JamoRoundResult[];
+  finalResult?: JamoFinalResult | null;
 }
 
 export interface JamoPlayerData {
-  score: number;
+  totalScore: number;
   successCount: number;
-  firstSuccessAt: number | null;
+  lastScoredAt: number | null;
 }
 
 export interface JamoPlayerView {
   id: string;
   name: string;
   socketId: string;
-  score: number;
+  totalScore: number;
   successCount: number;
   submissionCount: number;
 }
@@ -73,9 +76,35 @@ export interface JamoAssignmentSummary {
 
 export interface JamoRoundResult {
   roundNo: number;
+  durationSec: number;
   successCount: number;
   winner: { playerId: string; playerName: string; score: number } | null;
   successes: JamoSuccessEntry[];
+  perPlayerDelta: Record<
+    string,
+    { gainedScore: number; success: boolean; word?: string }
+  >;
+  finalizedAt: number;
+}
+
+export interface JamoFinalStanding {
+  playerId: string;
+  playerName: string;
+  totalScore: number;
+  successCount: number;
+  lastScoredAt: number | null;
+}
+
+export interface JamoFinalResult {
+  decidedAt: number;
+  roundCount: number;
+  winner: {
+    playerId: string;
+    playerName: string;
+    totalScore: number;
+    successCount: number;
+  } | null;
+  standings: JamoFinalStanding[];
 }
 
 export interface JamoStateSnapshot {
@@ -88,6 +117,8 @@ export interface JamoStateSnapshot {
   draftSubmittedAt?: number | null;
   gameData: JamoGameData;
   successLog: JamoSuccessEntry[];
+  roundHistory: JamoRoundResult[];
+  finalResult: JamoFinalResult | null;
   isHostView: boolean;
 }
 
@@ -98,6 +129,10 @@ export interface JamoClientToServerEvents {
   ) => void;
   jamo_set_round_time: (
     data: { roomId: string; sessionId: string; duration: number },
+    callback: (response: CommonResponse) => void
+  ) => void;
+  jamo_set_max_rounds: (
+    data: { roomId: string; sessionId: string; maxRounds: number },
     callback: (response: CommonResponse) => void
   ) => void;
   jamo_start_round: (
@@ -129,6 +164,7 @@ export interface JamoServerToClientEvents {
     timeLeft: number;
     endsAt: number | null;
     roundNo: number;
+    maxRounds: number;
     roundDuration: number;
   }) => void;
   jamo_draft_saved: (data: { submittedAt: number }) => void;

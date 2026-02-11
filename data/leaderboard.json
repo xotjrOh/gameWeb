@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-01-18T06:32:58.728Z",
+  "updatedAt": "2026-02-11T12:01:48.166Z",
   "games": {
     "horse": {
       "2": {
@@ -21,6 +21,14 @@
         "wins": 1,
         "lastWinAt": "2026-01-18T06:32:58.728Z"
       }
-    }
+    },
+    "animal": {},
+    "jamo": {
+      "23": {
+        "wins": 1,
+        "lastWinAt": "2026-02-11T12:01:48.166Z"
+      }
+    },
+    "murder_mystery": {}
   }
 }

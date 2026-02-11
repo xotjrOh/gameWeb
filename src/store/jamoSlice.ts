@@ -2,6 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import {
   JamoAssignmentSummary,
   JamoDraftSubmission,
+  JamoFinalResult,
   JamoGameData,
   JamoOwnershipMap,
   JamoRoundResult,
@@ -21,6 +22,8 @@ interface JamoState {
   draftSubmissions: Record<string, JamoDraftSubmission>;
   draftSubmittedAt: number | null;
   successLog: JamoSuccessEntry[];
+  roundHistory: JamoRoundResult[];
+  finalResult: JamoFinalResult | null;
   roundResult: JamoRoundResult | null;
 }
 
@@ -30,6 +33,7 @@ const initialState: JamoState = {
   gameData: {
     phase: 'waiting',
     roundNo: 0,
+    maxRounds: 5,
     roundDuration: 180,
     timeLeft: 0,
     endsAt: null,
@@ -40,6 +44,8 @@ const initialState: JamoState = {
   draftSubmissions: {},
   draftSubmittedAt: null,
   successLog: [],
+  roundHistory: [],
+  finalResult: null,
   roundResult: null,
 };
 
@@ -63,6 +69,8 @@ const jamoSlice = createSlice({
       state.draftSubmissions = action.payload.draftSubmissions ?? {};
       state.draftSubmittedAt = action.payload.draftSubmittedAt ?? null;
       state.successLog = action.payload.successLog ?? [];
+      state.roundHistory = action.payload.roundHistory ?? [];
+      state.finalResult = action.payload.finalResult ?? null;
     },
     updatePhase(
       state,
@@ -71,6 +79,7 @@ const jamoSlice = createSlice({
         timeLeft: number;
         endsAt: number | null;
         roundNo: number;
+        maxRounds: number;
         roundDuration: number;
       }>
     ) {
@@ -78,6 +87,7 @@ const jamoSlice = createSlice({
       state.gameData.timeLeft = action.payload.timeLeft;
       state.gameData.endsAt = action.payload.endsAt;
       state.gameData.roundNo = action.payload.roundNo;
+      state.gameData.maxRounds = action.payload.maxRounds;
       state.gameData.roundDuration = action.payload.roundDuration;
     },
     setDraftSaved(state, action: PayloadAction<number>) {
@@ -88,6 +98,16 @@ const jamoSlice = createSlice({
     },
     setRoundResult(state, action: PayloadAction<JamoRoundResult | null>) {
       state.roundResult = action.payload;
+      if (action.payload) {
+        const existingIndex = state.roundHistory.findIndex(
+          (entry) => entry.roundNo === action.payload?.roundNo
+        );
+        if (existingIndex >= 0) {
+          state.roundHistory[existingIndex] = action.payload;
+        } else {
+          state.roundHistory.push(action.payload);
+        }
+      }
     },
     clearRoundResult(state) {
       state.roundResult = null;

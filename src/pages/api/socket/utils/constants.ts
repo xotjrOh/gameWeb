@@ -106,6 +106,7 @@ export const DEFAULT_GAME_DATA: {
   jamo: {
     phase: 'waiting',
     roundNo: 0,
+    maxRounds: 5,
     roundDuration: 180,
     timeLeft: 0,
     endsAt: null,
@@ -115,6 +116,8 @@ export const DEFAULT_GAME_DATA: {
     draftByPlayerId: {},
     wordFirstByPlayerId: {},
     successLog: [],
+    roundHistory: [],
+    finalResult: null,
     lastRoundResult: undefined,
   },
   murder_mystery: {
@@ -178,9 +181,9 @@ export const DEFAULT_PLAYER_DATA: {
     pendingEatTargetId: null,
   },
   jamo: {
-    score: 0,
+    totalScore: 0,
     successCount: 0,
-    firstSuccessAt: null,
+    lastScoredAt: null,
   },
   murder_mystery: {
     statusText: '감시',

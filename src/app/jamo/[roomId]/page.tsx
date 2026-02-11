@@ -2,6 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Box,
   Typography,
   Stack,
@@ -21,6 +24,7 @@ import {
   TableHead,
   TableRow,
 } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Confetti from 'react-confetti';
@@ -72,8 +76,16 @@ export default function JamoGamePage({ params }: JamoGamePageProps) {
   const { enqueueSnackbar } = useCustomSnackbar();
   const sessionId = session?.user?.id ?? '';
 
-  const { you, gameData, board, roundResult, draftSubmittedAt } =
-    useAppSelector((state) => state.jamo);
+  const {
+    you,
+    players,
+    gameData,
+    board,
+    roundHistory,
+    finalResult,
+    roundResult,
+    draftSubmittedAt,
+  } = useAppSelector((state) => state.jamo);
 
   useCheckVersion(socket);
   useRedirectIfInvalidRoom(roomId);
@@ -96,16 +108,19 @@ export default function JamoGamePage({ params }: JamoGamePageProps) {
   }, [gameData.roundNo]);
 
   useEffect(() => {
-    if (!roundResult) {
+    if (!finalResult?.winner) {
       setShowConfetti(false);
       return;
     }
-    const isWinner = roundResult.winner?.playerId === you?.id;
-    setShowConfetti(isWinner);
-    if (isWinner) {
-      playFanfare();
-    }
-  }, [roundResult, you?.id]);
+    setShowConfetti(true);
+    playFanfare();
+    const timer = window.setTimeout(() => {
+      setShowConfetti(false);
+    }, 5000);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [finalResult?.decidedAt, finalResult?.winner?.playerId]);
 
   useEffect(() => {
     if (roundResult) {
@@ -188,9 +203,23 @@ export default function JamoGamePage({ params }: JamoGamePageProps) {
     numbersInput.trim().length > 0 &&
     !isSubmitting;
   const winnerId = roundResult?.winner?.playerId ?? null;
+  const sortedPlayers = useMemo(
+    () =>
+      [...players].sort((a, b) => {
+        if ((b.totalScore ?? 0) !== (a.totalScore ?? 0)) {
+          return (b.totalScore ?? 0) - (a.totalScore ?? 0);
+        }
+        if ((b.successCount ?? 0) !== (a.successCount ?? 0)) {
+          return (b.successCount ?? 0) - (a.successCount ?? 0);
+        }
+        return a.id.localeCompare(b.id);
+      }),
+    [players]
+  );
   const mySuccess = roundResult?.successes.find(
     (entry) => entry.playerId === you?.id
   );
+  const myDelta = roundResult?.perPlayerDelta?.[you?.id ?? ''];
   const hasSubmitted = Boolean(draftSubmittedAt);
 
   return (
@@ -222,7 +251,7 @@ export default function JamoGamePage({ params }: JamoGamePageProps) {
           </Typography>
           <Chip label={`ROOM ${roomId}`} sx={{ fontWeight: 600 }} />
           <Chip label={phaseLabels[gameData.phase] ?? gameData.phase} />
-          <Chip label={`Round ${gameData.roundNo}`} />
+          <Chip label={`라운드 ${gameData.roundNo}/${gameData.maxRounds}`} />
           <Chip
             label={`남은 시간 ${formatTime(gameData.timeLeft)}`}
             color="primary"
@@ -242,6 +271,34 @@ export default function JamoGamePage({ params }: JamoGamePageProps) {
           <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
             배정받은 칸만 자모가 표시되며, 나머지는 추측해서 제출합니다.
           </Typography>
+        </Paper>
+
+        <Paper sx={{ p: 2, borderRadius: 3 }}>
+          <Typography variant="h6" fontWeight={700} gutterBottom>
+            누적 스코어보드
+          </Typography>
+          <TableContainer component={Paper} variant="outlined">
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>순위</TableCell>
+                  <TableCell>플레이어</TableCell>
+                  <TableCell align="right">누적 점수</TableCell>
+                  <TableCell align="right">성공 라운드</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {sortedPlayers.map((player, index) => (
+                  <TableRow key={player.id}>
+                    <TableCell>{index + 1}</TableCell>
+                    <TableCell>{player.name}</TableCell>
+                    <TableCell align="right">{player.totalScore}</TableCell>
+                    <TableCell align="right">{player.successCount}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
         </Paper>
 
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
@@ -299,6 +356,14 @@ export default function JamoGamePage({ params }: JamoGamePageProps) {
                   ? `${roundResult.winner.playerName} (${roundResult.winner.score}점)`
                   : '없음'}
               </Typography>
+              <Typography>
+                내 점수 변화:{' '}
+                {myDelta
+                  ? myDelta.success
+                    ? `+${myDelta.gainedScore}`
+                    : '+0'
+                  : '+0'}
+              </Typography>
             </Stack>
             <Divider sx={{ my: 2 }} />
             <Typography variant="subtitle1" fontWeight={600} gutterBottom>
@@ -346,6 +411,101 @@ export default function JamoGamePage({ params }: JamoGamePageProps) {
             )}
           </Paper>
         )}
+
+        <Paper sx={{ p: 2, borderRadius: 3 }}>
+          <Typography variant="h6" fontWeight={700} gutterBottom>
+            라운드 히스토리
+          </Typography>
+          {roundHistory.length === 0 ? (
+            <Typography color="textSecondary">
+              아직 종료된 라운드가 없습니다.
+            </Typography>
+          ) : (
+            roundHistory.map((history, index) => {
+              const delta = history.perPlayerDelta?.[you?.id ?? ''];
+              return (
+                <Accordion
+                  key={`${history.roundNo}-${history.finalizedAt}`}
+                  defaultExpanded={index === roundHistory.length - 1}
+                >
+                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Stack
+                      direction={{ xs: 'column', sm: 'row' }}
+                      spacing={2}
+                      alignItems={{ xs: 'flex-start', sm: 'center' }}
+                    >
+                      <Typography fontWeight={700}>
+                        라운드 {history.roundNo}
+                      </Typography>
+                      <Typography variant="body2">
+                        성공자 {history.successCount}명
+                      </Typography>
+                      <Typography variant="body2">
+                        우승:{' '}
+                        {history.winner
+                          ? `${history.winner.playerName} (${history.winner.score}점)`
+                          : '없음'}
+                      </Typography>
+                      <Typography variant="body2">
+                        내 변화:{' '}
+                        {delta?.success ? `+${delta.gainedScore}` : '+0'}
+                      </Typography>
+                    </Stack>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Typography variant="body2" color="textSecondary">
+                      제한시간 {history.durationSec}초
+                    </Typography>
+                  </AccordionDetails>
+                </Accordion>
+              );
+            })
+          )}
+        </Paper>
+
+        {finalResult && (
+          <Paper sx={{ p: 2, borderRadius: 3 }}>
+            <Typography variant="h6" fontWeight={700} gutterBottom>
+              최종 결과
+            </Typography>
+            <Typography sx={{ mb: 1 }}>
+              우승:{' '}
+              {finalResult.winner
+                ? `${finalResult.winner.playerName} (누적 ${finalResult.winner.totalScore}점)`
+                : '없음'}
+            </Typography>
+            <TableContainer component={Paper} variant="outlined">
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>순위</TableCell>
+                    <TableCell>플레이어</TableCell>
+                    <TableCell align="right">누적 점수</TableCell>
+                    <TableCell align="right">성공 라운드</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {finalResult.standings.map((entry, index) => (
+                    <TableRow
+                      key={entry.playerId}
+                      sx={{
+                        backgroundColor:
+                          entry.playerId === finalResult.winner?.playerId
+                            ? 'rgba(251,191,36,0.2)'
+                            : undefined,
+                      }}
+                    >
+                      <TableCell>{index + 1}</TableCell>
+                      <TableCell>{entry.playerName}</TableCell>
+                      <TableCell align="right">{entry.totalScore}</TableCell>
+                      <TableCell align="right">{entry.successCount}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
+        )}
       </Stack>
 
       <Dialog
@@ -359,7 +519,7 @@ export default function JamoGamePage({ params }: JamoGamePageProps) {
           {mySuccess ? (
             <Stack spacing={1} sx={{ mt: 1 }}>
               <Typography>단어: {mySuccess.word}</Typography>
-              <Typography>점수: {mySuccess.score}점</Typography>
+              <Typography>획득: +{mySuccess.score}점</Typography>
             </Stack>
           ) : (
             <Typography sx={{ mt: 1 }}>

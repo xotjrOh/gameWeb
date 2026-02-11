@@ -1,5 +1,6 @@
 import { Server } from 'socket.io';
 import { rooms, timers } from '../state/gameState';
+import { recordGameWinners } from '../state/leaderboardState';
 import { GAME_STATUS } from '../utils/constants';
 import { validateRoom, validatePlayer } from '../utils/validation';
 import { JamoRoom, Player } from '@/types/room';
@@ -14,6 +15,7 @@ import {
   recordDraftSubmission,
   resolveDictionaryResult,
   resetJamoRound,
+  setJamoMaxRounds,
   startJamoRound,
 } from '../services/jamoGameService';
 import {
@@ -33,7 +35,7 @@ const jamoGameHandler = (
     }
   };
 
-  const handleEndRound = (room: JamoRoom) => {
+  const handleEndRound = async (room: JamoRoom) => {
     if (room.gameData.phase !== 'discuss') {
       return;
     }
@@ -42,8 +44,17 @@ const jamoGameHandler = (
     room.gameData.endsAt = null;
     room.status = GAME_STATUS.PENDING;
 
-    const result = endJamoRound(room);
+    const result = await endJamoRound(room);
     room.gameData.lastRoundResult = result;
+    if (room.gameData.finalResult?.winner?.playerName) {
+      try {
+        recordGameWinners('jamo', [
+          room.gameData.finalResult.winner.playerName,
+        ]);
+      } catch (error) {
+        console.error('[leaderboard] failed to record jamo winner', error);
+      }
+    }
     io.to(room.roomId).emit('jamo_round_result', result);
     emitJamoPhaseUpdate(room, io);
     emitJamoSnapshots(room, io);
@@ -101,6 +112,33 @@ const jamoGameHandler = (
     }
   );
 
+  socket.on(
+    'jamo_set_max_rounds',
+    ({ roomId, sessionId, maxRounds }, callback) => {
+      try {
+        const room = validateRoom(roomId) as JamoRoom;
+        if (room.gameType !== 'jamo') {
+          throw new Error('자모 게임방이 아닙니다.');
+        }
+        if (room.host.id !== sessionId) {
+          throw new Error('방장만 총 라운드 수를 설정할 수 있습니다.');
+        }
+        if (room.gameData.phase === 'discuss') {
+          throw new Error('라운드 진행 중에는 변경할 수 없습니다.');
+        }
+        if (!Number.isInteger(maxRounds) || maxRounds < 1) {
+          throw new Error('총 라운드 수는 1 이상 정수여야 합니다.');
+        }
+        setJamoMaxRounds(room, maxRounds);
+        emitJamoSnapshots(room, io);
+        emitJamoPhaseUpdate(room, io);
+        return callback({ success: true });
+      } catch (error) {
+        return callback({ success: false, message: (error as Error).message });
+      }
+    }
+  );
+
   socket.on('jamo_start_round', ({ roomId, sessionId }, callback) => {
     try {
       const room = validateRoom(roomId) as JamoRoom;
@@ -115,6 +153,9 @@ const jamoGameHandler = (
       }
       if (room.players.length === 0) {
         throw new Error('참가자가 없습니다.');
+      }
+      if (room.gameData.roundNo >= room.gameData.maxRounds) {
+        throw new Error('총 라운드가 종료되어 더 이상 시작할 수 없습니다.');
       }
       if (
         !room.gameData.board ||
@@ -142,7 +183,9 @@ const jamoGameHandler = (
           emitJamoPhaseUpdate(room, io);
         } else {
           clearRoomTimer(roomId);
-          handleEndRound(room);
+          void handleEndRound(room).catch((error) => {
+            console.error('[jamo] failed to end round', error);
+          });
         }
       }, 1000);
 
@@ -153,7 +196,7 @@ const jamoGameHandler = (
     }
   });
 
-  socket.on('jamo_force_end_round', ({ roomId, sessionId }, callback) => {
+  socket.on('jamo_force_end_round', async ({ roomId, sessionId }, callback) => {
     try {
       const room = validateRoom(roomId) as JamoRoom;
       if (room.gameType !== 'jamo') {
@@ -163,7 +206,7 @@ const jamoGameHandler = (
         throw new Error('방장만 라운드를 종료할 수 있습니다.');
       }
       clearRoomTimer(roomId);
-      handleEndRound(room);
+      await handleEndRound(room);
       return callback({ success: true });
     } catch (error) {
       return callback({ success: false, message: (error as Error).message });
@@ -183,6 +226,7 @@ const jamoGameHandler = (
         throw new Error('라운드 진행 중에는 초기화할 수 없습니다.');
       }
 
+      clearRoomTimer(roomId);
       resetJamoRound(room);
       emitJamoSnapshots(room, io);
       emitJamoPhaseUpdate(room, io);

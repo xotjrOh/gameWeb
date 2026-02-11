@@ -5,6 +5,7 @@ import { JamoRoom, Player } from '@/types/room';
 import {
   JamoAssignmentSummary,
   JamoDraftSubmission,
+  JamoFinalResult,
   JamoOwnershipMap,
   JamoPlayerData,
   JamoRoundResult,
@@ -91,7 +92,8 @@ const FINAL_INDEX: Record<string, number> = {
   ㅎ: 27,
 };
 
-const DICT_API_KEY = process.env.OPENDICT_API_KEY ?? '';
+const DICT_API_KEY =
+  process.env.OPENDICT_API_KEY ?? process.env.DICT_API_KEY ?? '';
 const DICT_API_ENABLED = Boolean(DICT_API_KEY);
 const DICT_API_URL = 'https://krdict.korean.go.kr/api/search';
 
@@ -104,12 +106,15 @@ const makeId = () =>
   `jamo_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
 const ensureGameData = (room: JamoRoom) => {
+  room.gameData.maxRounds ??= 5;
   room.gameData.board ??= {};
   room.gameData.assignmentsByPlayerId ??= {};
   room.gameData.ownershipByNumber ??= {};
   room.gameData.draftByPlayerId ??= {};
   room.gameData.wordFirstByPlayerId ??= {};
   room.gameData.successLog ??= [];
+  room.gameData.roundHistory ??= [];
+  room.gameData.finalResult ??= null;
 };
 
 const isConsonant = (char: string) =>
@@ -310,20 +315,26 @@ export const distributeJamoBoard = (room: JamoRoom) => {
 export const resetJamoRound = (room: JamoRoom) => {
   ensureGameData(room);
   room.gameData.phase = 'waiting';
+  room.gameData.roundNo = 0;
   room.gameData.timeLeft = 0;
   room.gameData.endsAt = null;
   room.status = GAME_STATUS.PENDING;
 
+  room.gameData.board = {};
+  room.gameData.assignmentsByPlayerId = {};
+  room.gameData.ownershipByNumber = {};
   room.gameData.draftByPlayerId = {};
   room.gameData.wordFirstByPlayerId = {};
   room.gameData.successLog = [];
+  room.gameData.roundHistory = [];
+  room.gameData.finalResult = null;
   room.gameData.lastRoundResult = undefined;
 
   room.players.forEach((player) => {
     const jamoPlayer = player as Player & JamoPlayerData;
-    jamoPlayer.score = 0;
+    jamoPlayer.totalScore = 0;
     jamoPlayer.successCount = 0;
-    jamoPlayer.firstSuccessAt = null;
+    jamoPlayer.lastScoredAt = null;
   });
 };
 
@@ -351,6 +362,7 @@ export const assignJamoToPlayers = (room: JamoRoom) => {
 };
 
 export const startJamoRound = (room: JamoRoom, duration: number) => {
+  ensureGameData(room);
   const nextDuration = duration > 0 ? duration : room.gameData.roundDuration;
   room.status = GAME_STATUS.IN_PROGRESS;
   room.gameData.phase = 'discuss';
@@ -359,21 +371,79 @@ export const startJamoRound = (room: JamoRoom, duration: number) => {
   room.gameData.timeLeft = nextDuration;
   room.gameData.endsAt = Date.now() + nextDuration * 1000;
 
-  ensureGameData(room);
   room.gameData.draftByPlayerId = {};
   room.gameData.wordFirstByPlayerId = {};
   room.gameData.successLog = [];
   room.gameData.lastRoundResult = undefined;
-
-  room.players.forEach((player) => {
-    const jamoPlayer = player as Player & JamoPlayerData;
-    jamoPlayer.score = 0;
-    jamoPlayer.successCount = 0;
-    jamoPlayer.firstSuccessAt = null;
-  });
+  room.gameData.finalResult = null;
 };
 
-export const endJamoRound = (room: JamoRoom): JamoRoundResult => {
+export const setJamoMaxRounds = (room: JamoRoom, maxRounds: number) => {
+  ensureGameData(room);
+  room.gameData.maxRounds = maxRounds;
+  const players = room.players as (Player & JamoPlayerData)[];
+  if (room.gameData.phase !== 'discuss' && room.gameData.roundNo >= maxRounds) {
+    room.gameData.finalResult = buildFinalResult(
+      players,
+      room.gameData.roundNo
+    );
+    return;
+  }
+  if (room.gameData.roundNo < maxRounds) {
+    room.gameData.finalResult = null;
+  }
+};
+
+const sortFinalStandings = (
+  players: Array<Player & JamoPlayerData>
+): Array<Player & JamoPlayerData> =>
+  [...players].sort((a, b) => {
+    if ((b.totalScore ?? 0) !== (a.totalScore ?? 0)) {
+      return (b.totalScore ?? 0) - (a.totalScore ?? 0);
+    }
+    if ((b.successCount ?? 0) !== (a.successCount ?? 0)) {
+      return (b.successCount ?? 0) - (a.successCount ?? 0);
+    }
+    const aLast = a.lastScoredAt ?? Number.MAX_SAFE_INTEGER;
+    const bLast = b.lastScoredAt ?? Number.MAX_SAFE_INTEGER;
+    if (aLast !== bLast) {
+      return aLast - bLast;
+    }
+    return a.id.localeCompare(b.id);
+  });
+
+const buildFinalResult = (
+  players: Array<Player & JamoPlayerData>,
+  roundCount: number
+): JamoFinalResult => {
+  const sorted = sortFinalStandings(players);
+  const standings = sorted.map((player) => ({
+    playerId: player.id,
+    playerName: player.name,
+    totalScore: player.totalScore ?? 0,
+    successCount: player.successCount ?? 0,
+    lastScoredAt: player.lastScoredAt ?? null,
+  }));
+  const winner = standings[0]
+    ? {
+        playerId: standings[0].playerId,
+        playerName: standings[0].playerName,
+        totalScore: standings[0].totalScore,
+        successCount: standings[0].successCount,
+      }
+    : null;
+
+  return {
+    decidedAt: Date.now(),
+    roundCount,
+    winner,
+    standings,
+  };
+};
+
+export const endJamoRound = async (
+  room: JamoRoom
+): Promise<JamoRoundResult> => {
   ensureGameData(room);
   const players = room.players as (Player & JamoPlayerData)[];
   const drafts = room.gameData.draftByPlayerId ?? {};
@@ -382,6 +452,28 @@ export const endJamoRound = (room: JamoRoom): JamoRoundResult => {
     string,
     Array<{ draft: JamoDraftSubmission; firstSubmittedAt: number }>
   >();
+  const perPlayerDelta: JamoRoundResult['perPlayerDelta'] = {};
+
+  const pendingDrafts = Object.values(drafts).filter(
+    (draft) => draft.word && draft.word.length >= 2 && draft.dictOk === null
+  );
+  if (pendingDrafts.length > 0) {
+    const resolved = await Promise.all(
+      pendingDrafts.map((draft) =>
+        resolveDictionaryResult(draft.word as string)
+      )
+    );
+    pendingDrafts.forEach((draft, index) => {
+      draft.dictOk = resolved[index];
+    });
+  }
+
+  players.forEach((player) => {
+    perPlayerDelta[player.id] = {
+      gainedScore: 0,
+      success: false,
+    };
+  });
 
   players.forEach((player) => {
     const draft = drafts[player.id];
@@ -392,9 +484,6 @@ export const endJamoRound = (room: JamoRoom): JamoRoundResult => {
       !draft.dictOk ||
       !draft.parsedOk
     ) {
-      player.score = 0;
-      player.successCount = 0;
-      player.firstSuccessAt = null;
       return;
     }
 
@@ -432,19 +521,19 @@ export const endJamoRound = (room: JamoRoom): JamoRoundResult => {
     return a.submittedAt - b.submittedAt;
   });
 
-  players.forEach((player) => {
-    const winnerEntry = sortedSuccesses.find(
-      (entry) => entry.playerId === player.id
-    );
-    if (!winnerEntry) {
-      player.score = 0;
-      player.successCount = 0;
-      player.firstSuccessAt = null;
+  sortedSuccesses.forEach((entry) => {
+    const player = players.find((p) => p.id === entry.playerId);
+    if (!player) {
       return;
     }
-    player.score = winnerEntry.score;
-    player.successCount = 1;
-    player.firstSuccessAt = winnerEntry.submittedAt;
+    player.totalScore = (player.totalScore ?? 0) + entry.score;
+    player.successCount = (player.successCount ?? 0) + 1;
+    player.lastScoredAt = entry.submittedAt;
+    perPlayerDelta[player.id] = {
+      gainedScore: entry.score,
+      success: true,
+      word: entry.word,
+    };
   });
 
   room.gameData.successLog = sortedSuccesses;
@@ -457,12 +546,30 @@ export const endJamoRound = (room: JamoRoom): JamoRoundResult => {
       }
     : null;
 
-  return {
+  const result: JamoRoundResult = {
     roundNo: room.gameData.roundNo,
+    durationSec: room.gameData.roundDuration,
     successCount: sortedSuccesses.length,
     winner,
     successes: sortedSuccesses,
+    perPlayerDelta,
+    finalizedAt: Date.now(),
   };
+
+  room.gameData.roundHistory ??= [];
+  room.gameData.roundHistory.push(result);
+  room.gameData.lastRoundResult = result;
+
+  if (room.gameData.roundNo >= room.gameData.maxRounds) {
+    room.gameData.finalResult = buildFinalResult(
+      players,
+      room.gameData.roundNo
+    );
+  } else {
+    room.gameData.finalResult = null;
+  }
+
+  return result;
 };
 
 export const buildJamoSnapshot = (
@@ -485,7 +592,7 @@ export const buildJamoSnapshot = (
       id: player.id,
       name: player.name,
       socketId: player.socketId,
-      score: jamoPlayer.score ?? 0,
+      totalScore: jamoPlayer.totalScore ?? 0,
       successCount: jamoPlayer.successCount ?? 0,
       submissionCount: hasDraft ? 1 : 0,
     };
@@ -497,7 +604,7 @@ export const buildJamoSnapshot = (
       id: viewerId,
       name: room.host.name,
       socketId: room.host.socketId,
-      score: 0,
+      totalScore: 0,
       successCount: 0,
       submissionCount: draftByPlayerId[viewerId] ? 1 : 0,
     } as const);
@@ -543,11 +650,14 @@ export const buildJamoSnapshot = (
     gameData: {
       phase: room.gameData.phase,
       roundNo: room.gameData.roundNo,
+      maxRounds: room.gameData.maxRounds,
       roundDuration: room.gameData.roundDuration,
       timeLeft: room.gameData.timeLeft,
       endsAt: room.gameData.endsAt ?? null,
     },
     successLog: room.gameData.successLog ?? [],
+    roundHistory: room.gameData.roundHistory ?? [],
+    finalResult: room.gameData.finalResult ?? null,
     isHostView,
   };
 };
@@ -632,6 +742,7 @@ export const emitJamoPhaseUpdate = (
     timeLeft: room.gameData.timeLeft,
     endsAt: room.gameData.endsAt ?? null,
     roundNo: room.gameData.roundNo,
+    maxRounds: room.gameData.maxRounds,
     roundDuration: room.gameData.roundDuration,
   });
 };
