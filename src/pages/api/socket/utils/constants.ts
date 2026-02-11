@@ -107,6 +107,7 @@ export const DEFAULT_GAME_DATA: {
     phase: 'waiting',
     roundNo: 0,
     maxRounds: 5,
+    blockDuplicateCards: true,
     roundDuration: 180,
     timeLeft: 0,
     endsAt: null,

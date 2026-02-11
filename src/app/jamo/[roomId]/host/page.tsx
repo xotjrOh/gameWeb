@@ -23,6 +23,8 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useSession } from 'next-auth/react';
@@ -182,6 +184,30 @@ export default function JamoHostPage({ params }: JamoHostPageProps) {
         enqueueSnackbar(`총 ${maxRounds}라운드로 설정했습니다.`, {
           variant: 'success',
         });
+      }
+    );
+  };
+
+  const handleToggleCardReuseRule = (enabled: boolean) => {
+    if (!socket) {
+      return;
+    }
+    socket.emit(
+      'jamo_set_card_reuse_rule',
+      { roomId, sessionId, enabled },
+      (response) => {
+        if (!response.success) {
+          enqueueSnackbar(response.message ?? '규칙 변경 실패', {
+            variant: 'error',
+          });
+          return;
+        }
+        enqueueSnackbar(
+          enabled
+            ? '카드 중복 사용 금지를 켰습니다.'
+            : '카드 중복 사용 금지를 껐습니다.',
+          { variant: 'success' }
+        );
       }
     );
   };
@@ -365,6 +391,17 @@ export default function JamoHostPage({ params }: JamoHostPageProps) {
             >
               총 라운드 저장
             </Button>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={gameData.blockDuplicateCards}
+                  onChange={(event) =>
+                    handleToggleCardReuseRule(event.target.checked)
+                  }
+                />
+              }
+              label="카드 중복 금지"
+            />
             <Button
               variant="outlined"
               color="inherit"

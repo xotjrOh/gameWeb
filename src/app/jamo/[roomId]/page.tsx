@@ -253,6 +253,10 @@ export default function JamoGamePage({ params }: JamoGamePageProps) {
           <Chip label={phaseLabels[gameData.phase] ?? gameData.phase} />
           <Chip label={`라운드 ${gameData.roundNo}/${gameData.maxRounds}`} />
           <Chip
+            label={`카드중복 ${gameData.blockDuplicateCards ? '금지' : '허용'}`}
+            color={gameData.blockDuplicateCards ? 'warning' : 'default'}
+          />
+          <Chip
             label={`남은 시간 ${formatTime(gameData.timeLeft)}`}
             color="primary"
           />

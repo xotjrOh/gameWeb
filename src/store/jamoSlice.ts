@@ -34,6 +34,7 @@ const initialState: JamoState = {
     phase: 'waiting',
     roundNo: 0,
     maxRounds: 5,
+    blockDuplicateCards: true,
     roundDuration: 180,
     timeLeft: 0,
     endsAt: null,

@@ -62,17 +62,57 @@ const INITIAL_INDEX: Record<string, number> = {
   ㅎ: 18,
 };
 
-const MEDIAL_INDEX: Record<string, number> = {
-  ㅏ: 0,
-  ㅑ: 2,
-  ㅓ: 4,
-  ㅕ: 6,
-  ㅗ: 8,
-  ㅛ: 12,
-  ㅜ: 13,
-  ㅠ: 17,
-  ㅡ: 18,
-  ㅣ: 20,
+const JUNGSEONG_LIST = [
+  'ㅏ',
+  'ㅐ',
+  'ㅑ',
+  'ㅒ',
+  'ㅓ',
+  'ㅔ',
+  'ㅕ',
+  'ㅖ',
+  'ㅗ',
+  'ㅘ',
+  'ㅙ',
+  'ㅚ',
+  'ㅛ',
+  'ㅜ',
+  'ㅝ',
+  'ㅞ',
+  'ㅟ',
+  'ㅠ',
+  'ㅡ',
+  'ㅢ',
+  'ㅣ',
+] as const;
+
+const MEDIAL_INDEX: Record<string, number> = JUNGSEONG_LIST.reduce<
+  Record<string, number>
+>((acc, vowel, index) => {
+  acc[vowel] = index;
+  return acc;
+}, {});
+
+const COMBINED_MEDIAL_MAP_2: Record<string, string> = {
+  ㅏㅣ: 'ㅐ',
+  ㅑㅣ: 'ㅒ',
+  ㅓㅣ: 'ㅔ',
+  ㅕㅣ: 'ㅖ',
+  ㅗㅏ: 'ㅘ',
+  ㅗㅐ: 'ㅙ',
+  ㅗㅣ: 'ㅚ',
+  ㅜㅓ: 'ㅝ',
+  ㅜㅔ: 'ㅞ',
+  ㅜㅣ: 'ㅟ',
+  ㅡㅣ: 'ㅢ',
+  // Chained composition support: ㅗ+ㅏ+ㅣ -> ㅙ, ㅜ+ㅓ+ㅣ -> ㅞ
+  ㅘㅣ: 'ㅙ',
+  ㅝㅣ: 'ㅞ',
+};
+
+const COMBINED_MEDIAL_MAP_3: Record<string, string> = {
+  ㅗㅏㅣ: 'ㅙ',
+  ㅜㅓㅣ: 'ㅞ',
 };
 
 const FINAL_INDEX: Record<string, number> = {
@@ -107,6 +147,7 @@ const makeId = () =>
 
 const ensureGameData = (room: JamoRoom) => {
   room.gameData.maxRounds ??= 5;
+  room.gameData.blockDuplicateCards ??= true;
   room.gameData.board ??= {};
   room.gameData.assignmentsByPlayerId ??= {};
   room.gameData.ownershipByNumber ??= {};
@@ -121,6 +162,46 @@ const isConsonant = (char: string) =>
   Object.prototype.hasOwnProperty.call(INITIAL_INDEX, char);
 const isVowel = (char: string) =>
   Object.prototype.hasOwnProperty.call(MEDIAL_INDEX, char);
+
+const combineVowels = (
+  v1?: string,
+  v2?: string,
+  v3?: string
+): { vowel: string; consumed: number } | null => {
+  if (!v1 || !isVowel(v1)) {
+    return null;
+  }
+
+  if (v2 && isVowel(v2) && v3 && isVowel(v3)) {
+    const tripleCombined = COMBINED_MEDIAL_MAP_3[`${v1}${v2}${v3}`];
+    if (tripleCombined) {
+      return { vowel: tripleCombined, consumed: 3 };
+    }
+  }
+
+  if (v2 && isVowel(v2)) {
+    const combined = COMBINED_MEDIAL_MAP_2[`${v1}${v2}`];
+    if (combined) {
+      if (v3 && isVowel(v3)) {
+        const chained = COMBINED_MEDIAL_MAP_2[`${combined}${v3}`];
+        if (chained) {
+          return { vowel: chained, consumed: 3 };
+        }
+      }
+      return { vowel: combined, consumed: 2 };
+    }
+  }
+
+  return { vowel: v1, consumed: 1 };
+};
+
+const resolveMedial = (jamos: string[], startIndex: number) => {
+  return combineVowels(
+    jamos[startIndex],
+    jamos[startIndex + 1],
+    jamos[startIndex + 2]
+  );
+};
 
 const composeSyllable = (
   initial: string,
@@ -149,26 +230,31 @@ export const composeWordFromJamo = (jamos: string[]) => {
   let index = 0;
   while (index < jamos.length) {
     const initial = jamos[index];
-    const vowel = jamos[index + 1];
-    if (!initial || !vowel || !isConsonant(initial) || !isVowel(vowel)) {
+    if (!initial || !isConsonant(initial)) {
       return null;
     }
 
-    let final: string | null = null;
-    const next = jamos[index + 2];
-    if (next && isConsonant(next)) {
-      const afterNext = jamos[index + 3];
-      if (!afterNext || !isVowel(afterNext)) {
-        final = next;
-        index += 3;
-      } else {
-        index += 2;
-      }
-    } else {
-      index += 2;
+    const medial = resolveMedial(jamos, index + 1);
+    if (!medial || !isVowel(medial.vowel)) {
+      return null;
     }
 
-    const syllable = composeSyllable(initial, vowel, final);
+    const nextIndex = index + 1 + medial.consumed;
+    let final: string | null = null;
+    const next = jamos[nextIndex];
+    if (next && isConsonant(next)) {
+      const afterNext = jamos[nextIndex + 1];
+      if (!afterNext || !isVowel(afterNext)) {
+        final = next;
+        index = nextIndex + 1;
+      } else {
+        index = nextIndex;
+      }
+    } else {
+      index = nextIndex;
+    }
+
+    const syllable = composeSyllable(initial, medial.vowel, final);
     if (!syllable) {
       return null;
     }
@@ -178,7 +264,10 @@ export const composeWordFromJamo = (jamos: string[]) => {
   return syllables.join('');
 };
 
-const parseNumberList = (value: string): number[] | null => {
+const parseNumberList = (
+  value: string,
+  allowDuplicateNumbers = false
+): number[] | null => {
   if (!value) {
     return null;
   }
@@ -193,9 +282,11 @@ const parseNumberList = (value: string): number[] | null => {
   if (numbers.some((num) => !Number.isInteger(num))) {
     return null;
   }
-  const unique = new Set(numbers);
-  if (unique.size !== numbers.length) {
-    return null;
+  if (!allowDuplicateNumbers) {
+    const unique = new Set(numbers);
+    if (unique.size !== numbers.length) {
+      return null;
+    }
   }
   if (numbers.some((num) => num < 1 || num > 24)) {
     return null;
@@ -394,6 +485,11 @@ export const setJamoMaxRounds = (room: JamoRoom, maxRounds: number) => {
   }
 };
 
+export const setJamoCardReuseRule = (room: JamoRoom, enabled: boolean) => {
+  ensureGameData(room);
+  room.gameData.blockDuplicateCards = enabled;
+};
+
 const sortFinalStandings = (
   players: Array<Player & JamoPlayerData>
 ): Array<Player & JamoPlayerData> =>
@@ -521,7 +617,23 @@ export const endJamoRound = async (
     return a.submittedAt - b.submittedAt;
   });
 
-  sortedSuccesses.forEach((entry) => {
+  const finalSuccesses = room.gameData.blockDuplicateCards
+    ? (() => {
+        const usedNumbers = new Set<number>();
+        const filtered: JamoSuccessEntry[] = [];
+        sortedSuccesses.forEach((entry) => {
+          const hasConflict = entry.numbers.some((num) => usedNumbers.has(num));
+          if (hasConflict) {
+            return;
+          }
+          entry.numbers.forEach((num) => usedNumbers.add(num));
+          filtered.push(entry);
+        });
+        return filtered;
+      })()
+    : sortedSuccesses;
+
+  finalSuccesses.forEach((entry) => {
     const player = players.find((p) => p.id === entry.playerId);
     if (!player) {
       return;
@@ -536,22 +648,22 @@ export const endJamoRound = async (
     };
   });
 
-  room.gameData.successLog = sortedSuccesses;
+  room.gameData.successLog = finalSuccesses;
 
-  const winner = sortedSuccesses[0]
+  const winner = finalSuccesses[0]
     ? {
-        playerId: sortedSuccesses[0].playerId,
-        playerName: sortedSuccesses[0].playerName,
-        score: sortedSuccesses[0].score,
+        playerId: finalSuccesses[0].playerId,
+        playerName: finalSuccesses[0].playerName,
+        score: finalSuccesses[0].score,
       }
     : null;
 
   const result: JamoRoundResult = {
     roundNo: room.gameData.roundNo,
     durationSec: room.gameData.roundDuration,
-    successCount: sortedSuccesses.length,
+    successCount: finalSuccesses.length,
     winner,
-    successes: sortedSuccesses,
+    successes: finalSuccesses,
     perPlayerDelta,
     finalizedAt: Date.now(),
   };
@@ -651,6 +763,7 @@ export const buildJamoSnapshot = (
       phase: room.gameData.phase,
       roundNo: room.gameData.roundNo,
       maxRounds: room.gameData.maxRounds,
+      blockDuplicateCards: room.gameData.blockDuplicateCards,
       roundDuration: room.gameData.roundDuration,
       timeLeft: room.gameData.timeLeft,
       endsAt: room.gameData.endsAt ?? null,
@@ -694,7 +807,7 @@ export const recordDraftSubmission = async (
   }
 
   const board: Record<number, string> = room.gameData.board ?? {};
-  const numbers = parseNumberList(trimmed);
+  const numbers = parseNumberList(trimmed, !room.gameData.blockDuplicateCards);
   const parsedOk = Boolean(numbers);
   const parsedNumbers = numbers ?? [];
   const jamos = parsedOk

@@ -6,6 +6,7 @@ export interface JamoGameData {
   phase: JamoPhase;
   roundNo: number;
   maxRounds: number;
+  blockDuplicateCards: boolean;
   roundDuration: number;
   timeLeft: number;
   endsAt: number | null;
@@ -133,6 +134,10 @@ export interface JamoClientToServerEvents {
   ) => void;
   jamo_set_max_rounds: (
     data: { roomId: string; sessionId: string; maxRounds: number },
+    callback: (response: CommonResponse) => void
+  ) => void;
+  jamo_set_card_reuse_rule: (
+    data: { roomId: string; sessionId: string; enabled: boolean },
     callback: (response: CommonResponse) => void
   ) => void;
   jamo_start_round: (

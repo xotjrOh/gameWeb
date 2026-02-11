@@ -15,6 +15,7 @@ import {
   recordDraftSubmission,
   resolveDictionaryResult,
   resetJamoRound,
+  setJamoCardReuseRule,
   setJamoMaxRounds,
   startJamoRound,
 } from '../services/jamoGameService';
@@ -132,6 +133,30 @@ const jamoGameHandler = (
         setJamoMaxRounds(room, maxRounds);
         emitJamoSnapshots(room, io);
         emitJamoPhaseUpdate(room, io);
+        return callback({ success: true });
+      } catch (error) {
+        return callback({ success: false, message: (error as Error).message });
+      }
+    }
+  );
+
+  socket.on(
+    'jamo_set_card_reuse_rule',
+    ({ roomId, sessionId, enabled }, callback) => {
+      try {
+        const room = validateRoom(roomId) as JamoRoom;
+        if (room.gameType !== 'jamo') {
+          throw new Error('자모 게임방이 아닙니다.');
+        }
+        if (room.host.id !== sessionId) {
+          throw new Error('방장만 카드 중복 규칙을 변경할 수 있습니다.');
+        }
+        if (typeof enabled !== 'boolean') {
+          throw new Error('규칙 값이 올바르지 않습니다.');
+        }
+
+        setJamoCardReuseRule(room, enabled);
+        emitJamoSnapshots(room, io);
         return callback({ success: true });
       } catch (error) {
         return callback({ success: false, message: (error as Error).message });
