@@ -37,7 +37,7 @@ const gameTypeMap: Record<GameType, string> = {
   shuffle: '🔀 뒤죽박죽',
   animal: '🦁 동물 능력전',
   jamo: '🔤 단어게임',
-  murder_mystery: '🕵️ 반장을 죽였다',
+  murder_mystery: '🕵️ 머더미스터리',
 };
 
 const DEBUG = process.env.NEXT_PUBLIC_SOCKET_DEBUG === '1';
@@ -219,7 +219,7 @@ export default function GameRooms({ session }: GameRoomsProps) {
     }
     const scenarioLabel =
       room.gameData.scenarioRoomDisplayName || '반장을 죽였다';
-    return `🕵️ ${scenarioLabel}`;
+    return `${gameTypeMap.murder_mystery} · ${scenarioLabel}`;
   };
 
   return (

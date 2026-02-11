@@ -24,6 +24,7 @@ import { Session } from 'next-auth';
 import { ClientSocketType } from '@/types/socket';
 import { AppDispatch } from '@/store';
 import { GameType } from '@/types/room';
+import LockedFocusedMaxPlayersField from '@/components/LockedFocusedMaxPlayersField';
 
 type RouterType = ReturnType<typeof useRouter>;
 
@@ -142,6 +143,15 @@ export default function RoomModal({
     enqueueSnackbar,
   ]);
 
+  useEffect(() => {
+    if (selectedGameType !== 'murder_mystery' || !selectedScenario) {
+      return;
+    }
+    setValue('maxPlayers', selectedScenario.players.max, {
+      shouldValidate: true,
+    });
+  }, [selectedGameType, selectedScenario, setValue]);
+
   const onSubmit: SubmitHandler<FormData> = (data) => {
     if (!socket || !socket.connected || !socket.id) {
       return enqueueSnackbar('소켓 연결 대기 중입니다.', {
@@ -158,6 +168,10 @@ export default function RoomModal({
 
     const userName = session.user.name ?? 'Anonymous';
     const sessionId = session.user.id;
+    const resolvedMaxPlayers =
+      data.gameType === 'murder_mystery' && selectedScenario
+        ? selectedScenario.players.max
+        : data.maxPlayers;
 
     if (data.gameType === 'murder_mystery') {
       if (!data.scenarioId) {
@@ -167,8 +181,8 @@ export default function RoomModal({
       }
       if (
         selectedScenario &&
-        (data.maxPlayers < selectedScenario.players.min ||
-          data.maxPlayers > selectedScenario.players.max)
+        (resolvedMaxPlayers < selectedScenario.players.min ||
+          resolvedMaxPlayers > selectedScenario.players.max)
       ) {
         return enqueueSnackbar(
           `이 시나리오는 ${selectedScenario.players.min}~${selectedScenario.players.max}명 설정만 가능합니다.`,
@@ -181,11 +195,11 @@ export default function RoomModal({
 
     const payload =
       data.gameType === 'murder_mystery'
-        ? { ...data, userName, sessionId }
+        ? { ...data, maxPlayers: resolvedMaxPlayers, userName, sessionId }
         : {
             roomName: data.roomName,
             gameType: data.gameType,
-            maxPlayers: data.maxPlayers,
+            maxPlayers: resolvedMaxPlayers,
             userName,
             sessionId,
           };
@@ -297,7 +311,7 @@ export default function RoomModal({
             <MenuItem value="shuffle">🔀뒤죽박죽</MenuItem>
             <MenuItem value="animal">🦁동물 능력전</MenuItem>
             <MenuItem value="jamo">🔤단어게임</MenuItem>
-            <MenuItem value="murder_mystery">🕵️반장을 죽였다</MenuItem>
+            <MenuItem value="murder_mystery">🕵️머더미스터리</MenuItem>
           </Select>
         </FormControl>
 
@@ -353,36 +367,53 @@ export default function RoomModal({
         )}
 
         {/* 최대 인원 입력 */}
-        <TextField
-          label="최대 인원"
-          type="text"
-          {...register('maxPlayers', {
-            required: '최대 인원을 입력해주세요.',
-            valueAsNumber: true,
-          })}
-          error={!!errors.maxPlayers}
-          helperText={errors.maxPlayers?.message}
-          fullWidth
-          variant="outlined"
-          margin="normal"
-          disabled={isFixedMurderPlayerCount}
-          onInput={(e) => {
-            const target = e.target as HTMLInputElement;
-            target.value = target.value.replace(/[^0-9]/g, '');
-          }}
-          sx={{
-            backgroundColor: 'rgba(255, 255, 255, 0.8)',
-          }}
-          slotProps={{
-            formHelperText: {
-              sx: {
-                margin: 0,
-                paddingLeft: '12px',
-                backgroundColor: 'background.card', // 여기서 에러 문구의 색상을 검정으로 설정
+        {isFixedMurderPlayerCount ? (
+          <>
+            <LockedFocusedMaxPlayersField
+              value={selectedScenario?.players.max ?? 0}
+              error={Boolean(errors.maxPlayers)}
+              helperText={errors.maxPlayers?.message}
+            />
+            <input
+              type="hidden"
+              value={selectedScenario?.players.max ?? ''}
+              {...register('maxPlayers', {
+                required: '최대 인원을 입력해주세요.',
+                valueAsNumber: true,
+              })}
+            />
+          </>
+        ) : (
+          <TextField
+            label="최대 인원"
+            type="text"
+            {...register('maxPlayers', {
+              required: '최대 인원을 입력해주세요.',
+              valueAsNumber: true,
+            })}
+            error={!!errors.maxPlayers}
+            helperText={errors.maxPlayers?.message}
+            fullWidth
+            variant="outlined"
+            margin="normal"
+            onInput={(e) => {
+              const target = e.target as HTMLInputElement;
+              target.value = target.value.replace(/[^0-9]/g, '');
+            }}
+            sx={{
+              backgroundColor: 'rgba(255, 255, 255, 0.8)',
+            }}
+            slotProps={{
+              formHelperText: {
+                sx: {
+                  margin: 0,
+                  paddingLeft: '12px',
+                  backgroundColor: 'background.card',
+                },
               },
-            },
-          }}
-        />
+            }}
+          />
+        )}
 
         {/* 방 만들기 버튼 */}
         <Button

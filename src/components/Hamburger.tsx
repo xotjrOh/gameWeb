@@ -111,7 +111,7 @@ export default function Hamburger() {
           🦁 동물 능력전
         </MenuItem>
         <MenuItem component={Link} href="/games/murder_mystery">
-          🕵️ 반장을 죽였다
+          🕵️ 머더미스터리
         </MenuItem>
         <MenuItem component={Link} href="/games/jamo">
           🔤 단어게임
