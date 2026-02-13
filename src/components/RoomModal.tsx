@@ -14,6 +14,8 @@ import {
   Box,
   Typography,
   FormHelperText,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import { Cancel as CancelIcon } from '@mui/icons-material';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
@@ -41,6 +43,7 @@ interface FormData {
   gameType: GameType;
   maxPlayers: number;
   scenarioId: string;
+  hostParticipatesAsPlayer: boolean;
 }
 
 interface MurderMysteryScenarioOption {
@@ -78,10 +81,12 @@ export default function RoomModal({
       gameType: 'horse',
       maxPlayers: undefined,
       scenarioId: '',
+      hostParticipatesAsPlayer: false,
     },
   });
   const selectedGameType = watch('gameType');
   const selectedScenarioId = watch('scenarioId');
+  const hostParticipatesAsPlayer = watch('hostParticipatesAsPlayer');
 
   const selectedScenario = useMemo(
     () =>
@@ -95,8 +100,13 @@ export default function RoomModal({
     selectedScenario?.players.min === selectedScenario?.players.max;
 
   useEffect(() => {
+    register('hostParticipatesAsPlayer');
+  }, [register]);
+
+  useEffect(() => {
     if (selectedGameType !== 'murder_mystery') {
       setValue('scenarioId', '');
+      setValue('hostParticipatesAsPlayer', false);
       return;
     }
     if (scenarioOptions.length > 0 || isScenarioLoading) {
@@ -195,7 +205,13 @@ export default function RoomModal({
 
     const payload =
       data.gameType === 'murder_mystery'
-        ? { ...data, maxPlayers: resolvedMaxPlayers, userName, sessionId }
+        ? {
+            ...data,
+            maxPlayers: resolvedMaxPlayers,
+            userName,
+            sessionId,
+            hostParticipatesAsPlayer: data.hostParticipatesAsPlayer,
+          }
         : {
             roomName: data.roomName,
             gameType: data.gameType,
@@ -316,54 +332,90 @@ export default function RoomModal({
         </FormControl>
 
         {selectedGameType === 'murder_mystery' && (
-          <FormControl
-            fullWidth
-            margin="normal"
-            error={Boolean(errors.scenarioId)}
-            disabled={isScenarioLoading}
-          >
-            <InputLabel id="scenario-id-label">
-              머더미스터리 시나리오
-            </InputLabel>
-            <Select
-              labelId="scenario-id-label"
-              defaultValue=""
-              label="머더미스터리 시나리오"
+          <>
+            <FormControl
+              fullWidth
+              margin="normal"
+              error={Boolean(errors.scenarioId)}
+              disabled={isScenarioLoading}
+            >
+              <InputLabel id="scenario-id-label">
+                머더미스터리 시나리오
+              </InputLabel>
+              <Select
+                labelId="scenario-id-label"
+                defaultValue=""
+                label="머더미스터리 시나리오"
+                sx={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                }}
+                {...register('scenarioId', {
+                  validate: (value) =>
+                    selectedGameType !== 'murder_mystery' ||
+                    value.length > 0 ||
+                    '시나리오를 선택해주세요.',
+                })}
+                onChange={(event) => {
+                  const value = String(event.target.value);
+                  setValue('scenarioId', value, { shouldValidate: true });
+                  const foundScenario = scenarioOptions.find(
+                    (scenario) => scenario.id === value
+                  );
+                  if (foundScenario) {
+                    setValue('maxPlayers', foundScenario.players.max, {
+                      shouldValidate: true,
+                    });
+                  }
+                }}
+              >
+                {scenarioOptions.map((scenario) => (
+                  <MenuItem key={scenario.id} value={scenario.id}>
+                    {scenario.roomDisplayName}
+                  </MenuItem>
+                ))}
+              </Select>
+              <FormHelperText>
+                {errors.scenarioId?.message ??
+                  (selectedScenario
+                    ? `${selectedScenario.players.min}~${selectedScenario.players.max}명 플레이`
+                    : '시나리오를 불러오는 중입니다.')}
+              </FormHelperText>
+            </FormControl>
+
+            <Box
               sx={{
-                backgroundColor: 'rgba(255, 255, 255, 0.8)',
-              }}
-              {...register('scenarioId', {
-                validate: (value) =>
-                  selectedGameType !== 'murder_mystery' ||
-                  value.length > 0 ||
-                  '시나리오를 선택해주세요.',
-              })}
-              onChange={(event) => {
-                const value = String(event.target.value);
-                setValue('scenarioId', value, { shouldValidate: true });
-                const foundScenario = scenarioOptions.find(
-                  (scenario) => scenario.id === value
-                );
-                if (foundScenario) {
-                  setValue('maxPlayers', foundScenario.players.max, {
-                    shouldValidate: true,
-                  });
-                }
+                mt: 0.5,
+                mb: 0.5,
+                px: 1,
+                py: 1.2,
+                borderRadius: 1.5,
+                backgroundColor: 'rgba(255,255,255,0.72)',
               }}
             >
-              {scenarioOptions.map((scenario) => (
-                <MenuItem key={scenario.id} value={scenario.id}>
-                  {scenario.roomDisplayName}
-                </MenuItem>
-              ))}
-            </Select>
-            <FormHelperText>
-              {errors.scenarioId?.message ??
-                (selectedScenario
-                  ? `${selectedScenario.players.min}~${selectedScenario.players.max}명 플레이`
-                  : '시나리오를 불러오는 중입니다.')}
-            </FormHelperText>
-          </FormControl>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={hostParticipatesAsPlayer}
+                    onChange={(event) =>
+                      setValue(
+                        'hostParticipatesAsPlayer',
+                        event.target.checked,
+                        {
+                          shouldDirty: true,
+                        }
+                      )
+                    }
+                  />
+                }
+                label="방장도 플레이어로 참가"
+              />
+              <Typography variant="caption" color="text.secondary">
+                {hostParticipatesAsPlayer
+                  ? '플레이어 정원은 방장을 포함한 인원 기준'
+                  : '플레이어 정원은 방장을 제외한 인원 기준'}
+              </Typography>
+            </Box>
+          </>
         )}
 
         {/* 최대 인원 입력 */}

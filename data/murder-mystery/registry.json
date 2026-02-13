@@ -3,7 +3,7 @@
   "scenarios": [
     {
       "id": "banjang-killer",
-      "file": "banjang-killer.json"
+      "file": "banjang-killer.yaml"
     }
   ]
 }

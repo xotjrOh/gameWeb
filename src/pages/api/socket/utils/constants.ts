@@ -125,6 +125,7 @@ export const DEFAULT_GAME_DATA: {
     scenarioId: '',
     scenarioTitle: '',
     scenarioRoomDisplayName: '반장을 죽였다',
+    hostParticipatesAsPlayer: false,
     phase: 'LOBBY',
     roleByPlayerId: {},
     roleDisplayNameByPlayerId: {},

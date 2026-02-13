@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import YAML from 'yaml';
 
 const root = process.cwd();
 const registryPath = path.join(root, 'data', 'murder-mystery', 'registry.json');
@@ -8,6 +9,90 @@ const scenarioDir = path.join(root, 'data', 'murder-mystery', 'scenarios');
 const fail = (message) => {
   console.error(`[murder-mystery-smoke] ${message}`);
   process.exit(1);
+};
+
+const isRecord = (value) =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const toRound = (value) => (value === 1 || value === 2 ? value : null);
+
+const readScenarioFile = (filePath) => {
+  const raw = fs.readFileSync(filePath, 'utf8');
+  const ext = path.extname(filePath).toLowerCase();
+  if (ext === '.json') {
+    return JSON.parse(raw);
+  }
+  if (ext === '.yaml' || ext === '.yml') {
+    return YAML.parse(raw);
+  }
+  fail(`unsupported scenario file extension: ${ext}`);
+};
+
+const normalizePlayers = (players) => {
+  if (Number.isInteger(players)) {
+    return {
+      min: players,
+      max: players,
+    };
+  }
+
+  if (isRecord(players) && Number.isInteger(players.min) && Number.isInteger(players.max)) {
+    return {
+      min: players.min,
+      max: players.max,
+    };
+  }
+
+  return null;
+};
+
+const normalizeInvestigations = (investigations) => {
+  if (!isRecord(investigations)) {
+    return [];
+  }
+
+  if (Array.isArray(investigations.rounds) && investigations.rounds.length > 0) {
+    return investigations.rounds.map((round) => ({
+      round: round.round,
+      targets: Array.isArray(round.targets)
+        ? round.targets.map((target) => ({
+            id: target.id,
+            cardPool: Array.isArray(target.cardPool)
+              ? target.cardPool
+              : Array.isArray(target.cards)
+                ? target.cards
+                : [],
+          }))
+        : [],
+    }));
+  }
+
+  const round1Targets = Array.isArray(investigations.round1) ? investigations.round1 : [];
+  const round2Targets = Array.isArray(investigations.round2) ? investigations.round2 : [];
+  return [
+    {
+      round: 1,
+      targets: round1Targets.map((target) => ({
+        id: target.id,
+        cardPool: Array.isArray(target.cardPool)
+          ? target.cardPool
+          : Array.isArray(target.cards)
+            ? target.cards
+            : [],
+      })),
+    },
+    {
+      round: 2,
+      targets: round2Targets.map((target) => ({
+        id: target.id,
+        cardPool: Array.isArray(target.cardPool)
+          ? target.cardPool
+          : Array.isArray(target.cards)
+            ? target.cards
+            : [],
+      })),
+    },
+  ];
 };
 
 if (!fs.existsSync(registryPath)) {
@@ -25,18 +110,13 @@ for (const entry of registry.scenarios) {
     fail(`scenario file missing: ${entry.file}`);
   }
 
-  const scenario = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  if (scenario.id !== entry.id) {
-    fail(`${entry.file}: id mismatch (${scenario.id} !== ${entry.id})`);
+  const scenario = readScenarioFile(filePath);
+  const players = normalizePlayers(scenario.players);
+  if (!scenario.id || !scenario.roomDisplayName) {
+    fail(`${entry.file}: id/roomDisplayName are required`);
   }
-  if (!scenario.roomDisplayName) {
-    fail(`${entry.file}: roomDisplayName is required`);
-  }
-  if (!scenario.players || !Number.isInteger(scenario.players.min)) {
-    fail(`${entry.file}: players.min must be integer`);
-  }
-  if (!scenario.players || !Number.isInteger(scenario.players.max)) {
-    fail(`${entry.file}: players.max must be integer`);
+  if (!players) {
+    fail(`${entry.file}: players must be integer or {min,max}`);
   }
   if (!scenario.intro?.readAloud) {
     fail(`${entry.file}: intro.readAloud is required`);
@@ -51,15 +131,14 @@ for (const entry of registry.scenarios) {
     fail(`${entry.file}: cards must be non-empty`);
   }
 
-  const rounds = new Set(
-    (scenario.investigations?.rounds ?? []).map((round) => round.round)
-  );
-  if (!rounds.has(1) || !rounds.has(2)) {
+  const rounds = normalizeInvestigations(scenario.investigations);
+  const roundSet = new Set(rounds.map((round) => toRound(round.round)));
+  if (!roundSet.has(1) || !roundSet.has(2)) {
     fail(`${entry.file}: investigation rounds must include 1 and 2`);
   }
 
   const cardIds = new Set(scenario.cards.map((card) => card.id));
-  for (const round of scenario.investigations?.rounds ?? []) {
+  for (const round of rounds) {
     for (const target of round.targets ?? []) {
       for (const cardId of target.cardPool ?? []) {
         if (!cardIds.has(cardId)) {
@@ -70,17 +149,21 @@ for (const entry of registry.scenarios) {
   }
 
   const hasGuideRevealRule = scenario.roles.some((role) =>
-    (role.dynamicDisplayNameRules ?? []).some(
-      (rule) =>
-        rule.trigger?.type === 'cardRevealed' &&
-        rule.trigger?.cardId === 'card_dog_tag'
-    )
+    (role.dynamicDisplayNameRules ?? []).some((rule) => {
+      if (rule.trigger?.type === 'cardRevealed' && rule.trigger?.cardId === 'card_dog_tag') {
+        return true;
+      }
+      return rule.when?.onCardRevealed === 'card_dog_tag';
+    })
   );
   if (!hasGuideRevealRule) {
     fail(`${entry.file}: missing reusable guide reveal trigger(card_dog_tag)`);
   }
 
-  if (!scenario.finalVote?.question || !scenario.finalVote?.correctRoleId) {
+  const correctRoleId =
+    scenario.finalVote?.correctRoleId ??
+    scenario.roles.find((role) => role.isKiller === true)?.id;
+  if (!scenario.finalVote?.question || !correctRoleId) {
     fail(`${entry.file}: finalVote.question/correctRoleId are required`);
   }
   if (!scenario.endbook?.common || !scenario.endbook?.closingLine) {

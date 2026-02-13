@@ -222,6 +222,15 @@ export default function GameRooms({ session }: GameRoomsProps) {
     return `${gameTypeMap.murder_mystery} · ${scenarioLabel}`;
   };
 
+  const getMurderMysteryCapacityRuleLabel = (room: Room) => {
+    if (room.gameType !== 'murder_mystery') {
+      return null;
+    }
+    return room.gameData.hostParticipatesAsPlayer
+      ? '정원 기준: 방장 포함'
+      : '정원 기준: 방장 제외';
+  };
+
   return (
     <Box
       sx={{
@@ -340,6 +349,15 @@ export default function GameRooms({ session }: GameRoomsProps) {
                       >
                         {getRoomGameTypeLabel(room)}
                       </Typography>
+                      {room.gameType === 'murder_mystery' ? (
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: 'block', mt: 0.3 }}
+                        >
+                          {getMurderMysteryCapacityRuleLabel(room)}
+                        </Typography>
+                      ) : null}
                     </Grid>
 
                     {/* 우측 상태 및 인원수 */}
@@ -358,6 +376,9 @@ export default function GameRooms({ session }: GameRoomsProps) {
                             sx={{ whiteSpace: 'nowrap', pr: '6px' }}
                           >
                             {room.players.length} / {room.maxPlayers}
+                            {room.gameType === 'murder_mystery'
+                              ? ` (${room.gameData.hostParticipatesAsPlayer ? '포함' : '제외'})`
+                              : ''}
                           </Typography>
                         </Stack>
                         <Typography
@@ -437,6 +458,15 @@ export default function GameRooms({ session }: GameRoomsProps) {
                       >
                         {getRoomGameTypeLabel(room)}
                       </Typography>
+                      {room.gameType === 'murder_mystery' ? (
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: 'block', mt: 0.3 }}
+                        >
+                          {getMurderMysteryCapacityRuleLabel(room)}
+                        </Typography>
+                      ) : null}
                     </Grid>
 
                     {/* 우측 상태 및 인원수 */}
@@ -455,6 +485,9 @@ export default function GameRooms({ session }: GameRoomsProps) {
                             sx={{ whiteSpace: 'nowrap' }}
                           >
                             {room.players.length} / {room.maxPlayers} 명
+                            {room.gameType === 'murder_mystery'
+                              ? ` (${room.gameData.hostParticipatesAsPlayer ? '포함' : '제외'})`
+                              : ''}
                           </Typography>
                         </Stack>
                         <Typography

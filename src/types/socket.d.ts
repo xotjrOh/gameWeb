@@ -99,6 +99,7 @@ export interface CreateRoomData {
   sessionId: string;
   maxPlayers: number;
   scenarioId?: string;
+  hostParticipatesAsPlayer?: boolean;
 }
 
 export interface JoinRoomData {

@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
+import YAML from 'yaml';
 import {
+  MurderMysteryInvestigationRound,
   MurderMysteryScenario,
   MurderMysteryScenarioCatalogItem,
 } from '@/types/murderMystery';
@@ -22,6 +24,8 @@ interface ScenarioStore {
   loadedAt: number;
 }
 
+type RawRecord = Record<string, unknown>;
+
 const CACHE_TTL_MS = process.env.NODE_ENV === 'development' ? 1000 : 30000;
 const BASE_DIR = path.join(process.cwd(), 'data', 'murder-mystery');
 const SCENARIO_DIR = path.join(BASE_DIR, 'scenarios');
@@ -42,9 +46,579 @@ const assertCondition = (condition: unknown, message: string) => {
   }
 };
 
+const isRecord = (value: unknown): value is RawRecord =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const asNonEmptyString = (value: unknown): string | undefined =>
+  typeof value === 'string' && value.length > 0 ? value : undefined;
+
+const asRound = (
+  value: unknown
+): MurderMysteryInvestigationRound | undefined =>
+  value === 1 || value === 2 ? value : undefined;
+
+const toStringArray = (value: unknown): string[] =>
+  Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === 'string')
+    : [];
+
+const requireRecord = (value: unknown, message: string): RawRecord => {
+  assertCondition(isRecord(value), message);
+  return value as RawRecord;
+};
+
+const requireString = (value: unknown, message: string): string => {
+  const resolved = asNonEmptyString(value);
+  assertCondition(resolved, message);
+  return resolved as string;
+};
+
+const requireInteger = (value: unknown, message: string): number => {
+  assertCondition(Number.isInteger(value), message);
+  return Number(value);
+};
+
+const requireRound = (
+  value: unknown,
+  message: string
+): MurderMysteryInvestigationRound => {
+  const round = asRound(value);
+  assertCondition(round, message);
+  return round as MurderMysteryInvestigationRound;
+};
+
 const readJsonFile = <T>(filePath: string): T => {
   const raw = fs.readFileSync(filePath, 'utf8');
   return JSON.parse(raw) as T;
+};
+
+const readScenarioFile = (filePath: string): unknown => {
+  const raw = fs.readFileSync(filePath, 'utf8');
+  const extension = path.extname(filePath).toLowerCase();
+
+  if (extension === '.json') {
+    return JSON.parse(raw);
+  }
+  if (extension === '.yaml' || extension === '.yml') {
+    return YAML.parse(raw);
+  }
+
+  throw new Error(
+    `[murder_mystery][scenario] unsupported scenario file extension (${extension})`
+  );
+};
+
+const normalizePlayers = (
+  rawPlayers: unknown,
+  fileName: string
+): MurderMysteryScenario['players'] => {
+  if (Number.isInteger(rawPlayers)) {
+    const count = Number(rawPlayers);
+    return {
+      min: count,
+      max: count,
+    };
+  }
+
+  const playersRecord = requireRecord(
+    rawPlayers,
+    `${fileName}: players must be integer or object`
+  );
+  return {
+    min: requireInteger(
+      playersRecord.min,
+      `${fileName}: players.min must be integer`
+    ),
+    max: requireInteger(
+      playersRecord.max,
+      `${fileName}: players.max must be integer`
+    ),
+  };
+};
+
+const normalizeInvestigationTargets = ({
+  rawTargets,
+  round,
+  fileName,
+  cardRoundById,
+}: {
+  rawTargets: unknown[];
+  round: MurderMysteryInvestigationRound;
+  fileName: string;
+  cardRoundById: Record<string, MurderMysteryInvestigationRound>;
+}): MurderMysteryScenario['investigations']['rounds'][number]['targets'] =>
+  rawTargets.map((rawTarget, index) => {
+    const targetRecord = requireRecord(
+      rawTarget,
+      `${fileName}: round ${round} target[${index}] must be object`
+    );
+    const id = requireString(
+      targetRecord.id,
+      `${fileName}: round ${round} target.id is required`
+    );
+    const label =
+      asNonEmptyString(targetRecord.label) ??
+      asNonEmptyString(targetRecord.name) ??
+      id;
+    const description = asNonEmptyString(targetRecord.description);
+    const cardPool = [
+      ...toStringArray(targetRecord.cardPool),
+      ...toStringArray(targetRecord.cards),
+    ];
+    assertCondition(
+      cardPool.length > 0,
+      `${fileName}: round ${round} target(${id}) cards/cardPool is required`
+    );
+
+    cardPool.forEach((cardId) => {
+      if (!cardRoundById[cardId]) {
+        cardRoundById[cardId] = round;
+      }
+    });
+
+    return {
+      id,
+      label,
+      description,
+      cardPool,
+    };
+  });
+
+const normalizeInvestigations = (
+  rawScenario: RawRecord,
+  fileName: string
+): {
+  investigations: MurderMysteryScenario['investigations'];
+  cardRoundById: Record<string, MurderMysteryInvestigationRound>;
+} => {
+  const investigationsRecord = requireRecord(
+    rawScenario.investigations,
+    `${fileName}: investigations is required`
+  );
+  const cardRoundById: Record<string, MurderMysteryInvestigationRound> = {};
+  const normalizedRounds: MurderMysteryScenario['investigations']['rounds'] =
+    [];
+
+  const explicitRounds = Array.isArray(investigationsRecord.rounds)
+    ? investigationsRecord.rounds
+    : [];
+
+  if (explicitRounds.length > 0) {
+    explicitRounds.forEach((rawRound, index) => {
+      const roundRecord = requireRecord(
+        rawRound,
+        `${fileName}: investigations.rounds[${index}] must be object`
+      );
+      const round = requireRound(
+        roundRecord.round,
+        `${fileName}: investigations.rounds[${index}].round must be 1 or 2`
+      );
+      const targets = normalizeInvestigationTargets({
+        rawTargets: Array.isArray(roundRecord.targets)
+          ? roundRecord.targets
+          : [],
+        round,
+        fileName,
+        cardRoundById,
+      });
+      normalizedRounds.push({ round, targets });
+    });
+  } else {
+    const round1Targets = Array.isArray(investigationsRecord.round1)
+      ? investigationsRecord.round1
+      : [];
+    const round2Targets = Array.isArray(investigationsRecord.round2)
+      ? investigationsRecord.round2
+      : [];
+
+    normalizedRounds.push({
+      round: 1,
+      targets: normalizeInvestigationTargets({
+        rawTargets: round1Targets,
+        round: 1,
+        fileName,
+        cardRoundById,
+      }),
+    });
+    normalizedRounds.push({
+      round: 2,
+      targets: normalizeInvestigationTargets({
+        rawTargets: round2Targets,
+        round: 2,
+        fileName,
+        cardRoundById,
+      }),
+    });
+  }
+
+  const deliveryMode =
+    investigationsRecord.deliveryMode === 'manual' ? 'manual' : 'auto';
+
+  return {
+    investigations: {
+      deliveryMode,
+      rounds: normalizedRounds,
+    },
+    cardRoundById,
+  };
+};
+
+const normalizeDynamicDisplayNameRules = ({
+  rawRules,
+  roleId,
+  fileName,
+  cardRoundById,
+}: {
+  rawRules: unknown;
+  roleId: string;
+  fileName: string;
+  cardRoundById: Record<string, MurderMysteryInvestigationRound>;
+}): MurderMysteryScenario['roles'][number]['dynamicDisplayNameRules'] => {
+  if (!Array.isArray(rawRules) || rawRules.length === 0) {
+    return undefined;
+  }
+
+  return rawRules.map((rawRule, index) => {
+    const ruleRecord = requireRecord(
+      rawRule,
+      `${fileName}: role(${roleId}) dynamicDisplayNameRules[${index}] must be object`
+    );
+    const ruleId = asNonEmptyString(ruleRecord.id);
+
+    if (isRecord(ruleRecord.trigger)) {
+      const trigger = ruleRecord.trigger;
+      assertCondition(
+        trigger.type === 'cardRevealed',
+        `${fileName}: role(${roleId}) dynamic rule trigger.type must be cardRevealed`
+      );
+      const cardId = requireString(
+        trigger.cardId,
+        `${fileName}: role(${roleId}) dynamic rule trigger.cardId is required`
+      );
+      const newDisplayName = requireString(
+        ruleRecord.newDisplayName,
+        `${fileName}: role(${roleId}) dynamic rule newDisplayName is required`
+      );
+      const round = asRound(trigger.round);
+      return {
+        id: ruleId,
+        trigger: {
+          type: 'cardRevealed' as const,
+          cardId,
+          ...(round ? { round } : {}),
+        },
+        newDisplayName,
+      };
+    }
+
+    const when = requireRecord(
+      ruleRecord.when,
+      `${fileName}: role(${roleId}) dynamic rule when is required`
+    );
+    const cardId = requireString(
+      when.onCardRevealed,
+      `${fileName}: role(${roleId}) dynamic rule when.onCardRevealed is required`
+    );
+    const newDisplayName = requireString(
+      ruleRecord.setDisplayName,
+      `${fileName}: role(${roleId}) dynamic rule setDisplayName is required`
+    );
+    const round = asRound(when.round) ?? cardRoundById[cardId];
+    return {
+      id: ruleId ?? `${roleId}:rule:${index}`,
+      trigger: {
+        type: 'cardRevealed' as const,
+        cardId,
+        ...(round ? { round } : {}),
+      },
+      newDisplayName,
+    };
+  });
+};
+
+const normalizeRoles = ({
+  rawRoles,
+  cardRoundById,
+  fileName,
+}: {
+  rawRoles: unknown;
+  cardRoundById: Record<string, MurderMysteryInvestigationRound>;
+  fileName: string;
+}): {
+  roles: MurderMysteryScenario['roles'];
+  killerRoleId: string | null;
+} => {
+  const roleList = Array.isArray(rawRoles) ? rawRoles : [];
+  assertCondition(roleList.length > 0, `${fileName}: roles must be non-empty`);
+
+  let killerRoleId: string | null = null;
+
+  const roles: MurderMysteryScenario['roles'] = roleList.map(
+    (rawRole, index) => {
+      const roleRecord = requireRecord(
+        rawRole,
+        `${fileName}: roles[${index}] must be object`
+      );
+      const id = requireString(
+        roleRecord.id,
+        `${fileName}: roles[${index}].id is required`
+      );
+      const displayName = requireString(
+        roleRecord.displayName,
+        `${fileName}: role(${id}) displayName is required`
+      );
+      const publicText = requireString(
+        roleRecord.publicText,
+        `${fileName}: role(${id}) publicText is required`
+      );
+      const secretText = requireString(
+        roleRecord.secretText,
+        `${fileName}: role(${id}) secretText is required`
+      );
+
+      if (roleRecord.isKiller === true) {
+        killerRoleId = id;
+      }
+
+      return {
+        id,
+        displayName,
+        publicText,
+        secretText,
+        dynamicDisplayNameRules: normalizeDynamicDisplayNameRules({
+          rawRules: roleRecord.dynamicDisplayNameRules,
+          roleId: id,
+          fileName,
+          cardRoundById,
+        }),
+      };
+    }
+  );
+
+  return {
+    roles,
+    killerRoleId,
+  };
+};
+
+const normalizeParts = ({
+  rawParts,
+  fileName,
+}: {
+  rawParts: unknown;
+  fileName: string;
+}): MurderMysteryScenario['parts'] => {
+  const partList = Array.isArray(rawParts) ? rawParts : [];
+  assertCondition(partList.length > 0, `${fileName}: parts must be non-empty`);
+
+  return partList.map((rawPart, index) => {
+    const partRecord = requireRecord(
+      rawPart,
+      `${fileName}: parts[${index}] must be object`
+    );
+    const id = requireString(
+      partRecord.id,
+      `${fileName}: parts[${index}].id is required`
+    );
+    return {
+      id,
+      name: requireString(
+        partRecord.name,
+        `${fileName}: part(${id}) name is required`
+      ),
+      source: requireString(
+        partRecord.source,
+        `${fileName}: part(${id}) source is required`
+      ),
+      note: requireString(
+        partRecord.note,
+        `${fileName}: part(${id}) note is required`
+      ),
+    };
+  });
+};
+
+const normalizeCards = ({
+  rawCards,
+  fileName,
+}: {
+  rawCards: unknown;
+  fileName: string;
+}): MurderMysteryScenario['cards'] => {
+  const cardList = Array.isArray(rawCards) ? rawCards : [];
+  assertCondition(cardList.length > 0, `${fileName}: cards must be non-empty`);
+
+  return cardList.map((rawCard, index) => {
+    const cardRecord = requireRecord(
+      rawCard,
+      `${fileName}: cards[${index}] must be object`
+    );
+    const id = requireString(
+      cardRecord.id,
+      `${fileName}: cards[${index}].id is required`
+    );
+    const rawEffects = Array.isArray(cardRecord.effects)
+      ? cardRecord.effects
+      : [];
+    const effects =
+      rawEffects.length > 0
+        ? rawEffects.map((rawEffect, effectIndex) => {
+            const effectRecord = requireRecord(
+              rawEffect,
+              `${fileName}: card(${id}) effects[${effectIndex}] must be object`
+            );
+            const effectType = requireString(
+              effectRecord.type,
+              `${fileName}: card(${id}) effects[${effectIndex}].type is required`
+            );
+
+            if (effectType === 'addPart') {
+              return {
+                type: 'addPart' as const,
+                partId: requireString(
+                  effectRecord.partId,
+                  `${fileName}: card(${id}) addPart.partId is required`
+                ),
+              };
+            }
+
+            if (effectType === 'revealRoleName') {
+              return {
+                type: 'revealRoleName' as const,
+                roleId: requireString(
+                  effectRecord.roleId,
+                  `${fileName}: card(${id}) revealRoleName.roleId is required`
+                ),
+                newDisplayName: requireString(
+                  effectRecord.newDisplayName,
+                  `${fileName}: card(${id}) revealRoleName.newDisplayName is required`
+                ),
+              };
+            }
+
+            throw new Error(
+              `[murder_mystery][scenario] ${fileName}: card(${id}) unsupported effect type (${effectType})`
+            );
+          })
+        : undefined;
+
+    return {
+      id,
+      title: requireString(
+        cardRecord.title,
+        `${fileName}: card(${id}) title is required`
+      ),
+      text: requireString(
+        cardRecord.text,
+        `${fileName}: card(${id}) text is required`
+      ),
+      effects,
+    };
+  });
+};
+
+const normalizeScenarioSchema = (
+  rawScenario: unknown,
+  fileName: string
+): MurderMysteryScenario => {
+  const scenarioRecord = requireRecord(
+    rawScenario,
+    `${fileName}: scenario root must be object`
+  );
+
+  const id = requireString(scenarioRecord.id, `${fileName}: id is required`);
+  const title = requireString(
+    scenarioRecord.title,
+    `${fileName}: title is required`
+  );
+  const roomDisplayName = requireString(
+    scenarioRecord.roomDisplayName,
+    `${fileName}: roomDisplayName is required`
+  );
+  const players = normalizePlayers(scenarioRecord.players, fileName);
+  const introRecord = requireRecord(
+    scenarioRecord.intro,
+    `${fileName}: intro is required`
+  );
+  const introReadAloud = requireString(
+    introRecord.readAloud,
+    `${fileName}: intro.readAloud is required`
+  );
+
+  const { investigations, cardRoundById } = normalizeInvestigations(
+    scenarioRecord,
+    fileName
+  );
+  const { roles, killerRoleId } = normalizeRoles({
+    rawRoles: scenarioRecord.roles,
+    cardRoundById,
+    fileName,
+  });
+  const parts = normalizeParts({
+    rawParts: scenarioRecord.parts,
+    fileName,
+  });
+  const cards = normalizeCards({
+    rawCards: scenarioRecord.cards,
+    fileName,
+  });
+
+  const finalVoteRecord = requireRecord(
+    scenarioRecord.finalVote,
+    `${fileName}: finalVote is required`
+  );
+  const finalVoteQuestion = requireString(
+    finalVoteRecord.question,
+    `${fileName}: finalVote.question is required`
+  );
+  const finalVoteCorrectRoleId =
+    asNonEmptyString(finalVoteRecord.correctRoleId) ?? killerRoleId;
+  assertCondition(
+    finalVoteCorrectRoleId,
+    `${fileName}: finalVote.correctRoleId is required`
+  );
+  const resolvedFinalVoteCorrectRoleId = finalVoteCorrectRoleId as string;
+
+  const endbookRecord = requireRecord(
+    scenarioRecord.endbook,
+    `${fileName}: endbook is required`
+  );
+
+  return {
+    id,
+    title,
+    roomDisplayName,
+    players,
+    intro: {
+      readAloud: introReadAloud,
+    },
+    roles,
+    parts,
+    investigations,
+    cards,
+    finalVote: {
+      question: finalVoteQuestion,
+      correctRoleId: resolvedFinalVoteCorrectRoleId,
+    },
+    endbook: {
+      common: requireString(
+        endbookRecord.common,
+        `${fileName}: endbook.common is required`
+      ),
+      variantMatched: requireString(
+        endbookRecord.variantMatched,
+        `${fileName}: endbook.variantMatched is required`
+      ),
+      variantNotMatched: requireString(
+        endbookRecord.variantNotMatched,
+        `${fileName}: endbook.variantNotMatched is required`
+      ),
+      closingLine: requireString(
+        endbookRecord.closingLine,
+        `${fileName}: endbook.closingLine is required`
+      ),
+    },
+  };
 };
 
 const validateScenarioSchema = (
@@ -226,6 +800,7 @@ const loadScenarioStore = (): ScenarioStore => {
   );
 
   const scenarioById: Record<string, MurderMysteryScenario> = {};
+  const scenarioByRegistryId: Record<string, MurderMysteryScenario> = {};
 
   registry.scenarios.forEach((entry) => {
     const filePath = path.join(SCENARIO_DIR, entry.file);
@@ -234,18 +809,36 @@ const loadScenarioStore = (): ScenarioStore => {
       `scenario file not found (${entry.file})`
     );
 
-    const scenario = readJsonFile<MurderMysteryScenario>(filePath);
-    validateScenarioSchema(scenario, entry.file);
-    assertCondition(
-      scenario.id === entry.id,
-      `${entry.file}: id mismatch (registry=${entry.id}, scenario=${scenario.id})`
+    const scenario = normalizeScenarioSchema(
+      readScenarioFile(filePath),
+      entry.file
     );
+    validateScenarioSchema(scenario, entry.file);
 
-    scenarioById[scenario.id] = scenario;
+    assertCondition(
+      !scenarioByRegistryId[entry.id],
+      `duplicated registry scenario id (${entry.id})`
+    );
+    scenarioByRegistryId[entry.id] = scenario;
+
+    assertCondition(
+      !scenarioById[entry.id],
+      `duplicated scenario lookup id (${entry.id})`
+    );
+    scenarioById[entry.id] = scenario;
+
+    if (scenario.id !== entry.id) {
+      assertCondition(
+        !scenarioById[scenario.id],
+        `duplicated scenario id (${scenario.id})`
+      );
+      scenarioById[scenario.id] = scenario;
+    }
   });
 
   const defaultScenarioId =
-    registry.defaultScenarioId && scenarioById[registry.defaultScenarioId]
+    registry.defaultScenarioId &&
+    scenarioByRegistryId[registry.defaultScenarioId]
       ? registry.defaultScenarioId
       : registry.scenarios[0].id;
 
@@ -254,14 +847,17 @@ const loadScenarioStore = (): ScenarioStore => {
     'default scenario is invalid'
   );
 
-  const catalog: MurderMysteryScenarioCatalogItem[] = Object.values(
-    scenarioById
-  ).map((scenario) => ({
-    id: scenario.id,
-    title: scenario.title,
-    roomDisplayName: scenario.roomDisplayName,
-    players: scenario.players,
-  }));
+  const catalog: MurderMysteryScenarioCatalogItem[] = registry.scenarios.map(
+    (entry) => {
+      const scenario = scenarioByRegistryId[entry.id];
+      return {
+        id: entry.id,
+        title: scenario.title,
+        roomDisplayName: scenario.roomDisplayName,
+        players: scenario.players,
+      };
+    }
+  );
 
   return {
     defaultScenarioId,

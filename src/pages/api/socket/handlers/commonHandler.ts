@@ -45,6 +45,7 @@ const buildRoom = ({
   socketId,
   maxPlayers,
   scenarioId,
+  hostParticipatesAsPlayer,
 }: {
   roomId: string;
   roomName: string;
@@ -54,6 +55,7 @@ const buildRoom = ({
   socketId: string;
   maxPlayers: number;
   scenarioId?: string;
+  hostParticipatesAsPlayer?: boolean;
 }): Room => {
   const baseRoom = {
     roomId,
@@ -93,12 +95,24 @@ const buildRoom = ({
         gameType: 'jamo',
         gameData: _.cloneDeep(DEFAULT_GAME_DATA.jamo),
       };
-    case 'murder_mystery':
+    case 'murder_mystery': {
+      const joinHostAsPlayer = Boolean(hostParticipatesAsPlayer);
       return {
         ...baseRoom,
+        players: joinHostAsPlayer
+          ? [
+              {
+                id: sessionId,
+                name: userName,
+                socketId,
+                ..._.cloneDeep(DEFAULT_PLAYER_DATA.murder_mystery),
+              },
+            ]
+          : [],
         gameType: 'murder_mystery',
-        gameData: createMurderMysteryGameData(scenarioId),
+        gameData: createMurderMysteryGameData(scenarioId, joinHostAsPlayer),
       };
+    }
     default:
       return {
         ...baseRoom,
@@ -181,7 +195,15 @@ const commonHandler = (
   socket.on(
     'create-room',
     (
-      { roomName, userName, gameType, sessionId, maxPlayers, scenarioId },
+      {
+        roomName,
+        userName,
+        gameType,
+        sessionId,
+        maxPlayers,
+        scenarioId,
+        hostParticipatesAsPlayer,
+      },
       callback
     ) => {
       try {
@@ -216,6 +238,7 @@ const commonHandler = (
               socketId: socket.id,
               maxPlayers,
               scenarioId,
+              hostParticipatesAsPlayer,
             });
 
             rooms[roomId] = newRoom;

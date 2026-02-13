@@ -37,11 +37,13 @@ const makeId = (prefix: string) =>
   `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
 const createInitialStateWithScenario = (
-  scenario: MurderMysteryScenario
+  scenario: MurderMysteryScenario,
+  hostParticipatesAsPlayer: boolean
 ): MurderMysteryGameData => ({
   scenarioId: scenario.id,
   scenarioTitle: scenario.title,
   scenarioRoomDisplayName: scenario.roomDisplayName,
+  hostParticipatesAsPlayer,
   phase: 'LOBBY',
   roleByPlayerId: {},
   roleDisplayNameByPlayerId: {},
@@ -332,10 +334,11 @@ const buildHostControls = (
 };
 
 export const createMurderMysteryGameData = (
-  scenarioId?: string
+  scenarioId?: string,
+  hostParticipatesAsPlayer = false
 ): MurderMysteryGameData => {
   const scenario = getMurderMysteryScenario(scenarioId);
-  return createInitialStateWithScenario(scenario);
+  return createInitialStateWithScenario(scenario, hostParticipatesAsPlayer);
 };
 
 export const resetMurderMysteryGame = (
@@ -345,7 +348,10 @@ export const resetMurderMysteryGame = (
   const scenario = getMurderMysteryScenario(
     scenarioId ?? room.gameData.scenarioId
   );
-  room.gameData = createInitialStateWithScenario(scenario);
+  room.gameData = createInitialStateWithScenario(
+    scenario,
+    room.gameData.hostParticipatesAsPlayer
+  );
   room.status = GAME_STATUS.PENDING;
 };
 
@@ -637,6 +643,8 @@ export const buildMurderMysterySnapshot = (
   viewerId: string,
   isHostView: boolean
 ): MurderMysteryStateSnapshot => {
+  const canUseHostGameMasterControls =
+    isHostView && !room.gameData.hostParticipatesAsPlayer;
   const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
   const player = room.players.find((entry) => entry.id === viewerId) ?? null;
   const roleId = player
@@ -715,13 +723,22 @@ export const buildMurderMysterySnapshot = (
         ? (room.gameData.voteByPlayerId[player.id] ?? null)
         : null,
       votes:
-        isHostView || room.gameData.finalVoteResult
+        canUseHostGameMasterControls || room.gameData.finalVoteResult
           ? room.gameData.voteByPlayerId
           : {},
       result: room.gameData.finalVoteResult,
     },
     endbook: buildEndbookView(room, scenario),
     isHostView,
-    hostControls: isHostView ? buildHostControls(room, scenario) : undefined,
+    hostParticipation: {
+      hostParticipatesAsPlayer: room.gameData.hostParticipatesAsPlayer,
+      playerCountIncludesHost: room.gameData.hostParticipatesAsPlayer,
+      currentPlayerCount: room.players.length,
+      requiredPlayerCount: room.maxPlayers,
+    },
+    canUseHostGameMasterControls,
+    hostControls: canUseHostGameMasterControls
+      ? buildHostControls(room, scenario)
+      : undefined,
   };
 };

@@ -139,6 +139,7 @@ export interface MurderMysteryGameData {
   scenarioId: string;
   scenarioTitle: string;
   scenarioRoomDisplayName: string;
+  hostParticipatesAsPlayer: boolean;
   phase: MurderMysteryPhase;
   roleByPlayerId: Record<string, string>;
   roleDisplayNameByPlayerId: Record<string, string>;
@@ -243,6 +244,13 @@ export interface MurderMysteryStateSnapshot {
   finalVote: MurderMysteryFinalVoteView;
   endbook: MurderMysteryEndbookView | null;
   isHostView: boolean;
+  hostParticipation: {
+    hostParticipatesAsPlayer: boolean;
+    playerCountIncludesHost: boolean;
+    currentPlayerCount: number;
+    requiredPlayerCount: number;
+  };
+  canUseHostGameMasterControls: boolean;
   hostControls?: MurderMysteryHostControlsView;
 }
 

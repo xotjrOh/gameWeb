@@ -20,6 +20,7 @@ import {
 import { getMurderMysteryScenario } from '../services/murderMysteryScenarioService';
 import {
   ensureAllowedPhase,
+  ensureMurderMysteryGameMaster,
   ensureMurderMysteryHost,
   ensureScenarioPlayerCount,
   toMurderMysteryRoom,
@@ -139,7 +140,7 @@ const murderMysteryGameHandler = (
     ({ roomId, sessionId, requestId, cardId }, callback) => {
       try {
         const room = toMurderMysteryRoom(validateRoom(roomId));
-        ensureMurderMysteryHost(room, sessionId);
+        ensureMurderMysteryGameMaster(room, sessionId);
         const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
         room.host.socketId = socket.id;
 
@@ -170,8 +171,26 @@ const murderMysteryGameHandler = (
     ({ roomId, sessionId, suspectPlayerId }, callback) => {
       try {
         const room = toMurderMysteryRoom(validateRoom(roomId));
+        const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
         validatePlayer(room, sessionId);
         submitMurderMysteryVote(room, sessionId, suspectPlayerId);
+
+        if (
+          room.gameData.hostParticipatesAsPlayer &&
+          Object.keys(room.gameData.voteByPlayerId).length ===
+            room.players.length
+        ) {
+          const result = finalizeMurderMysteryVote(room, scenario);
+          appendMurderMysteryAnnouncement(
+            room,
+            'SYSTEM',
+            result.matched
+              ? '최종 투표가 자동 집계되었습니다. 사건 지목은 정답입니다.'
+              : '최종 투표가 자동 집계되었습니다. 사건 지목은 오답입니다.'
+          );
+          io.emit('room-updated', rooms);
+        }
+
         emitMurderMysterySnapshots(room, io);
         return callback({ success: true });
       } catch (error) {
@@ -183,7 +202,7 @@ const murderMysteryGameHandler = (
   socket.on('mm_host_finalize_vote', ({ roomId, sessionId }, callback) => {
     try {
       const room = toMurderMysteryRoom(validateRoom(roomId));
-      ensureMurderMysteryHost(room, sessionId);
+      ensureMurderMysteryGameMaster(room, sessionId);
       const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
       room.host.socketId = socket.id;
 
@@ -207,7 +226,7 @@ const murderMysteryGameHandler = (
   socket.on('mm_host_broadcast_intro', ({ roomId, sessionId }, callback) => {
     try {
       const room = toMurderMysteryRoom(validateRoom(roomId));
-      ensureMurderMysteryHost(room, sessionId);
+      ensureMurderMysteryGameMaster(room, sessionId);
       ensureAllowedPhase(room, ['INTRO']);
       const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
 
@@ -227,7 +246,7 @@ const murderMysteryGameHandler = (
   socket.on('mm_host_broadcast_endbook', ({ roomId, sessionId }, callback) => {
     try {
       const room = toMurderMysteryRoom(validateRoom(roomId));
-      ensureMurderMysteryHost(room, sessionId);
+      ensureMurderMysteryGameMaster(room, sessionId);
       ensureAllowedPhase(room, ['ENDBOOK']);
       const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
 
