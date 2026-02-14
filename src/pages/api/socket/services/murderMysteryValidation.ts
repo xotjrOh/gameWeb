@@ -5,17 +5,6 @@ import {
   MurderMysteryScenario,
 } from '@/types/murderMystery';
 
-export const MURDER_MYSTERY_PHASE_ORDER: MurderMysteryPhase[] = [
-  'LOBBY',
-  'INTRO',
-  'ROUND1_DISCUSS',
-  'ROUND1_INVESTIGATE',
-  'ROUND2_DISCUSS',
-  'ROUND2_INVESTIGATE',
-  'FINAL_VOTE',
-  'ENDBOOK',
-];
-
 export const toMurderMysteryRoom = (room: Room): MurderMysteryRoom => {
   if (room.gameType !== 'murder_mystery') {
     throw new Error('머더미스터리 방이 아닙니다.');
@@ -48,6 +37,52 @@ export const ensureMurderMysteryGameMaster = (
   }
 };
 
+export const getMurderMysteryPhaseOrder = (
+  scenario: MurderMysteryScenario
+): MurderMysteryPhase[] => [
+  'LOBBY',
+  ...scenario.flow.steps.map((step) => step.id),
+];
+
+export const getFlowStepByPhase = (
+  scenario: MurderMysteryScenario,
+  phase: MurderMysteryPhase
+) => scenario.flow.steps.find((step) => step.id === phase) ?? null;
+
+export const getInvestigationRoundByPhase = (
+  phase: MurderMysteryPhase,
+  scenario: MurderMysteryScenario
+): MurderMysteryInvestigationRound | null => {
+  const step = getFlowStepByPhase(scenario, phase);
+  if (!step || step.kind !== 'investigate' || !step.round) {
+    return null;
+  }
+  return step.round;
+};
+
+export const ensureAllowedPhase = (
+  room: MurderMysteryRoom,
+  allowed: MurderMysteryPhase[]
+) => {
+  if (!allowed.includes(room.gameData.phase)) {
+    throw new Error(
+      `현재 단계(${room.gameData.phase})에서는 실행할 수 없습니다.`
+    );
+  }
+};
+
+export const getNextPhase = (
+  current: MurderMysteryPhase,
+  scenario: MurderMysteryScenario
+): MurderMysteryPhase | null => {
+  const order = getMurderMysteryPhaseOrder(scenario);
+  const index = order.indexOf(current);
+  if (index < 0) {
+    return null;
+  }
+  return order[index + 1] ?? null;
+};
+
 export const ensureScenarioPlayerCount = (
   room: MurderMysteryRoom,
   scenario: MurderMysteryScenario
@@ -71,37 +106,4 @@ export const ensureScenarioPlayerCount = (
       `이 시나리오는 ${playerCountRule} ${scenario.players.min}~${scenario.players.max}명에서만 시작할 수 있습니다.`
     );
   }
-};
-
-export const getInvestigationRoundByPhase = (
-  phase: MurderMysteryPhase
-): MurderMysteryInvestigationRound | null => {
-  if (phase === 'ROUND1_INVESTIGATE') {
-    return 1;
-  }
-  if (phase === 'ROUND2_INVESTIGATE') {
-    return 2;
-  }
-  return null;
-};
-
-export const ensureAllowedPhase = (
-  room: MurderMysteryRoom,
-  allowed: MurderMysteryPhase[]
-) => {
-  if (!allowed.includes(room.gameData.phase)) {
-    throw new Error(
-      `현재 단계(${room.gameData.phase})에서는 실행할 수 없습니다.`
-    );
-  }
-};
-
-export const getNextPhase = (
-  current: MurderMysteryPhase
-): MurderMysteryPhase | null => {
-  const index = MURDER_MYSTERY_PHASE_ORDER.indexOf(current);
-  if (index < 0) {
-    return null;
-  }
-  return MURDER_MYSTERY_PHASE_ORDER[index + 1] ?? null;
 };

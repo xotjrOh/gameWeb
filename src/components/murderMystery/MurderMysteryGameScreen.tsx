@@ -18,6 +18,7 @@ import {
   Stack,
   Tab,
   Tabs,
+  TextField,
   Typography,
   useMediaQuery,
 } from '@mui/material';
@@ -33,55 +34,45 @@ import useRedirectIfNotHost from '@/hooks/useRedirectIfNotHost';
 import useMurderMysteryGameData from '@/hooks/useMurderMysteryGameData';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { MurderMysteryPhase } from '@/types/murderMystery';
+import {
+  MurderMysteryPhase,
+  MurderMysteryStepKind,
+} from '@/types/murderMystery';
 
 interface MurderMysteryGameScreenProps {
   roomId: string;
   isHostView: boolean;
 }
 
-const PHASE_STEPS: Array<{ phase: MurderMysteryPhase; label: string }> = [
-  { phase: 'LOBBY', label: '대기' },
-  { phase: 'INTRO', label: '오프닝' },
-  { phase: 'ROUND1_DISCUSS', label: '1라운드 토론' },
-  { phase: 'ROUND1_INVESTIGATE', label: '1라운드 조사' },
-  { phase: 'ROUND2_DISCUSS', label: '2라운드 토론' },
-  { phase: 'ROUND2_INVESTIGATE', label: '2라운드 조사' },
-  { phase: 'FINAL_VOTE', label: '최종 투표' },
-  { phase: 'ENDBOOK', label: '엔딩' },
-];
+interface PhaseStepView {
+  phase: MurderMysteryPhase;
+  label: string;
+  kind: MurderMysteryStepKind | 'lobby';
+  round?: number;
+  description?: string;
+  enterAnnouncement?: string;
+}
 
-const phaseLabelMap = PHASE_STEPS.reduce(
-  (acc, step) => {
-    acc[step.phase] = step.label;
-    return acc;
-  },
-  {} as Record<MurderMysteryPhase, string>
-);
-
-const PHASE_INDEX_MAP = PHASE_STEPS.reduce(
-  (acc, step, index) => {
-    acc[step.phase] = index;
-    return acc;
-  },
-  {} as Record<MurderMysteryPhase, number>
-);
-
-const INVESTIGATE_ROUND_BY_PHASE: Partial<Record<MurderMysteryPhase, 1 | 2>> = {
-  ROUND1_INVESTIGATE: 1,
-  ROUND2_INVESTIGATE: 2,
-};
-
-const DISCUSS_GUIDE_BY_ROUND: Record<1 | 2, string> = {
-  1: '1라운드 목표: 각자 확보한 단서와 알리바이를 공유해 의심 포인트를 좁혀주세요.',
-  2: '2라운드 목표: 수사와 탈출 준비를 병행하며 최종 지목 근거를 정리해주세요.',
-};
+const DEFAULT_DISCUSS_GUIDE_TEXT =
+  '확보한 단서를 공유하고 발언 간 모순을 점검해 다음 행동 근거를 정리하세요.';
 
 const GUIDE_REVEAL_CARD_ID = 'card_dog_tag';
 const GUIDE_REAL_NAME = '연새사리 누도만쳐사라';
 const GUIDE_REVEAL_LOG_ID = 'guide_name_revealed';
 const GUIDE_REVEAL_LOG_TEXT =
   '가이드의 본명이 공개되었습니다: 연새사리 누도만쳐사라';
+const TICKING_THRESHOLD_SEC = 10;
+
+const formatSeconds = (seconds: number) => {
+  const safe = Math.max(seconds, 0);
+  const minute = Math.floor(safe / 60)
+    .toString()
+    .padStart(2, '0');
+  const second = Math.floor(safe % 60)
+    .toString()
+    .padStart(2, '0');
+  return `${minute}:${second}`;
+};
 
 type SidebarTab = 'SHEET' | 'PARTS' | 'LOG';
 
@@ -95,6 +86,8 @@ interface TimelineLogEntry {
 interface HostPanelProps {
   open: boolean;
   phase: MurderMysteryPhase;
+  phaseLabelMap: Record<MurderMysteryPhase, string>;
+  currentStepKind: MurderMysteryStepKind | 'lobby' | null;
   hostParticipatesAsPlayer: boolean;
   canUseHostGameMasterControls: boolean;
   hostControls: NonNullable<
@@ -116,8 +109,6 @@ const panelPaperSx = {
   p: 2.25,
   borderRadius: 3,
 } as const;
-
-const getPhaseIndex = (phase: MurderMysteryPhase) => PHASE_INDEX_MAP[phase];
 
 const PanelCard = ({
   title,
@@ -148,13 +139,25 @@ const PanelCard = ({
 const TabRouter = ({
   currentPhase,
   selectedPhase,
+  phaseSteps,
   onSelect,
 }: {
   currentPhase: MurderMysteryPhase;
   selectedPhase: MurderMysteryPhase;
+  phaseSteps: PhaseStepView[];
   onSelect: (phase: MurderMysteryPhase) => void;
 }) => {
+  const phaseIndexMap = phaseSteps.reduce<Record<MurderMysteryPhase, number>>(
+    (acc, step, index) => {
+      acc[step.phase] = index;
+      return acc;
+    },
+    {}
+  );
+  const getPhaseIndex = (phase: MurderMysteryPhase) =>
+    phaseIndexMap[phase] ?? 0;
   const currentIndex = getPhaseIndex(currentPhase);
+
   return (
     <Paper sx={{ ...panelPaperSx, p: 1.2 }}>
       <Tabs
@@ -168,7 +171,7 @@ const TabRouter = ({
         variant="scrollable"
         scrollButtons="auto"
       >
-        {PHASE_STEPS.map((step, index) => {
+        {phaseSteps.map((step, index) => {
           const isLocked = index > currentIndex;
           const isCurrent = step.phase === currentPhase;
           return (
@@ -279,18 +282,12 @@ const IntroPanel = ({
   readAloud,
   isHostView,
   canUseHostGameMasterControls,
-  canActAsPlayer,
-  introConfirmed,
-  onConfirmIntro,
   isReadOnly,
   onOpenGmPanel,
 }: {
   readAloud: string;
   isHostView: boolean;
   canUseHostGameMasterControls: boolean;
-  canActAsPlayer: boolean;
-  introConfirmed: boolean;
-  onConfirmIntro: () => void;
   isReadOnly: boolean;
   onOpenGmPanel: () => void;
 }) => (
@@ -316,40 +313,33 @@ const IntroPanel = ({
         severity="info"
         action={
           <Button size="small" onClick={onOpenGmPanel}>
-            INTRO 전체 표시
+            오프닝 전체 표시
           </Button>
         }
       >
-        INTRO 전체 표시는 GM 패널에서 진행할 수 있습니다.
+        오프닝 전체 표시는 GM 패널에서 진행할 수 있습니다.
       </Alert>
-    ) : canActAsPlayer ? (
-      <Button
-        variant={introConfirmed ? 'outlined' : 'contained'}
-        onClick={onConfirmIntro}
-      >
-        {introConfirmed ? '확인 완료' : '확인했어요'}
-      </Button>
     ) : isHostView ? (
       <Alert severity="info">
-        방장이 플레이어로 참가 중이라 INTRO 전체 표시 기능은 잠겨 있습니다.
+        방장이 플레이어로 참가 중이라 오프닝 전체 표시 기능은 잠겨 있습니다.
       </Alert>
     ) : (
-      <Alert severity="info">
-        플레이어 참가자만 확인 버튼을 사용할 수 있습니다.
-      </Alert>
+      <Alert severity="info">오프닝은 읽기 전용입니다.</Alert>
     )}
   </PanelCard>
 );
 
 const DiscussPanel = ({
   round,
+  guideText,
   isReadOnly,
 }: {
-  round: 1 | 2;
+  round?: number;
+  guideText?: string;
   isReadOnly: boolean;
 }) => (
   <PanelCard
-    title={`${round}라운드 토론`}
+    title={round ? `${round}라운드 토론` : '토론'}
     subtitle="토론 탭에서는 조사 버튼이 표시되지 않습니다. 조사 단계로 이동해 행동하세요."
   >
     {isReadOnly ? (
@@ -363,7 +353,7 @@ const DiscussPanel = ({
         <Typography fontWeight={700} sx={{ mb: 1 }}>
           이번 라운드 목표/가이드
         </Typography>
-        <Typography>{DISCUSS_GUIDE_BY_ROUND[round]}</Typography>
+        <Typography>{guideText ?? DEFAULT_DISCUSS_GUIDE_TEXT}</Typography>
         <Divider sx={{ my: 1.5 }} />
         <Typography variant="body2" color="text.secondary">
           권장 토론 시간: 10~15분
@@ -375,16 +365,23 @@ const DiscussPanel = ({
 
 const InvestigatePanel = ({
   round,
+  layoutSections,
+  stepDescription,
+  stepAnnouncement,
   canActAsPlayer,
   isActivePhase,
   isReadOnly,
   targets,
   used,
-  deliveryMode,
   myCards,
   onSubmitInvestigation,
 }: {
-  round: 1 | 2;
+  round?: number;
+  layoutSections: NonNullable<
+    ReturnType<typeof useMurderMysteryGameData>['snapshot']
+  >['investigation']['layoutSections'];
+  stepDescription?: string;
+  stepAnnouncement?: string;
   canActAsPlayer: boolean;
   isActivePhase: boolean;
   isReadOnly: boolean;
@@ -392,29 +389,152 @@ const InvestigatePanel = ({
     ReturnType<typeof useMurderMysteryGameData>['snapshot']
   >['investigation']['targets'];
   used: boolean;
-  deliveryMode: 'auto' | 'manual';
   myCards: NonNullable<
     ReturnType<typeof useMurderMysteryGameData>['snapshot']
-  >['myCards'];
+  >['clueVault']['myClues'];
   onSubmitInvestigation: (targetId: string) => void;
 }) => {
   const canSubmit = canActAsPlayer && isActivePhase && !isReadOnly;
   const myRemainingText = used ? '0' : canSubmit ? '1' : '0';
+  const targetById = useMemo(
+    () => Object.fromEntries(targets.map((target) => [target.id, target])),
+    [targets]
+  );
+
+  const sortedLayoutSections = useMemo(
+    () =>
+      [...layoutSections].sort(
+        (a, b) =>
+          (a.order ?? Number.MAX_SAFE_INTEGER) -
+          (b.order ?? Number.MAX_SAFE_INTEGER)
+      ),
+    [layoutSections]
+  );
+
+  const renderedTargetIds = new Set<string>();
+
+  const getSectionTargets = (
+    section: NonNullable<
+      ReturnType<typeof useMurderMysteryGameData>['snapshot']
+    >['investigation']['layoutSections'][number]
+  ) => {
+    const fromTargetIds =
+      section.targetIds
+        ?.map((targetId) => targetById[targetId])
+        .filter(Boolean) ?? [];
+
+    const resolvedTargets =
+      fromTargetIds.length > 0
+        ? fromTargetIds
+        : targets.filter((target) => {
+            if (section.targetTypes?.length) {
+              return section.targetTypes.includes(target.targetType);
+            }
+            if (target.sectionId) {
+              return target.sectionId === section.id;
+            }
+            return false;
+          });
+
+    const sortedTargets = [...resolvedTargets].sort(
+      (a, b) =>
+        (a.order ?? Number.MAX_SAFE_INTEGER) -
+          (b.order ?? Number.MAX_SAFE_INTEGER) || a.label.localeCompare(b.label)
+    );
+
+    sortedTargets.forEach((target) => renderedTargetIds.add(target.id));
+    return sortedTargets;
+  };
+
+  const renderTargetCards = (sectionTargets: typeof targets) => (
+    <Box
+      sx={{
+        display: 'grid',
+        gap: 1,
+        gridTemplateColumns: {
+          xs: '1fr',
+          sm: 'repeat(2, minmax(0, 1fr))',
+          lg: 'repeat(3, minmax(0, 1fr))',
+        },
+      }}
+    >
+      {sectionTargets.map((target) => (
+        <Card
+          key={target.id}
+          variant="outlined"
+          sx={{
+            borderRadius: 2,
+            backgroundColor: target.isExhausted
+              ? 'rgba(226,232,240,0.65)'
+              : 'rgba(254,249,195,0.45)',
+            opacity: target.isExhausted ? 0.78 : 1,
+          }}
+        >
+          <CardContent>
+            <Stack spacing={1}>
+              <Box>
+                <Typography fontWeight={700}>{target.label}</Typography>
+                {target.description ? (
+                  <Typography variant="body2" color="text.secondary">
+                    {target.description}
+                  </Typography>
+                ) : null}
+              </Box>
+              <Stack direction="row" spacing={0.8} flexWrap="wrap">
+                <Chip
+                  size="small"
+                  label={`남은 단서 ${target.remainingClues}/${target.totalClues}`}
+                  color={target.isExhausted ? 'default' : 'primary'}
+                />
+                <Chip
+                  size="small"
+                  label={target.isExhausted ? '이미 공개됨' : '미확인'}
+                />
+              </Stack>
+              {canActAsPlayer ? (
+                <Button
+                  variant="contained"
+                  color="inherit"
+                  onClick={() => onSubmitInvestigation(target.id)}
+                  disabled={!canSubmit || used || target.isExhausted}
+                >
+                  {target.isExhausted
+                    ? '단서 공개 완료'
+                    : used
+                      ? '이번 라운드 조사 완료'
+                      : '여기 조사하기'}
+                </Button>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  플레이어 참가자가 아니므로 조사 제출 버튼이 비활성화됩니다.
+                </Typography>
+              )}
+            </Stack>
+          </CardContent>
+        </Card>
+      ))}
+    </Box>
+  );
 
   return (
     <PanelCard
-      title={`${round}라운드 조사`}
-      subtitle="조사 결과 카드는 조사 단계 탭에서만 크게 표시됩니다."
+      title={round ? `${round}라운드 조사` : '조사'}
+      subtitle="맵 카드에서 조사 대상을 선택하세요. 이미 공개된 단서는 다시 뽑히지 않습니다."
     >
       {isReadOnly ? (
         <Alert severity="info">이전 단계 열람 모드입니다.</Alert>
+      ) : null}
+      {stepAnnouncement && isActivePhase ? (
+        <Alert severity="warning">{stepAnnouncement}</Alert>
+      ) : null}
+      {stepDescription ? (
+        <Alert severity="info">{stepDescription}</Alert>
       ) : null}
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         spacing={1}
         alignItems={{ xs: 'flex-start', sm: 'center' }}
       >
-        <Chip label={`배포 모드: ${deliveryMode}`} size="small" />
         {canActAsPlayer ? (
           <Chip
             color={canSubmit && !used ? 'primary' : 'default'}
@@ -428,39 +548,49 @@ const InvestigatePanel = ({
           />
         )}
       </Stack>
-
-      <Stack spacing={1}>
-        {targets.map((target) => (
-          <Card key={target.id} variant="outlined" sx={{ borderRadius: 2 }}>
-            <CardContent>
-              <Stack spacing={1}>
-                <Box>
-                  <Typography fontWeight={700}>{target.label}</Typography>
-                  {target.description ? (
-                    <Typography variant="body2" color="text.secondary">
-                      {target.description}
-                    </Typography>
-                  ) : null}
-                </Box>
-                {canActAsPlayer ? (
-                  <Button
-                    variant="contained"
-                    color="inherit"
-                    onClick={() => onSubmitInvestigation(target.id)}
-                    disabled={!canSubmit || used}
-                  >
-                    {used ? '이번 라운드 조사 완료' : '조사하기'}
-                  </Button>
-                ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    플레이어 참가자가 아니므로 조사 제출 버튼이 비활성화됩니다.
-                  </Typography>
-                )}
+      <Alert severity="info">
+        공개된 단서는 다시 선택되지 않습니다. 남은 단서가 0인 대상은 조사할 수
+        없습니다.
+      </Alert>
+      {targets.length === 0 ? (
+        <Typography color="text.secondary">
+          이 라운드에 조사 가능한 대상이 없습니다.
+        </Typography>
+      ) : (
+        <Stack spacing={1.2}>
+          {sortedLayoutSections.map((section) => {
+            const sectionTargets = getSectionTargets(section);
+            if (sectionTargets.length === 0) {
+              return null;
+            }
+            return (
+              <Stack key={section.id} spacing={1}>
+                <Typography fontWeight={700}>
+                  {section.icon ? `${section.icon} ` : ''}
+                  {section.title}
+                </Typography>
+                {renderTargetCards(sectionTargets)}
               </Stack>
-            </CardContent>
-          </Card>
-        ))}
-      </Stack>
+            );
+          })}
+          {targets.filter((target) => !renderedTargetIds.has(target.id))
+            .length > 0 ? (
+            <Stack spacing={1}>
+              <Typography fontWeight={700}>추가 조사 대상</Typography>
+              {renderTargetCards(
+                targets
+                  .filter((target) => !renderedTargetIds.has(target.id))
+                  .sort(
+                    (a, b) =>
+                      (a.order ?? Number.MAX_SAFE_INTEGER) -
+                        (b.order ?? Number.MAX_SAFE_INTEGER) ||
+                      a.label.localeCompare(b.label)
+                  )
+              )}
+            </Stack>
+          ) : null}
+        </Stack>
+      )}
 
       {canActAsPlayer ? (
         <Stack spacing={1}>
@@ -474,8 +604,22 @@ const InvestigatePanel = ({
               {myCards.map((card) => (
                 <Card key={card.id} variant="outlined">
                   <CardContent>
-                    <Typography fontWeight={700}>{card.title}</Typography>
-                    <Typography sx={{ mt: 0.5 }}>{card.text}</Typography>
+                    <Stack spacing={0.8}>
+                      <Typography fontWeight={700}>{card.title}</Typography>
+                      <Stack direction="row" spacing={0.8} flexWrap="wrap">
+                        {(card.sourceTargetLabels.length > 0
+                          ? card.sourceTargetLabels
+                          : ['출처 미확인']
+                        ).map((label) => (
+                          <Chip
+                            key={`${card.id}:${label}`}
+                            size="small"
+                            label={label}
+                          />
+                        ))}
+                      </Stack>
+                      <Typography sx={{ mt: 0.5 }}>{card.text}</Typography>
+                    </Stack>
                   </CardContent>
                 </Card>
               ))}
@@ -654,11 +798,11 @@ const EndbookPanel = ({
         severity="info"
         action={
           <Button size="small" onClick={onOpenGmPanel}>
-            ENDBOOK 전체 표시
+            엔딩북 전체 표시
           </Button>
         }
       >
-        ENDBOOK 전체 표시는 GM 패널에서 실행할 수 있습니다.
+        엔딩북 전체 표시는 GM 패널에서 실행할 수 있습니다.
       </Alert>
     ) : null}
   </PanelCard>
@@ -668,21 +812,46 @@ const MySheetPanel = ({
   roleSheet,
   mode,
   onChangeMode,
-  myCards,
+  clueVault,
 }: {
   roleSheet: NonNullable<
     ReturnType<typeof useMurderMysteryGameData>['snapshot']
   >['roleSheet'];
   mode: 'public' | 'secret';
   onChangeMode: (nextMode: 'public' | 'secret') => void;
-  myCards: NonNullable<
+  clueVault: NonNullable<
     ReturnType<typeof useMurderMysteryGameData>['snapshot']
-  >['myCards'];
+  >['clueVault'];
 }) => {
-  const recentCards = useMemo(
-    () => [...myCards].slice(-3).reverse(),
-    [myCards]
+  const [vaultTab, setVaultTab] = useState<'MY' | 'PUBLIC'>('MY');
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [sourceFilter, setSourceFilter] = useState('ALL');
+
+  const activeClues =
+    vaultTab === 'MY' ? clueVault.myClues : clueVault.publicClues;
+
+  const sourceFilterOptions = useMemo(
+    () =>
+      [...new Set(activeClues.flatMap((card) => card.sourceTargetLabels))]
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b)),
+    [activeClues]
   );
+
+  const filteredClues = useMemo(() => {
+    const normalizedKeyword = searchKeyword.trim().toLowerCase();
+    return activeClues.filter((card) => {
+      const matchesKeyword =
+        normalizedKeyword.length === 0 ||
+        card.title.toLowerCase().includes(normalizedKeyword) ||
+        card.text.toLowerCase().includes(normalizedKeyword);
+      const matchesSource =
+        sourceFilter === 'ALL' ||
+        card.sourceTargetLabels.includes(sourceFilter);
+      return matchesKeyword && matchesSource;
+    });
+  }, [activeClues, searchKeyword, sourceFilter]);
+
   return (
     <PanelCard title="내 캐릭터" subtitle="공개/비밀 시트를 전환해 확인하세요.">
       {!roleSheet ? (
@@ -717,18 +886,98 @@ const MySheetPanel = ({
               </Typography>
             </CardContent>
           </Card>
-          {recentCards.length > 0 ? (
-            <Stack spacing={0.8}>
-              <Typography variant="body2" color="text.secondary">
-                최근 조사 카드 3개
-              </Typography>
-              <Stack direction="row" spacing={0.8} flexWrap="wrap">
-                {recentCards.map((card) => (
-                  <Chip key={card.id} label={card.title} size="small" />
-                ))}
+          <Divider />
+          <Stack spacing={1}>
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={1}
+              justifyContent="space-between"
+              alignItems={{ xs: 'stretch', sm: 'center' }}
+            >
+              <Typography fontWeight={700}>단서 보관함</Typography>
+              <Stack direction="row" spacing={1}>
+                <Button
+                  size="small"
+                  variant={vaultTab === 'MY' ? 'contained' : 'outlined'}
+                  onClick={() => setVaultTab('MY')}
+                >
+                  내가 받은 단서
+                </Button>
+                <Button
+                  size="small"
+                  variant={vaultTab === 'PUBLIC' ? 'contained' : 'outlined'}
+                  onClick={() => setVaultTab('PUBLIC')}
+                >
+                  전체 공개 단서
+                </Button>
               </Stack>
             </Stack>
-          ) : null}
+
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+              <TextField
+                size="small"
+                fullWidth
+                label="검색"
+                value={searchKeyword}
+                onChange={(event) => setSearchKeyword(event.target.value)}
+                placeholder="단서 제목/내용 검색"
+              />
+              <FormControl size="small" sx={{ minWidth: 150 }}>
+                <InputLabel id="clue-source-filter-label">대상 필터</InputLabel>
+                <Select
+                  labelId="clue-source-filter-label"
+                  value={sourceFilter}
+                  label="대상 필터"
+                  onChange={(event) =>
+                    setSourceFilter(String(event.target.value))
+                  }
+                >
+                  <MenuItem value="ALL">전체 대상</MenuItem>
+                  {sourceFilterOptions.map((option) => (
+                    <MenuItem key={option} value={option}>
+                      {option}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Stack>
+
+            {filteredClues.length === 0 ? (
+              <Typography color="text.secondary">
+                조건에 맞는 단서가 없습니다.
+              </Typography>
+            ) : (
+              <Stack spacing={1}>
+                {filteredClues
+                  .slice()
+                  .reverse()
+                  .map((card) => (
+                    <Card key={`${vaultTab}:${card.id}`} variant="outlined">
+                      <CardContent>
+                        <Stack spacing={0.8}>
+                          <Typography fontWeight={700}>{card.title}</Typography>
+                          <Stack direction="row" spacing={0.8} flexWrap="wrap">
+                            {(card.sourceTargetLabels.length > 0
+                              ? card.sourceTargetLabels
+                              : ['출처 미확인']
+                            ).map((label) => (
+                              <Chip
+                                key={`${card.id}:${label}`}
+                                size="small"
+                                label={label}
+                              />
+                            ))}
+                          </Stack>
+                          <Typography sx={{ whiteSpace: 'pre-wrap' }}>
+                            {card.text}
+                          </Typography>
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  ))}
+              </Stack>
+            )}
+          </Stack>
         </Stack>
       )}
     </PanelCard>
@@ -742,37 +991,67 @@ const PartsBoardPanel = ({
     ReturnType<typeof useMurderMysteryGameData>['snapshot']
   >['partsBoard'];
 }) => (
-  <PanelCard title="파츠 보드" subtitle="획득 파츠는 즉시 전체 공개됩니다.">
+  <PanelCard
+    title="파츠 보드"
+    subtitle="탈출 재료는 수량 중심으로만 공개됩니다."
+  >
     <Stack spacing={1}>
-      {partsBoard.parts.map((part) => {
-        const revealed = partsBoard.revealedPartIds.includes(part.id);
-        return (
-          <Card
-            key={part.id}
-            variant="outlined"
-            sx={{
-              backgroundColor: revealed
-                ? 'rgba(187,247,208,0.45)'
-                : 'rgba(241,245,249,0.7)',
-            }}
-          >
-            <CardContent sx={{ pb: '12px !important' }}>
-              <Stack spacing={0.6}>
-                <Typography fontWeight={700}>{part.name}</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  출처: {part.source}
-                </Typography>
-                <Typography variant="body2">{part.note}</Typography>
-                <Chip
-                  size="small"
-                  color={revealed ? 'success' : 'default'}
-                  label={revealed ? '공개됨' : '미공개'}
-                />
-              </Stack>
-            </CardContent>
-          </Card>
-        );
-      })}
+      <Card variant="outlined" sx={{ borderRadius: 2.5 }}>
+        <CardContent>
+          <Stack spacing={1}>
+            <Typography fontWeight={800} fontSize={20}>
+              {partsBoard.revealedCount} / {partsBoard.totalCount}
+            </Typography>
+            <Typography color="text.secondary">확보한 파츠 수량</Typography>
+            <Box
+              sx={{
+                width: '100%',
+                height: 10,
+                borderRadius: 999,
+                overflow: 'hidden',
+                backgroundColor: 'rgba(148,163,184,0.3)',
+              }}
+            >
+              <Box
+                sx={{
+                  width: `${Math.min(
+                    (partsBoard.revealedCount /
+                      Math.max(partsBoard.totalCount, 1)) *
+                      100,
+                    100
+                  )}%`,
+                  height: '100%',
+                  background:
+                    'linear-gradient(90deg, rgba(16,185,129,0.85), rgba(14,165,233,0.85))',
+                }}
+              />
+            </Box>
+          </Stack>
+        </CardContent>
+      </Card>
+      {partsBoard.parts && partsBoard.parts.length > 0 ? (
+        <Stack spacing={0.8}>
+          <Alert severity="info">진행자 전용 파츠 상세</Alert>
+          <Stack direction="row" spacing={0.8} flexWrap="wrap">
+            {partsBoard.parts.map((part) => (
+              <Chip
+                key={part.id}
+                size="small"
+                color={
+                  partsBoard.revealedPartIds.includes(part.id)
+                    ? 'success'
+                    : 'default'
+                }
+                label={
+                  partsBoard.revealedPartIds.includes(part.id)
+                    ? `${part.name} (공개)`
+                    : `${part.name} (미공개)`
+                }
+              />
+            ))}
+          </Stack>
+        </Stack>
+      ) : null}
     </Stack>
   </PanelCard>
 );
@@ -802,6 +1081,8 @@ const LogPanel = ({ logs }: { logs: TimelineLogEntry[] }) => (
 const HostPanel = ({
   open,
   phase,
+  phaseLabelMap,
+  currentStepKind,
   hostParticipatesAsPlayer,
   canUseHostGameMasterControls,
   hostControls,
@@ -833,7 +1114,7 @@ const HostPanel = ({
           <Typography variant="h6" fontWeight={800}>
             GM 패널
           </Typography>
-          <Chip color="primary" label={`${phaseLabelMap[phase]} (${phase})`} />
+          <Chip color="primary" label={phaseLabelMap[phase] ?? phase} />
         </Stack>
 
         <Stack spacing={1}>
@@ -846,7 +1127,10 @@ const HostPanel = ({
               variant="contained"
               color="secondary"
               onClick={onNextPhase}
-              disabled={phase === 'FINAL_VOTE' || phase === 'ENDBOOK'}
+              disabled={
+                currentStepKind === 'final_vote' ||
+                currentStepKind === 'endbook'
+              }
             >
               다음 단계
             </Button>
@@ -856,23 +1140,23 @@ const HostPanel = ({
               <Button
                 variant="outlined"
                 onClick={onBroadcastIntro}
-                disabled={phase !== 'INTRO'}
+                disabled={currentStepKind !== 'intro'}
               >
-                INTRO 전체 표시
+                오프닝 전체 표시
               </Button>
               <Button
                 variant="outlined"
                 onClick={onFinalizeVote}
-                disabled={phase !== 'FINAL_VOTE'}
+                disabled={currentStepKind !== 'final_vote'}
               >
                 최종 투표 집계/결과 공개
               </Button>
               <Button
                 variant="outlined"
                 onClick={onBroadcastEndbook}
-                disabled={phase !== 'ENDBOOK'}
+                disabled={currentStepKind !== 'endbook'}
               >
-                ENDBOOK 전체 표시
+                엔딩북 전체 표시
               </Button>
             </>
           ) : (
@@ -927,8 +1211,17 @@ const HostPanel = ({
                           ))}
                         </Select>
                       </FormControl>
+                      {pending.cardOptions.length === 0 ? (
+                        <Alert severity="warning">
+                          이 대상은 공개 가능한 단서가 더 없습니다.
+                        </Alert>
+                      ) : null}
                       <Button
                         variant="contained"
+                        disabled={
+                          pending.cardOptions.length === 0 ||
+                          !selectedCardByRequestId[pending.requestId]
+                        }
                         onClick={() =>
                           onResolvePending(
                             pending.requestId,
@@ -1015,13 +1308,17 @@ export default function MurderMysteryGameScreen({
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('SHEET');
   const [sheetMode, setSheetMode] = useState<'public' | 'secret'>('public');
   const [isHostPanelOpen, setIsHostPanelOpen] = useState(false);
-  const [introConfirmed, setIntroConfirmed] = useState(false);
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  const [isTimerSoundMuted, setIsTimerSoundMuted] = useState(false);
+  const [hasInteractedForSound, setHasInteractedForSound] = useState(false);
   const [selectedCardByRequestId, setSelectedCardByRequestId] = useState<
     Record<string, string>
   >({});
   const [timelineLogs, setTimelineLogs] = useState<TimelineLogEntry[]>([]);
   const guideRevealNotifiedRef = useRef(false);
   const prevPhaseRef = useRef<MurderMysteryPhase | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const lastTickSecondRef = useRef<number | null>(null);
 
   useCheckVersion(socket);
   useUpdateSocketId(socket, session, roomId);
@@ -1062,13 +1359,16 @@ export default function MurderMysteryGameScreen({
       return;
     }
     const at = Date.now();
-    enqueueSnackbar(`파츠 공개: ${latestPartReveal.part.name}`, {
-      variant: 'info',
-    });
+    enqueueSnackbar(
+      `탈출 재료가 공개되었습니다. (${latestPartReveal.revealedCount}/${latestPartReveal.totalCount})`,
+      {
+        variant: 'info',
+      }
+    );
     appendTimelineLog({
-      id: `part:${latestPartReveal.cardId}:${latestPartReveal.byPlayerId}:${latestPartReveal.part.id}:${at}`,
+      id: `part:${latestPartReveal.cardId}:${latestPartReveal.byPlayerId}:${latestPartReveal.partId}:${at}`,
       type: 'PART',
-      text: `파츠 공개: ${latestPartReveal.part.name} (${latestPartReveal.part.source})`,
+      text: `탈출 재료 공개 진행: ${latestPartReveal.revealedCount}/${latestPartReveal.totalCount}`,
       at,
     });
     if (latestPartReveal.cardId === GUIDE_REVEAL_CARD_ID) {
@@ -1084,12 +1384,16 @@ export default function MurderMysteryGameScreen({
       latestAnnouncement.type === 'INTRO' ||
       latestAnnouncement.type === 'ENDBOOK'
     ) {
-      enqueueSnackbar(
-        `${latestAnnouncement.type} 낭독문이 전체 표시되었습니다.`,
-        {
-          variant: 'success',
-        }
-      );
+      const label = latestAnnouncement.type === 'INTRO' ? '오프닝' : '엔딩북';
+      enqueueSnackbar(`${label} 낭독문이 전체 표시되었습니다.`, {
+        variant: 'success',
+      });
+      return;
+    }
+    if (latestAnnouncement.type === 'SYSTEM') {
+      enqueueSnackbar(latestAnnouncement.text, {
+        variant: 'info',
+      });
     }
   }, [latestAnnouncement, enqueueSnackbar]);
 
@@ -1115,13 +1419,42 @@ export default function MurderMysteryGameScreen({
       snapshot.phase === 'LOBBY'
     ) {
       setTimelineLogs([]);
-      setIntroConfirmed(false);
       guideRevealNotifiedRef.current = false;
       setSelectedCardByRequestId({});
       setSidebarTab('SHEET');
     }
     prevPhaseRef.current = snapshot.phase;
   }, [snapshot?.phase]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNowTick(Date.now());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (hasInteractedForSound) {
+      return;
+    }
+    const markInteracted = () => {
+      setHasInteractedForSound(true);
+    };
+    window.addEventListener('pointerdown', markInteracted);
+    window.addEventListener('keydown', markInteracted);
+    return () => {
+      window.removeEventListener('pointerdown', markInteracted);
+      window.removeEventListener('keydown', markInteracted);
+    };
+  }, [hasInteractedForSound]);
+
+  useEffect(() => {
+    return () => {
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(() => undefined);
+      }
+    };
+  }, []);
 
   const emitWithAck = <T extends object>(
     eventName: string,
@@ -1225,6 +1558,64 @@ export default function MurderMysteryGameScreen({
     return [...unique.values()].sort((a, b) => b.at - a.at).slice(0, 60);
   }, [snapshot?.announcements, timelineLogs]);
 
+  const phaseRemainingSecForEffects =
+    snapshot?.phaseTimer.durationSec && snapshot?.phaseTimer.startedAt
+      ? Math.max(
+          snapshot.phaseTimer.durationSec -
+            Math.floor((nowTick - snapshot.phaseTimer.startedAt) / 1000),
+          0
+        )
+      : null;
+
+  useEffect(() => {
+    lastTickSecondRef.current = null;
+  }, [snapshot?.phase]);
+
+  useEffect(() => {
+    if (
+      !hasInteractedForSound ||
+      isTimerSoundMuted ||
+      phaseRemainingSecForEffects === null ||
+      phaseRemainingSecForEffects <= 0 ||
+      phaseRemainingSecForEffects > TICKING_THRESHOLD_SEC
+    ) {
+      return;
+    }
+    if (lastTickSecondRef.current === phaseRemainingSecForEffects) {
+      return;
+    }
+    lastTickSecondRef.current = phaseRemainingSecForEffects;
+
+    const AudioContextCtor =
+      window.AudioContext ||
+      (window as Window & { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext;
+    if (!AudioContextCtor) {
+      return;
+    }
+
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContextCtor();
+    }
+
+    const ctx = audioContextRef.current;
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => undefined);
+    }
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.value = 1400;
+    gain.gain.value = 0.0001;
+    gain.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.09);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.1);
+  }, [phaseRemainingSecForEffects, hasInteractedForSound, isTimerSoundMuted]);
+
   if (!snapshot) {
     return (
       <Box sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
@@ -1238,7 +1629,7 @@ export default function MurderMysteryGameScreen({
     phase,
     players,
     roleSheet,
-    myCards,
+    clueVault,
     partsBoard,
     investigation,
     finalVote,
@@ -1249,21 +1640,100 @@ export default function MurderMysteryGameScreen({
   } = snapshot;
   const hostParticipatesAsPlayer = hostParticipation.hostParticipatesAsPlayer;
   const canActAsPlayer = Boolean(roleSheet);
+  const phaseRemainingSec = phaseRemainingSecForEffects;
+  const isTimerNearEnd =
+    phaseRemainingSec !== null &&
+    phaseRemainingSec > 0 &&
+    phaseRemainingSec <= TICKING_THRESHOLD_SEC;
+
+  const flowStepByPhase = Object.fromEntries(
+    scenario.flow.steps.map((step) => [step.id, step])
+  ) as Record<MurderMysteryPhase, (typeof scenario.flow.steps)[number]>;
+
+  const fallbackOrder: MurderMysteryPhase[] = [
+    'LOBBY',
+    ...scenario.flow.steps.map((step) => step.id),
+  ];
+  const order =
+    snapshot.phaseOrder.length > 0 ? snapshot.phaseOrder : fallbackOrder;
+  const phaseSteps: PhaseStepView[] = order.map((phaseId) => {
+    if (phaseId === 'LOBBY') {
+      return {
+        phase: 'LOBBY',
+        label: '대기',
+        kind: 'lobby',
+      };
+    }
+
+    const step = flowStepByPhase[phaseId];
+    return {
+      phase: phaseId,
+      label: step?.label ?? phaseId,
+      kind: step?.kind ?? 'lobby',
+      round: step?.round,
+      description: step?.description,
+      enterAnnouncement: step?.enterAnnouncement,
+    };
+  });
+
+  const phaseLabelMap = phaseSteps.reduce<Record<MurderMysteryPhase, string>>(
+    (acc, step) => {
+      acc[step.phase] = step.label;
+      return acc;
+    },
+    {}
+  );
+
+  const phaseIndexMap = phaseSteps.reduce<Record<MurderMysteryPhase, number>>(
+    (acc, step, index) => {
+      acc[step.phase] = index;
+      return acc;
+    },
+    {}
+  );
+
+  const getPhaseIndex = (phaseId: MurderMysteryPhase) =>
+    phaseIndexMap[phaseId] ?? 0;
 
   const currentPhaseIndex = getPhaseIndex(phase);
   const selectedPhaseIndex = getPhaseIndex(selectedPhase);
   const isReadOnlyTab = selectedPhaseIndex < currentPhaseIndex;
-  const selectedInvestigateRound = INVESTIGATE_ROUND_BY_PHASE[selectedPhase];
+  const selectedStep =
+    selectedPhase === 'LOBBY' ? null : (flowStepByPhase[selectedPhase] ?? null);
+  const currentStep =
+    phase === 'LOBBY' ? null : (flowStepByPhase[phase] ?? null);
+
+  const selectedInvestigateRound =
+    selectedStep?.kind === 'investigate' ? (selectedStep.round ?? null) : null;
   const selectedDiscussRound =
-    selectedPhase === 'ROUND1_DISCUSS'
-      ? 1
-      : selectedPhase === 'ROUND2_DISCUSS'
-        ? 2
-        : null;
+    selectedStep?.kind === 'discuss' ? (selectedStep.round ?? null) : null;
+
+  const revealedCardIdsSet = new Set(investigation.revealedCardIds);
+
   const selectedRoundTargets = selectedInvestigateRound
-    ? (scenario.investigations.rounds.find(
-        (entry) => entry.round === selectedInvestigateRound
-      )?.targets ?? [])
+    ? (
+        scenario.investigations.rounds.find(
+          (entry) => entry.round === selectedInvestigateRound
+        )?.targets ?? []
+      ).map((target) => {
+        const targetRevealedCardIds = new Set(
+          investigation.revealedCardIdsByTargetId[target.id] ?? []
+        );
+        const revealedClues = target.cardPool.filter((cardId) =>
+          scenario.investigations.depletionMode === 'global'
+            ? revealedCardIdsSet.has(cardId)
+            : targetRevealedCardIds.has(cardId)
+        ).length;
+        const totalClues = target.cardPool.length;
+        const remainingClues = Math.max(totalClues - revealedClues, 0);
+        return {
+          ...target,
+          totalClues,
+          revealedClues,
+          remainingClues,
+          isExhausted: remainingClues === 0,
+        };
+      })
     : [];
 
   const activeSidebarTabs: SidebarTab[] =
@@ -1273,78 +1743,89 @@ export default function MurderMysteryGameScreen({
     : 'SHEET';
 
   const renderMainPanel = () => {
-    switch (selectedPhase) {
-      case 'LOBBY':
-        return (
-          <LobbyPanel
-            players={players}
-            isHostView={isHostView}
-            hostParticipation={hostParticipation}
-            onOpenGmPanel={() => setIsHostPanelOpen(true)}
-          />
-        );
-      case 'INTRO':
-        return (
-          <IntroPanel
-            readAloud={scenario.intro.readAloud}
-            isHostView={isHostView}
-            canUseHostGameMasterControls={canUseHostGameMasterControls}
-            canActAsPlayer={canActAsPlayer}
-            introConfirmed={introConfirmed}
-            onConfirmIntro={() => setIntroConfirmed(true)}
-            isReadOnly={isReadOnlyTab}
-            onOpenGmPanel={() => setIsHostPanelOpen(true)}
-          />
-        );
-      case 'ROUND1_DISCUSS':
-      case 'ROUND2_DISCUSS':
-        return (
-          <DiscussPanel
-            round={selectedDiscussRound ?? 1}
-            isReadOnly={isReadOnlyTab}
-          />
-        );
-      case 'ROUND1_INVESTIGATE':
-      case 'ROUND2_INVESTIGATE':
-        return (
-          <InvestigatePanel
-            round={selectedInvestigateRound ?? 1}
-            canActAsPlayer={canActAsPlayer}
-            isActivePhase={selectedPhase === phase}
-            isReadOnly={isReadOnlyTab}
-            targets={selectedRoundTargets}
-            used={selectedPhase === phase ? investigation.used : false}
-            deliveryMode={scenario.investigations.deliveryMode}
-            myCards={myCards}
-            onSubmitInvestigation={handleSubmitInvestigation}
-          />
-        );
-      case 'FINAL_VOTE':
-        return (
-          <VotePanel
-            isHostView={isHostView}
-            canActAsPlayer={canActAsPlayer}
-            canUseHostGameMasterControls={canUseHostGameMasterControls}
-            isActivePhase={selectedPhase === phase}
-            isReadOnly={isReadOnlyTab}
-            finalVote={finalVote}
-            players={players}
-            onSubmitVote={handleSubmitVote}
-            onOpenGmPanel={() => setIsHostPanelOpen(true)}
-          />
-        );
-      case 'ENDBOOK':
-        return (
-          <EndbookPanel
-            endbook={endbook}
-            canUseHostGameMasterControls={canUseHostGameMasterControls}
-            isReadOnly={isReadOnlyTab}
-            onOpenGmPanel={() => setIsHostPanelOpen(true)}
-          />
-        );
-      default:
-        return null;
+    if (selectedPhase === 'LOBBY') {
+      return (
+        <LobbyPanel
+          players={players}
+          isHostView={isHostView}
+          hostParticipation={hostParticipation}
+          onOpenGmPanel={() => setIsHostPanelOpen(true)}
+        />
+      );
     }
+
+    if (!selectedStep) {
+      return (
+        <Alert severity="warning">
+          현재 선택한 단계 정보를 찾을 수 없습니다.
+        </Alert>
+      );
+    }
+
+    if (selectedStep.kind === 'intro') {
+      return (
+        <IntroPanel
+          readAloud={scenario.intro.readAloud}
+          isHostView={isHostView}
+          canUseHostGameMasterControls={canUseHostGameMasterControls}
+          isReadOnly={isReadOnlyTab}
+          onOpenGmPanel={() => setIsHostPanelOpen(true)}
+        />
+      );
+    }
+
+    if (selectedStep.kind === 'discuss') {
+      return (
+        <DiscussPanel
+          round={selectedDiscussRound ?? undefined}
+          guideText={selectedStep.description}
+          isReadOnly={isReadOnlyTab}
+        />
+      );
+    }
+
+    if (selectedStep.kind === 'investigate') {
+      return (
+        <InvestigatePanel
+          round={selectedInvestigateRound ?? undefined}
+          layoutSections={investigation.layoutSections}
+          stepDescription={selectedStep.description}
+          stepAnnouncement={selectedStep.enterAnnouncement}
+          canActAsPlayer={canActAsPlayer}
+          isActivePhase={selectedPhase === phase}
+          isReadOnly={isReadOnlyTab}
+          targets={selectedRoundTargets}
+          used={selectedPhase === phase ? investigation.used : false}
+          myCards={clueVault.myClues}
+          onSubmitInvestigation={handleSubmitInvestigation}
+        />
+      );
+    }
+
+    if (selectedStep.kind === 'final_vote') {
+      return (
+        <VotePanel
+          isHostView={isHostView}
+          canActAsPlayer={canActAsPlayer}
+          canUseHostGameMasterControls={canUseHostGameMasterControls}
+          isActivePhase={selectedPhase === phase}
+          isReadOnly={isReadOnlyTab}
+          finalVote={finalVote}
+          players={players}
+          onSubmitVote={handleSubmitVote}
+          onOpenGmPanel={() => setIsHostPanelOpen(true)}
+        />
+      );
+    }
+
+    return (
+      <EndbookPanel
+        endbook={endbook}
+        canUseHostGameMasterControls={canUseHostGameMasterControls}
+        isReadOnly={isReadOnlyTab}
+        onOpenGmPanel={() => setIsHostPanelOpen(true)}
+      />
+    );
   };
 
   const renderSidebarContent = (tab: SidebarTab) => {
@@ -1354,7 +1835,7 @@ export default function MurderMysteryGameScreen({
           roleSheet={roleSheet}
           mode={sheetMode}
           onChangeMode={setSheetMode}
-          myCards={myCards}
+          clueVault={clueVault}
         />
       );
     }
@@ -1389,14 +1870,30 @@ export default function MurderMysteryGameScreen({
             <Typography variant="h4" fontWeight={800}>
               🕵️ {scenario.roomDisplayName}
             </Typography>
-            <Chip label={`ROOM ${roomId}`} />
+            <Chip label={`방 ${roomId}`} />
             <Chip
               color="primary"
-              label={`${phaseLabelMap[phase]} (${phase})`}
+              label={phaseLabelMap[phase] ?? phase}
               sx={{ fontWeight: 700 }}
             />
+            {phaseRemainingSec !== null ? (
+              <Chip
+                color={isTimerNearEnd ? 'warning' : 'default'}
+                label={`남은 시간 ${formatSeconds(phaseRemainingSec)}`}
+              />
+            ) : null}
           </Stack>
           <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              color={isTimerSoundMuted ? 'inherit' : 'warning'}
+              onClick={() => {
+                setHasInteractedForSound(true);
+                setIsTimerSoundMuted((prev) => !prev);
+              }}
+            >
+              {isTimerSoundMuted ? '타이머 음소거' : '타이머 소리 켜짐'}
+            </Button>
             {isHostView ? (
               <Button
                 variant="contained"
@@ -1453,13 +1950,14 @@ export default function MurderMysteryGameScreen({
         <TabRouter
           currentPhase={phase}
           selectedPhase={selectedPhase}
+          phaseSteps={phaseSteps}
           onSelect={setSelectedPhase}
         />
 
         {isReadOnlyTab ? (
           <Alert severity="info">
-            현재 단계는 {phaseLabelMap[phase]}입니다. 이 탭은 이전 단계 열람
-            모드입니다.
+            현재 단계는 {phaseLabelMap[phase] ?? phase}입니다. 이 탭은 이전 단계
+            열람 모드입니다.
           </Alert>
         ) : null}
 
@@ -1513,7 +2011,7 @@ export default function MurderMysteryGameScreen({
                 roleSheet={roleSheet}
                 mode={sheetMode}
                 onChangeMode={setSheetMode}
-                myCards={myCards}
+                clueVault={clueVault}
               />
               {selectedPhase !== 'LOBBY' ? (
                 <>
@@ -1530,6 +2028,10 @@ export default function MurderMysteryGameScreen({
         <HostPanel
           open={isHostPanelOpen}
           phase={phase}
+          phaseLabelMap={phaseLabelMap}
+          currentStepKind={
+            phase === 'LOBBY' ? 'lobby' : (currentStep?.kind ?? null)
+          }
           hostParticipatesAsPlayer={hostParticipatesAsPlayer}
           canUseHostGameMasterControls={canUseHostGameMasterControls}
           hostControls={hostControls}
@@ -1559,7 +2061,7 @@ export default function MurderMysteryGameScreen({
             emitWithAck(
               'mm_host_broadcast_intro',
               { roomId, sessionId },
-              'INTRO 낭독문을 전체 표시했습니다.'
+              '오프닝 낭독문을 전체 표시했습니다.'
             )
           }
           onFinalizeVote={() =>
@@ -1573,7 +2075,7 @@ export default function MurderMysteryGameScreen({
             emitWithAck(
               'mm_host_broadcast_endbook',
               { roomId, sessionId },
-              'ENDBOOK 낭독문을 전체 표시했습니다.'
+              '엔딩북 낭독문을 전체 표시했습니다.'
             )
           }
           onResolvePending={handleResolvePending}

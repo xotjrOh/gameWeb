@@ -2,9 +2,13 @@ import fs from 'fs';
 import path from 'path';
 import YAML from 'yaml';
 import {
+  MurderMysteryFlowStepScenario,
+  MurderMysteryInvestigationLayoutSection,
   MurderMysteryInvestigationRound,
   MurderMysteryScenario,
   MurderMysteryScenarioCatalogItem,
+  MurderMysteryStepKind,
+  MurderMysteryTargetType,
 } from '@/types/murderMystery';
 
 interface ScenarioRegistryEntry {
@@ -52,15 +56,61 @@ const isRecord = (value: unknown): value is RawRecord =>
 const asNonEmptyString = (value: unknown): string | undefined =>
   typeof value === 'string' && value.length > 0 ? value : undefined;
 
+const asInteger = (value: unknown): number | undefined =>
+  Number.isInteger(value) ? Number(value) : undefined;
+
 const asRound = (
   value: unknown
-): MurderMysteryInvestigationRound | undefined =>
-  value === 1 || value === 2 ? value : undefined;
+): MurderMysteryInvestigationRound | undefined => {
+  if (!Number.isInteger(value)) {
+    return undefined;
+  }
+  const resolved = Number(value);
+  return resolved >= 1 ? resolved : undefined;
+};
+
+const asPositiveInteger = (value: unknown): number | undefined => {
+  const resolved = asInteger(value);
+  if (!resolved || resolved < 1) {
+    return undefined;
+  }
+  return resolved;
+};
 
 const toStringArray = (value: unknown): string[] =>
   Array.isArray(value)
     ? value.filter((entry): entry is string => typeof entry === 'string')
     : [];
+
+const toTargetType = (value: unknown): MurderMysteryTargetType | undefined => {
+  if (value === 'location' || value === 'character' || value === 'item') {
+    return value;
+  }
+  return undefined;
+};
+
+const toStepKind = (value: unknown): MurderMysteryStepKind | undefined => {
+  if (
+    value === 'intro' ||
+    value === 'investigate' ||
+    value === 'discuss' ||
+    value === 'final_vote' ||
+    value === 'endbook'
+  ) {
+    return value;
+  }
+  return undefined;
+};
+
+const inferTargetTypeById = (id: string): MurderMysteryTargetType => {
+  if (id.startsWith('npc_')) {
+    return 'character';
+  }
+  if (id.startsWith('item_')) {
+    return 'item';
+  }
+  return 'location';
+};
 
 const requireRecord = (value: unknown, message: string): RawRecord => {
   assertCondition(isRecord(value), message);
@@ -136,6 +186,19 @@ const normalizePlayers = (
   };
 };
 
+const normalizeRules = (
+  rawScenario: RawRecord
+): MurderMysteryScenario['rules'] => {
+  const rules = isRecord(rawScenario.rules) ? rawScenario.rules : {};
+  return {
+    investigationsPerRound:
+      asPositiveInteger(rules.investigationsPerRound) ?? 1,
+    noEliminationDuringGame: rules.noEliminationDuringGame !== false,
+    partsAutoReveal: rules.partsAutoReveal !== false,
+    partsPublicDetail: rules.partsPublicDetail === true,
+  };
+};
+
 const normalizeInvestigationTargets = ({
   rawTargets,
   round,
@@ -156,11 +219,21 @@ const normalizeInvestigationTargets = ({
       targetRecord.id,
       `${fileName}: round ${round} target.id is required`
     );
+    const targetType =
+      toTargetType(targetRecord.targetType) ?? inferTargetTypeById(id);
+    const entityKey =
+      asNonEmptyString(targetRecord.entityKey) ??
+      asNonEmptyString(targetRecord.subjectId) ??
+      id;
     const label =
       asNonEmptyString(targetRecord.label) ??
       asNonEmptyString(targetRecord.name) ??
       id;
     const description = asNonEmptyString(targetRecord.description);
+    const sectionId = asNonEmptyString(targetRecord.sectionId);
+    const order = asInteger(targetRecord.order);
+    const icon = asNonEmptyString(targetRecord.icon);
+
     const cardPool = [
       ...toStringArray(targetRecord.cardPool),
       ...toStringArray(targetRecord.cards),
@@ -180,9 +253,89 @@ const normalizeInvestigationTargets = ({
       id,
       label,
       description,
+      targetType,
+      entityKey,
+      sectionId,
+      order,
+      icon,
       cardPool,
     };
   });
+
+const normalizeInvestigationLayoutSections = ({
+  rawSections,
+  allTargets,
+  fileName,
+}: {
+  rawSections: unknown;
+  allTargets: MurderMysteryScenario['investigations']['rounds'][number]['targets'];
+  fileName: string;
+}): MurderMysteryInvestigationLayoutSection[] => {
+  const sections = Array.isArray(rawSections)
+    ? rawSections.map((rawSection, index) => {
+        const sectionRecord = requireRecord(
+          rawSection,
+          `${fileName}: investigations.layout.sections[${index}] must be object`
+        );
+
+        const id = requireString(
+          sectionRecord.id,
+          `${fileName}: investigations.layout.sections[${index}].id is required`
+        );
+
+        return {
+          id,
+          title:
+            asNonEmptyString(sectionRecord.title) ??
+            asNonEmptyString(sectionRecord.label) ??
+            id,
+          targetTypes: Array.isArray(sectionRecord.targetTypes)
+            ? sectionRecord.targetTypes.filter(
+                (type): type is MurderMysteryTargetType =>
+                  type === 'location' || type === 'character' || type === 'item'
+              )
+            : undefined,
+          targetIds: toStringArray(sectionRecord.targetIds),
+          order: asInteger(sectionRecord.order),
+          icon: asNonEmptyString(sectionRecord.icon),
+        };
+      })
+    : [];
+
+  if (sections.length > 0) {
+    return sections;
+  }
+
+  const targetTypes = new Set(allTargets.map((target) => target.targetType));
+  const defaults: MurderMysteryInvestigationLayoutSection[] = [];
+
+  if (targetTypes.has('location')) {
+    defaults.push({
+      id: 'locations',
+      title: '지도 - 장소',
+      targetTypes: ['location'],
+      order: 10,
+    });
+  }
+  if (targetTypes.has('character')) {
+    defaults.push({
+      id: 'characters',
+      title: '인물 조사',
+      targetTypes: ['character'],
+      order: 20,
+    });
+  }
+  if (targetTypes.has('item')) {
+    defaults.push({
+      id: 'items',
+      title: '소지품/특수 조사',
+      targetTypes: ['item'],
+      order: 30,
+    });
+  }
+
+  return defaults;
+};
 
 const normalizeInvestigations = (
   rawScenario: RawRecord,
@@ -195,6 +348,7 @@ const normalizeInvestigations = (
     rawScenario.investigations,
     `${fileName}: investigations is required`
   );
+
   const cardRoundById: Record<string, MurderMysteryInvestigationRound> = {};
   const normalizedRounds: MurderMysteryScenario['investigations']['rounds'] =
     [];
@@ -211,56 +365,172 @@ const normalizeInvestigations = (
       );
       const round = requireRound(
         roundRecord.round,
-        `${fileName}: investigations.rounds[${index}].round must be 1 or 2`
+        `${fileName}: investigations.rounds[${index}].round must be >= 1`
       );
-      const targets = normalizeInvestigationTargets({
-        rawTargets: Array.isArray(roundRecord.targets)
-          ? roundRecord.targets
-          : [],
+      normalizedRounds.push({
         round,
-        fileName,
-        cardRoundById,
+        targets: normalizeInvestigationTargets({
+          rawTargets: Array.isArray(roundRecord.targets)
+            ? roundRecord.targets
+            : [],
+          round,
+          fileName,
+          cardRoundById,
+        }),
       });
-      normalizedRounds.push({ round, targets });
     });
   } else {
-    const round1Targets = Array.isArray(investigationsRecord.round1)
-      ? investigationsRecord.round1
-      : [];
-    const round2Targets = Array.isArray(investigationsRecord.round2)
-      ? investigationsRecord.round2
-      : [];
+    const legacyRoundEntries = Object.entries(investigationsRecord)
+      .filter(([key, value]) => /^round\d+$/.test(key) && Array.isArray(value))
+      .map(([key, value]) => ({
+        round: Number(key.replace('round', '')),
+        targets: value as unknown[],
+      }))
+      .filter((entry) => Number.isInteger(entry.round) && entry.round >= 1)
+      .sort((a, b) => a.round - b.round);
 
-    normalizedRounds.push({
-      round: 1,
-      targets: normalizeInvestigationTargets({
-        rawTargets: round1Targets,
-        round: 1,
-        fileName,
-        cardRoundById,
-      }),
-    });
-    normalizedRounds.push({
-      round: 2,
-      targets: normalizeInvestigationTargets({
-        rawTargets: round2Targets,
-        round: 2,
-        fileName,
-        cardRoundById,
-      }),
+    legacyRoundEntries.forEach((entry) => {
+      normalizedRounds.push({
+        round: entry.round,
+        targets: normalizeInvestigationTargets({
+          rawTargets: entry.targets,
+          round: entry.round,
+          fileName,
+          cardRoundById,
+        }),
+      });
     });
   }
 
+  assertCondition(
+    normalizedRounds.length > 0,
+    `${fileName}: at least one investigation round is required`
+  );
+
+  normalizedRounds.sort((a, b) => a.round - b.round);
+
+  const allTargets = normalizedRounds.flatMap((round) => round.targets);
+  const layoutRecord = isRecord(investigationsRecord.layout)
+    ? investigationsRecord.layout
+    : null;
+
   const deliveryMode =
     investigationsRecord.deliveryMode === 'manual' ? 'manual' : 'auto';
+  const depletionMode =
+    investigationsRecord.depletionMode === 'per_target'
+      ? 'per_target'
+      : 'global';
 
   return {
     investigations: {
       deliveryMode,
+      depletionMode,
+      layout: {
+        sections: normalizeInvestigationLayoutSections({
+          rawSections: layoutRecord?.sections,
+          allTargets,
+          fileName,
+        }),
+      },
       rounds: normalizedRounds,
     },
     cardRoundById,
   };
+};
+
+const normalizeFlow = ({
+  rawScenario,
+  investigations,
+  fileName,
+}: {
+  rawScenario: RawRecord;
+  investigations: MurderMysteryScenario['investigations'];
+  fileName: string;
+}): MurderMysteryScenario['flow'] => {
+  const flowRecord = isRecord(rawScenario.flow) ? rawScenario.flow : null;
+  const rawSteps = Array.isArray(flowRecord?.steps) ? flowRecord.steps : [];
+
+  if (rawSteps.length > 0) {
+    const steps = rawSteps.map((rawStep, index) => {
+      const stepRecord = requireRecord(
+        rawStep,
+        `${fileName}: flow.steps[${index}] must be object`
+      );
+      const kind = toStepKind(stepRecord.kind);
+      assertCondition(
+        kind,
+        `${fileName}: flow.steps[${index}].kind is invalid`
+      );
+      const resolvedKind = kind as MurderMysteryStepKind;
+
+      const round = asRound(stepRecord.round);
+      if (resolvedKind === 'investigate' || resolvedKind === 'discuss') {
+        assertCondition(
+          round,
+          `${fileName}: flow.steps[${index}](${resolvedKind}) requires round`
+        );
+      }
+
+      return {
+        id: requireString(
+          stepRecord.id,
+          `${fileName}: flow.steps[${index}].id is required`
+        ),
+        label: requireString(
+          stepRecord.label,
+          `${fileName}: flow.steps[${index}].label is required`
+        ),
+        kind: resolvedKind,
+        round,
+        durationSec: asPositiveInteger(stepRecord.durationSec),
+        description: asNonEmptyString(stepRecord.description),
+        enterAnnouncement: asNonEmptyString(stepRecord.enterAnnouncement),
+      };
+    });
+
+    return { steps };
+  }
+
+  const rounds = investigations.rounds
+    .map((entry) => entry.round)
+    .sort((a, b) => a - b);
+  const steps: MurderMysteryFlowStepScenario[] = [
+    {
+      id: 'INTRO',
+      label: '오프닝',
+      kind: 'intro',
+      durationSec: 180,
+    },
+    ...rounds.flatMap((round) => [
+      {
+        id: `ROUND${round}_INVESTIGATE`,
+        label: `${round}라운드 조사`,
+        kind: 'investigate' as const,
+        round,
+        durationSec: 420,
+      },
+      {
+        id: `ROUND${round}_DISCUSS`,
+        label: `${round}라운드 토론`,
+        kind: 'discuss' as const,
+        round,
+        durationSec: 600,
+      },
+    ]),
+    {
+      id: 'FINAL_VOTE',
+      label: '최종 투표',
+      kind: 'final_vote',
+      durationSec: 300,
+    },
+    {
+      id: 'ENDBOOK',
+      label: '엔딩',
+      kind: 'endbook',
+    },
+  ];
+
+  return { steps };
 };
 
 const normalizeDynamicDisplayNameRules = ({
@@ -536,6 +806,8 @@ const normalizeScenarioSchema = (
     `${fileName}: roomDisplayName is required`
   );
   const players = normalizePlayers(scenarioRecord.players, fileName);
+  const rules = normalizeRules(scenarioRecord);
+
   const introRecord = requireRecord(
     scenarioRecord.intro,
     `${fileName}: intro is required`
@@ -549,6 +821,12 @@ const normalizeScenarioSchema = (
     scenarioRecord,
     fileName
   );
+  const flow = normalizeFlow({
+    rawScenario: scenarioRecord,
+    investigations,
+    fileName,
+  });
+
   const { roles, killerRoleId } = normalizeRoles({
     rawRoles: scenarioRecord.roles,
     cardRoundById,
@@ -577,7 +855,6 @@ const normalizeScenarioSchema = (
     finalVoteCorrectRoleId,
     `${fileName}: finalVote.correctRoleId is required`
   );
-  const resolvedFinalVoteCorrectRoleId = finalVoteCorrectRoleId as string;
 
   const endbookRecord = requireRecord(
     scenarioRecord.endbook,
@@ -589,6 +866,8 @@ const normalizeScenarioSchema = (
     title,
     roomDisplayName,
     players,
+    rules,
+    flow,
     intro: {
       readAloud: introReadAloud,
     },
@@ -598,7 +877,7 @@ const normalizeScenarioSchema = (
     cards,
     finalVote: {
       question: finalVoteQuestion,
-      correctRoleId: resolvedFinalVoteCorrectRoleId,
+      correctRoleId: finalVoteCorrectRoleId as string,
     },
     endbook: {
       common: requireString(
@@ -647,6 +926,12 @@ const validateScenarioSchema = (
     scenario.intro?.readAloud,
     `${fileName}: intro.readAloud is required`
   );
+
+  assertCondition(
+    Array.isArray(scenario.flow?.steps) && scenario.flow.steps.length > 0,
+    `${fileName}: flow.steps must be non-empty`
+  );
+
   assertCondition(
     Array.isArray(scenario.roles) && scenario.roles.length > 0,
     `${fileName}: roles must be non-empty`
@@ -663,6 +948,7 @@ const validateScenarioSchema = (
     Array.isArray(scenario.investigations?.rounds),
     `${fileName}: investigations.rounds is required`
   );
+
   assertCondition(
     scenario.finalVote?.question,
     `${fileName}: finalVote.question is required`
@@ -724,32 +1010,40 @@ const validateScenarioSchema = (
           roleIds.has(effect.roleId),
           `${fileName}: revealRoleName references unknown role (${effect.roleId})`
         );
-        assertCondition(
-          effect.newDisplayName,
-          `${fileName}: revealRoleName.newDisplayName is required`
-        );
       }
     });
   });
 
   const rounds = scenario.investigations.rounds;
-  const roundSet = new Set(rounds.map((round) => round.round));
   assertCondition(
-    roundSet.has(1),
-    `${fileName}: investigation round 1 required`
-  );
-  assertCondition(
-    roundSet.has(2),
-    `${fileName}: investigation round 2 required`
+    rounds.length > 0,
+    `${fileName}: at least one investigation round is required`
   );
 
+  const roundSet = new Set<number>();
   rounds.forEach((roundConfig) => {
+    assertCondition(
+      !roundSet.has(roundConfig.round),
+      `${fileName}: duplicated investigation round (${roundConfig.round})`
+    );
+    roundSet.add(roundConfig.round);
     assertCondition(
       Array.isArray(roundConfig.targets) && roundConfig.targets.length > 0,
       `${fileName}: round ${roundConfig.round} must have targets`
     );
+
+    const targetIdsInRound = new Set<string>();
     roundConfig.targets.forEach((target) => {
       assertCondition(target.id, `${fileName}: target.id is required`);
+      assertCondition(
+        !targetIdsInRound.has(target.id),
+        `${fileName}: duplicated target id in round ${roundConfig.round} (${target.id})`
+      );
+      targetIdsInRound.add(target.id);
+      assertCondition(
+        target.entityKey,
+        `${fileName}: target (${target.id}) entityKey is required`
+      );
       assertCondition(
         Array.isArray(target.cardPool) && target.cardPool.length > 0,
         `${fileName}: target (${target.id}) cardPool is required`
@@ -761,6 +1055,86 @@ const validateScenarioSchema = (
         );
       });
     });
+  });
+
+  const allTargetIds = new Set(
+    rounds.flatMap((round) => round.targets.map((target) => target.id))
+  );
+
+  const layoutSections = scenario.investigations.layout.sections;
+  const layoutSectionIds = new Set<string>();
+  layoutSections.forEach((section) => {
+    assertCondition(section.id, `${fileName}: layout section id is required`);
+    assertCondition(
+      !layoutSectionIds.has(section.id),
+      `${fileName}: duplicated layout section id (${section.id})`
+    );
+    layoutSectionIds.add(section.id);
+
+    section.targetIds?.forEach((targetId) => {
+      assertCondition(
+        allTargetIds.has(targetId),
+        `${fileName}: layout section(${section.id}) references unknown targetId (${targetId})`
+      );
+    });
+  });
+
+  const stepIds = new Set<string>();
+  const flowRounds = new Set<number>();
+  const flowKinds = new Set<MurderMysteryStepKind>();
+
+  scenario.flow.steps.forEach((step) => {
+    assertCondition(step.id, `${fileName}: flow step id is required`);
+    assertCondition(
+      step.id !== 'LOBBY',
+      `${fileName}: flow step id 'LOBBY' is reserved`
+    );
+    assertCondition(
+      !stepIds.has(step.id),
+      `${fileName}: duplicated flow step id (${step.id})`
+    );
+    stepIds.add(step.id);
+
+    flowKinds.add(step.kind);
+
+    if (step.kind === 'investigate' || step.kind === 'discuss') {
+      assertCondition(
+        step.round,
+        `${fileName}: flow step(${step.id}) round is required`
+      );
+      assertCondition(
+        roundSet.has(step.round as number),
+        `${fileName}: flow step(${step.id}) references unknown round (${step.round})`
+      );
+      flowRounds.add(step.round as number);
+    }
+
+    if (step.durationSec !== undefined) {
+      assertCondition(
+        Number.isInteger(step.durationSec) && step.durationSec > 0,
+        `${fileName}: flow step(${step.id}) durationSec must be a positive integer`
+      );
+    }
+  });
+
+  assertCondition(
+    flowKinds.has('intro'),
+    `${fileName}: flow requires intro step`
+  );
+  assertCondition(
+    flowKinds.has('final_vote'),
+    `${fileName}: flow requires final_vote step`
+  );
+  assertCondition(
+    flowKinds.has('endbook'),
+    `${fileName}: flow requires endbook step`
+  );
+
+  rounds.forEach((roundConfig) => {
+    assertCondition(
+      flowRounds.has(roundConfig.round),
+      `${fileName}: investigation round ${roundConfig.round} is not reachable from flow`
+    );
   });
 
   assertCondition(
@@ -780,8 +1154,8 @@ const validateScenarioSchema = (
       );
       if (rule.trigger.round) {
         assertCondition(
-          rule.trigger.round === 1 || rule.trigger.round === 2,
-          `${fileName}: dynamic rule round must be 1 or 2`
+          roundSet.has(rule.trigger.round),
+          `${fileName}: dynamic rule round is invalid (${rule.trigger.round})`
         );
       }
       assertCondition(
@@ -801,54 +1175,87 @@ const loadScenarioStore = (): ScenarioStore => {
 
   const scenarioById: Record<string, MurderMysteryScenario> = {};
   const scenarioByRegistryId: Record<string, MurderMysteryScenario> = {};
+  const invalidScenarioEntries: Array<{
+    id: string;
+    file: string;
+    reason: string;
+  }> = [];
 
   registry.scenarios.forEach((entry) => {
     const filePath = path.join(SCENARIO_DIR, entry.file);
-    assertCondition(
-      fs.existsSync(filePath),
-      `scenario file not found (${entry.file})`
-    );
 
-    const scenario = normalizeScenarioSchema(
-      readScenarioFile(filePath),
-      entry.file
-    );
-    validateScenarioSchema(scenario, entry.file);
-
-    assertCondition(
-      !scenarioByRegistryId[entry.id],
-      `duplicated registry scenario id (${entry.id})`
-    );
-    scenarioByRegistryId[entry.id] = scenario;
-
-    assertCondition(
-      !scenarioById[entry.id],
-      `duplicated scenario lookup id (${entry.id})`
-    );
-    scenarioById[entry.id] = scenario;
-
-    if (scenario.id !== entry.id) {
+    try {
       assertCondition(
-        !scenarioById[scenario.id],
-        `duplicated scenario id (${scenario.id})`
+        fs.existsSync(filePath),
+        `scenario file not found (${entry.file})`
       );
-      scenarioById[scenario.id] = scenario;
+
+      const scenario = normalizeScenarioSchema(
+        readScenarioFile(filePath),
+        entry.file
+      );
+      validateScenarioSchema(scenario, entry.file);
+
+      assertCondition(
+        !scenarioByRegistryId[entry.id],
+        `duplicated registry scenario id (${entry.id})`
+      );
+      scenarioByRegistryId[entry.id] = scenario;
+
+      assertCondition(
+        !scenarioById[entry.id],
+        `duplicated scenario lookup id (${entry.id})`
+      );
+      scenarioById[entry.id] = scenario;
+
+      if (scenario.id !== entry.id) {
+        assertCondition(
+          !scenarioById[scenario.id],
+          `duplicated scenario id (${scenario.id})`
+        );
+        scenarioById[scenario.id] = scenario;
+      }
+    } catch (error) {
+      invalidScenarioEntries.push({
+        id: entry.id,
+        file: entry.file,
+        reason: (error as Error).message,
+      });
+      console.error(
+        `[murder_mystery][scenario] disabled invalid scenario (${entry.id}:${entry.file}) ${(error as Error).message}`
+      );
     }
   });
+
+  assertCondition(
+    Object.keys(scenarioByRegistryId).length > 0,
+    'all scenarios are invalid'
+  );
+
+  if (invalidScenarioEntries.length > 0) {
+    console.warn(
+      `[murder_mystery][scenario] ${invalidScenarioEntries.length} scenario(s) skipped due to validation errors`
+    );
+  }
+
+  const firstValidRegistryEntry = registry.scenarios.find((entry) =>
+    Boolean(scenarioByRegistryId[entry.id])
+  );
 
   const defaultScenarioId =
     registry.defaultScenarioId &&
     scenarioByRegistryId[registry.defaultScenarioId]
       ? registry.defaultScenarioId
-      : registry.scenarios[0].id;
+      : firstValidRegistryEntry?.id;
 
   assertCondition(
     Boolean(defaultScenarioId && scenarioById[defaultScenarioId]),
     'default scenario is invalid'
   );
 
-  const catalog: MurderMysteryScenarioCatalogItem[] = registry.scenarios.map(
-    (entry) => {
+  const catalog: MurderMysteryScenarioCatalogItem[] = registry.scenarios
+    .filter((entry) => Boolean(scenarioByRegistryId[entry.id]))
+    .map((entry) => {
       const scenario = scenarioByRegistryId[entry.id];
       return {
         id: entry.id,
@@ -856,11 +1263,10 @@ const loadScenarioStore = (): ScenarioStore => {
         roomDisplayName: scenario.roomDisplayName,
         players: scenario.players,
       };
-    }
-  );
+    });
 
   return {
-    defaultScenarioId,
+    defaultScenarioId: defaultScenarioId as string,
     scenarioById,
     catalog,
     loadedAt: Date.now(),

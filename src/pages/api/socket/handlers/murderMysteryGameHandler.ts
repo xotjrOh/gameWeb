@@ -20,6 +20,7 @@ import {
 import { getMurderMysteryScenario } from '../services/murderMysteryScenarioService';
 import {
   ensureAllowedPhase,
+  getFlowStepByPhase,
   ensureMurderMysteryGameMaster,
   ensureMurderMysteryHost,
   ensureScenarioPlayerCount,
@@ -87,9 +88,12 @@ const murderMysteryGameHandler = (
       resolvedPending.forEach((resolved) => {
         resolved.revealResult.revealedParts.forEach((part) => {
           emitMurderMysteryPartRevealed(room, io, {
-            part,
+            partId: part.id,
+            partName: part.name,
             byPlayerId: resolved.request.playerId,
             cardId: resolved.cardId,
+            revealedCount: room.gameData.revealedPartIds.length,
+            totalCount: scenario.parts.length,
           });
         });
       });
@@ -120,9 +124,12 @@ const murderMysteryGameHandler = (
         if (result.mode === 'auto') {
           result.revealResult.revealedParts.forEach((part) => {
             emitMurderMysteryPartRevealed(room, io, {
-              part,
+              partId: part.id,
+              partName: part.name,
               byPlayerId: sessionId,
               cardId: result.cardId,
+              revealedCount: room.gameData.revealedPartIds.length,
+              totalCount: scenario.parts.length,
             });
           });
         }
@@ -152,9 +159,12 @@ const murderMysteryGameHandler = (
         );
         resolved.revealResult.revealedParts.forEach((part) => {
           emitMurderMysteryPartRevealed(room, io, {
-            part,
+            partId: part.id,
+            partName: part.name,
             byPlayerId: resolved.request.playerId,
             cardId: resolved.cardId,
+            revealedCount: room.gameData.revealedPartIds.length,
+            totalCount: scenario.parts.length,
           });
         });
 
@@ -173,7 +183,7 @@ const murderMysteryGameHandler = (
         const room = toMurderMysteryRoom(validateRoom(roomId));
         const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
         validatePlayer(room, sessionId);
-        submitMurderMysteryVote(room, sessionId, suspectPlayerId);
+        submitMurderMysteryVote(room, scenario, sessionId, suspectPlayerId);
 
         if (
           room.gameData.hostParticipatesAsPlayer &&
@@ -227,8 +237,11 @@ const murderMysteryGameHandler = (
     try {
       const room = toMurderMysteryRoom(validateRoom(roomId));
       ensureMurderMysteryGameMaster(room, sessionId);
-      ensureAllowedPhase(room, ['INTRO']);
       const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
+      const currentStep = getFlowStepByPhase(scenario, room.gameData.phase);
+      if (currentStep?.kind !== 'intro') {
+        throw new Error('오프닝 단계에서만 실행할 수 있습니다.');
+      }
 
       const announcement = appendMurderMysteryAnnouncement(
         room,
@@ -247,8 +260,11 @@ const murderMysteryGameHandler = (
     try {
       const room = toMurderMysteryRoom(validateRoom(roomId));
       ensureMurderMysteryGameMaster(room, sessionId);
-      ensureAllowedPhase(room, ['ENDBOOK']);
       const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
+      const currentStep = getFlowStepByPhase(scenario, room.gameData.phase);
+      if (currentStep?.kind !== 'endbook') {
+        throw new Error('엔딩 단계에서만 실행할 수 있습니다.');
+      }
 
       const variant =
         room.gameData.endbookVariant === 'matched'

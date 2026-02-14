@@ -1,9 +1,6 @@
 import { Server } from 'socket.io';
 import { MurderMysteryRoom } from '@/types/room';
-import {
-  MurderMysteryAnnouncement,
-  MurderMysteryPartScenario,
-} from '@/types/murderMystery';
+import { MurderMysteryAnnouncement } from '@/types/murderMystery';
 import { ClientToServerEvents, ServerToClientEvents } from '@/types/socket';
 import { buildMurderMysterySnapshot } from './murderMysteryStateMachine';
 
@@ -34,9 +31,12 @@ export const emitMurderMysteryPartRevealed = (
   room: MurderMysteryRoom,
   io: Server<ClientToServerEvents, ServerToClientEvents>,
   data: {
-    part: MurderMysteryPartScenario;
+    partId: string;
+    partName: string;
     byPlayerId: string;
     cardId: string;
+    revealedCount: number;
+    totalCount: number;
   }
 ) => {
   io.to(room.roomId).emit('mm_part_revealed', data);

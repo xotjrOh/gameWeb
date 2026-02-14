@@ -8,6 +8,7 @@ rules:
   investigationsPerRound: 1
   noEliminationDuringGame: true
   partsAutoReveal: true
+  partsPublicDetail: false
 
 intro:
   readAloud: |
@@ -24,6 +25,45 @@ intro:
 
     그런데 다음날 새벽, 너희는 난파선 잔해 쪽에서 바메쥬 거요의 시체를 발견한다.
     이제 너희는 범인을 찾아야 하고, 동시에 탈출 계획을 멈추면 안 된다.
+
+flow:
+  steps:
+    - id: INTRO
+      label: "오프닝"
+      kind: intro
+      durationSec: 180
+    - id: ROUND1_INVESTIGATE
+      label: "1라운드 조사"
+      kind: investigate
+      round: 1
+      durationSec: 420
+      description: "지도/인물 카드를 선택해 단서를 확보하세요. 같은 단서는 다시 나오지 않습니다."
+    - id: ROUND1_DISCUSS
+      label: "1라운드 토론"
+      kind: discuss
+      round: 1
+      durationSec: 600
+      description: "각자 확보한 단서와 알리바이를 공유해 의심 포인트를 좁혀주세요."
+    - id: ROUND2_INVESTIGATE
+      label: "2라운드 조사"
+      kind: investigate
+      round: 2
+      durationSec: 420
+      description: "추가 단서를 확보하고 최종 지목의 근거를 보강하세요."
+      enterAnnouncement: "밤이 지나고 아침이 밝았습니다. 흔적은 더 옅어졌지만, 거짓말은 더 선명해졌습니다."
+    - id: ROUND2_DISCUSS
+      label: "2라운드 토론"
+      kind: discuss
+      round: 2
+      durationSec: 600
+      description: "수사와 탈출 준비를 병행하며 최종 지목 근거를 정리해주세요."
+    - id: FINAL_VOTE
+      label: "최종 투표"
+      kind: final_vote
+      durationSec: 300
+    - id: ENDBOOK
+      label: "엔딩"
+      kind: endbook
 
 parts:
   - id: part_sail
@@ -89,6 +129,18 @@ roles:
         setDisplayName: "연새사리 누도만쳐사라"
 
 investigations:
+  deliveryMode: auto
+  depletionMode: global
+  layout:
+    sections:
+      - id: map_locations
+        title: "지도 - 장소"
+        targetTypes: [location]
+        order: 10
+      - id: map_characters
+        title: "인물 조사"
+        targetTypes: [character]
+        order: 20
   round1:
     - id: loc_ship
       name: "난파된 배"

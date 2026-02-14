@@ -1,18 +1,18 @@
 import { CommonResponse } from '@/types/socket';
 
-export type MurderMysteryPhase =
-  | 'LOBBY'
-  | 'INTRO'
-  | 'ROUND1_DISCUSS'
-  | 'ROUND1_INVESTIGATE'
-  | 'ROUND2_DISCUSS'
-  | 'ROUND2_INVESTIGATE'
-  | 'FINAL_VOTE'
-  | 'ENDBOOK';
+export type MurderMysteryPhase = string;
+export type MurderMysteryStepKind =
+  | 'intro'
+  | 'investigate'
+  | 'discuss'
+  | 'final_vote'
+  | 'endbook';
 
 export type MurderMysteryPlayerStatus = '감시' | '격리' | '결박';
 export type MurderMysteryDeliveryMode = 'auto' | 'manual';
-export type MurderMysteryInvestigationRound = 1 | 2;
+export type MurderMysteryClueDepletionMode = 'global' | 'per_target';
+export type MurderMysteryInvestigationRound = number;
+export type MurderMysteryTargetType = 'location' | 'character' | 'item';
 
 export interface MurderMysteryPlayersConfig {
   min: number;
@@ -70,6 +70,11 @@ export interface MurderMysteryInvestigationTargetScenario {
   id: string;
   label: string;
   description?: string;
+  targetType: MurderMysteryTargetType;
+  entityKey: string;
+  sectionId?: string;
+  order?: number;
+  icon?: string;
   cardPool: string[];
 }
 
@@ -78,11 +83,41 @@ export interface MurderMysteryInvestigationRoundScenario {
   targets: MurderMysteryInvestigationTargetScenario[];
 }
 
+export interface MurderMysteryInvestigationLayoutSection {
+  id: string;
+  title: string;
+  targetTypes?: MurderMysteryTargetType[];
+  targetIds?: string[];
+  order?: number;
+  icon?: string;
+}
+
+export interface MurderMysteryFlowStepScenario {
+  id: string;
+  label: string;
+  kind: MurderMysteryStepKind;
+  round?: number;
+  durationSec?: number;
+  description?: string;
+  enterAnnouncement?: string;
+}
+
+export interface MurderMysteryFlowScenario {
+  steps: MurderMysteryFlowStepScenario[];
+}
+
 export interface MurderMysteryScenario {
   id: string;
   title: string;
   roomDisplayName: string;
   players: MurderMysteryPlayersConfig;
+  rules: {
+    investigationsPerRound: number;
+    noEliminationDuringGame: boolean;
+    partsAutoReveal: boolean;
+    partsPublicDetail: boolean;
+  };
+  flow: MurderMysteryFlowScenario;
   intro: {
     readAloud: string;
   };
@@ -90,6 +125,10 @@ export interface MurderMysteryScenario {
   parts: MurderMysteryPartScenario[];
   investigations: {
     deliveryMode: MurderMysteryDeliveryMode;
+    depletionMode: MurderMysteryClueDepletionMode;
+    layout: {
+      sections: MurderMysteryInvestigationLayoutSection[];
+    };
     rounds: MurderMysteryInvestigationRoundScenario[];
   };
   cards: MurderMysteryCardScenario[];
@@ -109,10 +148,10 @@ export interface MurderMysteryPlayerData {
   statusText: MurderMysteryPlayerStatus;
 }
 
-export interface MurderMysteryInvestigationUsage {
-  1: boolean;
-  2: boolean;
-}
+export type MurderMysteryInvestigationUsage = Record<
+  MurderMysteryInvestigationRound,
+  boolean
+>;
 
 export interface MurderMysteryPendingInvestigation {
   requestId: string;
@@ -141,11 +180,15 @@ export interface MurderMysteryGameData {
   scenarioRoomDisplayName: string;
   hostParticipatesAsPlayer: boolean;
   phase: MurderMysteryPhase;
+  phaseStartedAt: number | null;
+  phaseDurationSec: number | null;
   roleByPlayerId: Record<string, string>;
   roleDisplayNameByPlayerId: Record<string, string>;
   investigationUsedByPlayerId: Record<string, MurderMysteryInvestigationUsage>;
   pendingInvestigations: MurderMysteryPendingInvestigation[];
   revealedCardsByPlayerId: Record<string, string[]>;
+  revealedCardIds: string[];
+  revealedCardIdsByTargetId: Record<string, string[]>;
   revealedPartIds: string[];
   voteByPlayerId: Record<string, string>;
   finalVoteResult: MurderMysteryFinalVoteResult | null;
@@ -196,9 +239,24 @@ export interface MurderMysteryHostControlsView {
 
 export interface MurderMysteryInvestigationView {
   round: MurderMysteryInvestigationRound | null;
-  deliveryMode: MurderMysteryDeliveryMode;
+  revealedCardIds: string[];
+  revealedCardIdsByTargetId: Record<string, string[]>;
+  layoutSections: MurderMysteryInvestigationLayoutSection[];
   used: boolean;
-  targets: MurderMysteryInvestigationTargetScenario[];
+  targets: Array<
+    MurderMysteryInvestigationTargetScenario & {
+      totalClues: number;
+      revealedClues: number;
+      remainingClues: number;
+      isExhausted: boolean;
+    }
+  >;
+}
+
+export interface MurderMysteryClueVaultCardView
+  extends MurderMysteryCardScenario {
+  sourceTargetIds: string[];
+  sourceTargetLabels: string[];
 }
 
 export interface MurderMysteryFinalVoteView {
@@ -225,6 +283,10 @@ export interface MurderMysteryStateSnapshot {
     intro: {
       readAloud: string;
     };
+    rules: {
+      partsPublicDetail: boolean;
+    };
+    flow: MurderMysteryFlowScenario;
     parts: MurderMysteryPartScenario[];
     investigations: MurderMysteryScenario['investigations'];
     finalVote: MurderMysteryScenario['finalVote'];
@@ -235,11 +297,23 @@ export interface MurderMysteryStateSnapshot {
   players: MurderMysteryPublicPlayerView[];
   roleSheet: MurderMysteryRoleSheetView | null;
   myCards: MurderMysteryCardScenario[];
+  clueVault: {
+    myClues: MurderMysteryClueVaultCardView[];
+    publicClues: MurderMysteryClueVaultCardView[];
+  };
   partsBoard: {
+    totalCount: number;
+    revealedCount: number;
     revealedPartIds: string[];
-    parts: MurderMysteryPartScenario[];
+    parts?: MurderMysteryPartScenario[];
   };
   announcements: MurderMysteryAnnouncement[];
+  phaseTimer: {
+    durationSec: number | null;
+    startedAt: number | null;
+    remainingSec: number | null;
+    isExpired: boolean;
+  };
   investigation: MurderMysteryInvestigationView;
   finalVote: MurderMysteryFinalVoteView;
   endbook: MurderMysteryEndbookView | null;
@@ -316,9 +390,12 @@ export interface MurderMysteryClientToServerEvents {
 export interface MurderMysteryServerToClientEvents {
   mm_state_snapshot: (data: MurderMysteryStateSnapshot) => void;
   mm_part_revealed: (data: {
-    part: MurderMysteryPartScenario;
+    partId: string;
+    partName: string;
     byPlayerId: string;
     cardId: string;
+    revealedCount: number;
+    totalCount: number;
   }) => void;
   mm_announcement: (data: MurderMysteryAnnouncement) => void;
 }

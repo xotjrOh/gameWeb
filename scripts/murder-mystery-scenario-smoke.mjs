@@ -14,7 +14,17 @@ const fail = (message) => {
 const isRecord = (value) =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
-const toRound = (value) => (value === 1 || value === 2 ? value : null);
+const toRound = (value) =>
+  Number.isInteger(value) && Number(value) >= 1 ? Number(value) : null;
+
+const toStepKind = (value) =>
+  value === 'intro' ||
+  value === 'investigate' ||
+  value === 'discuss' ||
+  value === 'final_vote' ||
+  value === 'endbook'
+    ? value
+    : null;
 
 const readScenarioFile = (filePath) => {
   const raw = fs.readFileSync(filePath, 'utf8');
@@ -36,7 +46,11 @@ const normalizePlayers = (players) => {
     };
   }
 
-  if (isRecord(players) && Number.isInteger(players.min) && Number.isInteger(players.max)) {
+  if (
+    isRecord(players) &&
+    Number.isInteger(players.min) &&
+    Number.isInteger(players.max)
+  ) {
     return {
       min: players.min,
       max: players.max,
@@ -51,47 +65,61 @@ const normalizeInvestigations = (investigations) => {
     return [];
   }
 
-  if (Array.isArray(investigations.rounds) && investigations.rounds.length > 0) {
-    return investigations.rounds.map((round) => ({
-      round: round.round,
-      targets: Array.isArray(round.targets)
-        ? round.targets.map((target) => ({
-            id: target.id,
-            cardPool: Array.isArray(target.cardPool)
-              ? target.cardPool
-              : Array.isArray(target.cards)
-                ? target.cards
-                : [],
-          }))
-        : [],
-    }));
+  if (
+    Array.isArray(investigations.rounds) &&
+    investigations.rounds.length > 0
+  ) {
+    return investigations.rounds
+      .map((round) => ({
+        round: toRound(round.round),
+        targets: Array.isArray(round.targets)
+          ? round.targets.map((target) => ({
+              id: target.id,
+              cardPool: Array.isArray(target.cardPool)
+                ? target.cardPool
+                : Array.isArray(target.cards)
+                  ? target.cards
+                  : [],
+            }))
+          : [],
+      }))
+      .filter((round) => round.round !== null);
   }
 
-  const round1Targets = Array.isArray(investigations.round1) ? investigations.round1 : [];
-  const round2Targets = Array.isArray(investigations.round2) ? investigations.round2 : [];
+  return Object.entries(investigations)
+    .filter(([key, value]) => /^round\d+$/.test(key) && Array.isArray(value))
+    .map(([key, value]) => ({
+      round: toRound(Number(key.replace('round', ''))),
+      targets: value.map((target) => ({
+        id: target.id,
+        cardPool: Array.isArray(target.cardPool)
+          ? target.cardPool
+          : Array.isArray(target.cards)
+            ? target.cards
+            : [],
+      })),
+    }))
+    .filter((round) => round.round !== null)
+    .sort((a, b) => a.round - b.round);
+};
+
+const normalizeFlowSteps = (scenario, rounds) => {
+  if (
+    isRecord(scenario.flow) &&
+    Array.isArray(scenario.flow.steps) &&
+    scenario.flow.steps.length > 0
+  ) {
+    return scenario.flow.steps;
+  }
+
   return [
-    {
-      round: 1,
-      targets: round1Targets.map((target) => ({
-        id: target.id,
-        cardPool: Array.isArray(target.cardPool)
-          ? target.cardPool
-          : Array.isArray(target.cards)
-            ? target.cards
-            : [],
-      })),
-    },
-    {
-      round: 2,
-      targets: round2Targets.map((target) => ({
-        id: target.id,
-        cardPool: Array.isArray(target.cardPool)
-          ? target.cardPool
-          : Array.isArray(target.cards)
-            ? target.cards
-            : [],
-      })),
-    },
+    { id: 'INTRO', kind: 'intro' },
+    ...rounds.flatMap((round) => [
+      { id: `ROUND${round}_INVESTIGATE`, kind: 'investigate', round },
+      { id: `ROUND${round}_DISCUSS`, kind: 'discuss', round },
+    ]),
+    { id: 'FINAL_VOTE', kind: 'final_vote' },
+    { id: 'ENDBOOK', kind: 'endbook' },
   ];
 };
 
@@ -103,6 +131,8 @@ const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
 if (!Array.isArray(registry.scenarios) || registry.scenarios.length === 0) {
   fail('registry.scenarios must be a non-empty array');
 }
+
+let validCount = 0;
 
 for (const entry of registry.scenarios) {
   const filePath = path.join(scenarioDir, entry.file);
@@ -121,8 +151,8 @@ for (const entry of registry.scenarios) {
   if (!scenario.intro?.readAloud) {
     fail(`${entry.file}: intro.readAloud is required`);
   }
-  if (!Array.isArray(scenario.parts) || scenario.parts.length !== 5) {
-    fail(`${entry.file}: parts must contain exactly 5 entries`);
+  if (!Array.isArray(scenario.parts) || scenario.parts.length === 0) {
+    fail(`${entry.file}: parts must be non-empty`);
   }
   if (!Array.isArray(scenario.roles) || scenario.roles.length === 0) {
     fail(`${entry.file}: roles must be non-empty`);
@@ -132,15 +162,25 @@ for (const entry of registry.scenarios) {
   }
 
   const rounds = normalizeInvestigations(scenario.investigations);
-  const roundSet = new Set(rounds.map((round) => toRound(round.round)));
-  if (!roundSet.has(1) || !roundSet.has(2)) {
-    fail(`${entry.file}: investigation rounds must include 1 and 2`);
+  if (rounds.length === 0) {
+    fail(`${entry.file}: investigations must include at least one round`);
   }
+  const roundValues = rounds.map((round) => round.round);
 
   const cardIds = new Set(scenario.cards.map((card) => card.id));
   for (const round of rounds) {
-    for (const target of round.targets ?? []) {
-      for (const cardId of target.cardPool ?? []) {
+    if (!Array.isArray(round.targets) || round.targets.length === 0) {
+      fail(`${entry.file}: round ${round.round} must include targets`);
+    }
+
+    for (const target of round.targets) {
+      if (!target.id) {
+        fail(`${entry.file}: target.id is required`);
+      }
+      if (!Array.isArray(target.cardPool) || target.cardPool.length === 0) {
+        fail(`${entry.file}: target(${target.id}) cardPool/cards is required`);
+      }
+      for (const cardId of target.cardPool) {
         if (!cardIds.has(cardId)) {
           fail(`${entry.file}: unknown card in cardPool (${cardId})`);
         }
@@ -148,16 +188,55 @@ for (const entry of registry.scenarios) {
     }
   }
 
-  const hasGuideRevealRule = scenario.roles.some((role) =>
-    (role.dynamicDisplayNameRules ?? []).some((rule) => {
-      if (rule.trigger?.type === 'cardRevealed' && rule.trigger?.cardId === 'card_dog_tag') {
-        return true;
+  const flowSteps = normalizeFlowSteps(scenario, roundValues);
+  const flowKinds = new Set();
+  const investigateRounds = new Set();
+
+  for (const step of flowSteps) {
+    const kind = toStepKind(step.kind);
+    if (!step.id || !kind) {
+      fail(`${entry.file}: flow.steps id/kind is invalid`);
+    }
+    flowKinds.add(kind);
+
+    if (kind === 'investigate' || kind === 'discuss') {
+      const round = toRound(step.round);
+      if (!round) {
+        fail(`${entry.file}: flow step(${step.id}) round is invalid`);
       }
-      return rule.when?.onCardRevealed === 'card_dog_tag';
-    })
-  );
-  if (!hasGuideRevealRule) {
-    fail(`${entry.file}: missing reusable guide reveal trigger(card_dog_tag)`);
+      if (!roundValues.includes(round)) {
+        fail(
+          `${entry.file}: flow step(${step.id}) references missing round ${round}`
+        );
+      }
+      if (kind === 'investigate') {
+        investigateRounds.add(round);
+      }
+    }
+
+    if (step.durationSec !== undefined) {
+      if (!Number.isInteger(step.durationSec) || step.durationSec <= 0) {
+        fail(
+          `${entry.file}: flow step(${step.id}) durationSec must be positive integer`
+        );
+      }
+    }
+  }
+
+  if (
+    !flowKinds.has('intro') ||
+    !flowKinds.has('final_vote') ||
+    !flowKinds.has('endbook')
+  ) {
+    fail(`${entry.file}: flow must include intro/final_vote/endbook`);
+  }
+
+  for (const round of roundValues) {
+    if (!investigateRounds.has(round)) {
+      fail(
+        `${entry.file}: round ${round} is unreachable from flow(investigate)`
+      );
+    }
   }
 
   const correctRoleId =
@@ -169,10 +248,14 @@ for (const entry of registry.scenarios) {
   if (!scenario.endbook?.common || !scenario.endbook?.closingLine) {
     fail(`${entry.file}: endbook.common/closingLine are required`);
   }
+
+  validCount += 1;
 }
 
 if (!registry.defaultScenarioId) {
   fail('defaultScenarioId is required');
 }
 
-console.log('[murder-mystery-smoke] all checks passed');
+console.log(
+  `[murder-mystery-smoke] all checks passed (${validCount} scenario(s))`
+);

@@ -1,0 +1,98 @@
+id: mm_example_v1
+type: murder_mystery
+title: "시나리오 제목"
+roomDisplayName: "표시 이름"
+players:
+  min: 5
+  max: 5
+
+rules:
+  investigationsPerRound: 1
+  noEliminationDuringGame: true
+  partsAutoReveal: true
+  partsPublicDetail: false
+
+intro:
+  readAloud: |
+    오프닝 공개 지문
+
+flow:
+  steps:
+    - id: INTRO
+      label: "오프닝"
+      kind: intro
+      durationSec: 180
+    - id: ROUND1_INVESTIGATE
+      label: "1라운드 조사"
+      kind: investigate
+      round: 1
+      durationSec: 420
+      description: "조사 안내"
+    - id: ROUND1_DISCUSS
+      label: "1라운드 토론"
+      kind: discuss
+      round: 1
+      durationSec: 600
+      description: "토론 안내"
+    - id: FINAL_VOTE
+      label: "최종 투표"
+      kind: final_vote
+      durationSec: 300
+    - id: ENDBOOK
+      label: "엔딩"
+      kind: endbook
+
+parts:
+  - id: part_a
+    name: "파츠 이름"
+    source: "내부용 출처"
+    note: "내부용 메모"
+
+roles:
+  - id: role_a
+    displayName: "역할 이름"
+    publicText: |
+      공개 시트
+    secretText: |
+      비밀 시트
+
+investigations:
+  deliveryMode: auto
+  depletionMode: global
+  layout:
+    sections:
+      - id: map_locations
+        title: "지도 - 장소"
+        targetTypes: [location]
+        order: 10
+      - id: map_characters
+        title: "인물 조사"
+        targetTypes: [character]
+        order: 20
+  rounds:
+    - round: 1
+      targets:
+        - id: loc_a
+          label: "장소 A"
+          targetType: location
+          entityKey: location_a
+          sectionId: map_locations
+          cardPool: [card_a]
+
+cards:
+  - id: card_a
+    title: "카드 제목"
+    text: "카드 본문"
+
+finalVote:
+  question: "범인은 누구인가?"
+  correctRoleId: role_a
+
+endbook:
+  common: |
+    공통 엔딩
+  variantMatched: |
+    정답 분기
+  variantNotMatched: |
+    오답 분기
+  closingLine: "《엔딩 타이틀》"

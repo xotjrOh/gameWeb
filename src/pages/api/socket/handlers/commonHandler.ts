@@ -19,6 +19,8 @@ import {
 import { ShufflePlayerData } from '@/types/shuffle';
 import { createMurderMysteryGameData } from '../services/murderMysteryStateMachine';
 import { getMurderMysteryScenario } from '../services/murderMysteryScenarioService';
+import { emitMurderMysterySnapshots } from '../services/murderMysteryBroadcast';
+import { toMurderMysteryRoom } from '../services/murderMysteryValidation';
 import {
   validateRoomName,
   validateGameType,
@@ -312,6 +314,9 @@ const commonHandler = (
 
         socket.join(roomId);
         io.emit('room-updated', rooms);
+        if (room.gameType === 'murder_mystery') {
+          emitMurderMysterySnapshots(toMurderMysteryRoom(room), io);
+        }
         const successResponse: CommonResponse = { success: true };
         if (DEBUG) {
           console.log(
