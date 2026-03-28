@@ -62,6 +62,7 @@ const GUIDE_REVEAL_LOG_ID = 'guide_name_revealed';
 const GUIDE_REVEAL_LOG_TEXT =
   '가이드의 본명이 공개되었습니다: 연새사리 누도만쳐사라';
 const TICKING_THRESHOLD_SEC = 10;
+const EVIDENCE_BOARD_LABEL = '핵심 증거';
 
 const formatSeconds = (seconds: number) => {
   const safe = Math.max(seconds, 0);
@@ -992,8 +993,8 @@ const PartsBoardPanel = ({
   >['partsBoard'];
 }) => (
   <PanelCard
-    title="파츠 보드"
-    subtitle="탈출 재료는 수량 중심으로만 공개됩니다."
+    title={`${EVIDENCE_BOARD_LABEL} 보드`}
+    subtitle="핵심 증거는 공개 수량 중심으로 집계됩니다."
   >
     <Stack spacing={1}>
       <Card variant="outlined" sx={{ borderRadius: 2.5 }}>
@@ -1002,7 +1003,9 @@ const PartsBoardPanel = ({
             <Typography fontWeight={800} fontSize={20}>
               {partsBoard.revealedCount} / {partsBoard.totalCount}
             </Typography>
-            <Typography color="text.secondary">확보한 파츠 수량</Typography>
+            <Typography color="text.secondary">
+              확보한 핵심 증거 수량
+            </Typography>
             <Box
               sx={{
                 width: '100%',
@@ -1031,7 +1034,7 @@ const PartsBoardPanel = ({
       </Card>
       {partsBoard.parts && partsBoard.parts.length > 0 ? (
         <Stack spacing={0.8}>
-          <Alert severity="info">진행자 전용 파츠 상세</Alert>
+          <Alert severity="info">진행자 전용 증거 상세</Alert>
           <Stack direction="row" spacing={0.8} flexWrap="wrap">
             {partsBoard.parts.map((part) => (
               <Chip
@@ -1360,7 +1363,7 @@ export default function MurderMysteryGameScreen({
     }
     const at = Date.now();
     enqueueSnackbar(
-      `탈출 재료가 공개되었습니다. (${latestPartReveal.revealedCount}/${latestPartReveal.totalCount})`,
+      `${EVIDENCE_BOARD_LABEL}가 공개되었습니다. (${latestPartReveal.revealedCount}/${latestPartReveal.totalCount})`,
       {
         variant: 'info',
       }
@@ -1368,7 +1371,7 @@ export default function MurderMysteryGameScreen({
     appendTimelineLog({
       id: `part:${latestPartReveal.cardId}:${latestPartReveal.byPlayerId}:${latestPartReveal.partId}:${at}`,
       type: 'PART',
-      text: `탈출 재료 공개 진행: ${latestPartReveal.revealedCount}/${latestPartReveal.totalCount}`,
+      text: `${EVIDENCE_BOARD_LABEL} 공개 진행: ${latestPartReveal.revealedCount}/${latestPartReveal.totalCount}`,
       at,
     });
     if (latestPartReveal.cardId === GUIDE_REVEAL_CARD_ID) {
@@ -1994,7 +1997,7 @@ export default function MurderMysteryGameScreen({
                         tab === 'SHEET'
                           ? '내 시트'
                           : tab === 'PARTS'
-                            ? '파츠'
+                            ? '증거'
                             : '로그'
                       }
                     />

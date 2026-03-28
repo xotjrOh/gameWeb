@@ -23,6 +23,7 @@
 - `docs/gpt-project/05-env-and-ops.md`
 - `docs/gpt-project/06-prompting-codex.md`
 - `docs/gpt-project/07-recommended-source-files.md`
+- `docs/gpt-project/08-murder-mystery-implementation.md`
 
 이 패킷이 일부러 덜 다루는 영역도 있다.
 

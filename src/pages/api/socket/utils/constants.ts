@@ -124,7 +124,7 @@ export const DEFAULT_GAME_DATA: {
   murder_mystery: {
     scenarioId: '',
     scenarioTitle: '',
-    scenarioRoomDisplayName: '반장을 죽였다',
+    scenarioRoomDisplayName: '머더미스터리 시나리오',
     hostParticipatesAsPlayer: false,
     phase: 'LOBBY',
     phaseStartedAt: null,

@@ -218,7 +218,7 @@ export default function GameRooms({ session }: GameRoomsProps) {
       return gameTypeMap[room.gameType];
     }
     const scenarioLabel =
-      room.gameData.scenarioRoomDisplayName || '반장을 죽였다';
+      room.gameData.scenarioRoomDisplayName || '머더미스터리 시나리오';
     return `${gameTypeMap.murder_mystery} · ${scenarioLabel}`;
   };
 

@@ -1,9 +1,9 @@
 {
-  "defaultScenarioId": "banjang-killer",
+  "defaultScenarioId": "rabbit-turtle-finish-line-night",
   "scenarios": [
     {
-      "id": "banjang-killer",
-      "file": "banjang-killer.yaml"
+      "id": "rabbit-turtle-finish-line-night",
+      "file": "rabbit-turtle-finish-line-night.yaml"
     }
   ]
 }

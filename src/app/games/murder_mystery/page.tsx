@@ -28,26 +28,27 @@ export default function MurderMysteryRulePage() {
         <Container maxWidth="md">
           <Paper sx={{ p: 3, borderRadius: 4 }}>
             <Typography variant="h4" fontWeight={700} gutterBottom>
-              🕵️ 반장을 죽였다 룰 요약
+              🕵️ 토끼와 거북이, 결승선 다음의 밤
             </Typography>
             <Stack spacing={2}>
               <Typography>
-                머더미스터리는 시나리오 기반 추리 게임입니다. 역할/단서/조사
-                대상/엔딩 텍스트가 모두 시나리오 데이터에서 로드됩니다.
+                머더미스터리는 시나리오 기반 추리 게임입니다. 현재 등록된
+                시나리오는 용궁섬 의료동에서 벌어진 4인 심리 스릴러,{' '}
+                <strong>토끼와 거북이, 결승선 다음의 밤</strong>
+                입니다.
               </Typography>
               <Typography>
-                진행 단계는 INTRO, 2회 토론/조사, FINAL VOTE, ENDBOOK 순으로
-                고정되며, 각 조사 라운드에서 플레이어는 1회만 조사할 수
+                진행 단계는 오프닝, 2회 조사/토론, 최종 투표, 엔딩 순으로
+                이어지며, 각 조사 라운드에서 플레이어는 1회만 조사할 수
                 있습니다.
               </Typography>
               <Typography>
-                뗏목 파츠는 단서 카드 효과로 획득되며 획득 즉시 전체에게
-                공개되어 파츠 보드에 누적됩니다.
+                핵심 문서와 공개 단서는 조사 카드 효과로 누적되며, 사건의 동선과
+                은폐 정황을 좁히는 데 사용됩니다.
               </Typography>
               <Divider />
               <Typography variant="body2" color="textSecondary">
-                GM은 오프닝/엔딩북 낭독문 송출과 조사 카드 배포(자동/수동)를
-                제어할 수 있습니다.
+                GM은 오프닝/엔딩 낭독문 송출과 단계 진행을 제어할 수 있습니다.
               </Typography>
             </Stack>
           </Paper>
