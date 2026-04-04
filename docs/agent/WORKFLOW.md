@@ -5,6 +5,7 @@
 ## 1. Understand
 
 - 사용자 목표, 수정 범위, 제약을 2~3문장으로 정리한다.
+- [TASK_STARTUP_PLAYBOOK.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/TASK_STARTUP_PLAYBOOK.md)에서 가장 가까운 작업 프로필을 먼저 고른다.
 - 어떤 계층이 바뀌는지 먼저 결정한다.
   - `src/app`: 화면, 라우팅, App Router
   - `src/components`: 재사용 UI와 화면 조각
@@ -17,6 +18,7 @@
 - 편집 전 아래 둘 다 반드시 읽는다.
   - 직접 수정할 파일
   - 같은 폴더 또는 같은 기능의 인접 파일 1개 이상
+- 실시간 입장/재입장/방 종료가 섞이면 [contracts/ROOM_SOCKET_CONTRACT.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/contracts/ROOM_SOCKET_CONTRACT.md)를 같이 읽는다.
 - 확인할 항목
   - import 정렬과 alias 사용 방식
   - 타입 선언 위치
@@ -33,6 +35,7 @@
 ## 4. Verify Before Final
 
 - 변경 범위에 맞는 명령을 [VALIDATION_MATRIX.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/VALIDATION_MATRIX.md)에서 고른다.
+- 기본 빠른 검증은 `yarn check:fast`, 소켓 흐름은 `yarn check:socket`, 머더미스터리는 `yarn check:murder`, 강한 전체 검증은 `yarn check:full`을 우선 고려한다.
 - 실행 결과 오류가 나오면 먼저 수정하고 다시 실행한다.
 - 검증이 길더라도 가능한 한 실제 명령을 우선한다.
 

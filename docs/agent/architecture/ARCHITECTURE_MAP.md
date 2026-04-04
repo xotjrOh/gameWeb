@@ -10,6 +10,7 @@
 - `src/pages/api`
   - Socket.IO 서버 엔드포인트와 랭킹 API가 있다.
   - 실시간 서버는 [src/pages/api/socket/io.ts](/c:/Users/xotjr/Desktop/react/next-game-web/src/pages/api/socket/io.ts)에 붙는다.
+  - 현재 구조상 `src/pages/api/socket/handlers|services|state|utils` 아래 파일도 build route tree에 잡히므로 "사설 모듈"이라고 단정하지 않는다.
 - `src/components`
   - 공용 UI와 게임별 컴포넌트가 있다.
   - 전역 provider는 `src/components/provider`에 모여 있다.
@@ -28,6 +29,7 @@
 - 전역 provider 체인은 [src/app/layout.tsx](/c:/Users/xotjr/Desktop/react/next-game-web/src/app/layout.tsx) 기준으로 유지한다.
 - 게임 ID의 진실원은 [src/lib/gameCatalog.ts](/c:/Users/xotjr/Desktop/react/next-game-web/src/lib/gameCatalog.ts)다.
 - Socket 이벤트 타입과 ACK 계약은 [src/types/socket.d.ts](/c:/Users/xotjr/Desktop/react/next-game-web/src/types/socket.d.ts)를 먼저 본다.
+- 실시간 입장/재입장 작업은 [docs/agent/contracts/ROOM_SOCKET_CONTRACT.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/contracts/ROOM_SOCKET_CONTRACT.md)까지 같이 봐야 흐름이 닫힌다.
 
 ## Where To Copy Patterns From
 
@@ -38,6 +40,7 @@
   - `src/app/<game>/[roomId]/host/page.tsx`
 - 로비 및 방 입장 흐름
   - [src/components/GameRooms.tsx](/c:/Users/xotjr/Desktop/react/next-game-web/src/components/GameRooms.tsx)
+  - [src/components/RoomModal.tsx](/c:/Users/xotjr/Desktop/react/next-game-web/src/components/RoomModal.tsx)
   - [src/components/provider/SocketProvider.tsx](/c:/Users/xotjr/Desktop/react/next-game-web/src/components/provider/SocketProvider.tsx)
 - 실시간 서버 처리
   - [src/pages/api/socket/io.ts](/c:/Users/xotjr/Desktop/react/next-game-web/src/pages/api/socket/io.ts)

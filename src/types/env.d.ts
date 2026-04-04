@@ -1,5 +1,7 @@
 namespace NodeJS {
   interface ProcessEnv {
+    APP_VERSION?: string;
+    SERVER_VERSION?: string;
     KAKAO_CLIENT_ID: string;
     KAKAO_CLIENT_SECRET: string;
     GOOGLE_CLIENT_ID: string;
@@ -7,6 +9,20 @@ namespace NodeJS {
     NEXTAUTH_SECRET: string;
     NEXTAUTH_URL: string;
     NEXT_PUBLIC_SITE_URL: string;
+    NEXT_PUBLIC_APP_VERSION?: string;
+    NEXT_PUBLIC_SITE_VERSION?: string;
+    NEXT_PUBLIC_SOCKET_DEBUG?: '0' | '1';
+    NEXT_PUBLIC_SOCKET_SINGLETON_FIX?: '0' | '1';
+    NEXT_PUBLIC_SOCKET_VERSION_ENFORCE?: '0' | '1';
+    NEXT_PUBLIC_SOCKET_ACK_DEBUG?: '0' | '1';
+    NEXT_PUBLIC_VERSION_WATCH_DEBUG?: '0' | '1';
+    NEXT_PUBLIC_VERSION_WATCH_NOOP?: '0' | '1';
+    NEXT_PUBLIC_VERSION_WATCH_FORCE_REFRESH?: '0' | '1';
+    NEXT_PUBLIC_VERSION_WATCH_INTERVAL_MS?: string;
+    SOCKET_DEBUG?: '0' | '1';
+    SOCKET_SINGLETON_FIX?: '0' | '1';
+    SOCKET_ENFORCE_VERSION?: '0' | '1';
+    ROOM_STATE_PERSIST?: '0' | '1';
     OPENDICT_API_KEY?: string;
     DICT_API_KEY?: string;
   }

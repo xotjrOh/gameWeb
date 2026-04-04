@@ -6,6 +6,9 @@
 
 - 항상 먼저 [docs/agent/INDEX.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/INDEX.md)를 읽고 현재 작업에 필요한 문서를 고른다.
 - 구조 파악이 필요하면 [docs/agent/architecture/ARCHITECTURE_MAP.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/architecture/ARCHITECTURE_MAP.md)를 본다.
+- 작업 종류별로 무엇을 먼저 읽을지 빠르게 고르려면 [docs/agent/TASK_STARTUP_PLAYBOOK.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/TASK_STARTUP_PLAYBOOK.md)를 본다.
+- 실시간 입장/재입장/방 종료 흐름을 건드릴 때는 [docs/agent/contracts/ROOM_SOCKET_CONTRACT.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/contracts/ROOM_SOCKET_CONTRACT.md)를 먼저 확인한다.
+- 디버그 플래그나 버전/소켓 보존 동작을 건드릴 때는 [docs/agent/ENV_FLAGS.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/ENV_FLAGS.md)를 본다.
 - 사용자가 무엇을 주면 좋은지 확인하거나 프롬프트 템플릿이 필요하면 [docs/agent/REQUESTED_INPUTS.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/REQUESTED_INPUTS.md)를 본다.
 - 작업 절차와 종료 기준은 [docs/agent/WORKFLOW.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/WORKFLOW.md), 검증 명령 선택은 [docs/agent/VALIDATION_MATRIX.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/VALIDATION_MATRIX.md)를 따른다.
 
@@ -14,6 +17,7 @@
 - 수정 전에 반드시 관련 소스와 인접 구현을 읽고 기존 패턴을 맞춘다.
 - 새 추상화, 새 폴더 규칙, 새 이벤트 계약은 기존 패턴으로 해결이 안 될 때만 도입한다.
 - 라우트, `gameId`, Socket.IO ACK 시그니처, `sessionId` 기반 흐름처럼 이미 문서화된 계약은 함부로 바꾸지 않는다.
+- `src/pages/api/socket` 아래 구현 파일은 현재 빌드에서 route tree에도 노출되므로, 같은 구조를 무심코 늘리지 않는다.
 - 가능한 한 실제 검증 명령을 실행하고, 실패하면 원인을 수정한 뒤 종료한다.
 - 검증을 끝내지 못했거나 기존 실패로 막히면 마지막 답변에 정확한 명령과 막힌 이유를 남긴다.
 
@@ -27,3 +31,4 @@
 
 - 안정적인 프로젝트 구조 문서는 [docs/gpt-project/00-index.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/gpt-project/00-index.md)부터 이어서 참고한다.
 - 현재 진행 중인 소켓 디버그 컨텍스트는 [docs/agent/context/SOCKET_DEBUG_STATUS.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/context/SOCKET_DEBUG_STATUS.md)에 보존한다.
+- 실시간 흐름 smoke는 루트 스크립트 `yarn smoke:socket`으로 확인할 수 있다.
