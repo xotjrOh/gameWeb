@@ -329,6 +329,311 @@ const cleanupRoom = async ({ baseUrl, roomId, hostSessionId, hostSockets }) => {
   }
 };
 
+const requestMurderSnapshot = async (socket, roomId, sessionId) => {
+  const snapshotPromise = waitForEvent(socket, 'mm_state_snapshot');
+  const response = await emitAck(socket, 'mm_get_state', {
+    roomId,
+    sessionId,
+  });
+  assertCondition(response?.success, 'mm_get_state failed', response);
+  return snapshotPromise;
+};
+
+const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
+  const scenarioId = 'rabbit-turtle-finish-line-night';
+  const roomName = makeId('mm-room');
+  const maxPlayers = 4;
+
+  const hostSessionId = makeId('mm-host');
+  const hostName = makeNickname('mhost');
+  const playerInfos = Array.from({ length: 3 }, (_, index) => ({
+    sessionId: makeId(`mm-player-${index}`),
+    userName: makeNickname(`mm${index}`),
+  }));
+
+  let roomId = '';
+  let hostSocket = null;
+  const playerSockets = new Map();
+
+  const disconnectAll = () => {
+    for (const socket of playerSockets.values()) {
+      disconnectSocket(socket);
+    }
+    playerSockets.clear();
+    disconnectSocket(hostSocket);
+  };
+
+  try {
+    hostSocket = await connectSocket(baseUrl, 'mm-host');
+    await primeSocket(hostSocket);
+
+    const createResponse = await emitAck(hostSocket, 'create-room', {
+      roomName,
+      userName: hostName,
+      gameType: 'murder_mystery',
+      sessionId: hostSessionId,
+      maxPlayers,
+      scenarioId,
+      hostParticipatesAsPlayer: true,
+    });
+    assertCondition(
+      createResponse?.success && createResponse?.roomId,
+      'murder create-room failed',
+      createResponse
+    );
+    roomId = String(createResponse.roomId);
+
+    for (const [index, playerInfo] of playerInfos.entries()) {
+      const socket = await connectSocket(baseUrl, `mm-player-${index}`);
+      await primeSocket(socket);
+      const checkJoinResponse = await emitAck(socket, 'check-can-join-room', {
+        roomId,
+        sessionId: playerInfo.sessionId,
+      });
+      assertCondition(
+        checkJoinResponse?.success,
+        'murder check-can-join-room failed',
+        checkJoinResponse
+      );
+      const joinResponse = await emitAck(socket, 'join-room', {
+        roomId,
+        userName: playerInfo.userName,
+        sessionId: playerInfo.sessionId,
+      });
+      assertCondition(
+        joinResponse?.success,
+        'murder join-room failed',
+        joinResponse
+      );
+      playerSockets.set(playerInfo.sessionId, socket);
+    }
+
+    const startResponse = await emitAck(hostSocket, 'mm_host_start_game', {
+      roomId,
+      sessionId: hostSessionId,
+    });
+    assertCondition(
+      startResponse?.success,
+      'mm_host_start_game failed',
+      startResponse
+    );
+
+    const moveToInvestigateResponse = await emitAck(
+      hostSocket,
+      'mm_host_next_phase',
+      {
+        roomId,
+        sessionId: hostSessionId,
+      }
+    );
+    assertCondition(
+      moveToInvestigateResponse?.success,
+      'mm_host_next_phase failed',
+      moveToInvestigateResponse
+    );
+
+    const sessionOrder = [
+      hostSessionId,
+      ...playerInfos.map((player) => player.sessionId),
+    ];
+    const playerSessionIds = playerInfos.map((player) => player.sessionId);
+    const socketsBySession = new Map([
+      [hostSessionId, hostSocket],
+      ...playerSockets.entries(),
+    ]);
+    const snapshotEntries = await Promise.all(
+      sessionOrder.map(async (sessionId) => [
+        sessionId,
+        await requestMurderSnapshot(
+          socketsBySession.get(sessionId),
+          roomId,
+          sessionId
+        ),
+      ])
+    );
+    let snapshotsBySession = new Map(snapshotEntries);
+
+    const currentPlayerId =
+      snapshotsBySession.get(hostSessionId)?.investigation.turn
+        ?.currentPlayerId ?? null;
+    assertCondition(
+      Boolean(currentPlayerId),
+      'current investigation player missing'
+    );
+
+    const nonCurrentPlayerId = playerSessionIds.find(
+      (sessionId) => sessionId !== currentPlayerId
+    );
+    assertCondition(
+      Boolean(nonCurrentPlayerId),
+      'non-current non-host investigation player missing'
+    );
+
+    const currentPlayerSocket = socketsBySession.get(currentPlayerId);
+    let nonCurrentPlayerSocket = socketsBySession.get(nonCurrentPlayerId);
+    const currentPlayerSnapshot = snapshotsBySession.get(currentPlayerId);
+    const backId =
+      currentPlayerSnapshot?.investigation.rounds
+        ?.find((round) => round.round === 1)
+        ?.targets.find((target) => target.availableBacks.length > 0)
+        ?.availableBacks[0]?.backId ?? null;
+    assertCondition(Boolean(backId), 'map-mode backId missing from snapshot');
+
+    const reserveResponse = await emitAck(
+      nonCurrentPlayerSocket,
+      'mm_set_investigation_reservation',
+      {
+        roomId,
+        sessionId: nonCurrentPlayerId,
+        backId,
+      }
+    );
+    assertCondition(
+      reserveResponse?.success,
+      'mm_set_investigation_reservation failed',
+      reserveResponse
+    );
+
+    let nonCurrentSnapshot = await requestMurderSnapshot(
+      nonCurrentPlayerSocket,
+      roomId,
+      nonCurrentPlayerId
+    );
+    assertCondition(
+      nonCurrentSnapshot.investigation.turn?.myReservation?.backId === backId,
+      'reservation was not persisted for reserving player'
+    );
+
+    disconnectSocket(nonCurrentPlayerSocket);
+    playerSockets.delete(nonCurrentPlayerId);
+
+    nonCurrentPlayerSocket = await connectSocket(baseUrl, 'mm-player-reentry');
+    await primeSocket(nonCurrentPlayerSocket);
+    const reEntryResponse = await emitAck(
+      nonCurrentPlayerSocket,
+      'check-can-join-room',
+      {
+        roomId,
+        sessionId: nonCurrentPlayerId,
+      }
+    );
+    assertCondition(
+      reEntryResponse?.success && reEntryResponse?.reEnter === true,
+      'murder player re-entry failed',
+      reEntryResponse
+    );
+    playerSockets.set(nonCurrentPlayerId, nonCurrentPlayerSocket);
+    socketsBySession.set(nonCurrentPlayerId, nonCurrentPlayerSocket);
+
+    nonCurrentSnapshot = await requestMurderSnapshot(
+      nonCurrentPlayerSocket,
+      roomId,
+      nonCurrentPlayerId
+    );
+    assertCondition(
+      nonCurrentSnapshot.investigation.turn?.myReservation?.backId === backId,
+      'reservation was not restored after re-entry'
+    );
+
+    const illegalPickResponse = await emitAck(
+      nonCurrentPlayerSocket,
+      'mm_submit_investigation',
+      {
+        roomId,
+        sessionId: nonCurrentPlayerId,
+        backId,
+      }
+    );
+    assertCondition(
+      illegalPickResponse?.success === false,
+      'non-current player should not be able to pick a card'
+    );
+
+    const pickResponse = await emitAck(
+      currentPlayerSocket,
+      'mm_submit_investigation',
+      {
+        roomId,
+        sessionId: currentPlayerId,
+        backId,
+      }
+    );
+    assertCondition(
+      pickResponse?.success,
+      'current player pick failed',
+      pickResponse
+    );
+
+    const refreshedSnapshots = await Promise.all(
+      sessionOrder.map(async (sessionId) => [
+        sessionId,
+        await requestMurderSnapshot(
+          socketsBySession.get(sessionId),
+          roomId,
+          sessionId
+        ),
+      ])
+    );
+    snapshotsBySession = new Map(refreshedSnapshots);
+
+    const refreshedCurrentSnapshot = snapshotsBySession.get(currentPlayerId);
+    const refreshedReservedSnapshot =
+      snapshotsBySession.get(nonCurrentPlayerId);
+    assertCondition(
+      refreshedCurrentSnapshot?.clueVault?.myClues?.length === 1,
+      'picked card did not reach the current player clue vault'
+    );
+    assertCondition(
+      !refreshedReservedSnapshot?.investigation.turn?.myReservation,
+      'reservation should clear after another player takes the card'
+    );
+    assertCondition(
+      refreshedReservedSnapshot?.investigation.rounds
+        ?.flatMap((round) => round.targets)
+        ?.every((target) =>
+          target.availableBacks.every((entry) => entry.backId !== backId)
+        ),
+      'revealed backId should disappear from later snapshots'
+    );
+    assertCondition(
+      refreshedCurrentSnapshot?.investigation.turn?.currentPlayerId &&
+        refreshedCurrentSnapshot.investigation.turn.currentPlayerId !==
+          currentPlayerId,
+      'investigation turn did not advance after pick'
+    );
+
+    const resetResponse = await emitAck(
+      socketsBySession.get(hostSessionId),
+      'mm_host_reset_game',
+      {
+        roomId,
+        sessionId: hostSessionId,
+      }
+    );
+    assertCondition(
+      resetResponse?.success,
+      'mm_host_reset_game failed',
+      resetResponse
+    );
+
+    const closeResponse = await emitAck(
+      socketsBySession.get(hostSessionId),
+      'leave-room',
+      {
+        roomId,
+        sessionId: hostSessionId,
+      }
+    );
+    assertCondition(
+      closeResponse?.success,
+      'murder leave-room failed',
+      closeResponse
+    );
+  } finally {
+    disconnectAll();
+  }
+};
+
 const main = async () => {
   let devServer = null;
   let baseUrl = '';
@@ -509,6 +814,11 @@ const main = async () => {
     log('room flow smoke passed', {
       baseUrl,
       roomId,
+    });
+
+    await runMurderMysteryInvestigationSmoke(baseUrl);
+    log('murder mystery investigation smoke passed', {
+      baseUrl,
     });
   } finally {
     if (!roomClosed) {

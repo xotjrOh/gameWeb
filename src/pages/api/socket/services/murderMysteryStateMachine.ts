@@ -8,7 +8,13 @@ import {
   MurderMysteryFinalVoteResult,
   MurderMysteryGameData,
   MurderMysteryHostControlsView,
+  MurderMysteryInvestigationBackCardView,
+  MurderMysteryInvestigationMapView,
   MurderMysteryInvestigationRound,
+  MurderMysteryInvestigationRoundView,
+  MurderMysteryInvestigationTargetView,
+  MurderMysteryInvestigationTurnPlayerView,
+  MurderMysteryInvestigationTurnView,
   MurderMysteryPhase,
   MurderMysteryPartScenario,
   MurderMysteryPendingInvestigation,
@@ -62,6 +68,27 @@ const buildInvestigationUsageTemplate = (
     {}
   );
 
+const buildTargetCardKey = (targetId: string, cardId: string) =>
+  `${targetId}::${cardId}`;
+
+const splitTargetCardKey = (targetCardKey: string) => {
+  const separatorIndex = targetCardKey.indexOf('::');
+  if (separatorIndex < 0) {
+    throw new Error('잘못된 조사 카드 키입니다.');
+  }
+  return {
+    targetId: targetCardKey.slice(0, separatorIndex),
+    cardId: targetCardKey.slice(separatorIndex + 2),
+  };
+};
+
+const isMapInvestigationMode = (scenario: MurderMysteryScenario) =>
+  Boolean(
+    scenario.investigations.deliveryMode === 'auto' &&
+      scenario.investigations.layout.map &&
+      scenario.investigations.turnOrder?.roleIds.length
+  );
+
 const getRoleById = (scenario: MurderMysteryScenario, roleId: string) =>
   scenario.roles.find((role) => role.id === roleId);
 
@@ -70,6 +97,59 @@ const getCardById = (scenario: MurderMysteryScenario, cardId: string) =>
 
 const getPartById = (scenario: MurderMysteryScenario, partId: string) =>
   scenario.parts.find((part) => part.id === partId);
+
+const getPreferredBackId = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  targetId: string,
+  cardId: string
+) => {
+  const card = getCardById(scenario, cardId);
+  const preferred = card?.backId ?? makeId('mm_back');
+  if (!room.gameData.investigationTargetCardKeyByBackId[preferred]) {
+    return preferred;
+  }
+  return `${preferred}__${targetId}`;
+};
+
+const ensureInvestigationBackRegistry = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario
+) => {
+  scenario.investigations.rounds.forEach((roundConfig) => {
+    roundConfig.targets.forEach((target) => {
+      target.cardPool.forEach((cardId) => {
+        const targetCardKey = buildTargetCardKey(target.id, cardId);
+        if (room.gameData.investigationBackIdByTargetCardKey[targetCardKey]) {
+          return;
+        }
+        const backId = getPreferredBackId(room, scenario, target.id, cardId);
+        room.gameData.investigationBackIdByTargetCardKey[targetCardKey] =
+          backId;
+        room.gameData.investigationTargetCardKeyByBackId[backId] =
+          targetCardKey;
+      });
+    });
+  });
+};
+
+const resolveBackIdToTargetCard = (room: MurderMysteryRoom, backId: string) => {
+  const targetCardKey =
+    room.gameData.investigationTargetCardKeyByBackId[backId];
+  if (!targetCardKey) {
+    throw new Error('존재하지 않는 조사 카드 뒷면입니다.');
+  }
+  return splitTargetCardKey(targetCardKey);
+};
+
+const getBackIdForTargetCard = (
+  room: MurderMysteryRoom,
+  targetId: string,
+  cardId: string
+) =>
+  room.gameData.investigationBackIdByTargetCardKey[
+    buildTargetCardKey(targetId, cardId)
+  ];
 
 const getPhaseDurationSec = (
   scenario: MurderMysteryScenario,
@@ -100,6 +180,16 @@ const createInitialStateWithScenario = (
   roleByPlayerId: {},
   roleDisplayNameByPlayerId: {},
   investigationUsedByPlayerId: {},
+  investigationBackIdByTargetCardKey: {},
+  investigationTargetCardKeyByBackId: {},
+  investigationTurn: {
+    round: null,
+    orderedPlayerIds: [],
+    currentPlayerIndex: -1,
+    completedPlayerIds: [],
+    turnStartedAt: null,
+    reservationByPlayerId: {},
+  },
   pendingInvestigations: [],
   revealedCardsByPlayerId: {},
   revealedCardIds: [],
@@ -123,6 +213,158 @@ const ensureInvestigationUsageMap = (
     };
     room.gameData.revealedCardsByPlayerId[player.id] ??= [];
   });
+};
+
+const clearInvestigationTurnState = (room: MurderMysteryRoom) => {
+  room.gameData.investigationTurn = {
+    round: null,
+    orderedPlayerIds: [],
+    currentPlayerIndex: -1,
+    completedPlayerIds: [],
+    turnStartedAt: null,
+    reservationByPlayerId: {},
+  };
+};
+
+const getCurrentTurnPlayerId = (room: MurderMysteryRoom) => {
+  const { orderedPlayerIds, currentPlayerIndex } =
+    room.gameData.investigationTurn;
+  if (currentPlayerIndex < 0 || currentPlayerIndex >= orderedPlayerIds.length) {
+    return null;
+  }
+  return orderedPlayerIds[currentPlayerIndex] ?? null;
+};
+
+const clearReservationForBackId = (
+  room: MurderMysteryRoom,
+  backId?: string
+) => {
+  if (!backId) {
+    return;
+  }
+  room.gameData.investigationTurn.reservationByPlayerId = Object.fromEntries(
+    Object.entries(
+      room.gameData.investigationTurn.reservationByPlayerId
+    ).filter(([, reservedBackId]) => reservedBackId !== backId)
+  );
+};
+
+const getOrderedPlayerIdsForRound = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  round: MurderMysteryInvestigationRound
+) => {
+  const roleOrder = scenario.investigations.turnOrder?.roleIds ?? [];
+  const roleOrderIndex = new Map(
+    roleOrder.map((roleId, index) => [roleId, index] as const)
+  );
+
+  const orderedPlayers = room.players
+    .map((player) => ({
+      playerId: player.id,
+      roleId: room.gameData.roleByPlayerId[player.id],
+    }))
+    .sort((a, b) => {
+      const orderA =
+        a.roleId && roleOrderIndex.has(a.roleId)
+          ? (roleOrderIndex.get(a.roleId) as number)
+          : Number.MAX_SAFE_INTEGER;
+      const orderB =
+        b.roleId && roleOrderIndex.has(b.roleId)
+          ? (roleOrderIndex.get(b.roleId) as number)
+          : Number.MAX_SAFE_INTEGER;
+      return orderA - orderB;
+    });
+
+  if (
+    orderedPlayers.some(
+      (entry) => !entry.roleId || !roleOrderIndex.has(entry.roleId)
+    )
+  ) {
+    throw new Error('조사 턴 순서를 계산할 수 없는 역할 배정이 있습니다.');
+  }
+
+  const orderedPlayerIds = orderedPlayers.map((entry) => entry.playerId);
+  if (orderedPlayerIds.length === 0) {
+    return orderedPlayerIds;
+  }
+
+  if (!scenario.investigations.turnOrder?.rotateFirstPlayerEachRound) {
+    return orderedPlayerIds;
+  }
+
+  const rounds = getInvestigationRounds(scenario);
+  const roundIndex = rounds.indexOf(round);
+  if (roundIndex < 0) {
+    return orderedPlayerIds;
+  }
+  const offset = roundIndex % orderedPlayerIds.length;
+  return [
+    ...orderedPlayerIds.slice(offset),
+    ...orderedPlayerIds.slice(0, offset),
+  ];
+};
+
+const initializeInvestigationTurnState = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  round: MurderMysteryInvestigationRound
+) => {
+  if (!isMapInvestigationMode(scenario)) {
+    clearInvestigationTurnState(room);
+    return;
+  }
+
+  const orderedPlayerIds = getOrderedPlayerIdsForRound(room, scenario, round);
+  room.gameData.investigationTurn = {
+    round,
+    orderedPlayerIds,
+    currentPlayerIndex: orderedPlayerIds.length > 0 ? 0 : -1,
+    completedPlayerIds: [],
+    turnStartedAt: orderedPlayerIds.length > 0 ? Date.now() : null,
+    reservationByPlayerId: {},
+  };
+};
+
+const advanceInvestigationTurnState = (
+  room: MurderMysteryRoom,
+  actingPlayerId: string,
+  revealedBackId?: string
+) => {
+  const turn = room.gameData.investigationTurn;
+  if (!turn.completedPlayerIds.includes(actingPlayerId)) {
+    turn.completedPlayerIds.push(actingPlayerId);
+  }
+  delete turn.reservationByPlayerId[actingPlayerId];
+  clearReservationForBackId(room, revealedBackId);
+
+  const nextIndex = turn.orderedPlayerIds.findIndex(
+    (playerId) => !turn.completedPlayerIds.includes(playerId)
+  );
+  turn.currentPlayerIndex = nextIndex;
+  turn.turnStartedAt = nextIndex >= 0 ? Date.now() : null;
+};
+
+const getNextRoundFirstPlayerId = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  round: MurderMysteryInvestigationRound | null
+) => {
+  if (!isMapInvestigationMode(scenario) || !round) {
+    return null;
+  }
+  const rounds = getInvestigationRounds(scenario);
+  const currentIndex = rounds.indexOf(round);
+  const nextRound = rounds[currentIndex + 1];
+  if (!nextRound) {
+    return null;
+  }
+  const orderedPlayerIds = getOrderedPlayerIdsForRound(
+    room,
+    scenario,
+    nextRound
+  );
+  return orderedPlayerIds[0] ?? null;
 };
 
 const applyRoleNameByRoleId = (
@@ -347,6 +589,200 @@ const resolvePendingRequestInternal = (
     target,
     cardId,
     revealResult,
+  };
+};
+
+const getCardBackStyle = (
+  scenario: MurderMysteryScenario,
+  target: MurderMysteryScenario['investigations']['rounds'][number]['targets'][number],
+  cardId: string
+) => {
+  const card = getCardById(scenario, cardId);
+  return {
+    imageSrc: card?.back?.imageSrc ?? target.cardBack?.imageSrc,
+    shortLabel:
+      card?.back?.shortLabel ?? target.cardBack?.shortLabel ?? target.label,
+  };
+};
+
+const buildBackCardView = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  viewerId: string,
+  target: MurderMysteryScenario['investigations']['rounds'][number]['targets'][number],
+  cardId: string
+): MurderMysteryInvestigationBackCardView | null => {
+  const backId = getBackIdForTargetCard(room, target.id, cardId);
+  if (!backId) {
+    return null;
+  }
+  const style = getCardBackStyle(scenario, target, cardId);
+  return {
+    backId,
+    targetId: target.id,
+    targetLabel: target.label,
+    imageSrc: style.imageSrc,
+    shortLabel: style.shortLabel,
+    isReservedByMe:
+      room.gameData.investigationTurn.reservationByPlayerId[viewerId] ===
+      backId,
+  };
+};
+
+const buildInvestigationTargetView = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  viewerId: string,
+  target: MurderMysteryScenario['investigations']['rounds'][number]['targets'][number]
+): MurderMysteryInvestigationTargetView => {
+  const remainingCardIds = getRemainingCardIdsByTarget(
+    room,
+    scenario,
+    target.id,
+    target.cardPool
+  );
+  const totalClues = target.cardPool.length;
+  const remainingClues = remainingCardIds.length;
+  const revealedClues = Math.max(totalClues - remainingClues, 0);
+  const availableBacks = remainingCardIds
+    .map((cardId) =>
+      buildBackCardView(room, scenario, viewerId, target, cardId)
+    )
+    .filter(Boolean) as MurderMysteryInvestigationBackCardView[];
+
+  return {
+    ...target,
+    totalClues,
+    revealedClues,
+    remainingClues,
+    isExhausted: remainingClues === 0,
+    availableBacks,
+  };
+};
+
+const buildInvestigationRoundViews = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  viewerId: string
+): MurderMysteryInvestigationRoundView[] =>
+  scenario.investigations.rounds.map((roundConfig) => ({
+    round: roundConfig.round,
+    targets: roundConfig.targets.map((target) =>
+      buildInvestigationTargetView(room, scenario, viewerId, target)
+    ),
+  }));
+
+const buildInvestigationMapView = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  viewerId: string,
+  roundViews: MurderMysteryInvestigationRoundView[]
+): MurderMysteryInvestigationMapView | null => {
+  const map = scenario.investigations.layout.map;
+  if (!map) {
+    return null;
+  }
+
+  const targetById = Object.fromEntries(
+    roundViews.flatMap((roundView) =>
+      roundView.targets.map((target) => [target.id, target] as const)
+    )
+  );
+
+  return {
+    scene: map.scene,
+    hotspots: map.hotspots
+      .map((hotspot) => {
+        const target = targetById[hotspot.targetId];
+        if (!target) {
+          return null;
+        }
+        return {
+          ...hotspot,
+          targetLabel: target.label,
+          totalClues: target.totalClues,
+          remainingClues: target.remainingClues,
+          isExhausted: target.isExhausted,
+          isCurrentTurnTarget:
+            Boolean(
+              room.gameData.investigationTurn.reservationByPlayerId[viewerId]
+            ) && !target.isExhausted,
+        };
+      })
+      .filter(Boolean) as MurderMysteryInvestigationMapView['hotspots'],
+  };
+};
+
+const buildInvestigationTurnView = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  viewerId: string
+): MurderMysteryInvestigationTurnView | null => {
+  if (!isMapInvestigationMode(scenario)) {
+    return null;
+  }
+
+  const turn = room.gameData.investigationTurn;
+  const currentPlayerId = getCurrentTurnPlayerId(room);
+  const myReservationBackId = turn.reservationByPlayerId[viewerId];
+  let myReservation: MurderMysteryInvestigationBackCardView | null = null;
+
+  if (myReservationBackId) {
+    try {
+      const { targetId, cardId } = resolveBackIdToTargetCard(
+        room,
+        myReservationBackId
+      );
+      const target = scenario.investigations.rounds
+        .flatMap((roundConfig) => roundConfig.targets)
+        .find((entry) => entry.id === targetId);
+      if (target) {
+        myReservation = buildBackCardView(
+          room,
+          scenario,
+          viewerId,
+          target,
+          cardId
+        );
+      }
+    } catch (error) {
+      myReservation = null;
+    }
+  }
+
+  const players: MurderMysteryInvestigationTurnPlayerView[] =
+    turn.orderedPlayerIds.map((playerId, index) => {
+      const player = room.players.find((entry) => entry.id === playerId);
+      return {
+        playerId,
+        roleId: room.gameData.roleByPlayerId[playerId] ?? '',
+        name: player?.name ?? 'unknown',
+        displayName:
+          room.gameData.roleDisplayNameByPlayerId[playerId] ??
+          player?.name ??
+          'unknown',
+        order: index + 1,
+        isCurrent: currentPlayerId === playerId,
+        isCompleted: turn.completedPlayerIds.includes(playerId),
+      };
+    });
+
+  return {
+    enabled: turn.round !== null,
+    currentPlayerId,
+    orderedPlayerIds: turn.orderedPlayerIds,
+    completedPlayerIds: turn.completedPlayerIds,
+    turnStartedAt: turn.turnStartedAt,
+    nextRoundFirstPlayerId: getNextRoundFirstPlayerId(
+      room,
+      scenario,
+      turn.round
+    ),
+    players,
+    canActNow: viewerId === currentPlayerId,
+    allPlayersDone:
+      currentPlayerId === null && turn.orderedPlayerIds.length > 0,
+    myReservation,
   };
 };
 
@@ -576,6 +1012,8 @@ export const startMurderMysteryGame = (
 
   applyPhaseWithTimer(room, scenario, firstStep.id);
   room.gameData.pendingInvestigations = [];
+  room.gameData.investigationBackIdByTargetCardKey = {};
+  room.gameData.investigationTargetCardKeyByBackId = {};
   room.gameData.revealedCardIds = [];
   room.gameData.revealedCardIdsByTargetId = {};
   room.gameData.revealedPartIds = [];
@@ -584,6 +1022,13 @@ export const startMurderMysteryGame = (
   room.gameData.endbookVariant = null;
   room.gameData.appliedDynamicRuleIds = {};
   room.gameData.announcements = [];
+  clearInvestigationTurnState(room);
+  ensureInvestigationBackRegistry(room, scenario);
+
+  const firstRound = getInvestigationRoundByPhase(firstStep.id, scenario);
+  if (firstRound && isMapInvestigationMode(scenario)) {
+    initializeInvestigationTurnState(room, scenario, firstRound);
+  }
 
   if (firstStep.enterAnnouncement) {
     appendMurderMysteryAnnouncement(
@@ -671,6 +1116,9 @@ export const moveMurderMysteryToNextPhase = (
   ) {
     resolvedPending = resolveAllPendingInvestigations(room, scenario);
   }
+  if (currentStep.kind === 'investigate') {
+    clearInvestigationTurnState(room);
+  }
 
   const nextPhase = getNextPhase(currentPhase, scenario);
   if (!nextPhase) {
@@ -683,6 +1131,9 @@ export const moveMurderMysteryToNextPhase = (
   if (nextStep?.kind === 'final_vote') {
     room.gameData.voteByPlayerId = {};
     room.gameData.finalVoteResult = null;
+  }
+  if (nextStep?.kind === 'investigate' && nextStep.round) {
+    initializeInvestigationTurnState(room, scenario, nextStep.round);
   }
   if (nextStep?.enterAnnouncement) {
     appendMurderMysteryAnnouncement(room, 'SYSTEM', nextStep.enterAnnouncement);
@@ -700,7 +1151,10 @@ export const submitMurderMysteryInvestigation = (
   room: MurderMysteryRoom,
   scenario: MurderMysteryScenario,
   playerId: string,
-  targetId: string
+  selection: {
+    targetId?: string;
+    backId?: string;
+  }
 ) => {
   const round = getInvestigationRoundByPhase(room.gameData.phase, scenario);
   if (!round) {
@@ -720,6 +1174,64 @@ export const submitMurderMysteryInvestigation = (
   if (!roundConfig) {
     throw new Error('조사 라운드 설정을 찾을 수 없습니다.');
   }
+
+  if (isMapInvestigationMode(scenario)) {
+    const backId = selection.backId;
+    if (!backId) {
+      throw new Error('맵에서 가져갈 카드 뒷면을 선택해주세요.');
+    }
+
+    ensureInvestigationBackRegistry(room, scenario);
+    if (room.gameData.investigationTurn.round !== round) {
+      initializeInvestigationTurnState(room, scenario, round);
+    }
+
+    const currentPlayerId = getCurrentTurnPlayerId(room);
+    if (!currentPlayerId) {
+      throw new Error('이번 라운드 조사 차례가 모두 끝났습니다.');
+    }
+    if (currentPlayerId !== playerId) {
+      throw new Error('현재 조사 차례가 아닙니다.');
+    }
+
+    const { targetId, cardId } = resolveBackIdToTargetCard(room, backId);
+    const target = roundConfig.targets.find((entry) => entry.id === targetId);
+    if (!target || !target.cardPool.includes(cardId)) {
+      throw new Error('이 라운드에서 선택할 수 없는 조사 카드입니다.');
+    }
+    if (isCardRevealedForTarget(room, scenario, target.id, cardId)) {
+      throw new Error('이미 다른 플레이어가 먼저 가져간 카드입니다.');
+    }
+
+    room.gameData.investigationUsedByPlayerId[playerId] = {
+      ...usage,
+      [round]: true,
+    };
+
+    const revealResult = revealCardToPlayer(
+      room,
+      scenario,
+      playerId,
+      target.id,
+      cardId,
+      round
+    );
+    advanceInvestigationTurnState(room, playerId, backId);
+
+    return {
+      mode: 'auto' as const,
+      cardId,
+      backId,
+      target,
+      revealResult,
+    };
+  }
+
+  const targetId = selection.targetId;
+  if (!targetId) {
+    throw new Error('조사 대상을 선택해주세요.');
+  }
+
   const target = roundConfig.targets.find((entry) => entry.id === targetId);
   if (!target) {
     throw new Error('존재하지 않는 조사 대상입니다.');
@@ -785,6 +1297,54 @@ export const submitMurderMysteryInvestigation = (
     target,
     revealResult,
   };
+};
+
+export const setMurderMysteryInvestigationReservation = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  playerId: string,
+  backId: string
+) => {
+  const round = getInvestigationRoundByPhase(room.gameData.phase, scenario);
+  if (!round || !isMapInvestigationMode(scenario)) {
+    throw new Error('지금은 예약 가능한 조사 단계가 아닙니다.');
+  }
+
+  ensureInvestigationBackRegistry(room, scenario);
+  if (room.gameData.investigationTurn.round !== round) {
+    initializeInvestigationTurnState(room, scenario, round);
+  }
+
+  const usageTemplate = buildInvestigationUsageTemplate(scenario);
+  const usage = room.gameData.investigationUsedByPlayerId[playerId] ?? {
+    ...usageTemplate,
+  };
+  if (usage[round]) {
+    throw new Error('이번 라운드 조사를 이미 완료했습니다.');
+  }
+
+  const { targetId, cardId } = resolveBackIdToTargetCard(room, backId);
+  const roundConfig = getRoundConfig(scenario, round);
+  const target = roundConfig?.targets.find((entry) => entry.id === targetId);
+  if (!target || !target.cardPool.includes(cardId)) {
+    throw new Error('이 라운드에서 예약할 수 없는 카드입니다.');
+  }
+  if (isCardRevealedForTarget(room, scenario, targetId, cardId)) {
+    throw new Error('이미 다른 플레이어가 먼저 가져간 카드입니다.');
+  }
+
+  room.gameData.investigationTurn.reservationByPlayerId[playerId] = backId;
+};
+
+export const clearMurderMysteryInvestigationReservation = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  playerId: string
+) => {
+  if (!isMapInvestigationMode(scenario)) {
+    return;
+  }
+  delete room.gameData.investigationTurn.reservationByPlayerId[playerId];
 };
 
 export const resolveMurderMysteryInvestigation = (
@@ -944,26 +1504,14 @@ export const buildMurderMysterySnapshot = (
   );
 
   const round = getInvestigationRoundByPhase(room.gameData.phase, scenario);
-  const roundConfig = round ? getRoundConfig(scenario, round) : undefined;
-
-  const targetsWithProgress = (roundConfig?.targets ?? []).map((target) => {
-    const remainingClues = getRemainingCardIdsByTarget(
-      room,
-      scenario,
-      target.id,
-      target.cardPool
-    ).length;
-    const totalClues = target.cardPool.length;
-    const revealedClues = Math.max(totalClues - remainingClues, 0);
-
-    return {
-      ...target,
-      totalClues,
-      revealedClues,
-      remainingClues,
-      isExhausted: remainingClues === 0,
-    };
-  });
+  const roundViews = buildInvestigationRoundViews(room, scenario, viewerId);
+  const mapView = buildInvestigationMapView(
+    room,
+    scenario,
+    viewerId,
+    roundViews
+  );
+  const turnView = buildInvestigationTurnView(room, scenario, viewerId);
 
   const timerDurationSec = room.gameData.phaseDurationSec;
   const timerStartedAt = room.gameData.phaseStartedAt;
@@ -1036,7 +1584,10 @@ export const buildMurderMysterySnapshot = (
       revealedCardIdsByTargetId: room.gameData.revealedCardIdsByTargetId,
       layoutSections: scenario.investigations.layout.sections,
       used: round ? Boolean(usage[round]) : false,
-      targets: targetsWithProgress,
+      mode: mapView ? 'map' : 'legacy',
+      rounds: roundViews,
+      turn: turnView,
+      map: mapView,
     },
     finalVote: {
       question: scenario.finalVote.question,

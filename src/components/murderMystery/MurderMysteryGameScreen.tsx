@@ -25,6 +25,7 @@ import {
 import { useTheme } from '@mui/material/styles';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import MurderMysteryInvestigationPanel from '@/components/murderMystery/MurderMysteryInvestigationPanel';
 import { useSocket } from '@/components/provider/SocketProvider';
 import useCheckVersion from '@/hooks/useCheckVersion';
 import useUpdateSocketId from '@/hooks/useUpdateSocketId';
@@ -363,274 +364,6 @@ const DiscussPanel = ({
     </Card>
   </PanelCard>
 );
-
-const InvestigatePanel = ({
-  round,
-  layoutSections,
-  stepDescription,
-  stepAnnouncement,
-  canActAsPlayer,
-  isActivePhase,
-  isReadOnly,
-  targets,
-  used,
-  myCards,
-  onSubmitInvestigation,
-}: {
-  round?: number;
-  layoutSections: NonNullable<
-    ReturnType<typeof useMurderMysteryGameData>['snapshot']
-  >['investigation']['layoutSections'];
-  stepDescription?: string;
-  stepAnnouncement?: string;
-  canActAsPlayer: boolean;
-  isActivePhase: boolean;
-  isReadOnly: boolean;
-  targets: NonNullable<
-    ReturnType<typeof useMurderMysteryGameData>['snapshot']
-  >['investigation']['targets'];
-  used: boolean;
-  myCards: NonNullable<
-    ReturnType<typeof useMurderMysteryGameData>['snapshot']
-  >['clueVault']['myClues'];
-  onSubmitInvestigation: (targetId: string) => void;
-}) => {
-  const canSubmit = canActAsPlayer && isActivePhase && !isReadOnly;
-  const myRemainingText = used ? '0' : canSubmit ? '1' : '0';
-  const targetById = useMemo(
-    () => Object.fromEntries(targets.map((target) => [target.id, target])),
-    [targets]
-  );
-
-  const sortedLayoutSections = useMemo(
-    () =>
-      [...layoutSections].sort(
-        (a, b) =>
-          (a.order ?? Number.MAX_SAFE_INTEGER) -
-          (b.order ?? Number.MAX_SAFE_INTEGER)
-      ),
-    [layoutSections]
-  );
-
-  const renderedTargetIds = new Set<string>();
-
-  const getSectionTargets = (
-    section: NonNullable<
-      ReturnType<typeof useMurderMysteryGameData>['snapshot']
-    >['investigation']['layoutSections'][number]
-  ) => {
-    const fromTargetIds =
-      section.targetIds
-        ?.map((targetId) => targetById[targetId])
-        .filter(Boolean) ?? [];
-
-    const resolvedTargets =
-      fromTargetIds.length > 0
-        ? fromTargetIds
-        : targets.filter((target) => {
-            if (section.targetTypes?.length) {
-              return section.targetTypes.includes(target.targetType);
-            }
-            if (target.sectionId) {
-              return target.sectionId === section.id;
-            }
-            return false;
-          });
-
-    const sortedTargets = [...resolvedTargets].sort(
-      (a, b) =>
-        (a.order ?? Number.MAX_SAFE_INTEGER) -
-          (b.order ?? Number.MAX_SAFE_INTEGER) || a.label.localeCompare(b.label)
-    );
-
-    sortedTargets.forEach((target) => renderedTargetIds.add(target.id));
-    return sortedTargets;
-  };
-
-  const renderTargetCards = (sectionTargets: typeof targets) => (
-    <Box
-      sx={{
-        display: 'grid',
-        gap: 1,
-        gridTemplateColumns: {
-          xs: '1fr',
-          sm: 'repeat(2, minmax(0, 1fr))',
-          lg: 'repeat(3, minmax(0, 1fr))',
-        },
-      }}
-    >
-      {sectionTargets.map((target) => (
-        <Card
-          key={target.id}
-          variant="outlined"
-          sx={{
-            borderRadius: 2,
-            backgroundColor: target.isExhausted
-              ? 'rgba(226,232,240,0.65)'
-              : 'rgba(254,249,195,0.45)',
-            opacity: target.isExhausted ? 0.78 : 1,
-          }}
-        >
-          <CardContent>
-            <Stack spacing={1}>
-              <Box>
-                <Typography fontWeight={700}>{target.label}</Typography>
-                {target.description ? (
-                  <Typography variant="body2" color="text.secondary">
-                    {target.description}
-                  </Typography>
-                ) : null}
-              </Box>
-              <Stack direction="row" spacing={0.8} flexWrap="wrap">
-                <Chip
-                  size="small"
-                  label={`남은 단서 ${target.remainingClues}/${target.totalClues}`}
-                  color={target.isExhausted ? 'default' : 'primary'}
-                />
-                <Chip
-                  size="small"
-                  label={target.isExhausted ? '이미 공개됨' : '미확인'}
-                />
-              </Stack>
-              {canActAsPlayer ? (
-                <Button
-                  variant="contained"
-                  color="inherit"
-                  onClick={() => onSubmitInvestigation(target.id)}
-                  disabled={!canSubmit || used || target.isExhausted}
-                >
-                  {target.isExhausted
-                    ? '단서 공개 완료'
-                    : used
-                      ? '이번 라운드 조사 완료'
-                      : '여기 조사하기'}
-                </Button>
-              ) : (
-                <Typography variant="body2" color="text.secondary">
-                  플레이어 참가자가 아니므로 조사 제출 버튼이 비활성화됩니다.
-                </Typography>
-              )}
-            </Stack>
-          </CardContent>
-        </Card>
-      ))}
-    </Box>
-  );
-
-  return (
-    <PanelCard
-      title={round ? `${round}라운드 조사` : '조사'}
-      subtitle="맵 카드에서 조사 대상을 선택하세요. 이미 공개된 단서는 다시 뽑히지 않습니다."
-    >
-      {isReadOnly ? (
-        <Alert severity="info">이전 단계 열람 모드입니다.</Alert>
-      ) : null}
-      {stepAnnouncement && isActivePhase ? (
-        <Alert severity="warning">{stepAnnouncement}</Alert>
-      ) : null}
-      {stepDescription ? (
-        <Alert severity="info">{stepDescription}</Alert>
-      ) : null}
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        spacing={1}
-        alignItems={{ xs: 'flex-start', sm: 'center' }}
-      >
-        {canActAsPlayer ? (
-          <Chip
-            color={canSubmit && !used ? 'primary' : 'default'}
-            label={`내 조사 남음: ${myRemainingText}`}
-            size="small"
-          />
-        ) : (
-          <Chip
-            label="플레이어별 조사 제한은 서버에서 검증됩니다."
-            size="small"
-          />
-        )}
-      </Stack>
-      <Alert severity="info">
-        공개된 단서는 다시 선택되지 않습니다. 남은 단서가 0인 대상은 조사할 수
-        없습니다.
-      </Alert>
-      {targets.length === 0 ? (
-        <Typography color="text.secondary">
-          이 라운드에 조사 가능한 대상이 없습니다.
-        </Typography>
-      ) : (
-        <Stack spacing={1.2}>
-          {sortedLayoutSections.map((section) => {
-            const sectionTargets = getSectionTargets(section);
-            if (sectionTargets.length === 0) {
-              return null;
-            }
-            return (
-              <Stack key={section.id} spacing={1}>
-                <Typography fontWeight={700}>
-                  {section.icon ? `${section.icon} ` : ''}
-                  {section.title}
-                </Typography>
-                {renderTargetCards(sectionTargets)}
-              </Stack>
-            );
-          })}
-          {targets.filter((target) => !renderedTargetIds.has(target.id))
-            .length > 0 ? (
-            <Stack spacing={1}>
-              <Typography fontWeight={700}>추가 조사 대상</Typography>
-              {renderTargetCards(
-                targets
-                  .filter((target) => !renderedTargetIds.has(target.id))
-                  .sort(
-                    (a, b) =>
-                      (a.order ?? Number.MAX_SAFE_INTEGER) -
-                        (b.order ?? Number.MAX_SAFE_INTEGER) ||
-                      a.label.localeCompare(b.label)
-                  )
-              )}
-            </Stack>
-          ) : null}
-        </Stack>
-      )}
-
-      {canActAsPlayer ? (
-        <Stack spacing={1}>
-          <Typography fontWeight={700}>조사 결과 카드</Typography>
-          {myCards.length === 0 ? (
-            <Typography color="text.secondary">
-              아직 배정된 조사 카드가 없습니다.
-            </Typography>
-          ) : (
-            <Stack spacing={1}>
-              {myCards.map((card) => (
-                <Card key={card.id} variant="outlined">
-                  <CardContent>
-                    <Stack spacing={0.8}>
-                      <Typography fontWeight={700}>{card.title}</Typography>
-                      <Stack direction="row" spacing={0.8} flexWrap="wrap">
-                        {(card.sourceTargetLabels.length > 0
-                          ? card.sourceTargetLabels
-                          : ['출처 미확인']
-                        ).map((label) => (
-                          <Chip
-                            key={`${card.id}:${label}`}
-                            size="small"
-                            label={label}
-                          />
-                        ))}
-                      </Stack>
-                      <Typography sx={{ mt: 0.5 }}>{card.text}</Typography>
-                    </Stack>
-                  </CardContent>
-                </Card>
-              ))}
-            </Stack>
-          )}
-        </Stack>
-      ) : null}
-    </PanelCard>
-  );
-};
 
 const VotePanel = ({
   isHostView,
@@ -1322,6 +1055,9 @@ export default function MurderMysteryGameScreen({
   const prevPhaseRef = useRef<MurderMysteryPhase | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const lastTickSecondRef = useRef<number | null>(null);
+  const previousReservationBackIdRef = useRef<string | null>(null);
+  const reservationChangeSourceRef = useRef<'self' | null>(null);
+  const lastInvestigationReminderBucketRef = useRef<number | null>(null);
 
   useCheckVersion(socket);
   useUpdateSocketId(socket, session, roomId);
@@ -1412,6 +1148,29 @@ export default function MurderMysteryGameScreen({
   }, [snapshot?.players]);
 
   useEffect(() => {
+    const currentReservationBackId =
+      snapshot?.investigation.turn?.myReservation?.backId ?? null;
+
+    if (previousReservationBackIdRef.current && !currentReservationBackId) {
+      if (reservationChangeSourceRef.current === 'self') {
+        reservationChangeSourceRef.current = null;
+      } else {
+        enqueueSnackbar(
+          '예약한 카드가 다른 플레이어에게 먼저 가져가졌습니다. 새 카드를 다시 골라주세요.',
+          {
+            variant: 'warning',
+          }
+        );
+      }
+    }
+
+    if (currentReservationBackId) {
+      reservationChangeSourceRef.current = null;
+    }
+    previousReservationBackIdRef.current = currentReservationBackId;
+  }, [snapshot?.investigation.turn?.myReservation?.backId, enqueueSnackbar]);
+
+  useEffect(() => {
     if (!snapshot) {
       return;
     }
@@ -1425,6 +1184,9 @@ export default function MurderMysteryGameScreen({
       guideRevealNotifiedRef.current = false;
       setSelectedCardByRequestId({});
       setSidebarTab('SHEET');
+      previousReservationBackIdRef.current = null;
+      reservationChangeSourceRef.current = null;
+      lastInvestigationReminderBucketRef.current = null;
     }
     prevPhaseRef.current = snapshot.phase;
   }, [snapshot?.phase]);
@@ -1518,6 +1280,43 @@ export default function MurderMysteryGameScreen({
     );
   };
 
+  const handleSubmitInvestigationByBack = (backId: string) => {
+    reservationChangeSourceRef.current = 'self';
+    emitWithAck(
+      'mm_submit_investigation',
+      {
+        roomId,
+        sessionId,
+        backId,
+      },
+      '카드를 가져왔습니다.'
+    );
+  };
+
+  const handleSetInvestigationReservation = (backId: string) => {
+    emitWithAck(
+      'mm_set_investigation_reservation',
+      {
+        roomId,
+        sessionId,
+        backId,
+      },
+      '카드를 예약했습니다.'
+    );
+  };
+
+  const handleClearInvestigationReservation = () => {
+    reservationChangeSourceRef.current = 'self';
+    emitWithAck(
+      'mm_clear_investigation_reservation',
+      {
+        roomId,
+        sessionId,
+      },
+      '예약을 해제했습니다.'
+    );
+  };
+
   const handleSubmitVote = (suspectPlayerId: string) => {
     emitWithAck(
       'mm_submit_vote',
@@ -1575,6 +1374,13 @@ export default function MurderMysteryGameScreen({
   }, [snapshot?.phase]);
 
   useEffect(() => {
+    lastInvestigationReminderBucketRef.current = null;
+  }, [
+    snapshot?.investigation.turn?.currentPlayerId,
+    snapshot?.investigation.turn?.turnStartedAt,
+  ]);
+
+  useEffect(() => {
     if (
       !hasInteractedForSound ||
       isTimerSoundMuted ||
@@ -1618,6 +1424,80 @@ export default function MurderMysteryGameScreen({
     osc.start();
     osc.stop(ctx.currentTime + 0.1);
   }, [phaseRemainingSecForEffects, hasInteractedForSound, isTimerSoundMuted]);
+
+  useEffect(() => {
+    const turnStartedAt = snapshot?.investigation.turn?.turnStartedAt;
+    if (
+      snapshot?.investigation.mode !== 'map' ||
+      !snapshot?.investigation.turn?.canActNow ||
+      !turnStartedAt
+    ) {
+      return;
+    }
+
+    const elapsedSec = Math.max(
+      Math.floor((nowTick - turnStartedAt) / 1000),
+      0
+    );
+    if (elapsedSec < 20) {
+      return;
+    }
+
+    const bucket = Math.floor((elapsedSec - 20) / 20);
+    if (lastInvestigationReminderBucketRef.current === bucket) {
+      return;
+    }
+    lastInvestigationReminderBucketRef.current = bucket;
+
+    enqueueSnackbar(
+      '당신의 조사 차례입니다. 맵에서 카드 한 장을 즉시 가져가세요.',
+      {
+        variant: 'warning',
+      }
+    );
+
+    if (!hasInteractedForSound || isTimerSoundMuted) {
+      return;
+    }
+
+    const AudioContextCtor =
+      window.AudioContext ||
+      (window as Window & { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext;
+    if (!AudioContextCtor) {
+      return;
+    }
+
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContextCtor();
+    }
+
+    const ctx = audioContextRef.current;
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => undefined);
+    }
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = 980;
+    gain.gain.value = 0.0001;
+    gain.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.18);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.2);
+  }, [
+    enqueueSnackbar,
+    hasInteractedForSound,
+    isTimerSoundMuted,
+    nowTick,
+    snapshot?.investigation.mode,
+    snapshot?.investigation.turn?.canActNow,
+    snapshot?.investigation.turn?.turnStartedAt,
+    snapshot?.phase,
+  ]);
 
   if (!snapshot) {
     return (
@@ -1711,33 +1591,26 @@ export default function MurderMysteryGameScreen({
   const selectedDiscussRound =
     selectedStep?.kind === 'discuss' ? (selectedStep.round ?? null) : null;
 
-  const revealedCardIdsSet = new Set(investigation.revealedCardIds);
-
-  const selectedRoundTargets = selectedInvestigateRound
-    ? (
-        scenario.investigations.rounds.find(
-          (entry) => entry.round === selectedInvestigateRound
-        )?.targets ?? []
-      ).map((target) => {
-        const targetRevealedCardIds = new Set(
-          investigation.revealedCardIdsByTargetId[target.id] ?? []
-        );
-        const revealedClues = target.cardPool.filter((cardId) =>
-          scenario.investigations.depletionMode === 'global'
-            ? revealedCardIdsSet.has(cardId)
-            : targetRevealedCardIds.has(cardId)
-        ).length;
-        const totalClues = target.cardPool.length;
-        const remainingClues = Math.max(totalClues - revealedClues, 0);
-        return {
-          ...target,
-          totalClues,
-          revealedClues,
-          remainingClues,
-          isExhausted: remainingClues === 0,
-        };
-      })
-    : [];
+  const selectedRoundTargets =
+    investigation.rounds.find(
+      (entry) => entry.round === selectedInvestigateRound
+    )?.targets ?? [];
+  const investigationTurnStartedAt =
+    phase === selectedPhase &&
+    investigation.mode === 'map' &&
+    investigation.turn?.canActNow &&
+    investigation.turn.turnStartedAt
+      ? investigation.turn.turnStartedAt
+      : null;
+  const investigationTurnElapsedSec = investigationTurnStartedAt
+    ? Math.max(Math.floor((nowTick - investigationTurnStartedAt) / 1000), 0)
+    : 0;
+  const turnAttentionLevel: 0 | 1 | 2 =
+    investigationTurnElapsedSec >= 20
+      ? 2
+      : investigationTurnElapsedSec >= 8
+        ? 1
+        : 0;
 
   const activeSidebarTabs: SidebarTab[] =
     selectedPhase === 'LOBBY' ? ['SHEET'] : ['SHEET', 'PARTS', 'LOG'];
@@ -1789,18 +1662,25 @@ export default function MurderMysteryGameScreen({
 
     if (selectedStep.kind === 'investigate') {
       return (
-        <InvestigatePanel
+        <MurderMysteryInvestigationPanel
           round={selectedInvestigateRound ?? undefined}
+          investigation={investigation}
           layoutSections={investigation.layoutSections}
+          selectedRoundTargets={selectedRoundTargets}
           stepDescription={selectedStep.description}
           stepAnnouncement={selectedStep.enterAnnouncement}
           canActAsPlayer={canActAsPlayer}
           isActivePhase={selectedPhase === phase}
+          isMobile={isMobile}
           isReadOnly={isReadOnlyTab}
-          targets={selectedRoundTargets}
-          used={selectedPhase === phase ? investigation.used : false}
           myCards={clueVault.myClues}
-          onSubmitInvestigation={handleSubmitInvestigation}
+          players={players}
+          nowTick={nowTick}
+          turnAttentionLevel={turnAttentionLevel}
+          onSubmitInvestigationByTarget={handleSubmitInvestigation}
+          onSubmitInvestigationByBack={handleSubmitInvestigationByBack}
+          onSetReservation={handleSetInvestigationReservation}
+          onClearReservation={handleClearInvestigationReservation}
         />
       );
     }

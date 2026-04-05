@@ -59,10 +59,17 @@ export type MurderMysteryCardEffect =
   | MurderMysteryCardEffectAddPart
   | MurderMysteryCardEffectRevealRoleName;
 
+export interface MurderMysteryCardBackStyle {
+  imageSrc?: string;
+  shortLabel?: string;
+}
+
 export interface MurderMysteryCardScenario {
   id: string;
   title: string;
   text: string;
+  backId?: string;
+  back?: MurderMysteryCardBackStyle;
   effects?: MurderMysteryCardEffect[];
 }
 
@@ -75,12 +82,18 @@ export interface MurderMysteryInvestigationTargetScenario {
   sectionId?: string;
   order?: number;
   icon?: string;
+  cardBack?: MurderMysteryCardBackStyle;
   cardPool: string[];
 }
 
 export interface MurderMysteryInvestigationRoundScenario {
   round: MurderMysteryInvestigationRound;
   targets: MurderMysteryInvestigationTargetScenario[];
+}
+
+export interface MurderMysteryInvestigationTurnOrderScenario {
+  roleIds: string[];
+  rotateFirstPlayerEachRound: boolean;
 }
 
 export interface MurderMysteryInvestigationLayoutSection {
@@ -90,6 +103,41 @@ export interface MurderMysteryInvestigationLayoutSection {
   targetIds?: string[];
   order?: number;
   icon?: string;
+}
+
+export interface MurderMysteryInvestigationMapSceneScenario {
+  imageSrc: string;
+  alt: string;
+  width: number;
+  height: number;
+}
+
+export interface MurderMysteryInvestigationMapHotspotScenario {
+  id: string;
+  targetId: string;
+  label?: string;
+  xPct: number;
+  yPct: number;
+  widthPct: number;
+  heightPct: number;
+}
+
+export interface MurderMysteryInvestigationLayoutMapScenario {
+  scene: MurderMysteryInvestigationMapSceneScenario;
+  hotspots: MurderMysteryInvestigationMapHotspotScenario[];
+}
+
+export interface MurderMysteryInvestigationLayoutScenario {
+  sections: MurderMysteryInvestigationLayoutSection[];
+  map?: MurderMysteryInvestigationLayoutMapScenario;
+}
+
+export interface MurderMysteryInvestigationsScenario {
+  deliveryMode: MurderMysteryDeliveryMode;
+  depletionMode: MurderMysteryClueDepletionMode;
+  turnOrder?: MurderMysteryInvestigationTurnOrderScenario;
+  layout: MurderMysteryInvestigationLayoutScenario;
+  rounds: MurderMysteryInvestigationRoundScenario[];
 }
 
 export interface MurderMysteryFlowStepScenario {
@@ -123,14 +171,7 @@ export interface MurderMysteryScenario {
   };
   roles: MurderMysteryRoleScenario[];
   parts: MurderMysteryPartScenario[];
-  investigations: {
-    deliveryMode: MurderMysteryDeliveryMode;
-    depletionMode: MurderMysteryClueDepletionMode;
-    layout: {
-      sections: MurderMysteryInvestigationLayoutSection[];
-    };
-    rounds: MurderMysteryInvestigationRoundScenario[];
-  };
+  investigations: MurderMysteryInvestigationsScenario;
   cards: MurderMysteryCardScenario[];
   finalVote: {
     question: string;
@@ -161,6 +202,15 @@ export interface MurderMysteryPendingInvestigation {
   requestedAt: number;
 }
 
+export interface MurderMysteryInvestigationTurnState {
+  round: MurderMysteryInvestigationRound | null;
+  orderedPlayerIds: string[];
+  currentPlayerIndex: number;
+  completedPlayerIds: string[];
+  turnStartedAt: number | null;
+  reservationByPlayerId: Record<string, string>;
+}
+
 export interface MurderMysteryAnnouncement {
   id: string;
   type: 'INTRO' | 'ENDBOOK' | 'SYSTEM';
@@ -185,6 +235,9 @@ export interface MurderMysteryGameData {
   roleByPlayerId: Record<string, string>;
   roleDisplayNameByPlayerId: Record<string, string>;
   investigationUsedByPlayerId: Record<string, MurderMysteryInvestigationUsage>;
+  investigationBackIdByTargetCardKey: Record<string, string>;
+  investigationTargetCardKeyByBackId: Record<string, string>;
+  investigationTurn: MurderMysteryInvestigationTurnState;
   pendingInvestigations: MurderMysteryPendingInvestigation[];
   revealedCardsByPlayerId: Record<string, string[]>;
   revealedCardIds: string[];
@@ -237,20 +290,75 @@ export interface MurderMysteryHostControlsView {
   cardsByPlayerId: Record<string, MurderMysteryCardScenario[]>;
 }
 
+export interface MurderMysteryInvestigationBackCardView
+  extends MurderMysteryCardBackStyle {
+  backId: string;
+  targetId: string;
+  targetLabel: string;
+  isReservedByMe: boolean;
+}
+
+export interface MurderMysteryInvestigationTargetView
+  extends MurderMysteryInvestigationTargetScenario {
+  totalClues: number;
+  revealedClues: number;
+  remainingClues: number;
+  isExhausted: boolean;
+  availableBacks: MurderMysteryInvestigationBackCardView[];
+}
+
+export interface MurderMysteryInvestigationRoundView {
+  round: MurderMysteryInvestigationRound;
+  targets: MurderMysteryInvestigationTargetView[];
+}
+
+export interface MurderMysteryInvestigationTurnPlayerView {
+  playerId: string;
+  roleId: string;
+  name: string;
+  displayName: string;
+  order: number;
+  isCurrent: boolean;
+  isCompleted: boolean;
+}
+
+export interface MurderMysteryInvestigationTurnView {
+  enabled: boolean;
+  currentPlayerId: string | null;
+  orderedPlayerIds: string[];
+  completedPlayerIds: string[];
+  turnStartedAt: number | null;
+  nextRoundFirstPlayerId: string | null;
+  players: MurderMysteryInvestigationTurnPlayerView[];
+  canActNow: boolean;
+  allPlayersDone: boolean;
+  myReservation: MurderMysteryInvestigationBackCardView | null;
+}
+
+export interface MurderMysteryInvestigationMapHotspotView
+  extends MurderMysteryInvestigationMapHotspotScenario {
+  targetLabel: string;
+  totalClues: number;
+  remainingClues: number;
+  isExhausted: boolean;
+  isCurrentTurnTarget: boolean;
+}
+
+export interface MurderMysteryInvestigationMapView {
+  scene: MurderMysteryInvestigationMapSceneScenario;
+  hotspots: MurderMysteryInvestigationMapHotspotView[];
+}
+
 export interface MurderMysteryInvestigationView {
   round: MurderMysteryInvestigationRound | null;
   revealedCardIds: string[];
   revealedCardIdsByTargetId: Record<string, string[]>;
   layoutSections: MurderMysteryInvestigationLayoutSection[];
   used: boolean;
-  targets: Array<
-    MurderMysteryInvestigationTargetScenario & {
-      totalClues: number;
-      revealedClues: number;
-      remainingClues: number;
-      isExhausted: boolean;
-    }
-  >;
+  mode: 'legacy' | 'map';
+  rounds: MurderMysteryInvestigationRoundView[];
+  turn: MurderMysteryInvestigationTurnView | null;
+  map: MurderMysteryInvestigationMapView | null;
 }
 
 export interface MurderMysteryClueVaultCardView
@@ -288,7 +396,7 @@ export interface MurderMysteryStateSnapshot {
     };
     flow: MurderMysteryFlowScenario;
     parts: MurderMysteryPartScenario[];
-    investigations: MurderMysteryScenario['investigations'];
+    investigations: MurderMysteryInvestigationsScenario;
     finalVote: MurderMysteryScenario['finalVote'];
     endbook: MurderMysteryScenario['endbook'];
   };
@@ -374,7 +482,27 @@ export interface MurderMysteryClientToServerEvents {
     callback: (response: CommonResponse) => void
   ) => void;
   mm_submit_investigation: (
-    data: { roomId: string; sessionId: string; targetId: string },
+    data: {
+      roomId: string;
+      sessionId: string;
+      targetId?: string;
+      backId?: string;
+    },
+    callback: (response: CommonResponse) => void
+  ) => void;
+  mm_set_investigation_reservation: (
+    data: {
+      roomId: string;
+      sessionId: string;
+      backId: string;
+    },
+    callback: (response: CommonResponse) => void
+  ) => void;
+  mm_clear_investigation_reservation: (
+    data: {
+      roomId: string;
+      sessionId: string;
+    },
     callback: (response: CommonResponse) => void
   ) => void;
   mm_submit_vote: (

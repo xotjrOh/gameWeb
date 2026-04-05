@@ -59,6 +59,9 @@ const asNonEmptyString = (value: unknown): string | undefined =>
 const asInteger = (value: unknown): number | undefined =>
   Number.isInteger(value) ? Number(value) : undefined;
 
+const asFiniteNumber = (value: unknown): number | undefined =>
+  typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+
 const asRound = (
   value: unknown
 ): MurderMysteryInvestigationRound | undefined => {
@@ -135,6 +138,27 @@ const requireRound = (
   const round = asRound(value);
   assertCondition(round, message);
   return round as MurderMysteryInvestigationRound;
+};
+
+const requireFiniteNumber = (value: unknown, message: string): number => {
+  const resolved = asFiniteNumber(value);
+  assertCondition(resolved !== undefined, message);
+  return resolved as number;
+};
+
+const normalizeCardBackStyle = (value: unknown) => {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+  const imageSrc = asNonEmptyString(value.imageSrc);
+  const shortLabel = asNonEmptyString(value.shortLabel);
+  if (!imageSrc && !shortLabel) {
+    return undefined;
+  }
+  return {
+    ...(imageSrc ? { imageSrc } : {}),
+    ...(shortLabel ? { shortLabel } : {}),
+  };
 };
 
 const readJsonFile = <T>(filePath: string): T => {
@@ -233,6 +257,7 @@ const normalizeInvestigationTargets = ({
     const sectionId = asNonEmptyString(targetRecord.sectionId);
     const order = asInteger(targetRecord.order);
     const icon = asNonEmptyString(targetRecord.icon);
+    const cardBack = normalizeCardBackStyle(targetRecord.cardBack);
 
     const cardPool = [
       ...toStringArray(targetRecord.cardPool),
@@ -258,6 +283,7 @@ const normalizeInvestigationTargets = ({
       sectionId,
       order,
       icon,
+      cardBack,
       cardPool,
     };
   });
@@ -337,6 +363,94 @@ const normalizeInvestigationLayoutSections = ({
   return defaults;
 };
 
+const normalizeInvestigationTurnOrder = ({
+  rawTurnOrder,
+}: {
+  rawTurnOrder: unknown;
+}) => {
+  if (!isRecord(rawTurnOrder)) {
+    return undefined;
+  }
+  const roleIds = toStringArray(rawTurnOrder.roleIds);
+  if (roleIds.length === 0) {
+    return undefined;
+  }
+  return {
+    roleIds,
+    rotateFirstPlayerEachRound:
+      rawTurnOrder.rotateFirstPlayerEachRound !== false,
+  };
+};
+
+const normalizeInvestigationLayoutMap = ({
+  rawMap,
+  fileName,
+}: {
+  rawMap: unknown;
+  fileName: string;
+}) => {
+  if (!isRecord(rawMap)) {
+    return undefined;
+  }
+
+  const sceneRecord = requireRecord(
+    rawMap.scene,
+    `${fileName}: investigations.layout.map.scene is required`
+  );
+  const hotspots = Array.isArray(rawMap.hotspots) ? rawMap.hotspots : [];
+
+  return {
+    scene: {
+      imageSrc: requireString(
+        sceneRecord.imageSrc,
+        `${fileName}: investigations.layout.map.scene.imageSrc is required`
+      ),
+      alt: asNonEmptyString(sceneRecord.alt) ?? `${fileName} investigation map`,
+      width: requireInteger(
+        sceneRecord.width,
+        `${fileName}: investigations.layout.map.scene.width must be integer`
+      ),
+      height: requireInteger(
+        sceneRecord.height,
+        `${fileName}: investigations.layout.map.scene.height must be integer`
+      ),
+    },
+    hotspots: hotspots.map((rawHotspot, index) => {
+      const hotspotRecord = requireRecord(
+        rawHotspot,
+        `${fileName}: investigations.layout.map.hotspots[${index}] must be object`
+      );
+      return {
+        id: requireString(
+          hotspotRecord.id,
+          `${fileName}: investigations.layout.map.hotspots[${index}].id is required`
+        ),
+        targetId: requireString(
+          hotspotRecord.targetId,
+          `${fileName}: investigations.layout.map.hotspots[${index}].targetId is required`
+        ),
+        label: asNonEmptyString(hotspotRecord.label),
+        xPct: requireFiniteNumber(
+          hotspotRecord.xPct,
+          `${fileName}: investigations.layout.map.hotspots[${index}].xPct must be number`
+        ),
+        yPct: requireFiniteNumber(
+          hotspotRecord.yPct,
+          `${fileName}: investigations.layout.map.hotspots[${index}].yPct must be number`
+        ),
+        widthPct: requireFiniteNumber(
+          hotspotRecord.widthPct,
+          `${fileName}: investigations.layout.map.hotspots[${index}].widthPct must be number`
+        ),
+        heightPct: requireFiniteNumber(
+          hotspotRecord.heightPct,
+          `${fileName}: investigations.layout.map.hotspots[${index}].heightPct must be number`
+        ),
+      };
+    }),
+  };
+};
+
 const normalizeInvestigations = (
   rawScenario: RawRecord,
   fileName: string
@@ -413,6 +527,10 @@ const normalizeInvestigations = (
   const layoutRecord = isRecord(investigationsRecord.layout)
     ? investigationsRecord.layout
     : null;
+  const layoutMap = normalizeInvestigationLayoutMap({
+    rawMap: layoutRecord?.map,
+    fileName,
+  });
 
   const deliveryMode =
     investigationsRecord.deliveryMode === 'manual' ? 'manual' : 'auto';
@@ -420,17 +538,22 @@ const normalizeInvestigations = (
     investigationsRecord.depletionMode === 'per_target'
       ? 'per_target'
       : 'global';
+  const turnOrder = normalizeInvestigationTurnOrder({
+    rawTurnOrder: investigationsRecord.turnOrder,
+  });
 
   return {
     investigations: {
       deliveryMode,
       depletionMode,
+      turnOrder,
       layout: {
         sections: normalizeInvestigationLayoutSections({
           rawSections: layoutRecord?.sections,
           allTargets,
           fileName,
         }),
+        ...(layoutMap ? { map: layoutMap } : {}),
       },
       rounds: normalizedRounds,
     },
@@ -782,6 +905,8 @@ const normalizeCards = ({
         cardRecord.text,
         `${fileName}: card(${id}) text is required`
       ),
+      backId: asNonEmptyString(cardRecord.backId),
+      back: normalizeCardBackStyle(cardRecord.back),
       effects,
     };
   });
@@ -990,6 +1115,7 @@ const validateScenarioSchema = (
   });
 
   const cardIds = new Set<string>();
+  const backIds = new Set<string>();
   scenario.cards.forEach((card) => {
     assertCondition(card.id, `${fileName}: card.id is required`);
     assertCondition(
@@ -997,6 +1123,13 @@ const validateScenarioSchema = (
       `${fileName}: duplicated card id (${card.id})`
     );
     cardIds.add(card.id);
+    if (card.backId) {
+      assertCondition(
+        !backIds.has(card.backId),
+        `${fileName}: duplicated card backId (${card.backId})`
+      );
+      backIds.add(card.backId);
+    }
 
     card.effects?.forEach((effect) => {
       if (effect.type === 'addPart') {
@@ -1078,6 +1211,99 @@ const validateScenarioSchema = (
       );
     });
   });
+
+  const turnOrder = scenario.investigations.turnOrder;
+  if (turnOrder) {
+    const orderedRoleIds = new Set<string>();
+    turnOrder.roleIds.forEach((roleId) => {
+      assertCondition(
+        roleIds.has(roleId),
+        `${fileName}: turnOrder references unknown roleId (${roleId})`
+      );
+      assertCondition(
+        !orderedRoleIds.has(roleId),
+        `${fileName}: duplicated turnOrder roleId (${roleId})`
+      );
+      orderedRoleIds.add(roleId);
+    });
+    assertCondition(
+      orderedRoleIds.size === scenario.roles.length,
+      `${fileName}: turnOrder.roleIds must include every scenario role exactly once`
+    );
+  }
+
+  const layoutMap = scenario.investigations.layout.map;
+  if (layoutMap) {
+    assertCondition(
+      scenario.investigations.deliveryMode === 'auto',
+      `${fileName}: map investigations require deliveryMode:auto`
+    );
+    assertCondition(
+      Boolean(turnOrder?.roleIds.length),
+      `${fileName}: map investigations require turnOrder.roleIds`
+    );
+    assertCondition(
+      Number.isInteger(layoutMap.scene.width) && layoutMap.scene.width > 0,
+      `${fileName}: map scene width must be positive integer`
+    );
+    assertCondition(
+      Number.isInteger(layoutMap.scene.height) && layoutMap.scene.height > 0,
+      `${fileName}: map scene height must be positive integer`
+    );
+    assertCondition(
+      layoutMap.hotspots.length > 0,
+      `${fileName}: map hotspots must be non-empty`
+    );
+
+    const hotspotIds = new Set<string>();
+    layoutMap.hotspots.forEach((hotspot) => {
+      assertCondition(
+        !hotspotIds.has(hotspot.id),
+        `${fileName}: duplicated map hotspot id (${hotspot.id})`
+      );
+      hotspotIds.add(hotspot.id);
+      assertCondition(
+        allTargetIds.has(hotspot.targetId),
+        `${fileName}: map hotspot(${hotspot.id}) references unknown targetId (${hotspot.targetId})`
+      );
+      assertCondition(
+        hotspot.xPct >= 0 && hotspot.xPct <= 100,
+        `${fileName}: map hotspot(${hotspot.id}) xPct must be between 0 and 100`
+      );
+      assertCondition(
+        hotspot.yPct >= 0 && hotspot.yPct <= 100,
+        `${fileName}: map hotspot(${hotspot.id}) yPct must be between 0 and 100`
+      );
+      assertCondition(
+        hotspot.widthPct > 0 && hotspot.widthPct <= 100,
+        `${fileName}: map hotspot(${hotspot.id}) widthPct must be between 0 and 100`
+      );
+      assertCondition(
+        hotspot.heightPct > 0 && hotspot.heightPct <= 100,
+        `${fileName}: map hotspot(${hotspot.id}) heightPct must be between 0 and 100`
+      );
+      assertCondition(
+        hotspot.xPct + hotspot.widthPct <= 100,
+        `${fileName}: map hotspot(${hotspot.id}) xPct + widthPct must be <= 100`
+      );
+      assertCondition(
+        hotspot.yPct + hotspot.heightPct <= 100,
+        `${fileName}: map hotspot(${hotspot.id}) yPct + heightPct must be <= 100`
+      );
+    });
+
+    rounds.forEach((roundConfig) => {
+      roundConfig.targets.forEach((target) => {
+        target.cardPool.forEach((cardId) => {
+          const card = scenario.cards.find((entry) => entry.id === cardId);
+          assertCondition(
+            Boolean(card?.backId),
+            `${fileName}: map target(${target.id}) card(${cardId}) requires backId`
+          );
+        });
+      });
+    });
+  }
 
   const stepIds = new Set<string>();
   const flowRounds = new Set<number>();

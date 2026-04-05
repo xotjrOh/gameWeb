@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Rehab Wing Investigation Map</title>
+  <desc id="desc">Stylized hospital wing map with desk, rehab ward, records room, auditorium, storage, and pool.</desc>
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#faf7ef"/>
+      <stop offset="100%" stop-color="#efe5d5"/>
+    </linearGradient>
+    <linearGradient id="ward" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fdfdfd"/>
+      <stop offset="100%" stop-color="#e2ecf5"/>
+    </linearGradient>
+    <linearGradient id="hall" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f0d2a3"/>
+      <stop offset="100%" stop-color="#d4ae77"/>
+    </linearGradient>
+    <linearGradient id="pool" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7dd3fc"/>
+      <stop offset="100%" stop-color="#0891b2"/>
+    </linearGradient>
+    <pattern id="tile" width="44" height="44" patternUnits="userSpaceOnUse">
+      <path d="M44 0H0V44" fill="none" stroke="#d5c9b8" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="1600" height="900" fill="#f7efe3"/>
+  <rect x="14" y="14" width="1572" height="872" rx="18" fill="url(#paper)" stroke="#111827" stroke-width="10"/>
+
+  <rect x="26" y="26" width="1548" height="238" rx="10" fill="url(#ward)" stroke="#111827" stroke-width="8"/>
+  <rect x="26" y="26" width="1548" height="238" fill="url(#tile)" opacity="0.5"/>
+  <rect x="58" y="48" width="210" height="90" rx="14" fill="#efe3cf" stroke="#475569" stroke-width="4"/>
+  <rect x="360" y="54" width="150" height="112" rx="12" fill="#d7e8f7" stroke="#475569" stroke-width="4"/>
+  <rect x="570" y="54" width="150" height="112" rx="12" fill="#d7e8f7" stroke="#475569" stroke-width="4"/>
+  <rect x="800" y="48" width="110" height="112" rx="10" fill="#d9d9d9" stroke="#475569" stroke-width="4"/>
+  <rect x="954" y="44" width="152" height="112" rx="10" fill="#d8c7a2" stroke="#475569" stroke-width="4"/>
+  <rect x="1138" y="104" width="180" height="76" rx="16" fill="#d9e3ea" stroke="#475569" stroke-width="4"/>
+  <rect x="1380" y="46" width="120" height="120" rx="10" fill="#e8e8e8" stroke="#475569" stroke-width="4"/>
+
+  <rect x="26" y="276" width="690" height="390" rx="8" fill="url(#hall)" stroke="#111827" stroke-width="8"/>
+  <rect x="48" y="298" width="646" height="346" rx="4" fill="rgba(255,255,255,0.12)" stroke="#9a7a4c" stroke-width="3"/>
+  <rect x="120" y="320" width="500" height="58" rx="8" fill="#f3efe9" stroke="#6b1d1d" stroke-width="4"/>
+  <g fill="#7b241c" stroke="#3f1c12" stroke-width="3">
+    <rect x="82" y="408" width="236" height="184" rx="8"/>
+    <rect x="382" y="408" width="236" height="184" rx="8"/>
+  </g>
+
+  <rect x="802" y="276" width="412" height="500" rx="8" fill="#f4f4f2" stroke="#111827" stroke-width="8"/>
+  <rect x="830" y="328" width="242" height="214" rx="6" fill="#7f7f7f" stroke="#111827" stroke-width="5"/>
+  <rect x="848" y="564" width="182" height="168" rx="6" fill="#ececec" stroke="#64748b" stroke-width="4"/>
+  <rect x="1048" y="564" width="118" height="86" rx="6" fill="#dfe7eb" stroke="#64748b" stroke-width="4"/>
+
+  <rect x="1242" y="276" width="332" height="500" rx="8" fill="#f7f2ea" stroke="#111827" stroke-width="8"/>
+  <rect x="1330" y="352" width="182" height="400" rx="64" fill="url(#pool)" stroke="#94a3b8" stroke-width="12"/>
+
+  <g fill="#0f172a" font-family="Arial, Helvetica, sans-serif" text-anchor="middle">
+    <text x="163" y="101" font-size="26" font-weight="700">Event Desk</text>
+    <text x="436" y="116" font-size="24" font-weight="700">Rehab Ward</text>
+    <text x="646" y="116" font-size="24" font-weight="700">Rehab Ward</text>
+    <text x="855" y="110" font-size="24" font-weight="700">Records</text>
+    <text x="1030" y="108" font-size="24" font-weight="700">Supplies</text>
+    <text x="1228" y="150" font-size="24" font-weight="700">Exam Area</text>
+    <text x="1440" y="118" font-size="24" font-weight="700">Wash</text>
+    <text x="371" y="352" font-size="30" font-weight="800">Auditorium</text>
+    <text x="951" y="438" font-size="28" font-weight="800">Storage</text>
+    <text x="939" y="640" font-size="26" font-weight="700">Laundry</text>
+    <text x="1110" y="618" font-size="22" font-weight="700">Sink</text>
+    <text x="1400" y="320" font-size="28" font-weight="800">Pool Wing</text>
+  </g>
+</svg>

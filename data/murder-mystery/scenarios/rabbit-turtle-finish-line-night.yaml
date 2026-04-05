@@ -1,7 +1,7 @@
 id: rabbit-turtle-finish-line-night
 type: murder_mystery
-title: "토끼와 거북이, 결승선 다음의 밤"
-roomDisplayName: "토끼와 거북이, 결승선 다음의 밤"
+title: '토끼와 거북이, 결승선 다음의 밤'
+roomDisplayName: '토끼와 거북이, 결승선 다음의 밤'
 players:
   min: 4
   max: 4
@@ -28,83 +28,83 @@ intro:
 flow:
   steps:
     - id: INTRO
-      label: "오프닝"
+      label: '오프닝'
       kind: intro
       durationSec: 180
-      enterAnnouncement: "별똥별은 이미 떨어졌다. 이제 남은 것은 늦은 밤의 진술뿐이다."
+      enterAnnouncement: '별똥별은 이미 떨어졌다. 이제 남은 것은 늦은 밤의 진술뿐이다.'
     - id: ROUND1_INVESTIGATE
-      label: "1라운드 조사"
+      label: '1라운드 조사'
       kind: investigate
       round: 1
       durationSec: 420
-      description: "재활수조실 주변과 행사 자료를 확인해 사건 직후의 동선과 첫 번째 거짓말을 정리하세요."
-      enterAnnouncement: "1라운드 조사: 재활수조실, 연결복도, 행사 자료에서 밤의 시작을 확인합니다."
+      description: '재활수조실 주변과 행사 자료를 확인해 사건 직후의 동선과 첫 번째 거짓말을 정리하세요.'
+      enterAnnouncement: '1라운드 조사: 재활수조실, 연결복도, 행사 자료에서 밤의 시작을 확인합니다.'
     - id: ROUND1_DISCUSS
-      label: "1라운드 토론"
+      label: '1라운드 토론'
       kind: discuss
       round: 1
       durationSec: 600
-      description: "거북이 즉사하지 않았다는 점과, 누군가가 구조보다 봉투를 먼저 찾았다는 점을 중심으로 맞춰 보세요."
+      description: '거북이 즉사하지 않았다는 점과, 누군가가 구조보다 봉투를 먼저 찾았다는 점을 중심으로 맞춰 보세요.'
     - id: ROUND2_INVESTIGATE
-      label: "2라운드 조사"
+      label: '2라운드 조사'
       kind: investigate
       round: 2
       durationSec: 420
-      description: "의료 기록, 보안 로그, 관계자 진술을 대조해 봉투와 최종 살해 방향을 좁히세요."
-      enterAnnouncement: "2라운드 조사: 문서와 로그를 열어 재단의 통제와 은폐 흔적을 확인합니다."
+      description: '의료 기록, 보안 로그, 관계자 진술을 대조해 봉투와 최종 살해 방향을 좁히세요.'
+      enterAnnouncement: '2라운드 조사: 문서와 로그를 열어 재단의 통제와 은폐 흔적을 확인합니다.'
     - id: ROUND2_DISCUSS
-      label: "2라운드 토론"
+      label: '2라운드 토론'
       kind: discuss
       round: 2
       durationSec: 600
-      description: "토끼부부가 최종 살해자가 아니라는 사실을 전제로, 누가 봉투를 되찾아야만 했는지 토론하세요."
+      description: '토끼부부가 최종 살해자가 아니라는 사실을 전제로, 누가 봉투를 되찾아야만 했는지 토론하세요.'
     - id: FINAL_VOTE
-      label: "최종 투표"
+      label: '최종 투표'
       kind: final_vote
       durationSec: 300
-      description: "현재 확보된 단서상, 거북의 최종 사망에 가장 직접적으로 연루된 인물을 지목하세요."
+      description: '현재 확보된 단서상, 거북의 최종 사망에 가장 직접적으로 연루된 인물을 지목하세요.'
     - id: ENDBOOK
-      label: "엔딩"
+      label: '엔딩'
       kind: endbook
-      enterAnnouncement: "엔딩 단계에 도달했습니다. 현재 저장된 draft 결말을 확인합니다."
+      enterAnnouncement: '엔딩 단계에 도달했습니다. 현재 저장된 draft 결말을 확인합니다.'
 
 parts:
   - id: part_media_frame_article
-    name: "기사 스크랩"
-    source: "event_desk_archive"
-    note: "여우의 프레이밍이 남은 기사 요약"
+    name: '기사 스크랩'
+    source: 'event_desk_archive'
+    note: '여우의 프레이밍이 남은 기사 요약'
   - id: part_apology_script
-    name: "사과 방송 대본"
-    source: "event_desk_archive"
-    note: "자라가 강요한 공개 사과 원고"
+    name: '사과 방송 대본'
+    source: 'event_desk_archive'
+    note: '자라가 강요한 공개 사과 원고'
   - id: part_turtle_message
-    name: "거북의 호출 메시지"
-    source: "event_desk_archive"
-    note: "거북이 토끼남편을 재활수조실로 부른 기록"
+    name: '거북의 호출 메시지'
+    source: 'event_desk_archive'
+    note: '거북이 토끼남편을 재활수조실로 부른 기록'
   - id: part_prescription_copy
-    name: "수면유도제 처방전 사본"
-    source: "medical_records"
-    note: "대표 선발전 직전 약효를 설명하는 사본"
+    name: '수면유도제 처방전 사본'
+    source: 'medical_records'
+    note: '대표 선발전 직전 약효를 설명하는 사본'
   - id: part_transfer_plan
-    name: "토끼남편 의료동 이송 계획안"
-    source: "medical_records"
-    note: "본행사 뒤 토끼남편을 붙잡아 둘 계획"
+    name: '토끼남편 의료동 이송 계획안'
+    source: 'medical_records'
+    note: '본행사 뒤 토끼남편을 붙잡아 둘 계획'
   - id: part_cctv_capture
-    name: "수술동 CCTV 캡처"
-    source: "security_logs"
-    note: "토끼아내의 과거 절박함을 쥔 재단 자료"
+    name: '수술동 CCTV 캡처'
+    source: 'security_logs'
+    note: '토끼아내의 과거 절박함을 쥔 재단 자료'
   - id: part_access_log_draft
-    name: "DRAFT 의료동 출입 로그"
-    source: "security_logs"
-    note: "최종 범행 방향을 위한 임시 보강 로그"
+    name: 'DRAFT 의료동 출입 로그'
+    source: 'security_logs'
+    note: '최종 범행 방향을 위한 임시 보강 로그'
   - id: part_turtle_note
-    name: "거북 자필 메모"
-    source: "people_accounts"
-    note: "거북이 남긴 고백과 경고"
+    name: '거북 자필 메모'
+    source: 'people_accounts'
+    note: '거북이 남긴 고백과 경고'
 
 roles:
   - id: rabbit_husband
-    displayName: "토끼남편"
+    displayName: '토끼남편'
     publicText: |
       국가대표 선발전에서 의문의 이상 증세로 쓰러진 뒤 추락한 육상선수다.
       윤슬의 아버지이자 복귀 특집 행사의 중심 인물이지만, 오늘 밤 누구보다 거북의 죽음 가까이에 있었던 사람으로도 의심받는다.
@@ -213,7 +213,7 @@ roles:
 
       복도로 나오자 주머니 안 휴대전화가 한 번 울렸다. 누구인지 확인하지 않았다. 그때는 아무 목소리도 들을 수 없을 것 같았다. 복도 끝에서는 단단한 구두 소리가 한 번 울린 것 같았지만, 나는 돌아보지 않았다. 돌아보면 거북을 죽이고 싶은 마음을 더 이상 억누르지 못할 것 같았다.
   - id: rabbit_wife
-    displayName: "토끼아내"
+    displayName: '토끼아내'
     publicText: |
       윤슬의 어머니이자 토끼남편의 동행이다.
       병실과 대기 명단 사이에서 오래 버텨 온 사람으로, 행사장에서도 남편을 혼자 두지 않으려 했지만 결국 그 밤의 중요한 순간에 가장 먼저 봉투를 들고 빠져나갔다.
@@ -454,7 +454,7 @@ roles:
       그래서 나중에라도 애초부터 내가 가지고 있던 서류였다고 둘러댈 수는 없었다. 그 봉투는 분명 그 방에 있었고, 내가 먼저 가져온 것이었다.
       그리고 거북이 숨 쉬고 있을 때 내가 먼저 손을 뻗은 건, 호출 버튼이 아니라 그 봉투였다.
   - id: jara
-    displayName: "자라"
+    displayName: '자라'
     publicText: |
       용왕재단 실무자다.
       느린 말투와 공손한 태도 뒤에서 일정, 대본, 수술 빈자리, 의료동 출입까지 관리하며 사람들의 선택지를 부드럽게 지워 왔다.
@@ -480,7 +480,7 @@ roles:
       현재 시스템상 최종 투표 정답은 자라로 설정되어 있다.
       최종 원고가 완성되면 이 역할지와 최종 정답, 엔딩 문구를 함께 교체해야 한다.
   - id: fox
-    displayName: "여우"
+    displayName: '여우'
     publicText: |
       복귀 행사의 기사와 연출을 맡은 기자다.
       가장 팔릴 문장을 가장 빨리 고르는 사람으로, 토끼남편의 추락을 오래 팔아 왔고 이번에도 그 서사를 포기하지 않으려 한다.
@@ -504,57 +504,122 @@ roles:
 investigations:
   deliveryMode: auto
   depletionMode: global
+  turnOrder:
+    roleIds:
+      - rabbit_husband
+      - rabbit_wife
+      - fox
+      - jara
+    rotateFirstPlayerEachRound: true
   layout:
+    map:
+      scene:
+        imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/rehab-wing-map.svg'
+        alt: 'Rehab wing and event hall map'
+        width: 1600
+        height: 900
+      hotspots:
+        - id: hotspot_event_desk
+          targetId: item_event_desk
+          label: '행사 자료 데스크'
+          xPct: 4
+          yPct: 4
+          widthPct: 17
+          heightPct: 13
+        - id: hotspot_rehab_room
+          targetId: loc_rehab_tank_room
+          label: '재활수조실'
+          xPct: 22
+          yPct: 4
+          widthPct: 26
+          heightPct: 16
+        - id: hotspot_records
+          targetId: item_medical_records
+          label: '기록 보관함'
+          xPct: 49
+          yPct: 3
+          widthPct: 19
+          heightPct: 15
+        - id: hotspot_security
+          targetId: item_security_logs
+          label: '보안 로그 정리'
+          xPct: 51
+          yPct: 36
+          widthPct: 17
+          heightPct: 22
+        - id: hotspot_corridor_storage
+          targetId: loc_corridor_storage
+          label: '연결복도와 정리실'
+          xPct: 49
+          yPct: 29
+          widthPct: 27
+          heightPct: 54
+        - id: hotspot_people_accounts
+          targetId: npc_people_accounts
+          label: '관계자 진술 묶음'
+          xPct: 2
+          yPct: 30
+          widthPct: 42
+          heightPct: 42
     sections:
       - id: island_locations
-        title: "현장 동선"
+        title: '현장 동선'
         targetTypes: [location]
         order: 10
-        icon: "📍"
+        icon: '📍'
       - id: case_files
-        title: "문서와 기록"
+        title: '문서와 기록'
         targetTypes: [item]
         order: 20
-        icon: "📁"
+        icon: '📁'
       - id: people_accounts
-        title: "관계자 진술"
+        title: '관계자 진술'
         targetTypes: [character]
         order: 30
-        icon: "👤"
+        icon: '👤'
   rounds:
     - round: 1
       targets:
         - id: loc_rehab_tank_room
-          label: "재활수조실"
+          label: '재활수조실'
           targetType: location
           entityKey: rehab_tank_room
           sectionId: island_locations
           order: 10
-          description: "거북이 발견된 현장. 수조, 벤치, 비상 호출 버튼이 그대로 남아 있다."
+          description: '거북이 발견된 현장. 수조, 벤치, 비상 호출 버튼이 그대로 남아 있다.'
+          cardBack:
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-rehab.svg'
+            shortLabel: '재활수조실 단서'
           cardPool:
             - card_rehab_thermos
             - card_rehab_emergency_button
             - card_rehab_bench_gap
             - card_rehab_waterline
         - id: loc_corridor_storage
-          label: "연결복도와 정리실"
+          label: '연결복도와 정리실'
           targetType: location
           entityKey: corridor_storage
           sectionId: island_locations
           order: 20
-          description: "재활수조실 맞은편 정리실과, 세탁실·비상계단으로 빠지는 우회 동선이 이어진다."
+          description: '재활수조실 맞은편 정리실과, 세탁실·비상계단으로 빠지는 우회 동선이 이어진다.'
+          cardBack:
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-corridor.svg'
+            shortLabel: '복도/정리실 단서'
           cardPool:
             - card_corridor_layout
             - card_storage_towel_trace
             - card_laundry_fiber
             - card_hard_sole_trace
         - id: item_event_desk
-          label: "행사 자료 데스크"
+          label: '행사 자료 데스크'
           targetType: item
           entityKey: event_desk
           sectionId: case_files
           order: 30
-          description: "여우의 기사 자료와 자라의 행사 문건이 뒤섞인 임시 데스크."
+          description: '여우의 기사 자료와 자라의 행사 문건이 뒤섞인 임시 데스크.'
+          cardBack:
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-desk.svg'
+            shortLabel: '데스크 단서'
           cardPool:
             - card_headline_archive
             - card_apology_script
@@ -563,36 +628,45 @@ investigations:
     - round: 2
       targets:
         - id: item_medical_records
-          label: "의료동 기록 보관함"
+          label: '의료동 기록 보관함'
           targetType: item
           entityKey: medical_records
           sectionId: case_files
           order: 10
-          description: "수면유도제 처방, 수술 대기, 이송 계획안까지 의료와 통제가 겹친 서류철."
+          description: '수면유도제 처방, 수술 대기, 이송 계획안까지 의료와 통제가 겹친 서류철.'
+          cardBack:
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            shortLabel: '의료 기록 단서'
           cardPool:
             - card_prescription_copy
             - card_transfer_plan
             - card_waitlist_note
             - card_yunsul_chart
         - id: item_security_logs
-          label: "보안 로그와 CCTV 정리"
+          label: '보안 로그와 CCTV 정리'
           targetType: item
           entityKey: security_logs
           sectionId: case_files
           order: 20
-          description: "출입 기록, 호출 로그, 흐릿한 캡처가 정리된 보안 폴더."
+          description: '출입 기록, 호출 로그, 흐릿한 캡처가 정리된 보안 폴더.'
+          cardBack:
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-security.svg'
+            shortLabel: '보안 로그 단서'
           cardPool:
             - card_cctv_capture
             - card_rehab_call_log
             - card_access_log_draft
             - card_laundry_exit_camera
         - id: npc_people_accounts
-          label: "관계자 진술 묶음"
+          label: '관계자 진술 묶음'
           targetType: character
           entityKey: people_accounts
           sectionId: people_accounts
           order: 30
-          description: "거북 메모와 행사 스태프들의 짧은 진술, 재단 브리핑 메모가 모여 있다."
+          description: '거북 메모와 행사 스태프들의 짧은 진술, 재단 브리핑 메모가 모여 있다.'
+          cardBack:
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-witness.svg'
+            shortLabel: '진술 묶음'
           cardPool:
             - card_turtle_note
             - card_staff_statement_jara
@@ -601,55 +675,82 @@ investigations:
 
 cards:
   - id: card_rehab_thermos
-    title: "열린 보온병"
+    backId: rehab_thermos
+    title: '열린 보온병'
+    back:
+      shortLabel: '보온병'
     text: |
       수조 옆 벤치에서 뚜껑 열린 보온병이 발견됐다.
       내부 잔류 성분은 병원 처방 수면유도제 계열과 일치한다.
       물에 섞인 양은 즉시 의식을 잃게 할 정도는 아니지만, 짧은 시간 안에 심한 졸음과 근력 저하를 유발할 수 있다.
   - id: card_rehab_emergency_button
-    title: "비상 호출 버튼"
+    backId: rehab_emergency_button
+    title: '비상 호출 버튼'
+    back:
+      shortLabel: '비상 버튼'
     text: |
       재활수조실 비상 호출 버튼에는 최근에 눌린 흔적이 없다.
       버튼 주변은 물기 하나 없이 말라 있었다.
       누군가 거북이 숨 쉬는 걸 확인하고도 구조 요청을 미뤘을 가능성을 시사한다.
   - id: card_rehab_bench_gap
-    title: "벤치 위의 빈 자리"
+    backId: rehab_bench_gap
+    title: '벤치 위의 빈 자리'
+    back:
+      shortLabel: '벤치 흔적'
     text: |
       벤치 위 먼지 위로 봉투 크기의 빈 사각 자국이 남아 있다.
       바닥에는 누군가 급히 숙여 손으로 훑은 듯한 물자국이 끊겨 있다.
       누군가는 거북보다 먼저 벤치와 바닥에서 무언가를 찾았다.
   - id: card_rehab_waterline
-    title: "수조 턱의 물자국"
+    backId: rehab_waterline
+    title: '수조 턱의 물자국'
+    back:
+      shortLabel: '물자국'
     text: |
       수조 턱과 바닥 사이에 젖은 손자국이 짧게 이어져 있다.
       거북은 약기운 속에서도 한동안 버티며 몸을 움직인 것으로 보인다.
       첫 방문자가 방을 떠난 직후 즉사한 상태는 아니었다.
   - id: card_corridor_layout
-    title: "복도 구조 설명"
+    backId: corridor_layout
+    title: '복도 구조 설명'
+    back:
+      shortLabel: '복도 구조'
     text: |
       의료동 연결복도 끝에는 재활수조실과 정리실 문이 서로 마주 보고 있다.
       정리실 뒷벽의 좁은 문은 세탁실로, 세탁실 왼편은 비상계단으로 바로 이어진다.
       재활수조실 안을 피하면서도 빠져나갈 수 있는 우회 동선이 존재한다.
   - id: card_storage_towel_trace
-    title: "정리실 수건 더미"
+    backId: storage_towel_trace
+    title: '정리실 수건 더미'
+    back:
+      shortLabel: '수건 더미'
     text: |
       정리실 수건 더미 안쪽이 한 번 깊게 눌렸다가 다시 급히 정리된 흔적이 있다.
       바닥에는 젖은 신발 자국이 오래 머문 방향 대신 문틈 쪽으로만 짧게 남아 있다.
       누군가 이곳에 몸을 숨긴 채 재활수조실 안쪽을 지켜봤을 가능성이 있다.
   - id: card_laundry_fiber
-    title: "세탁실 쪽 종이섬유"
+    backId: laundry_fiber
+    title: '세탁실 쪽 종이섬유'
+    back:
+      shortLabel: '종이 섬유'
     text: |
       세탁실 문고리와 비상계단 첫 계단에서 눅눅한 종이섬유와 봉투용 풀 냄새가 검출됐다.
       커다란 서류봉투 하나가 그 방향으로 옮겨졌음을 뒷받침한다.
       복도 정면을 통과하지 않고 빠져나간 동선도 이쪽뿐이다.
   - id: card_hard_sole_trace
-    title: "단단한 굽 자국"
+    backId: hard_sole_trace
+    title: '단단한 굽 자국'
+    back:
+      shortLabel: '굽 자국'
     text: |
       연결복도 왁스 바닥에 단단한 굽이 긁고 간 가는 반달 흔적이 남아 있다.
       빠르게 방향을 꺾을 때 생기는 자국으로, 운동화 바닥보다 형식용 구두나 굽 있는 신발 쪽에 가깝다.
       토끼남편의 러닝화와는 패턴이 다르다.
   - id: card_headline_archive
-    title: "기사 보관본"
+    backId: headline_archive
+    title: '기사 보관본'
+    back:
+      shortLabel: '기사 보관본'
     text: |
       기사 보관본 제목: 「재능만 믿던 스타의 몰락」.
       본문은 토끼남편을 '타고난 스타', 거북을 '성실한 역전승'으로 대비한다.
@@ -658,7 +759,10 @@ cards:
       - type: addPart
         partId: part_media_frame_article
   - id: card_apology_script
-    title: "공개 사과 방송 대본"
+    backId: apology_script
+    title: '공개 사과 방송 대본'
+    back:
+      shortLabel: '사과 대본'
     text: |
       공개 사과 방송 대본 요약:
       - '거북 선수를 얕보고 긴장을 놓쳤다.'
@@ -669,7 +773,10 @@ cards:
       - type: addPart
         partId: part_apology_script
   - id: card_turtle_message
-    title: "거북의 메시지"
+    backId: turtle_message
+    title: '거북의 메시지'
+    back:
+      shortLabel: '거북 메시지'
     text: |
       거북이 토끼남편에게 보낸 행사 당일 메시지:
       '대표 선발전 날 일에 대해 사과할 게 있어. 오늘은 꼭 말해야 할 것 같아.'
@@ -678,13 +785,19 @@ cards:
       - type: addPart
         partId: part_turtle_message
   - id: card_program_schedule
-    title: "행사 일정표"
+    backId: program_schedule
+    title: '행사 일정표'
+    back:
+      shortLabel: '일정표'
     text: |
       행사 당일 일정표에는 본행사 종료 뒤 '의료동 회복 동선 안내'와 '개별 컨디션 체크'가 별도 표시되어 있다.
       토끼남편 이름 옆엔 연필로 작은 별표가 두 번 찍혀 있다.
       공식 프로그램 바깥에서 누군가를 따로 떼어 놓을 준비처럼 보인다.
   - id: card_prescription_copy
-    title: "수면유도제 처방전 사본"
+    backId: prescription_copy
+    title: '수면유도제 처방전 사본'
+    back:
+      shortLabel: '처방전 사본'
     text: |
       수면유도제 처방전 사본.
       환자명은 일부 지워졌지만 처방일은 대표 선발전 직전 주간과 겹친다.
@@ -693,7 +806,10 @@ cards:
       - type: addPart
         partId: part_prescription_copy
   - id: card_transfer_plan
-    title: "의료동 이송 계획안"
+    backId: transfer_plan
+    title: '의료동 이송 계획안'
+    back:
+      shortLabel: '이송 계획안'
     text: |
       문서 제목: '토끼남편 의료동 이송 계획안'.
       요약: 본행사 종료 직후 토끼남편을 의료동 회복 관찰 명목으로 이동시킨다.
@@ -702,13 +818,19 @@ cards:
       - type: addPart
         partId: part_transfer_plan
   - id: card_waitlist_note
-    title: "수술 대기 내부 메모"
+    backId: waitlist_note
+    title: '수술 대기 내부 메모'
+    back:
+      shortLabel: '대기 메모'
     text: |
       수술 대기 관련 내부 메모.
       '빈자리 발생 시 재단 우선순위 확인 후 통보'라는 문장이 반복된다.
       윤슬 이름은 직접 적혀 있지 않지만, 수술 순서가 의료적 긴급성만으로 결정되지 않았음을 보여 준다.
   - id: card_yunsul_chart
-    title: "윤슬 상태 기록"
+    backId: yunsul_chart
+    title: '윤슬 상태 기록'
+    back:
+      shortLabel: '윤슬 기록'
     text: |
       윤슬 상태 기록 요약:
       - 공개 사과 방송 시작 전부터 호흡 불안정
@@ -716,7 +838,10 @@ cards:
       - 토끼남편 도착 전 사망 확인
       시간표는 '방송이 끝날 때쯤 윤슬이 죽었다'는 진술과 대체로 맞아떨어진다.
   - id: card_cctv_capture
-    title: "수술동 CCTV 캡처"
+    backId: cctv_capture
+    title: '수술동 CCTV 캡처'
+    back:
+      shortLabel: 'CCTV 캡처'
     text: |
       수술동 복도 CCTV 캡처 설명.
       토끼아내가 다른 아이 동의서 봉투를 들고 화장실로 들어가는 장면이 찍혀 있다.
@@ -725,13 +850,19 @@ cards:
       - type: addPart
         partId: part_cctv_capture
   - id: card_rehab_call_log
-    title: "구조 호출 로그"
+    backId: rehab_call_log
+    title: '구조 호출 로그'
+    back:
+      shortLabel: '호출 로그'
     text: |
       비상 호출 로그상 재활수조실 최초 구조 호출은 객석 쪽 소란이 번진 뒤에야 기록된다.
       거북이 공식적으로 발견되기 전까지 의료동 내부에서 즉시 구조 요청한 사람은 없었다.
       첫 목격자와 두 번째 방문자 모두, 구조보다 다른 일을 먼저 했을 가능성이 남는다.
   - id: card_access_log_draft
-    title: "DRAFT 의료동 출입 로그"
+    backId: access_log_draft
+    title: 'DRAFT 의료동 출입 로그'
+    back:
+      shortLabel: '출입 로그'
     text: |
       DRAFT 단서.
       의료동 출입 로그 초안에는 행사 종료 직전 자라의 출입권한이 연결복도 구역에서 한 번 더 사용된 흔적이 남아 있다.
@@ -741,12 +872,18 @@ cards:
       - type: addPart
         partId: part_access_log_draft
   - id: card_laundry_exit_camera
-    title: "세탁실 출구 캡처"
+    backId: laundry_exit_camera
+    title: '세탁실 출구 캡처'
+    back:
+      shortLabel: '세탁실 캡처'
     text: |
       세탁실 출구 카메라에는 누군가가 가방을 몸 앞으로 끌어안은 채 비상계단으로 사라지는 흐릿한 그림자만 남아 있다.
       얼굴은 보이지 않지만, 얇고 큰 봉투를 안쪽에 숨긴 듯한 각진 실루엣이 한 순간 스친다.
   - id: card_turtle_note
-    title: "거북 자필 메모"
+    backId: turtle_note
+    title: '거북 자필 메모'
+    back:
+      shortLabel: '거북 메모'
     text: |
       거북 자필 메모 요약:
       '대표선발전에서 유성이 진 건 내 잘못이다. 물병에 수면제를 탔다. 오늘 유성에게도 말할 계획이다.
@@ -756,26 +893,35 @@ cards:
       - type: addPart
         partId: part_turtle_note
   - id: card_staff_statement_jara
-    title: "DRAFT 스태프 진술 - 자라"
+    backId: staff_statement_jara
+    title: 'DRAFT 스태프 진술 - 자라'
+    back:
+      shortLabel: '자라 진술'
     text: |
       DRAFT 단서.
       행사 스태프 진술: 자라는 본행사 직전부터 의료동과 행사장 사이를 여러 번 오갔고, 한 번은 '봉투만 먼저 찾아'라는 말을 낮게 내뱉었다고 한다.
       정확한 맥락은 불명이나, 누락된 서류를 찾고 있었던 정황과 맞물린다.
       TODO_AUTHOR_FINALIZE_JARA_WITNESS로 교체 필요.
   - id: card_staff_statement_fox
-    title: "스태프 진술 - 여우"
+    backId: staff_statement_fox
+    title: '스태프 진술 - 여우'
+    back:
+      shortLabel: '여우 진술'
     text: |
       진행 보조 스태프 진술: 여우는 자료집 제목을 막판까지 고치며 '비극에도 각도가 필요하다'고 말했다.
       그는 가족 코멘트와 거북 발언 순서를 집요하게 조정했고, 토끼남편의 과거 추락 서사를 이번 복귀 행사 중심에 세우려 했다.
   - id: card_foundation_brief
-    title: "재단 브리핑 메모"
+    backId: foundation_brief
+    title: '재단 브리핑 메모'
+    back:
+      shortLabel: '재단 브리핑'
     text: |
       용왕재단 내부 브리핑 메모.
       '토끼남편은 공식 발표 후 의료동으로 유도, 불필요한 인터뷰 차단. 문서 유출 및 감정적 돌발 대응 주의.'
       서명란은 비어 있지만, 실무 전달 체크 칸엔 자라 이니셜이 남아 있다.
 
 finalVote:
-  question: "현재 확보된 단서상, 거북의 최종 사망에 가장 직접적으로 연루된 인물은 누구인가?"
+  question: '현재 확보된 단서상, 거북의 최종 사망에 가장 직접적으로 연루된 인물은 누구인가?'
   correctRoleId: jara
 
 endbook:

@@ -8,6 +8,8 @@ import {
   moveMurderMysteryToNextPhase,
   resetMurderMysteryGame,
   resolveMurderMysteryInvestigation,
+  clearMurderMysteryInvestigationReservation,
+  setMurderMysteryInvestigationReservation,
   startMurderMysteryGame,
   submitMurderMysteryInvestigation,
   submitMurderMysteryVote,
@@ -108,7 +110,7 @@ const murderMysteryGameHandler = (
 
   socket.on(
     'mm_submit_investigation',
-    ({ roomId, sessionId, targetId }, callback) => {
+    ({ roomId, sessionId, targetId, backId }, callback) => {
       try {
         const room = toMurderMysteryRoom(validateRoom(roomId));
         validatePlayer(room, sessionId);
@@ -118,7 +120,10 @@ const murderMysteryGameHandler = (
           room,
           scenario,
           sessionId,
-          targetId
+          {
+            targetId,
+            backId,
+          }
         );
 
         if (result.mode === 'auto') {
@@ -134,6 +139,45 @@ const murderMysteryGameHandler = (
           });
         }
 
+        emitMurderMysterySnapshots(room, io);
+        return callback({ success: true });
+      } catch (error) {
+        return callback({ success: false, message: (error as Error).message });
+      }
+    }
+  );
+
+  socket.on(
+    'mm_set_investigation_reservation',
+    ({ roomId, sessionId, backId }, callback) => {
+      try {
+        const room = toMurderMysteryRoom(validateRoom(roomId));
+        validatePlayer(room, sessionId);
+        const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
+
+        setMurderMysteryInvestigationReservation(
+          room,
+          scenario,
+          sessionId,
+          backId
+        );
+        emitMurderMysterySnapshots(room, io);
+        return callback({ success: true });
+      } catch (error) {
+        return callback({ success: false, message: (error as Error).message });
+      }
+    }
+  );
+
+  socket.on(
+    'mm_clear_investigation_reservation',
+    ({ roomId, sessionId }, callback) => {
+      try {
+        const room = toMurderMysteryRoom(validateRoom(roomId));
+        validatePlayer(room, sessionId);
+        const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
+
+        clearMurderMysteryInvestigationReservation(room, scenario, sessionId);
         emitMurderMysterySnapshots(room, io);
         return callback({ success: true });
       } catch (error) {
