@@ -98,7 +98,7 @@ export default function SignInPage() {
           variant="contained"
           color="primary"
           component={Link}
-          href="/games/animal"
+          href="/games/horse"
           prefetch={false}
           sx={{
             py: 1,

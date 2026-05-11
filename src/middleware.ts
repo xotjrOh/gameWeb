@@ -17,7 +17,7 @@ export async function middleware(request: NextRequest) {
   if (
     pathname.startsWith('/auth/signin') ||
     pathname.startsWith('/auth/popup') ||
-    pathname.startsWith('/games/horse')
+    pathname.startsWith('/games/')
   ) {
     return NextResponse.next();
   }
