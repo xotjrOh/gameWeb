@@ -58,16 +58,42 @@ const getInvestigationRounds = (
     (a, b) => a - b
   );
 
+const getInvestigationsPerRound = (scenario: MurderMysteryScenario) =>
+  Math.max(1, scenario.rules.investigationsPerRound || 1);
+
 const buildInvestigationUsageTemplate = (
   scenario: MurderMysteryScenario
-): Record<number, boolean> =>
-  getInvestigationRounds(scenario).reduce<Record<number, boolean>>(
+): Record<number, number> =>
+  getInvestigationRounds(scenario).reduce<Record<number, number>>(
     (acc, round) => {
-      acc[round] = false;
+      acc[round] = 0;
       return acc;
     },
     {}
   );
+
+const getInvestigationUseCount = (
+  usage: Record<number, number | boolean | undefined>,
+  round: MurderMysteryInvestigationRound,
+  scenario: MurderMysteryScenario
+) => {
+  const used = usage[round];
+  if (typeof used === 'number') {
+    return Math.max(0, used);
+  }
+  if (used === true) {
+    return getInvestigationsPerRound(scenario);
+  }
+  return 0;
+};
+
+const hasUsedAllInvestigations = (
+  usage: Record<number, number | boolean | undefined>,
+  round: MurderMysteryInvestigationRound,
+  scenario: MurderMysteryScenario
+) =>
+  getInvestigationUseCount(usage, round, scenario) >=
+  getInvestigationsPerRound(scenario);
 
 const buildTargetCardKey = (targetId: string, cardId: string) =>
   `${targetId}::${cardId}`;
@@ -223,9 +249,23 @@ const ensureInvestigationUsageMap = (
 ) => {
   const usageTemplate = buildInvestigationUsageTemplate(scenario);
   room.players.forEach((player) => {
+    const currentUsage = room.gameData.investigationUsedByPlayerId[
+      player.id
+    ] as Record<number, number | boolean | undefined> | undefined;
     room.gameData.investigationUsedByPlayerId[player.id] ??= {
       ...usageTemplate,
     };
+    if (currentUsage) {
+      room.gameData.investigationUsedByPlayerId[player.id] = Object.fromEntries(
+        Object.keys(usageTemplate).map((roundKey) => {
+          const round = Number(roundKey);
+          return [
+            roundKey,
+            getInvestigationUseCount(currentUsage, round, scenario),
+          ];
+        })
+      );
+    }
     room.gameData.revealedCardsByPlayerId[player.id] ??= [];
   });
 };
@@ -305,7 +345,9 @@ const getOrderedPlayerIdsForRound = (
   }
 
   if (!scenario.investigations.turnOrder?.rotateFirstPlayerEachRound) {
-    return orderedPlayerIds;
+    return Array.from({ length: getInvestigationsPerRound(scenario) }).flatMap(
+      () => orderedPlayerIds
+    );
   }
 
   const rounds = getInvestigationRounds(scenario);
@@ -314,10 +356,13 @@ const getOrderedPlayerIdsForRound = (
     return orderedPlayerIds;
   }
   const offset = roundIndex % orderedPlayerIds.length;
-  return [
+  const rotatedPlayerIds = [
     ...orderedPlayerIds.slice(offset),
     ...orderedPlayerIds.slice(0, offset),
   ];
+  return Array.from({ length: getInvestigationsPerRound(scenario) }).flatMap(
+    () => rotatedPlayerIds
+  );
 };
 
 const initializeInvestigationTurnState = (
@@ -347,17 +392,16 @@ const advanceInvestigationTurnState = (
   revealedBackId?: string
 ) => {
   const turn = room.gameData.investigationTurn;
-  if (!turn.completedPlayerIds.includes(actingPlayerId)) {
-    turn.completedPlayerIds.push(actingPlayerId);
-  }
+  turn.completedPlayerIds.push(actingPlayerId);
   delete turn.reservationByPlayerId[actingPlayerId];
   clearReservationForBackId(room, revealedBackId);
 
-  const nextIndex = turn.orderedPlayerIds.findIndex(
-    (playerId) => !turn.completedPlayerIds.includes(playerId)
-  );
+  const nextIndex = turn.currentPlayerIndex + 1;
   turn.currentPlayerIndex = nextIndex;
-  turn.turnStartedAt = nextIndex >= 0 ? Date.now() : null;
+  if (nextIndex >= turn.orderedPlayerIds.length) {
+    turn.currentPlayerIndex = -1;
+  }
+  turn.turnStartedAt = turn.currentPlayerIndex >= 0 ? Date.now() : null;
 };
 
 const getNextRoundFirstPlayerId = (
@@ -819,6 +863,12 @@ const buildInvestigationTurnView = (
   const players: MurderMysteryInvestigationTurnPlayerView[] =
     turn.orderedPlayerIds.map((playerId, index) => {
       const player = room.players.find((entry) => entry.id === playerId);
+      const completedCount = turn.completedPlayerIds.filter(
+        (completedPlayerId) => completedPlayerId === playerId
+      ).length;
+      const requiredCount = turn.orderedPlayerIds.filter(
+        (orderedPlayerId) => orderedPlayerId === playerId
+      ).length;
       return {
         playerId,
         roleId: room.gameData.roleByPlayerId[playerId] ?? '',
@@ -829,7 +879,9 @@ const buildInvestigationTurnView = (
           'unknown',
         order: index + 1,
         isCurrent: currentPlayerId === playerId,
-        isCompleted: turn.completedPlayerIds.includes(playerId),
+        isCompleted: completedCount >= requiredCount,
+        completedCount,
+        requiredCount,
       };
     });
 
@@ -1281,8 +1333,9 @@ export const submitMurderMysteryInvestigation = (
   const usage = room.gameData.investigationUsedByPlayerId[playerId] ?? {
     ...usageTemplate,
   };
+  const normalizedUsage = usage as Record<number, number | boolean | undefined>;
 
-  if (usage[round]) {
+  if (hasUsedAllInvestigations(normalizedUsage, round, scenario)) {
     throw new Error('이번 라운드 조사 기회를 이미 사용했습니다.');
   }
 
@@ -1321,7 +1374,7 @@ export const submitMurderMysteryInvestigation = (
 
     room.gameData.investigationUsedByPlayerId[playerId] = {
       ...usage,
-      [round]: true,
+      [round]: getInvestigationUseCount(normalizedUsage, round, scenario) + 1,
     };
 
     const revealResult = revealCardToPlayer(
@@ -1378,7 +1431,7 @@ export const submitMurderMysteryInvestigation = (
 
   room.gameData.investigationUsedByPlayerId[playerId] = {
     ...usage,
-    [round]: true,
+    [round]: getInvestigationUseCount(normalizedUsage, round, scenario) + 1,
   };
 
   if (scenario.investigations.deliveryMode === 'manual') {
@@ -1435,7 +1488,13 @@ export const setMurderMysteryInvestigationReservation = (
   const usage = room.gameData.investigationUsedByPlayerId[playerId] ?? {
     ...usageTemplate,
   };
-  if (usage[round]) {
+  if (
+    hasUsedAllInvestigations(
+      usage as Record<number, number | boolean | undefined>,
+      round,
+      scenario
+    )
+  ) {
     throw new Error('이번 라운드 조사를 이미 완료했습니다.');
   }
 
@@ -1559,21 +1618,69 @@ export const submitMurderMysteryVote = (
   room: MurderMysteryRoom,
   scenario: MurderMysteryScenario,
   playerId: string,
-  suspectPlayerId: string
+  selectedVoteId?: string
 ) => {
   const step = getFlowStepByPhase(scenario, room.gameData.phase);
   if (step?.kind !== 'final_vote') {
     throw new Error('지금은 최종 투표 단계가 아닙니다.');
   }
 
-  const suspectExists = room.players.some(
-    (player) => player.id === suspectPlayerId
-  );
-  if (!suspectExists) {
-    throw new Error('지목한 플레이어를 찾을 수 없습니다.');
+  const voteOptionId = resolveFinalVoteOptionId(room, scenario, selectedVoteId);
+
+  room.gameData.voteByPlayerId[playerId] = voteOptionId;
+};
+
+const resolveFinalVoteOptionId = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  selectedVoteId?: string
+) => {
+  if (!selectedVoteId) {
+    throw new Error('지목 대상을 선택해주세요.');
   }
 
-  room.gameData.voteByPlayerId[playerId] = suspectPlayerId;
+  const option = scenario.finalVote.options.find(
+    (entry) => entry.id === selectedVoteId
+  );
+  if (option) {
+    return option.id;
+  }
+
+  const legacyPlayer = room.players.find(
+    (player) => player.id === selectedVoteId
+  );
+  const legacyRoleId = legacyPlayer
+    ? room.gameData.roleByPlayerId[legacyPlayer.id]
+    : selectedVoteId;
+  const roleOption = scenario.finalVote.options.find(
+    (entry) => entry.optionType === 'role' && entry.roleId === legacyRoleId
+  );
+  if (roleOption) {
+    return roleOption.id;
+  }
+
+  throw new Error('지목한 투표 후보를 찾을 수 없습니다.');
+};
+
+const getVoteOptionPlayerId = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  voteOptionId: string | null
+) => {
+  if (!voteOptionId) {
+    return null;
+  }
+  const option = scenario.finalVote.options.find(
+    (entry) => entry.id === voteOptionId
+  );
+  if (option?.optionType !== 'role' || !option.roleId) {
+    return null;
+  }
+  return (
+    room.players.find(
+      (player) => room.gameData.roleByPlayerId[player.id] === option.roleId
+    )?.id ?? null
+  );
 };
 
 export const finalizeMurderMysteryVote = (
@@ -1586,8 +1693,13 @@ export const finalizeMurderMysteryVote = (
   }
 
   const tally: Record<string, number> = {};
-  Object.values(room.gameData.voteByPlayerId).forEach((suspectPlayerId) => {
-    tally[suspectPlayerId] = (tally[suspectPlayerId] ?? 0) + 1;
+  Object.values(room.gameData.voteByPlayerId).forEach((selectedVoteId) => {
+    const voteOptionId = resolveFinalVoteOptionId(
+      room,
+      scenario,
+      selectedVoteId
+    );
+    tally[voteOptionId] = (tally[voteOptionId] ?? 0) + 1;
   });
 
   const tallyEntries = Object.entries(tally);
@@ -1596,15 +1708,14 @@ export const finalizeMurderMysteryVote = (
     0
   );
   const topEntries = tallyEntries.filter(([, count]) => count === maxVoteCount);
-  const suspectPlayerId = topEntries.length === 1 ? topEntries[0][0] : null;
-  const suspectRoleId = suspectPlayerId
-    ? room.gameData.roleByPlayerId[suspectPlayerId]
-    : null;
+  const voteOptionId = topEntries.length === 1 ? topEntries[0][0] : null;
+  const suspectPlayerId = getVoteOptionPlayerId(room, scenario, voteOptionId);
   const matched = Boolean(
-    suspectRoleId && suspectRoleId === scenario.finalVote.correctRoleId
+    voteOptionId && voteOptionId === scenario.finalVote.correctOptionId
   );
 
   const result: MurderMysteryFinalVoteResult = {
+    voteOptionId,
     suspectPlayerId,
     matched,
     tally,
@@ -1728,6 +1839,14 @@ export const buildMurderMysterySnapshot = (
         ...usageTemplate,
       })
     : { ...usageTemplate };
+  const usedCount = round
+    ? getInvestigationUseCount(
+        usage as Record<number, number | boolean | undefined>,
+        round,
+        scenario
+      )
+    : 0;
+  const limitPerRound = getInvestigationsPerRound(scenario);
 
   return {
     roomId: room.roomId,
@@ -1782,7 +1901,9 @@ export const buildMurderMysterySnapshot = (
       revealedCardIds: room.gameData.revealedCardIds,
       revealedCardIdsByTargetId: room.gameData.revealedCardIdsByTargetId,
       layoutSections: scenario.investigations.layout.sections,
-      used: round ? Boolean(usage[round]) : false,
+      used: round ? usedCount >= limitPerRound : false,
+      usedCount,
+      limitPerRound,
       mode: mapView ? 'map' : 'legacy',
       rounds: roundViews,
       turn: turnView,
@@ -1790,6 +1911,7 @@ export const buildMurderMysterySnapshot = (
     },
     finalVote: {
       question: scenario.finalVote.question,
+      options: scenario.finalVote.options,
       totalVoters: room.players.length,
       submittedVoters: Object.keys(room.gameData.voteByPlayerId).length,
       yourVote: player

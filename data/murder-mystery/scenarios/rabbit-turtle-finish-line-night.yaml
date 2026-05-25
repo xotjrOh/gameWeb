@@ -7,7 +7,7 @@ players:
   max: 3
 
 rules:
-  investigationsPerRound: 1
+  investigationsPerRound: 2
   noEliminationDuringGame: true
   partsAutoReveal: true
   partsPublicDetail: false
@@ -53,40 +53,27 @@ flow:
       kind: investigate
       round: 1
       durationSec: 420
-      description: '현장 상태와 윤유성의 동기를 확인하세요. 이 라운드의 단서는 남편토끼를 가장 강하게 의심하게 만듭니다.'
+      description: '현장 상태, 윤유성의 동기, 아내토끼의 동선을 함께 확인하세요. 겉으로는 약물과 사고처럼 보이지만 현장의 물 흔적이 어긋납니다.'
       enterAnnouncement: '1라운드 조사: 재활수조실과 행사장 주변에서 첫 단서를 확인합니다.'
     - id: ROUND1_DISCUSS
       label: '1라운드 토론'
       kind: discuss
       round: 1
       durationSec: 600
-      description: '거북의 몸 상태, 고무링, 토끼 가족 사진을 중심으로 윤유성이 무엇을 했는지 토론하세요.'
+      description: '거북의 몸 상태, 고무링, 토끼 가족 사진, 아내토끼의 동선을 중심으로 누가 무엇을 숨겼는지 토론하세요.'
     - id: ROUND2_INVESTIGATE
       label: '2라운드 조사'
       kind: investigate
       round: 2
       durationSec: 420
-      description: '과거의 죄와 각자의 동기를 확인하세요. 거북의 고백, 의료동 계획, 정바른 기사가 새 방향을 만듭니다.'
-      enterAnnouncement: '2라운드 조사: 봉투와 기록을 열어, 누가 무엇을 숨기려 했는지 확인합니다.'
+      description: '과거의 죄, 각자의 동기, 실제 살해 방법을 한꺼번에 좁히세요. 고무호스와 수건 회수통을 분리해서 보면 답이 흐려집니다.'
+      enterAnnouncement: '2라운드 조사: 봉투와 기록, 물자국을 통해 마지막 손을 추적합니다.'
     - id: ROUND2_DISCUSS
       label: '2라운드 토론'
       kind: discuss
       round: 2
       durationSec: 600
-      description: '윤유성, 조희수, 서기준이 각각 숨긴 행동을 구분하세요. 원한과 실제 사망 원인이 같은지 따져보세요.'
-    - id: ROUND3_INVESTIGATE
-      label: '3라운드 조사'
-      kind: investigate
-      round: 3
-      durationSec: 420
-      description: '최종 살해 방법과 실행 가능성을 확인하세요. 물을 옮긴 방식, 수건 회수통, 과거 기록 조작이 핵심입니다.'
-      enterAnnouncement: '3라운드 조사: 현장의 물자국과 재단의 과거를 통해 마지막 손을 추적합니다.'
-    - id: ROUND3_DISCUSS
-      label: '3라운드 토론'
-      kind: discuss
-      round: 3
-      durationSec: 600
-      description: '오완주가 쓰러진 뒤 아직 살아 있었다는 가능성과, 그를 익사시킬 수 있었던 사람을 중심으로 결론을 정리하세요.'
+      description: '윤유성, 조희수, 서기준, 한다정의 거짓말과 실제 사망 원인을 분리하세요. 범인이 없다는 결론까지 포함해 최종 지목을 정리하세요.'
     - id: FINAL_VOTE
       label: '최종 투표'
       kind: final_vote
@@ -110,6 +97,14 @@ parts:
     name: '윤슬 수술 기록'
     source: '행사장 가족 사진'
     note: '윤유성이 거북에게 강한 원한을 품을 이유가 된다.'
+  - id: part_scene_memo
+    name: '검시/현장 메모'
+    source: '재활수조실 초동 기록'
+    note: '외상은 없고 현장 수위만으로는 사망 방식을 단정하기 어렵다.'
+  - id: part_wife_route
+    name: '아내토끼 동선과 고무링 은닉'
+    source: '비품 정리실'
+    note: '한다정이 재활수조실 쪽에 먼저 갔고, 젖은 고무링을 숨겼을 가능성이 있다.'
   - id: part_turtle_envelope
     name: '거북의 자필 고백'
     source: '서류봉투'
@@ -122,6 +117,10 @@ parts:
     name: '정바른 기사'
     source: '기사 스크랩'
     note: '조희수가 서기준을 의심하게 된 과거 사건이다.'
+  - id: part_syringe_trace
+    name: '의료동 주사기 반출 흔적'
+    source: '의료동 약품함'
+    note: '조희수가 숨긴 주사기와 진정제 절도 정황으로 이어진다.'
   - id: part_rubber_hose
     name: '고무호스의 물기'
     source: '재활수조실'
@@ -141,30 +140,14 @@ roles:
     publicText: |
       당신은 전성기 복귀를 노리던 육상 선수다. 딸 윤슬의 수술을 위해 용왕재단의 도움을 받아야 했고, 거북 오완주는 과거 선발전에서 당신을 쓰러뜨린 인물이다.
       오늘 밤 당신은 거북과 직접 만났고, 그 사실만으로도 모두가 당신을 의심할 수 있다.
-    secretText: |
-      당신은 거북 오완주를 죽이려 했다. 하지만 당신이 한 일은 최종 살해가 아니다.
-
-      거북은 밤 2시 무렵 당신을 재활수조실로 불러냈다. 그는 과거 대표 선발전에서 당신의 물병에 수면유도제를 섞었다고 고백했고, 자신이 쓴 자필 고백이 든 서류봉투를 보여주었다. 당신은 윤슬이 잃어버린 시간과 아내의 고통을 떠올렸고, 가지고 있던 보온병에 수면유도제를 섞어 거북에게 마시게 했다. 거북은 점점 휘청였고, 당신은 그에게 3분만 서 있으라고 강요했다.
-
-      02:24 무렵 거북은 쓰러졌다. 당신은 그가 죽었다고 생각했지만, 사실 숨을 정확히 확인하지 않았다. 창밖으로 별똥별이 지나갔고, 당신은 윤슬이 말하던 소원을 떠올렸다. 당신은 더 이상 손대지 못하고 서류봉투와 보온병을 챙겨 나왔다. 급히 움직이다 보온병 마개의 고무링이 빠진 것을 뒤늦게 알았다.
-
-      당신의 목표는 두 가지다. 첫째, 당신이 거북에게 약을 먹였다는 사실을 최대한 늦게 드러내라. 둘째, 최종 사망 원인이 약물이 아니라는 단서를 찾고 실제 살해자를 찾아라.
-
-      특수 조건: 여우가 먼저 아내토끼가 범인일 수 있다는 가능성을 제기한다면, 그 즉시 잠금된 아내토끼 카드가 전체공개됩니다. 여우가 아닌 인물이 아내토끼가 범인일 가능성에 대해 먼저 제기한다면 해당 잠금카드는 영영 공개되지 않습니다. 다만 해당 미션에 대해 언급해서는 안되며 유도해서도 안됩니다.
+    secretTextPath: rulesheets/rabbit-turtle-finish-line-night/rabbit_husband.txt
 
   - id: fox
     displayName: '여우 조희수'
     publicText: |
       당신은 행사의 홍보와 기사를 맡은 기자다. 말과 제목으로 사람을 움직이는 데 능숙하지만, 오늘 밤에는 당신 역시 누군가를 몰래 따라다녔다.
       사람들은 당신이 기삿거리 때문에 거북의 죽음을 이용하려 했다고 볼 수 있다.
-    secretText: |
-      당신은 거북을 죽이지 않았다. 하지만 흉기처럼 보일 수 있는 물건을 숨겼다.
-
-      당신은 오래전 정바른 사건을 취재했다. 정바른은 재단의 기록 조작을 추적하다 죽었고, 당신은 그 뒤에 자라 서기준이 있다고 믿었다. 오늘 행사 직전, 당신은 서기준의 파일에서 정바른 사건 관련 자료와 의료동 약품 반출 흔적을 보았다. 당신은 서기준이 또 누군가를 없앨 수 있다고 생각해, 의료동에서 수면유도제와 주사기를 훔쳐 품 안에 숨겼다.
-
-      밤중에 당신은 서기준을 따라 재활수조실 근처로 갔다. 비품 정리실 앞에서 아내토끼 한다정과 마주쳤고, 서로 본 일을 숨기자는 말을 들었다. 당신은 주사기를 들킨 것 같아 당황했다. 이후 재활수조실에 들어갔을 때 거북은 이미 죽어 있었다. 당신은 주사기를 숨기고 사람들을 불렀다.
-
-      당신의 목표는 두 가지다. 첫째, 당신이 주사기를 훔쳤다는 사실을 숨겨라. 둘째, 정바른 사건과 서기준의 연결고리를 찾아 실제 범인을 밝혀라.
+    secretTextPath: rulesheets/rabbit-turtle-finish-line-night/fox.txt
 
   - id: jara
     displayName: '자라 서기준'
@@ -172,16 +155,7 @@ roles:
     publicText: |
       당신은 용왕재단 의료동과 행사 동선을 관리하는 실무 책임자다. 침착하고 기록에 밝지만, 오늘 밤 재활수조실 주변을 가장 자유롭게 오갈 수 있었던 사람이기도 하다.
       모두가 당신에게 현장 설명을 요구할 것이다.
-    secretText: |
-      당신이 거북 오완주를 최종적으로 죽였다.
-
-      윤유성은 재단이 절대 놓칠 수 없는 사람이었다. 간 적합성 문서에 따르면 그는 용왕의 긴급 이식 후보였고, 행사가 끝난 뒤 의료동에 붙잡아 둘 계획이 있었다. 그런데 오완주는 과거 선발전 조작과 재단 자료를 들고 윤유성을 만나려 했다. 그가 모든 것을 말하면 윤유성은 섬을 떠나고, 당신과 재단의 계획은 무너진다.
-
-      당신은 02:24 이후 재활수조실에 도착했다. 오완주는 쓰러져 있었지만 아직 숨이 붙어 있었다. 윤유성이 약을 먹인 흔적이 보였고, 현장은 윤유성을 범인으로 만들기 충분했다. 당신은 단수 상태에서도 어린이 재활수조의 얕은 물을 고무호스로 수건 회수용 파란통에 옮겼다. 사이펀으로 물을 채운 뒤, 의식이 흐린 오완주의 얼굴을 파란통 물속에 눌러 익사시켰다. 이후 젖은 수건으로 얼굴과 바닥을 닦고, 수조 주변을 최대한 원래처럼 돌려놓았다.
-
-      당신의 목표는 두 가지다. 첫째, 윤유성이 약을 먹였다는 사실을 크게 부각해 최종 살해까지 그에게 연결하라. 둘째, 고무호스와 수건 회수통의 의미가 함께 해석되지 않도록 막아라.
-
-      특수 조건: 여우가 먼저 아내토끼가 범인일 수 있다는 가능성을 제기한다면, 그 즉시 잠금된 아내토끼 카드가 전체공개됩니다. 여우가 아닌 인물이 아내토끼가 범인일 가능성에 대해 먼저 제기한다면 해당 잠금카드는 영영 공개되지 않습니다. 다만 해당 미션에 대해 언급해서는 안되며 유도해서도 안됩니다.
+    secretTextPath: rulesheets/rabbit-turtle-finish-line-night/jara.txt
 
 initialRoleCards:
   - roleId: fox
@@ -218,18 +192,21 @@ investigations:
         targetIds:
           - r1_turtle_body
           - r1_rubber_ring
-          - r3_rubber_hose
-          - r3_towel_bin
+          - r1_scene_memo
+          - r2_rubber_hose
+          - r2_towel_bin
         order: 10
         icon: '🔎'
       - id: documents
         title: '문서와 기록'
         targetIds:
           - r1_rabbit_family
-          - r2_turtle_envelope
+          - r1_wife_route
+          - r1_turtle_envelope
           - r2_liver_compatibility
           - r2_barun_article
-          - r3_past_killing_photo
+          - r2_syringe_trace
+          - r2_past_killing_photo
         order: 20
         icon: '📄'
     map:
@@ -260,13 +237,27 @@ investigations:
           yPct: 25
           widthPct: 31
           heightPct: 43
-        - id: map_r2_turtle_envelope
-          targetId: r2_turtle_envelope
+        - id: map_r1_turtle_envelope
+          targetId: r1_turtle_envelope
           label: '연결복도 서류봉투'
           xPct: 41
           yPct: 38
           widthPct: 18
           heightPct: 31
+        - id: map_r1_scene_memo
+          targetId: r1_scene_memo
+          label: '초동 현장 메모'
+          xPct: 85
+          yPct: 42
+          widthPct: 10
+          heightPct: 18
+        - id: map_r1_wife_route
+          targetId: r1_wife_route
+          label: '비품 정리실 동선'
+          xPct: 49
+          yPct: 61
+          widthPct: 19
+          heightPct: 29
         - id: map_r2_liver_compatibility
           targetId: r2_liver_compatibility
           label: '의료동 기록함'
@@ -281,22 +272,29 @@ investigations:
           yPct: 4
           widthPct: 25
           heightPct: 18
-        - id: map_r3_rubber_hose
-          targetId: r3_rubber_hose
+        - id: map_r2_rubber_hose
+          targetId: r2_rubber_hose
           label: '재활수조실 고무호스'
           xPct: 75
           yPct: 25
           widthPct: 20
           heightPct: 24
-        - id: map_r3_towel_bin
-          targetId: r3_towel_bin
+        - id: map_r2_towel_bin
+          targetId: r2_towel_bin
           label: '비품 정리실 파란통'
           xPct: 49
           yPct: 61
           widthPct: 19
           heightPct: 29
-        - id: map_r3_past_killing_photo
-          targetId: r3_past_killing_photo
+        - id: map_r2_syringe_trace
+          targetId: r2_syringe_trace
+          label: '의료동 약품함'
+          xPct: 61
+          yPct: 16
+          widthPct: 14
+          heightPct: 8
+        - id: map_r2_past_killing_photo
+          targetId: r2_past_killing_photo
           label: '재단 보관 자료'
           xPct: 88
           yPct: 4
@@ -344,21 +342,47 @@ investigations:
             shortLabel: '가족'
           cardPool:
             - card_rabbit_family
-    - round: 2
-      targets:
-        - id: r2_turtle_envelope
+        - id: r1_scene_memo
+          label: '검시/현장 메모'
+          description: '초동 검시와 현장 기록의 빈칸을 확인한다.'
+          targetType: item
+          entityKey: scene_medical_memo
+          sectionId: scene
+          order: 40
+          icon: '📝'
+          cardBack:
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-rehab.svg'
+            shortLabel: '메모'
+          cardPool:
+            - card_scene_memo
+        - id: r1_wife_route
+          label: '아내토끼 동선'
+          description: '한다정이 재활수조실과 비품 정리실 주변에서 보인 흔적을 확인한다.'
+          targetType: character
+          entityKey: wife_route
+          sectionId: documents
+          order: 50
+          icon: '👤'
+          cardBack:
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-corridor.svg'
+            shortLabel: '동선'
+          cardPool:
+            - card_wife_route
+        - id: r1_turtle_envelope
           label: '거북 서류봉투'
           description: '오완주가 윤유성에게 전하려던 봉투를 확인한다.'
           targetType: item
           entityKey: turtle_envelope
           sectionId: documents
-          order: 10
+          order: 60
           icon: '✉️'
           cardBack:
             imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
             shortLabel: '봉투'
           cardPool:
             - card_turtle_envelope
+    - round: 2
+      targets:
         - id: r2_liver_compatibility
           label: '간 적합성 문서'
           description: '의료동 기록함의 이식 후보 문서를 확인한다.'
@@ -385,41 +409,52 @@ investigations:
             shortLabel: '기사'
           cardPool:
             - card_jeong_bareun_article
-    - round: 3
-      targets:
-        - id: r3_rubber_hose
+        - id: r2_syringe_trace
+          label: '의료동 주사기 반출 흔적'
+          description: '의료동 약품함에서 사라진 주사기와 진정제 기록을 확인한다.'
+          targetType: item
+          entityKey: syringe_trace
+          sectionId: documents
+          order: 40
+          icon: '💉'
+          cardBack:
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            shortLabel: '주사기'
+          cardPool:
+            - card_syringe_trace
+        - id: r2_rubber_hose
           label: '고무호스'
           description: '재활수조실 구석의 젖은 호스를 확인한다.'
           targetType: item
           entityKey: rubber_hose
           sectionId: scene
-          order: 10
+          order: 50
           icon: '〰️'
           cardBack:
             imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-rehab.svg'
             shortLabel: '호스'
           cardPool:
             - card_rubber_hose
-        - id: r3_towel_bin
+        - id: r2_towel_bin
           label: '수건 회수용 파란통'
           description: '비품 정리실의 젖은 수건 회수통을 확인한다.'
           targetType: item
           entityKey: towel_bin
           sectionId: scene
-          order: 20
+          order: 60
           icon: '🧺'
           cardBack:
             imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-corridor.svg'
             shortLabel: '파란통'
           cardPool:
             - card_towel_bin
-        - id: r3_past_killing_photo
+        - id: r2_past_killing_photo
           label: '살해장면 사진'
           description: '재단 보관 자료 속 삭제 예정 사진을 확인한다.'
           targetType: item
           entityKey: past_killing_photo
           sectionId: documents
-          order: 30
+          order: 70
           icon: '📷'
           cardBack:
             imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-security.svg'
@@ -461,6 +496,24 @@ cards:
     effects:
       - type: addPart
         partId: part_rabbit_family
+  - id: card_scene_memo
+    title: '검시/현장 메모'
+    text: |
+      초동 메모에는 "외상 없음, 교살 흔적 없음, 입과 코 주변 물기 확인 필요"라고 적혀 있다. 수조 바닥에는 3cm 남짓한 물만 남아 있어, 현장만 보면 사고사나 약물로 쓰러진 뒤의 사망처럼 보인다.
+      다만 바닥 타일의 물자국은 수조 안쪽보다 비품 정리실 방향으로 더 길게 이어져 있다. 물이 어디에 있었는지 확정되지 않으면 사망 방식도 확정할 수 없다.
+    backId: back_scene_memo
+    effects:
+      - type: addPart
+        partId: part_scene_memo
+  - id: card_wife_route
+    title: '아내토끼 동선과 고무링 은닉'
+    text: |
+      비품 정리실 문틀 아래에 작은 물방울이 이어져 있고, 한다정이 쥐고 있던 손수건 안쪽에는 고무 냄새와 수조 물 냄새가 남아 있다.
+      그녀는 "남편이 망가지는 걸 더는 볼 수 없었다"는 말만 반복했다. 재활수조실에 먼저 갔고, 젖은 고무링을 숨겼다면 남편을 감싸려 한 것인지 직접 손을 댄 것인지 구분하기 어렵다.
+    backId: back_wife_route
+    effects:
+      - type: addPart
+        partId: part_wife_route
   - id: card_turtle_envelope
     title: '거북 서류봉투'
     text: |
@@ -494,6 +547,15 @@ cards:
     effects:
       - type: addPart
         partId: part_barun_article
+  - id: card_syringe_trace
+    title: '의료동 주사기 반출 흔적'
+    text: |
+      의료동 약품함에는 일회용 주사기 한 개와 진정제 앰풀 하나가 빠진 기록이 있다. 반출 사유란은 비어 있고, 출입 기록에는 조희수가 의료동 근처에 머문 시간이 남아 있다.
+      실제 주입 흔적은 아직 확인되지 않았지만, 조희수가 품 안에 숨길 수 있는 물건이 있었고 그 물건이 살해 도구처럼 보일 수 있다는 점은 분명하다.
+    backId: back_syringe_trace
+    effects:
+      - type: addPart
+        partId: part_syringe_trace
   - id: card_rubber_hose
     title: '고무호스'
     text: |
@@ -537,6 +599,26 @@ cards:
 finalVote:
   question: '거북 오완주를 최종적으로 죽인 인물은 누구인가?'
   correctRoleId: jara
+  correctOptionId: jara
+  options:
+    - id: rabbit_husband
+      label: '남편토끼 윤유성'
+      optionType: role
+      roleId: rabbit_husband
+    - id: fox
+      label: '여우 조희수'
+      optionType: role
+      roleId: fox
+    - id: jara
+      label: '자라 서기준'
+      optionType: role
+      roleId: jara
+    - id: wife_npc
+      label: '아내토끼 한다정'
+      optionType: npc
+    - id: none
+      label: '범인 없음'
+      optionType: none
 
 endbook:
   common: |

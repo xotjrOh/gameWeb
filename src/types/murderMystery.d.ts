@@ -36,6 +36,7 @@ export interface MurderMysteryRoleScenario {
   displayName: string;
   publicText: string;
   secretText: string;
+  secretTextPath?: string;
   dynamicDisplayNameRules?: MurderMysteryDynamicDisplayNameRule[];
 }
 
@@ -174,6 +175,15 @@ export interface MurderMysteryFlowScenario {
   steps: MurderMysteryFlowStepScenario[];
 }
 
+export type MurderMysteryFinalVoteOptionType = 'role' | 'npc' | 'none';
+
+export interface MurderMysteryFinalVoteOptionScenario {
+  id: string;
+  label: string;
+  optionType: MurderMysteryFinalVoteOptionType;
+  roleId?: string;
+}
+
 export interface MurderMysteryScenario {
   id: string;
   title: string;
@@ -198,6 +208,8 @@ export interface MurderMysteryScenario {
   finalVote: {
     question: string;
     correctRoleId: string;
+    correctOptionId: string;
+    options: MurderMysteryFinalVoteOptionScenario[];
   };
   endbook: {
     common: string;
@@ -213,7 +225,7 @@ export interface MurderMysteryPlayerData {
 
 export type MurderMysteryInvestigationUsage = Record<
   MurderMysteryInvestigationRound,
-  boolean
+  number
 >;
 
 export interface MurderMysteryPendingInvestigation {
@@ -241,6 +253,7 @@ export interface MurderMysteryAnnouncement {
 }
 
 export interface MurderMysteryFinalVoteResult {
+  voteOptionId: string | null;
   suspectPlayerId: string | null;
   matched: boolean;
   tally: Record<string, number>;
@@ -344,6 +357,8 @@ export interface MurderMysteryInvestigationTurnPlayerView {
   order: number;
   isCurrent: boolean;
   isCompleted: boolean;
+  completedCount: number;
+  requiredCount: number;
 }
 
 export interface MurderMysteryInvestigationTurnView {
@@ -379,6 +394,8 @@ export interface MurderMysteryInvestigationView {
   revealedCardIdsByTargetId: Record<string, string[]>;
   layoutSections: MurderMysteryInvestigationLayoutSection[];
   used: boolean;
+  usedCount: number;
+  limitPerRound: number;
   mode: 'legacy' | 'map';
   rounds: MurderMysteryInvestigationRoundView[];
   turn: MurderMysteryInvestigationTurnView | null;
@@ -393,6 +410,7 @@ export interface MurderMysteryClueVaultCardView
 
 export interface MurderMysteryFinalVoteView {
   question: string;
+  options: MurderMysteryFinalVoteOptionScenario[];
   totalVoters: number;
   submittedVoters: number;
   yourVote: string | null;
@@ -540,7 +558,8 @@ export interface MurderMysteryClientToServerEvents {
     data: {
       roomId: string;
       sessionId: string;
-      suspectPlayerId: string;
+      voteOptionId?: string;
+      suspectPlayerId?: string;
     },
     callback: (response: CommonResponse) => void
   ) => void;

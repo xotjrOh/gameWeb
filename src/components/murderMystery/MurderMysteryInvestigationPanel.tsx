@@ -152,7 +152,7 @@ const InvestigationTurnRail = ({
         >
           {investigation.turn.players.map((player) => (
             <Card
-              key={player.playerId}
+              key={`${player.playerId}:${player.order}`}
               variant="outlined"
               sx={{
                 minWidth: 150,
@@ -177,6 +177,9 @@ const InvestigationTurnRail = ({
                   <Typography fontWeight={800}>{player.displayName}</Typography>
                   <Typography variant="body2" color="text.secondary">
                     {player.name}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {player.completedCount}/{player.requiredCount}
                   </Typography>
                   <Chip
                     size="small"
@@ -699,6 +702,8 @@ const LegacyInvestigatePanel = ({
   stepDescription,
   targets,
   used,
+  usedCount,
+  limitPerRound,
 }: {
   canActAsPlayer: boolean;
   isActivePhase: boolean;
@@ -711,9 +716,12 @@ const LegacyInvestigatePanel = ({
   stepDescription?: string;
   targets: MurderMysteryInvestigationTargetView[];
   used: boolean;
+  usedCount: number;
+  limitPerRound: number;
 }) => {
   const canSubmit = canActAsPlayer && isActivePhase && !isReadOnly;
-  const myRemainingText = used ? '0' : canSubmit ? '1' : '0';
+  const remainingInvestigations = Math.max(limitPerRound - usedCount, 0);
+  const myRemainingText = canSubmit ? String(remainingInvestigations) : '0';
   const targetById = Object.fromEntries(
     targets.map((target) => [target.id, target])
   );
@@ -1004,6 +1012,8 @@ export default function MurderMysteryInvestigationPanel({
         stepDescription={stepDescription}
         targets={selectedRoundTargets}
         used={isActivePhase ? investigation.used : false}
+        usedCount={isActivePhase ? investigation.usedCount : 0}
+        limitPerRound={investigation.limitPerRound}
       />
     );
   }

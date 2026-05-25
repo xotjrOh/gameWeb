@@ -182,6 +182,24 @@ const readScenarioFile = (filePath: string): unknown => {
   );
 };
 
+const resolveDataFilePath = (relativePath: string, context: string) => {
+  assertCondition(
+    !path.isAbsolute(relativePath),
+    `${context} must be relative to data/murder-mystery`
+  );
+  const resolved = path.resolve(BASE_DIR, relativePath);
+  const base = path.resolve(BASE_DIR);
+  assertCondition(
+    resolved === base || resolved.startsWith(`${base}${path.sep}`),
+    `${context} must stay inside data/murder-mystery`
+  );
+  assertCondition(fs.existsSync(resolved), `${context} file not found`);
+  return resolved;
+};
+
+const readDataTextFile = (relativePath: string, context: string) =>
+  fs.readFileSync(resolveDataFilePath(relativePath, context), 'utf8');
+
 const normalizePlayers = (
   rawPlayers: unknown,
   fileName: string
@@ -764,10 +782,16 @@ const normalizeRoles = ({
         roleRecord.publicText,
         `${fileName}: role(${id}) publicText is required`
       );
-      const secretText = requireString(
-        roleRecord.secretText,
-        `${fileName}: role(${id}) secretText is required`
-      );
+      const secretTextPath = asNonEmptyString(roleRecord.secretTextPath);
+      const secretText = secretTextPath
+        ? readDataTextFile(
+            secretTextPath,
+            `${fileName}: role(${id}) secretTextPath`
+          )
+        : requireString(
+            roleRecord.secretText,
+            `${fileName}: role(${id}) secretText is required`
+          );
 
       if (roleRecord.isKiller === true) {
         killerRoleId = id;
@@ -778,6 +802,7 @@ const normalizeRoles = ({
         displayName,
         publicText,
         secretText,
+        ...(secretTextPath ? { secretTextPath } : {}),
         dynamicDisplayNameRules: normalizeDynamicDisplayNameRules({
           rawRules: roleRecord.dynamicDisplayNameRules,
           roleId: id,
@@ -991,6 +1016,55 @@ const normalizeSpecialEvents = ({
   });
 };
 
+const normalizeFinalVoteOptions = ({
+  rawOptions,
+  roles,
+  fileName,
+}: {
+  rawOptions: unknown;
+  roles: MurderMysteryScenario['roles'];
+  fileName: string;
+}): MurderMysteryScenario['finalVote']['options'] => {
+  if (!Array.isArray(rawOptions) || rawOptions.length === 0) {
+    return roles.map((role) => ({
+      id: role.id,
+      label: role.displayName,
+      optionType: 'role' as const,
+      roleId: role.id,
+    }));
+  }
+
+  return rawOptions.map((rawOption, index) => {
+    const optionRecord = requireRecord(
+      rawOption,
+      `${fileName}: finalVote.options[${index}] must be object`
+    );
+    const id = requireString(
+      optionRecord.id,
+      `${fileName}: finalVote.options[${index}].id is required`
+    );
+    const rawOptionType = optionRecord.optionType;
+    assertCondition(
+      rawOptionType === 'role' ||
+        rawOptionType === 'npc' ||
+        rawOptionType === 'none',
+      `${fileName}: finalVote.options[${index}].optionType is invalid`
+    );
+    const optionType = rawOptionType as 'role' | 'npc' | 'none';
+    const roleId = asNonEmptyString(optionRecord.roleId);
+
+    return {
+      id,
+      label: requireString(
+        optionRecord.label,
+        `${fileName}: finalVote.options[${index}].label is required`
+      ),
+      optionType,
+      ...(roleId ? { roleId } : {}),
+    };
+  });
+};
+
 const normalizeScenarioSchema = (
   rawScenario: unknown,
   fileName: string
@@ -1067,6 +1141,24 @@ const normalizeScenarioSchema = (
     finalVoteCorrectRoleId,
     `${fileName}: finalVote.correctRoleId is required`
   );
+  const finalVoteOptions = normalizeFinalVoteOptions({
+    rawOptions: finalVoteRecord.options,
+    roles,
+    fileName,
+  });
+  const fallbackCorrectOptionId =
+    finalVoteOptions.find(
+      (option) =>
+        option.optionType === 'role' &&
+        (option.roleId ?? option.id) === finalVoteCorrectRoleId
+    )?.id ?? finalVoteCorrectRoleId;
+  const finalVoteCorrectOptionId =
+    asNonEmptyString(finalVoteRecord.correctOptionId) ??
+    fallbackCorrectOptionId;
+  assertCondition(
+    finalVoteOptions.some((option) => option.id === finalVoteCorrectOptionId),
+    `${fileName}: finalVote.correctOptionId is unknown (${finalVoteCorrectOptionId})`
+  );
 
   const endbookRecord = requireRecord(
     scenarioRecord.endbook,
@@ -1092,6 +1184,8 @@ const normalizeScenarioSchema = (
     finalVote: {
       question: finalVoteQuestion,
       correctRoleId: finalVoteCorrectRoleId as string,
+      correctOptionId: finalVoteCorrectOptionId as string,
+      options: finalVoteOptions,
     },
     endbook: {
       common: requireString(
@@ -1486,6 +1580,35 @@ const validateScenarioSchema = (
   assertCondition(
     roleIds.has(scenario.finalVote.correctRoleId),
     `${fileName}: finalVote.correctRoleId is unknown (${scenario.finalVote.correctRoleId})`
+  );
+  const finalVoteOptionIds = new Set<string>();
+  scenario.finalVote.options.forEach((option) => {
+    assertCondition(option.id, `${fileName}: finalVote option id is required`);
+    assertCondition(
+      !finalVoteOptionIds.has(option.id),
+      `${fileName}: duplicated finalVote option id (${option.id})`
+    );
+    finalVoteOptionIds.add(option.id);
+    assertCondition(
+      option.label,
+      `${fileName}: finalVote option label is required (${option.id})`
+    );
+    assertCondition(
+      option.optionType === 'role' ||
+        option.optionType === 'npc' ||
+        option.optionType === 'none',
+      `${fileName}: finalVote option type is invalid (${option.id})`
+    );
+    if (option.optionType === 'role') {
+      assertCondition(
+        option.roleId && roleIds.has(option.roleId),
+        `${fileName}: finalVote role option(${option.id}) references unknown role (${option.roleId})`
+      );
+    }
+  });
+  assertCondition(
+    finalVoteOptionIds.has(scenario.finalVote.correctOptionId),
+    `${fileName}: finalVote.correctOptionId is unknown (${scenario.finalVote.correctOptionId})`
   );
 
   scenario.roles.forEach((role) => {

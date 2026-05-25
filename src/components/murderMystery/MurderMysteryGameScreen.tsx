@@ -371,7 +371,6 @@ const VotePanel = ({
   isActivePhase,
   isReadOnly,
   finalVote,
-  players,
   onSubmitVote,
   onOpenGmPanel,
 }: {
@@ -383,15 +382,15 @@ const VotePanel = ({
   finalVote: NonNullable<
     ReturnType<typeof useMurderMysteryGameData>['snapshot']
   >['finalVote'];
-  players: NonNullable<
-    ReturnType<typeof useMurderMysteryGameData>['snapshot']
-  >['players'];
-  onSubmitVote: (suspectPlayerId: string) => void;
+  onSubmitVote: (voteOptionId: string) => void;
   onOpenGmPanel: () => void;
 }) => {
   const tallyEntries = finalVote.result
     ? Object.entries(finalVote.result.tally).sort((a, b) => b[1] - a[1])
     : [];
+  const optionLabelById = Object.fromEntries(
+    finalVote.options.map((option) => [option.id, option.label] as const)
+  );
 
   return (
     <PanelCard
@@ -416,15 +415,15 @@ const VotePanel = ({
       {canActAsPlayer ? (
         isActivePhase && !isReadOnly ? (
           <Stack spacing={1}>
-            {players.map((player) => (
+            {finalVote.options.map((option) => (
               <Button
-                key={player.id}
+                key={option.id}
                 variant={
-                  finalVote.yourVote === player.id ? 'contained' : 'outlined'
+                  finalVote.yourVote === option.id ? 'contained' : 'outlined'
                 }
-                onClick={() => onSubmitVote(player.id)}
+                onClick={() => onSubmitVote(option.id)}
               >
-                {player.displayName}
+                {option.label}
               </Button>
             ))}
           </Stack>
@@ -463,19 +462,16 @@ const VotePanel = ({
             </Typography>
             <Typography color="text.secondary" sx={{ mt: 0.5 }}>
               최고 지목 대상:{' '}
-              {finalVote.result.suspectPlayerId
-                ? (players.find(
-                    (player) => player.id === finalVote.result?.suspectPlayerId
-                  )?.displayName ?? finalVote.result.suspectPlayerId)
+              {finalVote.result.voteOptionId
+                ? (optionLabelById[finalVote.result.voteOptionId] ??
+                  finalVote.result.voteOptionId)
                 : '동률 또는 없음'}
             </Typography>
             <Stack direction="row" spacing={0.8} flexWrap="wrap" sx={{ mt: 1 }}>
-              {tallyEntries.map(([playerId, count]) => {
-                const playerName =
-                  players.find((player) => player.id === playerId)
-                    ?.displayName ?? playerId;
+              {tallyEntries.map(([optionId, count]) => {
+                const optionName = optionLabelById[optionId] ?? optionId;
                 return (
-                  <Chip key={playerId} label={`${playerName} ${count}표`} />
+                  <Chip key={optionId} label={`${optionName} ${count}표`} />
                 );
               })}
             </Stack>
@@ -1395,13 +1391,13 @@ export default function MurderMysteryGameScreen({
     );
   };
 
-  const handleSubmitVote = (suspectPlayerId: string) => {
+  const handleSubmitVote = (voteOptionId: string) => {
     emitWithAck(
       'mm_submit_vote',
       {
         roomId,
         sessionId,
-        suspectPlayerId,
+        voteOptionId,
       },
       '최종 투표를 제출했습니다.'
     );
@@ -1791,7 +1787,6 @@ export default function MurderMysteryGameScreen({
           isActivePhase={selectedPhase === phase}
           isReadOnly={isReadOnlyTab}
           finalVote={finalVote}
-          players={players}
           onSubmitVote={handleSubmitVote}
           onOpenGmPanel={() => setIsHostPanelOpen(true)}
         />

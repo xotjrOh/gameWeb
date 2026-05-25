@@ -4,6 +4,7 @@ import YAML from 'yaml';
 
 const root = process.cwd();
 const registryPath = path.join(root, 'data', 'murder-mystery', 'registry.json');
+const dataDir = path.join(root, 'data', 'murder-mystery');
 const scenarioDir = path.join(root, 'data', 'murder-mystery', 'scenarios');
 
 const fail = (message) => {
@@ -206,6 +207,29 @@ for (const entry of registry.scenarios) {
   if (!Array.isArray(scenario.roles) || scenario.roles.length === 0) {
     fail(`${entry.file}: roles must be non-empty`);
   }
+  for (const role of scenario.roles) {
+    if (!role.id || !role.displayName || !role.publicText) {
+      fail(`${entry.file}: role fields are required (${role.id ?? 'unknown'})`);
+    }
+    if (role.secretTextPath) {
+      if (path.isAbsolute(role.secretTextPath)) {
+        fail(`${entry.file}: role(${role.id}) secretTextPath must be relative`);
+      }
+      const secretTextPath = path.resolve(dataDir, role.secretTextPath);
+      if (!secretTextPath.startsWith(`${dataDir}${path.sep}`)) {
+        fail(`${entry.file}: role(${role.id}) secretTextPath escapes data dir`);
+      }
+      if (!fs.existsSync(secretTextPath)) {
+        fail(`${entry.file}: role(${role.id}) secretTextPath is missing`);
+      }
+      const secretText = fs.readFileSync(secretTextPath, 'utf8');
+      if (!secretText.trim()) {
+        fail(`${entry.file}: role(${role.id}) secretTextPath is empty`);
+      }
+    } else if (!role.secretText) {
+      fail(`${entry.file}: role(${role.id}) secretText is required`);
+    }
+  }
   if (!Array.isArray(scenario.cards) || scenario.cards.length === 0) {
     fail(`${entry.file}: cards must be non-empty`);
   }
@@ -324,6 +348,36 @@ for (const entry of registry.scenarios) {
   const roleIds = new Set(scenario.roles.map((role) => role.id));
   if (!roleIds.has(correctRoleId)) {
     fail(`${entry.file}: finalVote.correctRoleId is unknown (${correctRoleId})`);
+  }
+  if (Array.isArray(scenario.finalVote.options)) {
+    const optionIds = new Set();
+    for (const [index, option] of scenario.finalVote.options.entries()) {
+      if (!option.id || !option.label || !option.optionType) {
+        fail(`${entry.file}: finalVote.options[${index}] fields are required`);
+      }
+      if (optionIds.has(option.id)) {
+        fail(`${entry.file}: duplicated finalVote option id (${option.id})`);
+      }
+      optionIds.add(option.id);
+      if (!['role', 'npc', 'none'].includes(option.optionType)) {
+        fail(`${entry.file}: finalVote option(${option.id}) type is invalid`);
+      }
+      if (option.optionType === 'role' && !roleIds.has(option.roleId)) {
+        fail(
+          `${entry.file}: finalVote option(${option.id}) references unknown role (${option.roleId})`
+        );
+      }
+    }
+    const correctOptionId =
+      scenario.finalVote.correctOptionId ??
+      scenario.finalVote.options.find(
+        (option) => option.optionType === 'role' && option.roleId === correctRoleId
+      )?.id;
+    if (!correctOptionId || !optionIds.has(correctOptionId)) {
+      fail(
+        `${entry.file}: finalVote.correctOptionId is unknown (${correctOptionId})`
+      );
+    }
   }
 
   if (Array.isArray(scenario.initialRoleCards)) {

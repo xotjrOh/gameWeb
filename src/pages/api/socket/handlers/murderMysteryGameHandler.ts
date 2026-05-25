@@ -258,12 +258,17 @@ const murderMysteryGameHandler = (
 
   socket.on(
     'mm_submit_vote',
-    ({ roomId, sessionId, suspectPlayerId }, callback) => {
+    ({ roomId, sessionId, voteOptionId, suspectPlayerId }, callback) => {
       try {
         const room = toMurderMysteryRoom(validateRoom(roomId));
         const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
         validatePlayer(room, sessionId);
-        submitMurderMysteryVote(room, scenario, sessionId, suspectPlayerId);
+        submitMurderMysteryVote(
+          room,
+          scenario,
+          sessionId,
+          voteOptionId ?? suspectPlayerId
+        );
 
         if (
           room.gameData.hostParticipatesAsPlayer &&
