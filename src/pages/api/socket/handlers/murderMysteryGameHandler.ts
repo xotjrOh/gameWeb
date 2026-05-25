@@ -6,6 +6,7 @@ import {
   buildMurderMysterySnapshot,
   finalizeMurderMysteryVote,
   moveMurderMysteryToNextPhase,
+  reportMurderMysterySpecialEvent,
   resetMurderMysteryGame,
   resolveMurderMysteryInvestigation,
   clearMurderMysteryInvestigationReservation,
@@ -178,6 +179,41 @@ const murderMysteryGameHandler = (
         const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
 
         clearMurderMysteryInvestigationReservation(room, scenario, sessionId);
+        emitMurderMysterySnapshots(room, io);
+        return callback({ success: true });
+      } catch (error) {
+        return callback({ success: false, message: (error as Error).message });
+      }
+    }
+  );
+
+  socket.on(
+    'mm_report_special_event',
+    ({ roomId, sessionId, eventId, outcome }, callback) => {
+      try {
+        const room = toMurderMysteryRoom(validateRoom(roomId));
+        validatePlayer(room, sessionId);
+        const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
+
+        const result = reportMurderMysterySpecialEvent(
+          room,
+          scenario,
+          sessionId,
+          eventId,
+          outcome
+        );
+
+        result.revealedParts.forEach((part) => {
+          emitMurderMysteryPartRevealed(room, io, {
+            partId: part.id,
+            partName: part.name,
+            byPlayerId: sessionId,
+            cardId: result.card?.id ?? eventId,
+            revealedCount: room.gameData.revealedPartIds.length,
+            totalCount: scenario.parts.length,
+          });
+        });
+
         emitMurderMysterySnapshots(room, io);
         return callback({ success: true });
       } catch (error) {

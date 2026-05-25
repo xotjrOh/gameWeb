@@ -14,8 +14,6 @@ import {
   Box,
   Typography,
   FormHelperText,
-  FormControlLabel,
-  Switch,
 } from '@mui/material';
 import { Cancel as CancelIcon } from '@mui/icons-material';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
@@ -86,7 +84,6 @@ export default function RoomModal({
   });
   const selectedGameType = watch('gameType');
   const selectedScenarioId = watch('scenarioId');
-  const hostParticipatesAsPlayer = watch('hostParticipatesAsPlayer');
 
   const selectedScenario = useMemo(
     () =>
@@ -109,6 +106,10 @@ export default function RoomModal({
       setValue('hostParticipatesAsPlayer', false);
       return;
     }
+    setValue('hostParticipatesAsPlayer', true, {
+      shouldDirty: false,
+      shouldValidate: true,
+    });
     if (scenarioOptions.length > 0 || isScenarioLoading) {
       return;
     }
@@ -210,7 +211,7 @@ export default function RoomModal({
             maxPlayers: resolvedMaxPlayers,
             userName,
             sessionId,
-            hostParticipatesAsPlayer: data.hostParticipatesAsPlayer,
+            hostParticipatesAsPlayer: true,
           }
         : {
             roomName: data.roomName,
@@ -392,27 +393,9 @@ export default function RoomModal({
                 backgroundColor: 'rgba(255,255,255,0.72)',
               }}
             >
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={hostParticipatesAsPlayer}
-                    onChange={(event) =>
-                      setValue(
-                        'hostParticipatesAsPlayer',
-                        event.target.checked,
-                        {
-                          shouldDirty: true,
-                        }
-                      )
-                    }
-                  />
-                }
-                label="방장도 플레이어로 참가"
-              />
-              <Typography variant="caption" color="text.secondary">
-                {hostParticipatesAsPlayer
-                  ? '플레이어 정원은 방장을 포함한 인원 기준'
-                  : '플레이어 정원은 방장을 제외한 인원 기준'}
+              <Typography fontWeight={700}>3인 무진행자 플레이</Typography>
+              <Typography variant="body2" color="text.secondary">
+                방장을 포함한 3명이 플레이합니다. 별도 진행자를 두지 않습니다.
               </Typography>
             </Box>
           </>

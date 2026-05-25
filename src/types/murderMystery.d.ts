@@ -13,6 +13,8 @@ export type MurderMysteryDeliveryMode = 'auto' | 'manual';
 export type MurderMysteryClueDepletionMode = 'global' | 'per_target';
 export type MurderMysteryInvestigationRound = number;
 export type MurderMysteryTargetType = 'location' | 'character' | 'item';
+export type MurderMysterySpecialEventOutcome = 'reveal' | 'seal';
+export type MurderMysterySpecialEventStatus = 'pending' | 'revealed' | 'sealed';
 
 export interface MurderMysteryPlayersConfig {
   min: number;
@@ -68,9 +70,27 @@ export interface MurderMysteryCardScenario {
   id: string;
   title: string;
   text: string;
+  imageSrc?: string;
+  imageAlt?: string;
   backId?: string;
   back?: MurderMysteryCardBackStyle;
   effects?: MurderMysteryCardEffect[];
+}
+
+export interface MurderMysteryInitialRoleCardScenario {
+  roleId: string;
+  cardId: string;
+  sourceLabel?: string;
+}
+
+export interface MurderMysterySpecialEventScenario {
+  id: string;
+  label: string;
+  description: string;
+  reporterRoleIds: string[];
+  revealCardId: string;
+  revealAnnouncement?: string;
+  sealAnnouncement?: string;
 }
 
 export interface MurderMysteryInvestigationTargetScenario {
@@ -171,6 +191,8 @@ export interface MurderMysteryScenario {
   };
   roles: MurderMysteryRoleScenario[];
   parts: MurderMysteryPartScenario[];
+  initialRoleCards: MurderMysteryInitialRoleCardScenario[];
+  specialEvents: MurderMysterySpecialEventScenario[];
   investigations: MurderMysteryInvestigationsScenario;
   cards: MurderMysteryCardScenario[];
   finalVote: {
@@ -239,10 +261,12 @@ export interface MurderMysteryGameData {
   investigationTargetCardKeyByBackId: Record<string, string>;
   investigationTurn: MurderMysteryInvestigationTurnState;
   pendingInvestigations: MurderMysteryPendingInvestigation[];
+  privateCardIdsByPlayerId: Record<string, string[]>;
   revealedCardsByPlayerId: Record<string, string[]>;
   revealedCardIds: string[];
   revealedCardIdsByTargetId: Record<string, string[]>;
   revealedPartIds: string[];
+  specialEventStatusById: Record<string, MurderMysterySpecialEventStatus>;
   voteByPlayerId: Record<string, string>;
   finalVoteResult: MurderMysteryFinalVoteResult | null;
   endbookVariant: 'matched' | 'notMatched' | null;
@@ -382,6 +406,12 @@ export interface MurderMysteryEndbookView {
   closingLine: string;
 }
 
+export interface MurderMysteryReportableSpecialEventView {
+  id: string;
+  label: string;
+  description: string;
+}
+
 export interface MurderMysteryStateSnapshot {
   roomId: string;
   scenario: {
@@ -400,6 +430,7 @@ export interface MurderMysteryStateSnapshot {
     finalVote: MurderMysteryScenario['finalVote'];
     endbook: MurderMysteryScenario['endbook'];
   };
+  specialEvents: MurderMysteryReportableSpecialEventView[];
   phase: MurderMysteryPhase;
   phaseOrder: MurderMysteryPhase[];
   players: MurderMysteryPublicPlayerView[];
@@ -510,6 +541,15 @@ export interface MurderMysteryClientToServerEvents {
       roomId: string;
       sessionId: string;
       suspectPlayerId: string;
+    },
+    callback: (response: CommonResponse) => void
+  ) => void;
+  mm_report_special_event: (
+    data: {
+      roomId: string;
+      sessionId: string;
+      eventId: string;
+      outcome: MurderMysterySpecialEventOutcome;
     },
     callback: (response: CommonResponse) => void
   ) => void;

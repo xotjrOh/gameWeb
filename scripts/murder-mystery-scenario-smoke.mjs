@@ -29,6 +29,20 @@ const toStepKind = (value) =>
     ? value
     : null;
 
+const assertPublicAssetExists = (assetPath, context) => {
+  if (typeof assetPath !== 'string' || assetPath.length === 0) {
+    return;
+  }
+  if (!assetPath.startsWith('/')) {
+    return;
+  }
+
+  const filePath = path.join(root, 'public', assetPath.slice(1));
+  if (!fs.existsSync(filePath)) {
+    fail(`${context}: missing public asset (${assetPath})`);
+  }
+};
+
 const readScenarioFile = (filePath) => {
   const raw = fs.readFileSync(filePath, 'utf8');
   const ext = path.extname(filePath).toLowerCase();
@@ -81,6 +95,7 @@ const normalizeInvestigations = (investigations) => {
             targets: Array.isArray(round.targets)
               ? round.targets.map((target) => ({
                   id: target.id,
+                  cardBack: target.cardBack,
                   cardPool: Array.isArray(target.cardPool)
                     ? target.cardPool
                     : Array.isArray(target.cards)
@@ -98,6 +113,7 @@ const normalizeInvestigations = (investigations) => {
             round: toRound(Number(key.replace('round', ''))),
             targets: value.map((target) => ({
               id: target.id,
+              cardBack: target.cardBack,
               cardPool: Array.isArray(target.cardPool)
                 ? target.cardPool
                 : Array.isArray(target.cards)
@@ -220,6 +236,10 @@ for (const entry of registry.scenarios) {
           fail(`${entry.file}: unknown card in cardPool (${cardId})`);
         }
       }
+      assertPublicAssetExists(
+        target.cardBack?.imageSrc,
+        `${entry.file}: target(${target.id}).cardBack.imageSrc`
+      );
     }
   }
 
@@ -230,6 +250,14 @@ for (const entry of registry.scenarios) {
       }
       backIds.add(card.backId);
     }
+    assertPublicAssetExists(
+      card.imageSrc,
+      `${entry.file}: card(${card.id}).imageSrc`
+    );
+    assertPublicAssetExists(
+      card.back?.imageSrc,
+      `${entry.file}: card(${card.id}).back.imageSrc`
+    );
   }
 
   const flowSteps = normalizeFlowSteps(scenario, roundValues);
@@ -294,6 +322,56 @@ for (const entry of registry.scenarios) {
   }
 
   const roleIds = new Set(scenario.roles.map((role) => role.id));
+  if (!roleIds.has(correctRoleId)) {
+    fail(`${entry.file}: finalVote.correctRoleId is unknown (${correctRoleId})`);
+  }
+
+  if (Array.isArray(scenario.initialRoleCards)) {
+    for (const [index, initialCard] of scenario.initialRoleCards.entries()) {
+      if (!roleIds.has(initialCard.roleId)) {
+        fail(
+          `${entry.file}: initialRoleCards[${index}] references unknown role (${initialCard.roleId})`
+        );
+      }
+      if (!cardIds.has(initialCard.cardId)) {
+        fail(
+          `${entry.file}: initialRoleCards[${index}] references unknown card (${initialCard.cardId})`
+        );
+      }
+    }
+  }
+
+  if (Array.isArray(scenario.specialEvents)) {
+    const specialEventIds = new Set();
+    for (const event of scenario.specialEvents) {
+      if (!event.id) {
+        fail(`${entry.file}: specialEvent.id is required`);
+      }
+      if (specialEventIds.has(event.id)) {
+        fail(`${entry.file}: duplicated specialEvent id (${event.id})`);
+      }
+      specialEventIds.add(event.id);
+      if (!cardIds.has(event.revealCardId)) {
+        fail(
+          `${entry.file}: specialEvent(${event.id}) references unknown reveal card (${event.revealCardId})`
+        );
+      }
+      if (
+        !Array.isArray(event.reporterRoleIds) ||
+        event.reporterRoleIds.length === 0
+      ) {
+        fail(`${entry.file}: specialEvent(${event.id}) reporterRoleIds is required`);
+      }
+      for (const roleId of event.reporterRoleIds) {
+        if (!roleIds.has(roleId)) {
+          fail(
+            `${entry.file}: specialEvent(${event.id}) references unknown reporter role (${roleId})`
+          );
+        }
+      }
+    }
+  }
+
   if (investigations.turnOrder) {
     const orderedRoleIds = new Set();
     for (const roleId of investigations.turnOrder.roleIds) {
@@ -328,6 +406,10 @@ for (const entry of registry.scenarios) {
     ) {
       fail(`${entry.file}: map scene width/height must be positive integers`);
     }
+    assertPublicAssetExists(
+      scene?.imageSrc,
+      `${entry.file}: investigations.layout.map.scene.imageSrc`
+    );
     if (
       !Array.isArray(investigations.map.hotspots) ||
       investigations.map.hotspots.length === 0

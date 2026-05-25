@@ -47,6 +47,32 @@ const panelPaperSx = {
   borderRadius: 3,
 } as const;
 
+const ClueCardImage = ({
+  card,
+}: {
+  card: {
+    title: string;
+    imageSrc?: string;
+    imageAlt?: string;
+  };
+}) =>
+  card.imageSrc ? (
+    <Box
+      component="img"
+      src={card.imageSrc}
+      alt={card.imageAlt ?? card.title}
+      sx={{
+        width: '100%',
+        maxHeight: 360,
+        objectFit: 'contain',
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: 'divider',
+        backgroundColor: 'rgba(15,23,42,0.04)',
+      }}
+    />
+  ) : null;
+
 const getPlayerLabel = (
   playerId: string | null,
   players: MurderMysteryPublicPlayerView[]
@@ -896,6 +922,7 @@ const LegacyInvestigatePanel = ({
                   <CardContent>
                     <Stack spacing={0.8}>
                       <Typography fontWeight={700}>{card.title}</Typography>
+                      <ClueCardImage card={card} />
                       <Stack direction="row" spacing={0.8} flexWrap="wrap">
                         {(card.sourceTargetLabels.length > 0
                           ? card.sourceTargetLabels
@@ -1080,6 +1107,7 @@ export default function MurderMysteryInvestigationPanel({
                   <CardContent>
                     <Stack spacing={0.8}>
                       <Typography fontWeight={700}>{card.title}</Typography>
+                      <ClueCardImage card={card} />
                       <Stack direction="row" spacing={0.8} flexWrap="wrap">
                         {(card.sourceTargetLabels.length > 0
                           ? card.sourceTargetLabels

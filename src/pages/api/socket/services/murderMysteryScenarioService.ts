@@ -905,9 +905,88 @@ const normalizeCards = ({
         cardRecord.text,
         `${fileName}: card(${id}) text is required`
       ),
+      imageSrc: asNonEmptyString(cardRecord.imageSrc),
+      imageAlt: asNonEmptyString(cardRecord.imageAlt),
       backId: asNonEmptyString(cardRecord.backId),
       back: normalizeCardBackStyle(cardRecord.back),
       effects,
+    };
+  });
+};
+
+const normalizeInitialRoleCards = ({
+  rawInitialRoleCards,
+  fileName,
+}: {
+  rawInitialRoleCards: unknown;
+  fileName: string;
+}): MurderMysteryScenario['initialRoleCards'] => {
+  if (!Array.isArray(rawInitialRoleCards)) {
+    return [];
+  }
+
+  return rawInitialRoleCards.map((rawEntry, index) => {
+    const entryRecord = requireRecord(
+      rawEntry,
+      `${fileName}: initialRoleCards[${index}] must be object`
+    );
+    return {
+      roleId: requireString(
+        entryRecord.roleId,
+        `${fileName}: initialRoleCards[${index}].roleId is required`
+      ),
+      cardId: requireString(
+        entryRecord.cardId,
+        `${fileName}: initialRoleCards[${index}].cardId is required`
+      ),
+      sourceLabel: asNonEmptyString(entryRecord.sourceLabel),
+    };
+  });
+};
+
+const normalizeSpecialEvents = ({
+  rawSpecialEvents,
+  fileName,
+}: {
+  rawSpecialEvents: unknown;
+  fileName: string;
+}): MurderMysteryScenario['specialEvents'] => {
+  if (!Array.isArray(rawSpecialEvents)) {
+    return [];
+  }
+
+  return rawSpecialEvents.map((rawEntry, index) => {
+    const eventRecord = requireRecord(
+      rawEntry,
+      `${fileName}: specialEvents[${index}] must be object`
+    );
+    const id = requireString(
+      eventRecord.id,
+      `${fileName}: specialEvents[${index}].id is required`
+    );
+    const reporterRoleIds = toStringArray(eventRecord.reporterRoleIds);
+    assertCondition(
+      reporterRoleIds.length > 0,
+      `${fileName}: specialEvent(${id}) reporterRoleIds is required`
+    );
+
+    return {
+      id,
+      label: requireString(
+        eventRecord.label,
+        `${fileName}: specialEvent(${id}) label is required`
+      ),
+      description: requireString(
+        eventRecord.description,
+        `${fileName}: specialEvent(${id}) description is required`
+      ),
+      reporterRoleIds,
+      revealCardId: requireString(
+        eventRecord.revealCardId,
+        `${fileName}: specialEvent(${id}) revealCardId is required`
+      ),
+      revealAnnouncement: asNonEmptyString(eventRecord.revealAnnouncement),
+      sealAnnouncement: asNonEmptyString(eventRecord.sealAnnouncement),
     };
   });
 };
@@ -965,6 +1044,14 @@ const normalizeScenarioSchema = (
     rawCards: scenarioRecord.cards,
     fileName,
   });
+  const initialRoleCards = normalizeInitialRoleCards({
+    rawInitialRoleCards: scenarioRecord.initialRoleCards,
+    fileName,
+  });
+  const specialEvents = normalizeSpecialEvents({
+    rawSpecialEvents: scenarioRecord.specialEvents,
+    fileName,
+  });
 
   const finalVoteRecord = requireRecord(
     scenarioRecord.finalVote,
@@ -998,6 +1085,8 @@ const normalizeScenarioSchema = (
     },
     roles,
     parts,
+    initialRoleCards,
+    specialEvents,
     investigations,
     cards,
     finalVote: {
@@ -1144,6 +1233,37 @@ const validateScenarioSchema = (
           `${fileName}: revealRoleName references unknown role (${effect.roleId})`
         );
       }
+    });
+  });
+
+  scenario.initialRoleCards.forEach((entry, index) => {
+    assertCondition(
+      roleIds.has(entry.roleId),
+      `${fileName}: initialRoleCards[${index}] references unknown role (${entry.roleId})`
+    );
+    assertCondition(
+      cardIds.has(entry.cardId),
+      `${fileName}: initialRoleCards[${index}] references unknown card (${entry.cardId})`
+    );
+  });
+
+  const specialEventIds = new Set<string>();
+  scenario.specialEvents.forEach((event) => {
+    assertCondition(event.id, `${fileName}: specialEvent.id is required`);
+    assertCondition(
+      !specialEventIds.has(event.id),
+      `${fileName}: duplicated specialEvent id (${event.id})`
+    );
+    specialEventIds.add(event.id);
+    assertCondition(
+      cardIds.has(event.revealCardId),
+      `${fileName}: specialEvent(${event.id}) references unknown reveal card (${event.revealCardId})`
+    );
+    event.reporterRoleIds.forEach((roleId) => {
+      assertCondition(
+        roleIds.has(roleId),
+        `${fileName}: specialEvent(${event.id}) references unknown reporter role (${roleId})`
+      );
     });
   });
 

@@ -37,6 +37,7 @@ import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
   MurderMysteryPhase,
+  MurderMysterySpecialEventOutcome,
   MurderMysteryStepKind,
 } from '@/types/murderMystery';
 
@@ -270,12 +271,12 @@ const LobbyPanel = ({
     {isHostView ? (
       <Alert
         severity="info"
-        action={<Button onClick={onOpenGmPanel}>GM 패널</Button>}
+        action={<Button onClick={onOpenGmPanel}>진행 패널</Button>}
       >
-        게임 시작은 상단 GM 패널에서 실행할 수 있습니다.
+        게임 시작은 진행 패널에서 실행할 수 있습니다.
       </Alert>
     ) : (
-      <Alert severity="info">GM이 게임을 시작할 때까지 대기해주세요.</Alert>
+      <Alert severity="info">방장이 게임을 시작할 때까지 대기해주세요.</Alert>
     )}
   </PanelCard>
 );
@@ -319,12 +320,10 @@ const IntroPanel = ({
           </Button>
         }
       >
-        오프닝 전체 표시는 GM 패널에서 진행할 수 있습니다.
+        오프닝 전체 표시는 진행 패널에서 실행할 수 있습니다.
       </Alert>
     ) : isHostView ? (
-      <Alert severity="info">
-        방장이 플레이어로 참가 중이라 오프닝 전체 표시 기능은 잠겨 있습니다.
-      </Alert>
+      <Alert severity="info">오프닝은 각자 화면에서 확인하세요.</Alert>
     ) : (
       <Alert severity="info">오프닝은 읽기 전용입니다.</Alert>
     )}
@@ -439,11 +438,11 @@ const VotePanel = ({
           severity="info"
           action={
             <Button size="small" onClick={onOpenGmPanel}>
-              GM 패널
+              진행 패널
             </Button>
           }
         >
-          집계/결과 공개는 GM 패널에서 실행할 수 있습니다.
+          집계/결과 공개는 진행 패널에서 실행할 수 있습니다.
         </Alert>
       ) : isHostView ? (
         <Alert severity="info">
@@ -536,17 +535,45 @@ const EndbookPanel = ({
           </Button>
         }
       >
-        엔딩북 전체 표시는 GM 패널에서 실행할 수 있습니다.
+        엔딩북 전체 표시는 진행 패널에서 실행할 수 있습니다.
       </Alert>
     ) : null}
   </PanelCard>
 );
+
+const ClueCardImage = ({
+  card,
+}: {
+  card: {
+    title: string;
+    imageSrc?: string;
+    imageAlt?: string;
+  };
+}) =>
+  card.imageSrc ? (
+    <Box
+      component="img"
+      src={card.imageSrc}
+      alt={card.imageAlt ?? card.title}
+      sx={{
+        width: '100%',
+        maxHeight: 360,
+        objectFit: 'contain',
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: 'divider',
+        backgroundColor: 'rgba(15,23,42,0.04)',
+      }}
+    />
+  ) : null;
 
 const MySheetPanel = ({
   roleSheet,
   mode,
   onChangeMode,
   clueVault,
+  specialEvents,
+  onReportSpecialEvent,
 }: {
   roleSheet: NonNullable<
     ReturnType<typeof useMurderMysteryGameData>['snapshot']
@@ -556,6 +583,13 @@ const MySheetPanel = ({
   clueVault: NonNullable<
     ReturnType<typeof useMurderMysteryGameData>['snapshot']
   >['clueVault'];
+  specialEvents: NonNullable<
+    ReturnType<typeof useMurderMysteryGameData>['snapshot']
+  >['specialEvents'];
+  onReportSpecialEvent: (
+    eventId: string,
+    outcome: MurderMysterySpecialEventOutcome
+  ) => void;
 }) => {
   const [vaultTab, setVaultTab] = useState<'MY' | 'PUBLIC'>('MY');
   const [searchKeyword, setSearchKeyword] = useState('');
@@ -620,6 +654,49 @@ const MySheetPanel = ({
               </Typography>
             </CardContent>
           </Card>
+          {specialEvents.length > 0 ? (
+            <Stack spacing={1}>
+              {specialEvents.map((event) => (
+                <Alert
+                  key={event.id}
+                  severity="warning"
+                  sx={{ alignItems: 'flex-start' }}
+                >
+                  <Stack spacing={1}>
+                    <Box>
+                      <Typography fontWeight={800}>{event.label}</Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ whiteSpace: 'pre-wrap' }}
+                      >
+                        {event.description}
+                      </Typography>
+                    </Box>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        color="warning"
+                        onClick={() => onReportSpecialEvent(event.id, 'reveal')}
+                        sx={{ whiteSpace: 'normal', textAlign: 'center' }}
+                      >
+                        여우가 먼저 제기함 - 카드 공개
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="inherit"
+                        onClick={() => onReportSpecialEvent(event.id, 'seal')}
+                        sx={{ whiteSpace: 'normal', textAlign: 'center' }}
+                      >
+                        여우 외 인물이 먼저 제기함 - 영구 폐기
+                      </Button>
+                    </Stack>
+                  </Stack>
+                </Alert>
+              ))}
+            </Stack>
+          ) : null}
           <Divider />
           <Stack spacing={1}>
             <Stack
@@ -690,6 +767,7 @@ const MySheetPanel = ({
                       <CardContent>
                         <Stack spacing={0.8}>
                           <Typography fontWeight={700}>{card.title}</Typography>
+                          <ClueCardImage card={card} />
                           <Stack direction="row" spacing={0.8} flexWrap="wrap">
                             {(card.sourceTargetLabels.length > 0
                               ? card.sourceTargetLabels
@@ -767,7 +845,7 @@ const PartsBoardPanel = ({
       </Card>
       {partsBoard.parts && partsBoard.parts.length > 0 ? (
         <Stack spacing={0.8}>
-          <Alert severity="info">진행자 전용 증거 상세</Alert>
+          <Alert severity="info">방장 전용 증거 상세</Alert>
           <Stack direction="row" spacing={0.8} flexWrap="wrap">
             {partsBoard.parts.map((part) => (
               <Chip
@@ -848,7 +926,7 @@ const HostPanel = ({
           alignItems="center"
         >
           <Typography variant="h6" fontWeight={800}>
-            GM 패널
+            진행 패널
           </Typography>
           <Chip color="primary" label={phaseLabelMap[phase] ?? phase} />
         </Stack>
@@ -897,8 +975,8 @@ const HostPanel = ({
             </>
           ) : (
             <Alert severity="info">
-              방장이 플레이어로 참가 중이므로 진행자 전용 기능(전체 공개/수동
-              배포/수동 집계)은 잠겨 있습니다.
+              별도 진행자 없이 진행 중입니다. 오프닝/엔딩은 각자 화면에서
+              확인하고, 최종 투표는 모든 플레이어가 제출하면 자동 집계됩니다.
             </Alert>
           )}
           <Button variant="text" color="inherit" onClick={onResetGame}>
@@ -1018,8 +1096,8 @@ const HostPanel = ({
           </>
         ) : hostParticipatesAsPlayer ? (
           <Alert severity="info">
-            방장이 플레이어로 참가 중이라 다른 플레이어의 비밀 정보와 카드
-            현황은 표시되지 않습니다.
+            3인 플레이 모드에서는 다른 플레이어의 비밀 정보와 카드 현황을
+            표시하지 않습니다.
           </Alert>
         ) : null}
       </Stack>
@@ -1329,6 +1407,24 @@ export default function MurderMysteryGameScreen({
     );
   };
 
+  const handleReportSpecialEvent = (
+    eventId: string,
+    outcome: MurderMysterySpecialEventOutcome
+  ) => {
+    emitWithAck(
+      'mm_report_special_event',
+      {
+        roomId,
+        sessionId,
+        eventId,
+        outcome,
+      },
+      outcome === 'reveal'
+        ? '잠금 카드를 전체 공개했습니다.'
+        : '잠금 카드를 영구 폐기했습니다.'
+    );
+  };
+
   const handleResolvePending = (requestId: string, cardId?: string) => {
     emitWithAck(
       'mm_host_resolve_investigation',
@@ -1513,6 +1609,7 @@ export default function MurderMysteryGameScreen({
     players,
     roleSheet,
     clueVault,
+    specialEvents,
     partsBoard,
     investigation,
     finalVote,
@@ -1719,6 +1816,8 @@ export default function MurderMysteryGameScreen({
           mode={sheetMode}
           onChangeMode={setSheetMode}
           clueVault={clueVault}
+          specialEvents={specialEvents}
+          onReportSpecialEvent={handleReportSpecialEvent}
         />
       );
     }
@@ -1783,7 +1882,7 @@ export default function MurderMysteryGameScreen({
                 color="secondary"
                 onClick={() => setIsHostPanelOpen(true)}
               >
-                GM 패널
+                진행 패널
               </Button>
             ) : null}
             <Button
@@ -1811,7 +1910,7 @@ export default function MurderMysteryGameScreen({
               label={
                 hostParticipatesAsPlayer
                   ? '방장도 플레이어 참가'
-                  : '방장은 진행자 전용'
+                  : '방장 미참가'
               }
             />
             <Chip
@@ -1895,6 +1994,8 @@ export default function MurderMysteryGameScreen({
                 mode={sheetMode}
                 onChangeMode={setSheetMode}
                 clueVault={clueVault}
+                specialEvents={specialEvents}
+                onReportSpecialEvent={handleReportSpecialEvent}
               />
               {selectedPhase !== 'LOBBY' ? (
                 <>
