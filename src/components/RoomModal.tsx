@@ -41,6 +41,7 @@ interface FormData {
   gameType: GameType;
   maxPlayers: number;
   scenarioId: string;
+  hostNickname: string;
   hostParticipatesAsPlayer: boolean;
 }
 
@@ -79,6 +80,7 @@ export default function RoomModal({
       gameType: 'horse',
       maxPlayers: undefined,
       scenarioId: '',
+      hostNickname: '',
       hostParticipatesAsPlayer: false,
     },
   });
@@ -177,7 +179,10 @@ export default function RoomModal({
       return;
     }
 
-    const userName = session.user.name ?? 'Anonymous';
+    const userName =
+      data.gameType === 'murder_mystery'
+        ? data.hostNickname.trim()
+        : (session.user.name ?? 'Anonymous');
     const sessionId = session.user.id;
     const resolvedMaxPlayers =
       data.gameType === 'murder_mystery' && selectedScenario
@@ -187,6 +192,16 @@ export default function RoomModal({
     if (data.gameType === 'murder_mystery') {
       if (!data.scenarioId) {
         return enqueueSnackbar('머더미스터리 시나리오를 선택해주세요.', {
+          variant: 'error',
+        });
+      }
+      if (!userName) {
+        return enqueueSnackbar('방장 닉네임을 입력해주세요.', {
+          variant: 'error',
+        });
+      }
+      if (userName.length > 10) {
+        return enqueueSnackbar('방장 닉네임은 10자 이하로 입력해주세요.', {
           variant: 'error',
         });
       }
@@ -334,6 +349,45 @@ export default function RoomModal({
 
         {selectedGameType === 'murder_mystery' && (
           <>
+            <TextField
+              label="방장 닉네임"
+              {...register('hostNickname', {
+                validate: (value) => {
+                  if (selectedGameType !== 'murder_mystery') {
+                    return true;
+                  }
+                  const nickname = value.trim();
+                  if (!nickname) {
+                    return '방장 닉네임을 입력해주세요.';
+                  }
+                  if (nickname.length > 10) {
+                    return '방장 닉네임은 10자 이하로 입력해주세요.';
+                  }
+                  return true;
+                },
+              })}
+              error={!!errors.hostNickname}
+              helperText={
+                errors.hostNickname?.message ??
+                '게임 안에서 표시될 내 이름입니다.'
+              }
+              fullWidth
+              variant="outlined"
+              margin="normal"
+              sx={{
+                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+              }}
+              slotProps={{
+                formHelperText: {
+                  sx: {
+                    margin: 0,
+                    paddingLeft: '12px',
+                    backgroundColor: 'background.card',
+                  },
+                },
+              }}
+            />
+
             <FormControl
               fullWidth
               margin="normal"

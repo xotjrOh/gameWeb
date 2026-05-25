@@ -214,8 +214,10 @@ const commonHandler = (
         validateGameType(gameType);
         validateMaxPlayers(maxPlayers);
         validateAlreadyJoinOtherRoom(rooms, sessionId);
+        let resolvedUserName = userName;
 
         if (gameType === 'murder_mystery') {
+          resolvedUserName = validateNickname(userName.trim());
           const scenario = getMurderMysteryScenario(scenarioId);
           if (
             maxPlayers < scenario.players.min ||
@@ -236,7 +238,7 @@ const commonHandler = (
               roomName,
               gameType,
               sessionId,
-              userName,
+              userName: resolvedUserName,
               socketId: socket.id,
               maxPlayers,
               scenarioId,

@@ -299,7 +299,11 @@ export interface MurderMysteryPublicPlayerView {
   name: string;
   socketId: string;
   displayName: string;
+  roleId: string | null;
+  roleDisplayName: string | null;
+  rolePublicText: string | null;
   statusText: MurderMysteryPlayerStatus;
+  publicRevealedClues: MurderMysteryClueVaultCardView[];
 }
 
 export interface MurderMysteryHostRoleAssignmentView {

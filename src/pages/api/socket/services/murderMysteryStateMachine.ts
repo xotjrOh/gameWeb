@@ -1867,16 +1867,35 @@ export const buildMurderMysterySnapshot = (
     specialEvents: reportableSpecialEvents,
     phase: room.gameData.phase,
     phaseOrder: getMurderMysteryPhaseOrder(scenario),
-    players: room.players.map((entry) => ({
-      id: entry.id,
-      name: entry.name,
-      socketId: entry.socketId,
-      displayName:
-        room.gameData.roleDisplayNameByPlayerId[entry.id] ?? entry.name,
-      statusText:
-        (entry as { statusText?: '감시' | '격리' | '결박' }).statusText ??
-        '감시',
-    })),
+    players: room.players.map((entry) => {
+      const entryRoleId = room.gameData.roleByPlayerId[entry.id] ?? null;
+      const entryRole = entryRoleId
+        ? (getRoleById(scenario, entryRoleId) ?? null)
+        : null;
+      return {
+        id: entry.id,
+        name: entry.name,
+        socketId: entry.socketId,
+        displayName:
+          room.gameData.roleDisplayNameByPlayerId[entry.id] ??
+          entryRole?.displayName ??
+          entry.name,
+        roleId: entryRoleId,
+        roleDisplayName:
+          room.gameData.roleDisplayNameByPlayerId[entry.id] ??
+          entryRole?.displayName ??
+          null,
+        rolePublicText: entryRole?.publicText ?? null,
+        statusText:
+          (entry as { statusText?: '감시' | '격리' | '결박' }).statusText ??
+          '감시',
+        publicRevealedClues: buildClueVaultCards(
+          scenario,
+          room.gameData.revealedCardsByPlayerId[entry.id] ?? [],
+          cardSourceMap
+        ),
+      };
+    }),
     roleSheet,
     myCards,
     clueVault: {
