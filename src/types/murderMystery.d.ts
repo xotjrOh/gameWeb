@@ -259,6 +259,11 @@ export interface MurderMysteryFinalVoteResult {
   tally: Record<string, number>;
 }
 
+export interface MurderMysterySeatPosition {
+  x: number;
+  y: number;
+}
+
 export interface MurderMysteryGameData {
   scenarioId: string;
   scenarioTitle: string;
@@ -285,6 +290,7 @@ export interface MurderMysteryGameData {
   endbookVariant: 'matched' | 'notMatched' | null;
   announcements: MurderMysteryAnnouncement[];
   appliedDynamicRuleIds: Record<string, true>;
+  seatLayoutByPlayerId: Record<string, MurderMysterySeatPosition>;
 }
 
 export interface MurderMysteryRoleSheetView {
@@ -453,6 +459,7 @@ export interface MurderMysteryStateSnapshot {
     endbook: MurderMysteryScenario['endbook'];
   };
   specialEvents: MurderMysteryReportableSpecialEventView[];
+  seatLayoutByPlayerId: Record<string, MurderMysterySeatPosition>;
   phase: MurderMysteryPhase;
   phaseOrder: MurderMysteryPhase[];
   players: MurderMysteryPublicPlayerView[];
@@ -531,6 +538,19 @@ export interface MurderMysteryClientToServerEvents {
     callback: (response: CommonResponse) => void
   ) => void;
   mm_host_reset_game: (
+    data: { roomId: string; sessionId: string },
+    callback: (response: CommonResponse) => void
+  ) => void;
+  mm_update_seat_position: (
+    data: {
+      roomId: string;
+      sessionId: string;
+      playerId: string;
+      position: MurderMysterySeatPosition;
+    },
+    callback: (response: CommonResponse) => void
+  ) => void;
+  mm_reset_seat_layout: (
     data: { roomId: string; sessionId: string },
     callback: (response: CommonResponse) => void
   ) => void;

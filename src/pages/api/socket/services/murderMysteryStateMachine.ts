@@ -20,6 +20,7 @@ import {
   MurderMysteryPendingInvestigation,
   MurderMysteryRoleSheetView,
   MurderMysteryScenario,
+  MurderMysterySeatPosition,
   MurderMysterySpecialEventOutcome,
   MurderMysteryStateSnapshot,
 } from '@/types/murderMystery';
@@ -45,6 +46,61 @@ const shuffled = <T>(items: T[]): T[] => {
 
 const makeId = (prefix: string) =>
   `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+const clampSeatCoordinate = (value: number, min: number, max: number) =>
+  Math.min(Math.max(Number.isFinite(value) ? value : min, min), max);
+
+const normalizeSeatPosition = (
+  position: MurderMysterySeatPosition
+): MurderMysterySeatPosition => ({
+  x: clampSeatCoordinate(position.x, 8, 92),
+  y: clampSeatCoordinate(position.y, 10, 90),
+});
+
+const buildDefaultSeatPosition = (
+  index: number,
+  count: number
+): MurderMysterySeatPosition => {
+  const safeCount = Math.max(count, 1);
+  const angle = -Math.PI / 2 + (2 * Math.PI * index) / safeCount;
+  return {
+    x: 50 + Math.cos(angle) * 39,
+    y: 50 + Math.sin(angle) * 32,
+  };
+};
+
+const buildDefaultSeatLayout = (room: MurderMysteryRoom) =>
+  room.players.reduce<Record<string, MurderMysterySeatPosition>>(
+    (acc, player, index) => {
+      acc[player.id] = normalizeSeatPosition(
+        buildDefaultSeatPosition(index, room.players.length)
+      );
+      return acc;
+    },
+    {}
+  );
+
+const ensureMurderMysterySeatLayout = (room: MurderMysteryRoom) => {
+  room.gameData.seatLayoutByPlayerId ??= {};
+  const activePlayerIds = new Set(room.players.map((player) => player.id));
+
+  Object.keys(room.gameData.seatLayoutByPlayerId).forEach((playerId) => {
+    if (!activePlayerIds.has(playerId)) {
+      delete room.gameData.seatLayoutByPlayerId[playerId];
+    }
+  });
+
+  room.players.forEach((player, index) => {
+    const current = room.gameData.seatLayoutByPlayerId[player.id];
+    room.gameData.seatLayoutByPlayerId[player.id] = current
+      ? normalizeSeatPosition(current)
+      : normalizeSeatPosition(
+          buildDefaultSeatPosition(index, room.players.length)
+        );
+  });
+
+  return room.gameData.seatLayoutByPlayerId;
+};
 
 const getRoundConfig = (
   scenario: MurderMysteryScenario,
@@ -241,6 +297,7 @@ const createInitialStateWithScenario = (
   endbookVariant: null,
   announcements: [],
   appliedDynamicRuleIds: {},
+  seatLayoutByPlayerId: {},
 });
 
 const ensureInvestigationUsageMap = (
@@ -1132,6 +1189,41 @@ export const resetMurderMysteryGame = (
   room.status = GAME_STATUS.PENDING;
 };
 
+export const updateMurderMysterySeatPosition = (
+  room: MurderMysteryRoom,
+  sessionId: string,
+  playerId: string,
+  position: MurderMysterySeatPosition
+) => {
+  if (room.gameData.phase !== 'LOBBY') {
+    throw new Error('게임 시작 후에는 좌석을 변경할 수 없습니다.');
+  }
+  if (sessionId !== playerId) {
+    throw new Error('자기 좌석만 이동할 수 있습니다.');
+  }
+  if (!room.players.some((player) => player.id === playerId)) {
+    throw new Error('존재하지 않는 플레이어 좌석입니다.');
+  }
+  if (
+    !position ||
+    typeof position.x !== 'number' ||
+    typeof position.y !== 'number'
+  ) {
+    throw new Error('잘못된 좌석 좌표입니다.');
+  }
+
+  ensureMurderMysterySeatLayout(room);
+  room.gameData.seatLayoutByPlayerId[playerId] =
+    normalizeSeatPosition(position);
+};
+
+export const resetMurderMysterySeatLayout = (room: MurderMysteryRoom) => {
+  if (room.gameData.phase !== 'LOBBY') {
+    throw new Error('게임 시작 후에는 좌석 배치를 초기화할 수 없습니다.');
+  }
+  room.gameData.seatLayoutByPlayerId = buildDefaultSeatLayout(room);
+};
+
 export const assignMurderMysteryRoles = (
   room: MurderMysteryRoom,
   scenario: MurderMysteryScenario
@@ -1169,6 +1261,7 @@ export const startMurderMysteryGame = (
   room: MurderMysteryRoom,
   scenario: MurderMysteryScenario
 ) => {
+  ensureMurderMysterySeatLayout(room);
   assignMurderMysteryRoles(room, scenario);
 
   const firstStep = scenario.flow.steps[0];
@@ -1754,6 +1847,7 @@ export const buildMurderMysterySnapshot = (
   const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
   const canSeePartDetails =
     canUseHostGameMasterControls || scenario.rules.partsPublicDetail;
+  const seatLayoutByPlayerId = ensureMurderMysterySeatLayout(room);
   const player = room.players.find((entry) => entry.id === viewerId) ?? null;
   const roleId = player
     ? (room.gameData.roleByPlayerId[player.id] ?? null)
@@ -1865,6 +1959,7 @@ export const buildMurderMysterySnapshot = (
       endbook: scenario.endbook,
     },
     specialEvents: reportableSpecialEvents,
+    seatLayoutByPlayerId,
     phase: room.gameData.phase,
     phaseOrder: getMurderMysteryPhaseOrder(scenario),
     players: room.players.map((entry) => {

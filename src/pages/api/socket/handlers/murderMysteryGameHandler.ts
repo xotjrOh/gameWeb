@@ -8,12 +8,14 @@ import {
   moveMurderMysteryToNextPhase,
   reportMurderMysterySpecialEvent,
   resetMurderMysteryGame,
+  resetMurderMysterySeatLayout,
   resolveMurderMysteryInvestigation,
   clearMurderMysteryInvestigationReservation,
   setMurderMysteryInvestigationReservation,
   startMurderMysteryGame,
   submitMurderMysteryInvestigation,
   submitMurderMysteryVote,
+  updateMurderMysterySeatPosition,
 } from '../services/murderMysteryStateMachine';
 import {
   emitMurderMysteryAnnouncement,
@@ -74,6 +76,35 @@ const murderMysteryGameHandler = (
       startMurderMysteryGame(room, scenario);
       emitMurderMysterySnapshots(room, io);
       io.emit('room-updated', rooms);
+      return callback({ success: true });
+    } catch (error) {
+      return callback({ success: false, message: (error as Error).message });
+    }
+  });
+
+  socket.on(
+    'mm_update_seat_position',
+    ({ roomId, sessionId, playerId, position }, callback) => {
+      try {
+        const room = toMurderMysteryRoom(validateRoom(roomId));
+        validatePlayer(room, sessionId);
+
+        updateMurderMysterySeatPosition(room, sessionId, playerId, position);
+        emitMurderMysterySnapshots(room, io);
+        return callback({ success: true });
+      } catch (error) {
+        return callback({ success: false, message: (error as Error).message });
+      }
+    }
+  );
+
+  socket.on('mm_reset_seat_layout', ({ roomId, sessionId }, callback) => {
+    try {
+      const room = toMurderMysteryRoom(validateRoom(roomId));
+      ensureMurderMysteryHost(room, sessionId);
+
+      resetMurderMysterySeatLayout(room);
+      emitMurderMysterySnapshots(room, io);
       return callback({ success: true });
     } catch (error) {
       return callback({ success: false, message: (error as Error).message });

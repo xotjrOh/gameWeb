@@ -14,7 +14,10 @@ import useRedirectIfNotHost from '@/hooks/useRedirectIfNotHost';
 import useUpdateSocketId from '@/hooks/useUpdateSocketId';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
-import { MurderMysterySpecialEventOutcome } from '@/types/murderMystery';
+import {
+  MurderMysterySeatPosition,
+  MurderMysterySpecialEventOutcome,
+} from '@/types/murderMystery';
 
 interface MurderMysteryGameScreenProps {
   roomId: string;
@@ -123,6 +126,33 @@ export default function MurderMysteryGameScreen({
     });
   };
 
+  const emitWithAckResult = <T extends object>(eventName: string, payload: T) =>
+    new Promise<boolean>((resolve) => {
+      if (!socket) {
+        enqueueSnackbar('소켓 연결 대기 중입니다.', { variant: 'warning' });
+        resolve(false);
+        return;
+      }
+
+      const looseSocket = socket as unknown as {
+        emit: (
+          event: string,
+          data: unknown,
+          callback: (response: AckResponse) => void
+        ) => void;
+      };
+      looseSocket.emit(eventName, payload, (response) => {
+        if (!response.success) {
+          enqueueSnackbar(response.message ?? '요청 처리에 실패했습니다.', {
+            variant: 'error',
+          });
+          resolve(false);
+          return;
+        }
+        resolve(true);
+      });
+    });
+
   const handleLeaveRoom = () => {
     if (!socket || !sessionId) {
       return;
@@ -193,6 +223,17 @@ export default function MurderMysteryGameScreen({
     );
   };
 
+  const handleUpdateSeatPosition = (
+    playerId: string,
+    position: MurderMysterySeatPosition
+  ) =>
+    emitWithAckResult('mm_update_seat_position', {
+      roomId,
+      sessionId,
+      playerId,
+      position,
+    });
+
   if (!snapshot) {
     return (
       <Box sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
@@ -227,6 +268,14 @@ export default function MurderMysteryGameScreen({
           'mm_host_finalize_vote',
           { roomId, sessionId },
           '최종 투표를 집계했습니다.'
+        )
+      }
+      onUpdateSeatPosition={handleUpdateSeatPosition}
+      onResetSeatLayout={() =>
+        emitWithAck(
+          'mm_reset_seat_layout',
+          { roomId, sessionId },
+          '자리 배치를 초기화했습니다.'
         )
       }
       onSubmitInvestigationByTarget={handleSubmitInvestigationByTarget}

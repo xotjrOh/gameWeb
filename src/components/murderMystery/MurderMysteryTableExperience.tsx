@@ -41,6 +41,7 @@ import {
   MurderMysteryInvestigationBackCardView,
   MurderMysteryPublicPlayerView,
   MurderMysteryRoleSheetView,
+  MurderMysterySeatPosition,
   MurderMysterySpecialEventOutcome,
   MurderMysteryStateSnapshot,
   MurderMysteryStepKind,
@@ -55,6 +56,11 @@ interface MurderMysteryTableExperienceProps {
   onStartGame: () => void;
   onNextPhase: () => void;
   onFinalizeVote: () => void;
+  onUpdateSeatPosition: (
+    playerId: string,
+    position: MurderMysterySeatPosition
+  ) => Promise<boolean>;
+  onResetSeatLayout: () => void;
   onSubmitInvestigationByTarget: (targetId: string) => void;
   onSubmitInvestigationByBack: (backId: string) => void;
   onSetReservation: (backId: string) => void;
@@ -64,11 +70,6 @@ interface MurderMysteryTableExperienceProps {
     eventId: string,
     outcome: MurderMysterySpecialEventOutcome
   ) => void;
-}
-
-interface SeatPosition {
-  x: number;
-  y: number;
 }
 
 type PhaseKind = MurderMysteryStepKind | 'lobby';
@@ -97,7 +98,7 @@ const formatSeconds = (seconds: number | null) => {
 
 const buildDefaultLayout = (playerIds: string[]) => {
   const count = Math.max(playerIds.length, 1);
-  return playerIds.reduce<Record<string, SeatPosition>>(
+  return playerIds.reduce<Record<string, MurderMysterySeatPosition>>(
     (acc, playerId, index) => {
       const angle = -Math.PI / 2 + (2 * Math.PI * index) / count;
       acc[playerId] = {
@@ -112,19 +113,22 @@ const buildDefaultLayout = (playerIds: string[]) => {
 
 const mergeLayout = (
   playerIds: string[],
-  savedLayout: Record<string, SeatPosition> | null
+  savedLayout: Record<string, MurderMysterySeatPosition> | null
 ) => {
   const defaults = buildDefaultLayout(playerIds);
-  return playerIds.reduce<Record<string, SeatPosition>>((acc, playerId) => {
-    const saved = savedLayout?.[playerId];
-    acc[playerId] = saved
-      ? {
-          x: clamp(saved.x, 8, 92),
-          y: clamp(saved.y, 10, 90),
-        }
-      : defaults[playerId];
-    return acc;
-  }, {});
+  return playerIds.reduce<Record<string, MurderMysterySeatPosition>>(
+    (acc, playerId) => {
+      const saved = savedLayout?.[playerId];
+      acc[playerId] = saved
+        ? {
+            x: clamp(saved.x, 8, 92),
+            y: clamp(saved.y, 10, 90),
+          }
+        : defaults[playerId];
+      return acc;
+    },
+    {}
+  );
 };
 
 const getCardSourceText = (card: AnyClueCard) => {
@@ -410,6 +414,7 @@ const InvestigationCardBack = ({
 const SeatToken = ({
   player,
   isSelf,
+  canDrag,
   position,
   isDragging,
   onPointerDown,
@@ -422,7 +427,8 @@ const SeatToken = ({
 }: {
   player: MurderMysteryPublicPlayerView;
   isSelf: boolean;
-  position: SeatPosition;
+  canDrag: boolean;
+  position: MurderMysterySeatPosition;
   isDragging: boolean;
   onPointerDown: (
     event: React.PointerEvent<HTMLDivElement>,
@@ -447,7 +453,7 @@ const SeatToken = ({
       transform: 'translate(-50%, -50%)',
       zIndex: isDragging ? 12 : isSelf ? 8 : 7,
       touchAction: 'none',
-      cursor: isDragging ? 'grabbing' : 'grab',
+      cursor: canDrag ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
       userSelect: 'none',
     }}
   >
@@ -556,7 +562,9 @@ const SeatToken = ({
           </Stack>
         ) : (
           <Typography variant="caption" sx={{ color: '#6b6256' }}>
-            아직 이 자리에 공개 단서가 없습니다.
+            {canDrag
+              ? '드래그해서 실제 앉은 위치에 맞추세요.'
+              : '아직 이 자리에 공개 단서가 없습니다.'}
           </Typography>
         )}
 
@@ -1007,6 +1015,8 @@ export default function MurderMysteryTableExperience({
   onStartGame,
   onNextPhase,
   onFinalizeVote,
+  onUpdateSeatPosition,
+  onResetSeatLayout,
   onSubmitInvestigationByTarget,
   onSubmitInvestigationByBack,
   onSetReservation,
@@ -1017,17 +1027,20 @@ export default function MurderMysteryTableExperience({
   const theme = useTheme();
   const isSmall = useMediaQuery(theme.breakpoints.down('md'));
   const tableRef = useRef<HTMLDivElement | null>(null);
+  const seatPositionsRef = useRef<Record<string, MurderMysterySeatPosition>>(
+    {}
+  );
   const dragStateRef = useRef<{
     playerId: string;
     pointerId: number;
     startX: number;
     startY: number;
     moved: boolean;
+    canDrag: boolean;
   } | null>(null);
   const [seatPositions, setSeatPositions] = useState<
-    Record<string, SeatPosition>
+    Record<string, MurderMysterySeatPosition>
   >({});
-  const [layoutLoaded, setLayoutLoaded] = useState(false);
   const [draggingPlayerId, setDraggingPlayerId] = useState<string | null>(null);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [isRulebookOpen, setIsRulebookOpen] = useState(false);
@@ -1036,7 +1049,6 @@ export default function MurderMysteryTableExperience({
   const [nowTick, setNowTick] = useState(Date.now());
 
   const playerIdsKey = snapshot.players.map((player) => player.id).join('|');
-  const layoutKey = `murderMystery:seatLayout:${roomId}:${sessionId}`;
   const selfPlayer =
     snapshot.players.find((player) => player.id === sessionId) ?? null;
   const selectedPlayer =
@@ -1069,6 +1081,7 @@ export default function MurderMysteryTableExperience({
     ) ?? null;
   const canActNow = Boolean(snapshot.investigation.turn?.canActNow);
   const canUseHostTools = isHostView;
+  const canEditSeatLayout = snapshot.phase === 'LOBBY';
   const showNextPhaseTool =
     canUseHostTools &&
     phaseKind !== 'lobby' &&
@@ -1087,26 +1100,16 @@ export default function MurderMysteryTableExperience({
   }, []);
 
   useEffect(() => {
-    const playerIds = playerIdsKey ? playerIdsKey.split('|') : [];
-    let savedLayout: Record<string, SeatPosition> | null = null;
-    try {
-      const raw = window.localStorage.getItem(layoutKey);
-      savedLayout = raw
-        ? (JSON.parse(raw) as Record<string, SeatPosition>)
-        : null;
-    } catch {
-      savedLayout = null;
-    }
-    setSeatPositions(mergeLayout(playerIds, savedLayout));
-    setLayoutLoaded(true);
-  }, [layoutKey, playerIdsKey]);
+    seatPositionsRef.current = seatPositions;
+  }, [seatPositions]);
 
   useEffect(() => {
-    if (!layoutLoaded) {
+    const playerIds = playerIdsKey ? playerIdsKey.split('|') : [];
+    if (dragStateRef.current?.canDrag) {
       return;
     }
-    window.localStorage.setItem(layoutKey, JSON.stringify(seatPositions));
-  }, [layoutKey, layoutLoaded, seatPositions]);
+    setSeatPositions(mergeLayout(playerIds, snapshot.seatLayoutByPlayerId));
+  }, [playerIdsKey, snapshot.seatLayoutByPlayerId]);
 
   const updateSeatPositionFromPointer = (
     playerId: string,
@@ -1131,6 +1134,7 @@ export default function MurderMysteryTableExperience({
     if ((event.target as HTMLElement).closest('[data-seat-action]')) {
       return;
     }
+    const canDrag = canEditSeatLayout && playerId === sessionId;
     event.currentTarget.setPointerCapture(event.pointerId);
     dragStateRef.current = {
       playerId,
@@ -1138,8 +1142,11 @@ export default function MurderMysteryTableExperience({
       startX: event.clientX,
       startY: event.clientY,
       moved: false,
+      canDrag,
     };
-    setDraggingPlayerId(playerId);
+    if (canDrag) {
+      setDraggingPlayerId(playerId);
+    }
   };
 
   const handleSeatPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -1151,13 +1158,15 @@ export default function MurderMysteryTableExperience({
       event.clientX - state.startX,
       event.clientY - state.startY
     );
-    if (distance > 3) {
+    if (distance > 3 && state.canDrag) {
       state.moved = true;
       updateSeatPositionFromPointer(state.playerId, event);
     }
   };
 
-  const handleSeatPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+  const handleSeatPointerUp = async (
+    event: React.PointerEvent<HTMLDivElement>
+  ) => {
     const state = dragStateRef.current;
     if (!state || state.pointerId !== event.pointerId) {
       return;
@@ -1166,13 +1175,27 @@ export default function MurderMysteryTableExperience({
     if (!state.moved) {
       setSelectedPlayerId(state.playerId);
     }
+    if (state.moved && state.canDrag) {
+      const nextPosition = seatPositionsRef.current[state.playerId];
+      if (nextPosition) {
+        const success = await onUpdateSeatPosition(
+          state.playerId,
+          nextPosition
+        );
+        if (!success) {
+          const playerIds = playerIdsKey ? playerIdsKey.split('|') : [];
+          setSeatPositions(
+            mergeLayout(playerIds, snapshot.seatLayoutByPlayerId)
+          );
+        }
+      }
+    }
     dragStateRef.current = null;
     setDraggingPlayerId(null);
   };
 
   const resetSeats = () => {
-    const playerIds = playerIdsKey ? playerIdsKey.split('|') : [];
-    setSeatPositions(buildDefaultLayout(playerIds));
+    onResetSeatLayout();
   };
 
   const renderInvestigationArea = () => (
@@ -1385,7 +1408,7 @@ export default function MurderMysteryTableExperience({
             자리와 닉네임 확인
           </Typography>
           <Typography sx={{ color: '#d8d0bd' }}>
-            각자 실제 앉은 위치에 맞게 닉네임 좌석을 드래그하세요.
+            각자 자기 닉네임 좌석을 실제 앉은 위치에 맞게 드래그하세요.
           </Typography>
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
             {snapshot.players.map((player) => (
@@ -1523,11 +1546,13 @@ export default function MurderMysteryTableExperience({
             label={formatSeconds(phaseRemainingSec)}
             sx={{ backgroundColor: 'rgba(255,255,255,0.12)', color: '#f8f1de' }}
           />
-          <Tooltip title="자리 초기화">
-            <IconButton onClick={resetSeats} sx={{ color: '#f8f1de' }}>
-              <RestartAltIcon />
-            </IconButton>
-          </Tooltip>
+          {canUseHostTools && snapshot.phase === 'LOBBY' ? (
+            <Tooltip title="자리 초기화">
+              <IconButton onClick={resetSeats} sx={{ color: '#f8f1de' }}>
+                <RestartAltIcon />
+              </IconButton>
+            </Tooltip>
+          ) : null}
           {canUseHostTools && snapshot.phase === 'LOBBY' ? (
             <Tooltip title="게임 시작">
               <span>
@@ -1700,6 +1725,7 @@ export default function MurderMysteryTableExperience({
             key={player.id}
             player={player}
             isSelf={player.id === sessionId}
+            canDrag={canEditSeatLayout && player.id === sessionId}
             position={
               seatPositions[player.id] ??
               buildDefaultLayout(snapshot.players.map((entry) => entry.id))[

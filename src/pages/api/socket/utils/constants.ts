@@ -154,6 +154,7 @@ export const DEFAULT_GAME_DATA: {
     endbookVariant: null,
     announcements: [],
     appliedDynamicRuleIds: {},
+    seatLayoutByPlayerId: {},
   },
 } as const;
 
