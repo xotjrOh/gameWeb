@@ -34,7 +34,7 @@ const useRedirectIfInvalidRoom = (roomId: string, enabled = true) => {
         }
       );
     } else if (status === 'loading') {
-      dispatch(setIsLoading(true));
+      dispatch(setIsLoading({ isLoading: true, reason: 'route-check' }));
     }
   }, [enabled, socket?.id, status, roomId, session, router, dispatch]);
 };

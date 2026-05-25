@@ -221,7 +221,7 @@ export default function RoomModal({
             sessionId,
           };
 
-    dispatch(setIsLoading(true));
+    dispatch(setIsLoading({ isLoading: true, reason: 'create-room' }));
     socket.emit('create-room', payload, (response) => {
       if (!response.success) {
         enqueueSnackbar(response.message, { variant: 'error' });

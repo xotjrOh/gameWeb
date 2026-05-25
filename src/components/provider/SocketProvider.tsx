@@ -32,16 +32,36 @@ const SocketContext = createContext<SocketContextType>({
 
 const DEBUG = process.env.NEXT_PUBLIC_SOCKET_DEBUG === '1';
 const SOCKET_SINGLETON_FIX =
-  process.env.NEXT_PUBLIC_SOCKET_SINGLETON_FIX === '1';
+  process.env.NEXT_PUBLIC_SOCKET_SINGLETON_FIX !== '0';
 const SOCKET_VERSION_ENFORCE =
   process.env.NEXT_PUBLIC_SOCKET_VERSION_ENFORCE === '1';
 const CLIENT_APP_VERSION =
   process.env.NEXT_PUBLIC_APP_VERSION ??
   process.env.NEXT_PUBLIC_SITE_VERSION ??
   'dev';
+const SOCKET_DISCONNECT_LOADING_DELAY_MS = 2000;
+
+interface SocketHealthSnapshot {
+  socketId?: string;
+  connected: boolean;
+  transport?: string;
+  lastConnectAt?: string | null;
+  lastDisconnectAt?: string | null;
+  lastDisconnectReason?: string | null;
+  lastConnectError?: string | null;
+  reconnectAttempts: number;
+  roomUpdatedListenerCount: number;
+}
+
+declare global {
+  interface Window {
+    __socketHealth?: SocketHealthSnapshot;
+  }
+}
 
 type DebuggableClientSocket = ClientSocketType & {
   __dbgAttached?: boolean;
+  __healthAttached?: boolean;
   __providerListenersAttached?: boolean;
 };
 
@@ -92,6 +112,105 @@ const getManagedSocket = (version: string): ClientSocketType => {
   return singletonSocket;
 };
 
+const getSocketTransport = (socket: ClientSocketType | null) => {
+  return socket?.io.engine?.transport?.name;
+};
+
+const getRoomUpdatedListenerCount = (socket: ClientSocketType | null) => {
+  return socket?.listeners('room-updated').length ?? 0;
+};
+
+const updateSocketHealth = (
+  socket: ClientSocketType | null,
+  updates: Partial<SocketHealthSnapshot> = {}
+): SocketHealthSnapshot | null => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const previous = window.__socketHealth;
+  const nextHealth: SocketHealthSnapshot = {
+    socketId: socket?.id ?? previous?.socketId,
+    connected: socket?.connected ?? previous?.connected ?? false,
+    transport: getSocketTransport(socket) ?? previous?.transport,
+    lastConnectAt: previous?.lastConnectAt ?? null,
+    lastDisconnectAt: previous?.lastDisconnectAt ?? null,
+    lastDisconnectReason: previous?.lastDisconnectReason ?? null,
+    lastConnectError: previous?.lastConnectError ?? null,
+    reconnectAttempts: previous?.reconnectAttempts ?? 0,
+    roomUpdatedListenerCount:
+      socket !== null
+        ? getRoomUpdatedListenerCount(socket)
+        : (previous?.roomUpdatedListenerCount ?? 0),
+    ...updates,
+  };
+
+  window.__socketHealth = nextHealth;
+  return nextHealth;
+};
+
+const logSocketHealth = (
+  message: string,
+  socket: ClientSocketType | null,
+  updates: Partial<SocketHealthSnapshot> = {}
+) => {
+  if (!DEBUG) {
+    return;
+  }
+  console.log(
+    `[socket-debug][client] ${message}`,
+    updateSocketHealth(socket, updates)
+  );
+};
+
+function attachSocketHealthListeners(socket: ClientSocketType | null) {
+  if (!socket) {
+    return;
+  }
+
+  const debuggableSocket = socket as DebuggableClientSocket;
+  if (debuggableSocket.__healthAttached) {
+    updateSocketHealth(socket);
+    return;
+  }
+  debuggableSocket.__healthAttached = true;
+
+  updateSocketHealth(socket);
+
+  socket.on('connect', () => {
+    updateSocketHealth(socket, {
+      socketId: socket.id,
+      connected: true,
+      transport: getSocketTransport(socket),
+      lastConnectAt: new Date().toISOString(),
+      lastConnectError: null,
+    });
+  });
+
+  socket.on('disconnect', (reason) => {
+    updateSocketHealth(socket, {
+      socketId: socket.id,
+      connected: false,
+      lastDisconnectAt: new Date().toISOString(),
+      lastDisconnectReason: reason,
+    });
+  });
+
+  socket.on('connect_error', (error) => {
+    updateSocketHealth(socket, {
+      connected: false,
+      lastConnectError: error?.message ?? 'unknown',
+    });
+  });
+
+  socket.io.on('reconnect_attempt', (attempt) => {
+    updateSocketHealth(socket, {
+      connected: socket.connected,
+      reconnectAttempts: attempt,
+    });
+  });
+}
+
 export const useSocket = (): SocketContextType => {
   return useContext(SocketContext);
 };
@@ -111,30 +230,40 @@ function attachSocketDebugListeners(socket: ClientSocketType | null) {
   }
   debuggableSocket.__dbgAttached = true;
 
-  const getListenerCount = () => socket.listeners('room-updated').length;
-  const engine = socket.io.engine;
-
   socket.on('connect', () => {
-    const transport = engine?.transport?.name;
     console.log(
-      `[socket-debug][client] connect id=${socket.id} transport=${transport} listeners(room-updated)=${getListenerCount()}`
+      `[socket-debug][client] connect id=${socket.id} transport=${getSocketTransport(
+        socket
+      )} listeners(room-updated)=${getRoomUpdatedListenerCount(socket)}`
     );
+    logSocketHealth('health:connect', socket);
   });
 
   socket.on('disconnect', (reason) => {
     console.log(
-      `[socket-debug][client] disconnect id=${socket.id} reason=${reason} listeners(room-updated)=${getListenerCount()}`
+      `[socket-debug][client] disconnect id=${socket.id} reason=${reason} listeners(room-updated)=${getRoomUpdatedListenerCount(
+        socket
+      )}`
     );
+    logSocketHealth('health:disconnect', socket, {
+      lastDisconnectReason: reason,
+    });
   });
 
   socket.on('connect_error', (error) => {
     console.log(
       `[socket-debug][client] connect_error message=${error?.message ?? 'unknown'}`
     );
+    logSocketHealth('health:connect_error', socket, {
+      lastConnectError: error?.message ?? 'unknown',
+    });
   });
 
   socket.io.on('reconnect_attempt', (attempt) => {
     console.log(`[socket-debug][client] reconnect_attempt #${attempt}`);
+    logSocketHealth('health:reconnect_attempt', socket, {
+      reconnectAttempts: attempt,
+    });
   });
 
   const trackedEvents = new Set(['room-updated', 'room-closed', 'error']);
@@ -157,6 +286,9 @@ export default function SocketProvider({ children }: SocketProviderProps) {
   );
   const socketRef = useRef<ClientSocketType | null>(null);
   const socketVersionRef = useRef<string | null>(socketVersion);
+  const disconnectLoadingTimerRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
 
   useEffect(() => {
     socketRef.current = socket;
@@ -165,6 +297,13 @@ export default function SocketProvider({ children }: SocketProviderProps) {
   useEffect(() => {
     socketVersionRef.current = socketVersion;
   }, [socketVersion]);
+
+  const clearDisconnectLoadingTimer = useCallback(() => {
+    if (disconnectLoadingTimerRef.current) {
+      clearTimeout(disconnectLoadingTimerRef.current);
+      disconnectLoadingTimerRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     if (!SOCKET_VERSION_ENFORCE || socketVersion) {
@@ -245,6 +384,7 @@ export default function SocketProvider({ children }: SocketProviderProps) {
     }
 
     return () => {
+      clearDisconnectLoadingTimer();
       providerUnmountCount += 1;
       if (DEBUG) {
         console.log(
@@ -252,7 +392,7 @@ export default function SocketProvider({ children }: SocketProviderProps) {
         );
       }
     };
-  }, []);
+  }, [clearDisconnectLoadingTimer]);
 
   // console.log(socket, socket?.id, socket?.connected, isConnected);
   useEffect(() => {
@@ -280,25 +420,51 @@ export default function SocketProvider({ children }: SocketProviderProps) {
       !SOCKET_SINGLETON_FIX || !debuggableSocket.__providerListenersAttached;
 
     let handleConnect: (() => void) | null = null;
-    let handleDisconnect: (() => void) | null = null;
+    let handleDisconnect: ((reason: string) => void) | null = null;
 
     const handleServerVersionEvent = (payload: { version: string }) => {
       enforceServerVersion(payload.version);
     };
 
+    attachSocketHealthListeners(nextSocket);
+
     if (shouldAttachProviderListeners) {
       handleConnect = () => {
         console.log('client : conncect');
+        clearDisconnectLoadingTimer();
+        updateSocketHealth(nextSocket, {
+          socketId: nextSocket.id,
+          connected: true,
+          transport: getSocketTransport(nextSocket),
+          lastConnectAt: new Date().toISOString(),
+          lastConnectError: null,
+        });
         setSocket(nextSocket);
         setIsConnected(true);
         nextSocket.emit('get-room-list'); // 서버 재시작시 방 없애기위함
         dispatch(setIsLoading(false));
       };
 
-      handleDisconnect = () => {
+      handleDisconnect = (reason) => {
         console.log('client : disconnect');
+        updateSocketHealth(nextSocket, {
+          socketId: nextSocket.id,
+          connected: false,
+          lastDisconnectAt: new Date().toISOString(),
+          lastDisconnectReason: reason,
+        });
         setIsConnected(false);
-        dispatch(setIsLoading(true));
+        clearDisconnectLoadingTimer();
+        disconnectLoadingTimerRef.current = setTimeout(() => {
+          if (!nextSocket.connected) {
+            dispatch(
+              setIsLoading({
+                isLoading: true,
+                reason: 'socket-disconnect',
+              })
+            );
+          }
+        }, SOCKET_DISCONNECT_LOADING_DELAY_MS);
       };
 
       nextSocket.on('connect', handleConnect);
@@ -314,6 +480,16 @@ export default function SocketProvider({ children }: SocketProviderProps) {
     }
 
     setSocket(nextSocket);
+    if (nextSocket.connected) {
+      clearDisconnectLoadingTimer();
+      updateSocketHealth(nextSocket, {
+        socketId: nextSocket.id,
+        connected: true,
+        transport: getSocketTransport(nextSocket),
+      });
+      setIsConnected(true);
+      dispatch(setIsLoading(false));
+    }
 
     if (
       SOCKET_SINGLETON_FIX &&
@@ -335,7 +511,13 @@ export default function SocketProvider({ children }: SocketProviderProps) {
         nextSocket.off('server-version', handleServerVersionEvent);
       }
     };
-  }, [dispatch, enforceServerVersion, socket?.id, socketVersion]);
+  }, [
+    clearDisconnectLoadingTimer,
+    dispatch,
+    enforceServerVersion,
+    socket?.id,
+    socketVersion,
+  ]);
 
   useEffect(() => {
     if (socket) {
@@ -345,9 +527,11 @@ export default function SocketProvider({ children }: SocketProviderProps) {
 
       socket.on('room-updated', handleRoomUpdated);
       socket.emit('get-room-list');
+      updateSocketHealth(socket);
 
       return () => {
         socket.off('room-updated', handleRoomUpdated);
+        updateSocketHealth(socket);
       };
     }
   }, [socket, socket?.id, dispatch]);

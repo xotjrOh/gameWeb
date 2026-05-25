@@ -1,6 +1,6 @@
 import { Rooms } from '@/types/room';
 
-const ROOM_STATE_PERSIST = process.env.ROOM_STATE_PERSIST === '1';
+const ROOM_STATE_PERSIST = process.env.ROOM_STATE_PERSIST !== '0';
 
 type GlobalRoomState = typeof globalThis & {
   __roomsStore?: Rooms;

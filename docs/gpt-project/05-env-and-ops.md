@@ -48,6 +48,7 @@
 
 - 버전 확인 API는 `/api/version` 하나로 모인다.
 - 실시간 방 상태는 메모리 기반이다.
+- 소켓 싱글톤과 방 상태 `globalThis` 보존은 기본 ON이며, `SOCKET_SINGLETON_FIX=0`, `NEXT_PUBLIC_SOCKET_SINGLETON_FIX=0`, `ROOM_STATE_PERSIST=0`으로 비교 실험할 수 있다.
 - 랭킹은 파일 기반이다.
 - 머더미스터리 콘텐츠는 데이터 파일 기반이다.
 

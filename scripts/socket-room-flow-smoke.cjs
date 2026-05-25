@@ -342,11 +342,11 @@ const requestMurderSnapshot = async (socket, roomId, sessionId) => {
 const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
   const scenarioId = 'rabbit-turtle-finish-line-night';
   const roomName = makeId('mm-room');
-  const maxPlayers = 4;
+  const maxPlayers = 3;
 
   const hostSessionId = makeId('mm-host');
   const hostName = makeNickname('mhost');
-  const playerInfos = Array.from({ length: 3 }, (_, index) => ({
+  const playerInfos = Array.from({ length: 2 }, (_, index) => ({
     sessionId: makeId(`mm-player-${index}`),
     userName: makeNickname(`mm${index}`),
   }));

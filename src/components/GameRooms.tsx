@@ -123,7 +123,7 @@ export default function GameRooms({ session }: GameRoomsProps) {
       return;
     }
 
-    dispatch(setIsLoading(true));
+    dispatch(setIsLoading({ isLoading: true, reason: 'join-room' }));
     const joinStartedAt = DEBUG ? Date.now() : 0;
     if (DEBUG) {
       console.log(

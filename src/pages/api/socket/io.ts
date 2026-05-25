@@ -25,7 +25,7 @@ export type NextApiResponseServerIO = NextApiResponse & {
 };
 
 const DEBUG = process.env.SOCKET_DEBUG === '1';
-const SOCKET_SINGLETON_FIX = process.env.SOCKET_SINGLETON_FIX === '1';
+const SOCKET_SINGLETON_FIX = process.env.SOCKET_SINGLETON_FIX !== '0';
 const SOCKET_ENFORCE_VERSION = process.env.SOCKET_ENFORCE_VERSION === '1';
 const SERVER_APP_VERSION = process.env.APP_VERSION ?? 'dev';
 

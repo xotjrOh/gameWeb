@@ -13,13 +13,15 @@
   - 서버측 연결/ACK/버전 로그를 켠다.
   - 사용 파일: [src/pages/api/socket/io.ts](/c:/Users/xotjr/Desktop/react/next-game-web/src/pages/api/socket/io.ts), [src/pages/api/socket/handlers/commonHandler.ts](/c:/Users/xotjr/Desktop/react/next-game-web/src/pages/api/socket/handlers/commonHandler.ts), [src/app/api/version/route.ts](/c:/Users/xotjr/Desktop/react/next-game-web/src/app/api/version/route.ts)
 - `SOCKET_SINGLETON_FIX`
-  - 서버 Socket.IO 인스턴스를 `globalThis`에 보존하는 실험 플래그다.
+  - 서버 Socket.IO 인스턴스를 `globalThis`에 보존한다.
+  - 기본값은 ON이며, `0`으로 설정하면 비활성화한다.
   - 사용 파일: [src/pages/api/socket/io.ts](/c:/Users/xotjr/Desktop/react/next-game-web/src/pages/api/socket/io.ts)
 - `SOCKET_ENFORCE_VERSION`
   - 서버가 구버전 소켓을 강제로 끊고 `server-version` 이벤트를 보낸다.
   - 사용 파일: [src/pages/api/socket/io.ts](/c:/Users/xotjr/Desktop/react/next-game-web/src/pages/api/socket/io.ts)
 - `ROOM_STATE_PERSIST`
   - 방/타이머/roomId 카운터를 `globalThis`에 보존한다.
+  - 기본값은 ON이며, `0`으로 설정하면 비활성화한다.
   - 사용 파일: [src/pages/api/socket/state/gameState.ts](/c:/Users/xotjr/Desktop/react/next-game-web/src/pages/api/socket/state/gameState.ts)
 - `APP_VERSION`
   - 서버 버전 강제 경로의 진실원이다. 없으면 `/api/version`은 `SERVER_VERSION` 또는 `dev`를 사용한다.
@@ -31,7 +33,8 @@
   - 클라이언트 소켓 생명주기/이벤트 로그를 켠다.
   - 사용 파일: [src/components/provider/SocketProvider.tsx](/c:/Users/xotjr/Desktop/react/next-game-web/src/components/provider/SocketProvider.tsx), [src/components/GameRooms.tsx](/c:/Users/xotjr/Desktop/react/next-game-web/src/components/GameRooms.tsx)
 - `NEXT_PUBLIC_SOCKET_SINGLETON_FIX`
-  - 클라이언트 소켓 싱글톤을 켠다.
+  - 클라이언트 소켓 싱글톤을 제어한다.
+  - 기본값은 ON이며, `0`으로 설정하면 비활성화한다.
   - 사용 파일: [src/components/provider/SocketProvider.tsx](/c:/Users/xotjr/Desktop/react/next-game-web/src/components/provider/SocketProvider.tsx)
 - `NEXT_PUBLIC_SOCKET_VERSION_ENFORCE`
   - 서버 버전에 맞춰 클라이언트 소켓을 다시 만든다.
@@ -76,8 +79,8 @@
   - `NEXT_PUBLIC_SOCKET_DEBUG=1`
   - 필요 시 `NEXT_PUBLIC_SOCKET_ACK_DEBUG=1`
 - 싱글톤 실험
-  - `SOCKET_SINGLETON_FIX=1`
-  - `NEXT_PUBLIC_SOCKET_SINGLETON_FIX=1`
+  - 기본 ON
+  - 필요 시 `SOCKET_SINGLETON_FIX=0`, `NEXT_PUBLIC_SOCKET_SINGLETON_FIX=0`으로 끄고 비교
 - 버전 강제 실험
   - `APP_VERSION=<same-version>`
   - `NEXT_PUBLIC_APP_VERSION=<same-version>`
