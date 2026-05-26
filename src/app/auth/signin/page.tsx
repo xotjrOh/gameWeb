@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import KakaoIcon from '@/components/icon/KakaoIcon';
 import GoogleIcon from '@/components/icon/GoogleIcon';
 import Link from 'next/link';
@@ -14,9 +15,13 @@ import {
   CardContent,
 } from '@mui/material';
 
+const SIGN_IN_TIMEOUT_MS = 15000;
+
 export default function SignInPage() {
   const [isKakaoBrowser, setIsKakaoBrowser] = useState<boolean>(false);
-  const router = useRouter();
+  const [signingInProvider, setSigningInProvider] = useState<string | null>(
+    null
+  );
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -26,46 +31,39 @@ export default function SignInPage() {
     }
   }, []);
 
-  // 팝업창에서 로그인 창으로 돌아가면 종료
-  useEffect(() => {
-    if (window.opener) window.close();
-  }, []);
+  const handleSignIn = async (provider: string) => {
+    setSigningInProvider(provider);
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-  const handleSignIn = (provider: string) => {
-    const popup = window.open(
-      `/auth/popup?provider=${provider}`,
-      'oauthPopup',
-      'width=500,height=600'
-    );
-
-    if (!popup) {
-      alert('팝업 차단을 해제해주세요.');
-      return;
-    }
-
-    // 팝업 창으로부터 메시지 수신
-    const messageHandler = (event: MessageEvent) => {
+    try {
       const callbackUrl =
         searchParams.get('callbackUrl') || window.location.origin;
-      if (event.origin !== window.location.origin) return;
-      if (event.data === 'oauth:success') {
-        // 인증 성공 시 처리
-        router.replace(callbackUrl);
-      } else if (event.data === 'oauth:error') {
-        // 인증 실패 시 처리
-        alert('인증에 실패했습니다.');
-      }
-    };
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new Error('SIGN_IN_TIMEOUT'));
+        }, SIGN_IN_TIMEOUT_MS);
+      });
 
-    window.addEventListener('message', messageHandler);
+      await Promise.race([
+        signIn(provider, {
+          callbackUrl,
+          redirect: true,
+        }),
+        timeoutPromise,
+      ]);
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message === 'SIGN_IN_TIMEOUT'
+          ? '로그인 서버 응답이 지연되고 있습니다. 잠시 후 다시 시도해주세요.'
+          : '로그인을 시작하지 못했습니다. 잠시 후 다시 시도해주세요.';
 
-    // 팝업 창이 닫혔을 때 이벤트 리스너 제거
-    const timer = setInterval(() => {
-      if (popup.closed) {
-        clearInterval(timer);
-        window.removeEventListener('message', messageHandler);
+      alert(message);
+      setSigningInProvider(null);
+    } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
       }
-    }, 500);
+    }
   };
 
   return (
@@ -146,6 +144,7 @@ export default function SignInPage() {
             <Button
               variant="contained"
               fullWidth
+              disabled={signingInProvider !== null}
               sx={{
                 bgcolor: '#FEE500',
                 '&:hover': { bgcolor: '#FFD700' },
@@ -161,7 +160,9 @@ export default function SignInPage() {
                 variant="button"
                 sx={{ fontWeight: 'bold', color: 'inherit' }} // 상속된 컬러 유지
               >
-                카카오 로그인
+                {signingInProvider === 'kakao'
+                  ? '카카오 로그인 중...'
+                  : '카카오 로그인'}
               </Typography>
             </Button>
 
@@ -169,17 +170,26 @@ export default function SignInPage() {
             <Button
               variant="contained"
               fullWidth
-              disabled={isKakaoBrowser}
+              disabled={isKakaoBrowser || signingInProvider !== null}
               sx={{
-                bgcolor: isKakaoBrowser ? 'grey.400' : 'error.main',
+                bgcolor:
+                  isKakaoBrowser || signingInProvider !== null
+                    ? 'grey.400'
+                    : 'error.main',
                 '&:hover': {
-                  bgcolor: isKakaoBrowser ? 'grey.500' : 'error.dark',
+                  bgcolor:
+                    isKakaoBrowser || signingInProvider !== null
+                      ? 'grey.500'
+                      : 'error.dark',
                 },
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 padding: '10px 20px',
-                color: isKakaoBrowser ? 'grey.200' : 'white',
+                color:
+                  isKakaoBrowser || signingInProvider !== null
+                    ? 'grey.200'
+                    : 'white',
               }}
               onClick={() => handleSignIn('google')}
             >
@@ -199,7 +209,9 @@ export default function SignInPage() {
                   variant="button"
                   sx={{ fontWeight: 'bold', color: 'inherit' }}
                 >
-                  구글 로그인
+                  {signingInProvider === 'google'
+                    ? '구글 로그인 중...'
+                    : '구글 로그인'}
                 </Typography>
               )}
             </Button>
