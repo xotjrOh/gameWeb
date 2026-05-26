@@ -15,6 +15,7 @@ export type MurderMysteryInvestigationRound = number;
 export type MurderMysteryTargetType = 'location' | 'character' | 'item';
 export type MurderMysterySpecialEventOutcome = 'reveal' | 'seal';
 export type MurderMysterySpecialEventStatus = 'pending' | 'revealed' | 'sealed';
+export type MurderMysteryRoleSelectionStatus = 'open' | 'locked';
 
 export interface MurderMysteryPlayersConfig {
   min: number;
@@ -266,6 +267,28 @@ export interface MurderMysterySeatPosition {
   y: number;
 }
 
+export interface MurderMysteryRoleSelectionRoleView {
+  id: string;
+  displayName: string;
+  publicText: string;
+  assignedPlayerId: string | null;
+}
+
+export interface MurderMysteryRoleSelectionPlayerView {
+  playerId: string;
+  playerName: string;
+  submitted: boolean;
+}
+
+export interface MurderMysteryRoleSelectionView {
+  status: MurderMysteryRoleSelectionStatus;
+  roles: MurderMysteryRoleSelectionRoleView[];
+  players: MurderMysteryRoleSelectionPlayerView[];
+  requiredPlayerCount: number;
+  submittedCount: number;
+  yourPreferenceRoleIds: string[];
+}
+
 export interface MurderMysteryGameData {
   scenarioId: string;
   scenarioTitle: string;
@@ -274,6 +297,8 @@ export interface MurderMysteryGameData {
   phase: MurderMysteryPhase;
   phaseStartedAt: number | null;
   phaseDurationSec: number | null;
+  roleSelectionStatus: MurderMysteryRoleSelectionStatus;
+  rolePreferencesByPlayerId: Record<string, string[]>;
   roleByPlayerId: Record<string, string>;
   roleDisplayNameByPlayerId: Record<string, string>;
   investigationUsedByPlayerId: Record<string, MurderMysteryInvestigationUsage>;
@@ -464,6 +489,7 @@ export interface MurderMysteryStateSnapshot {
   };
   specialEvents: MurderMysteryReportableSpecialEventView[];
   seatLayoutByPlayerId: Record<string, MurderMysterySeatPosition>;
+  roleSelection: MurderMysteryRoleSelectionView;
   phase: MurderMysteryPhase;
   phaseOrder: MurderMysteryPhase[];
   players: MurderMysteryPublicPlayerView[];
@@ -555,6 +581,14 @@ export interface MurderMysteryClientToServerEvents {
     callback: (response: CommonResponse) => void
   ) => void;
   mm_reset_seat_layout: (
+    data: { roomId: string; sessionId: string },
+    callback: (response: CommonResponse) => void
+  ) => void;
+  mm_submit_role_preferences: (
+    data: { roomId: string; sessionId: string; roleIds: string[] },
+    callback: (response: CommonResponse) => void
+  ) => void;
+  mm_clear_role_preferences: (
     data: { roomId: string; sessionId: string },
     callback: (response: CommonResponse) => void
   ) => void;

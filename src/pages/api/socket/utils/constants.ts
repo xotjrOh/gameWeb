@@ -129,6 +129,8 @@ export const DEFAULT_GAME_DATA: {
     phase: 'LOBBY',
     phaseStartedAt: null,
     phaseDurationSec: null,
+    roleSelectionStatus: 'open',
+    rolePreferencesByPlayerId: {},
     roleByPlayerId: {},
     roleDisplayNameByPlayerId: {},
     investigationUsedByPlayerId: {},

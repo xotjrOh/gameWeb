@@ -408,6 +408,57 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       playerSockets.set(playerInfo.sessionId, socket);
     }
 
+    const blockedStartResponse = await emitAck(
+      hostSocket,
+      'mm_host_start_game',
+      {
+        roomId,
+        sessionId: hostSessionId,
+      }
+    );
+    assertCondition(
+      blockedStartResponse?.success === false,
+      'mm_host_start_game should fail before role selection is locked',
+      blockedStartResponse
+    );
+
+    const lobbySnapshot = await requestMurderSnapshot(
+      hostSocket,
+      roomId,
+      hostSessionId
+    );
+    const roleIds = lobbySnapshot.roleSelection?.roles?.map((role) => role.id);
+    assertCondition(
+      Array.isArray(roleIds) && roleIds.length === maxPlayers,
+      'murder role selection roles missing',
+      lobbySnapshot.roleSelection
+    );
+
+    const preferenceSubmitters = [
+      [hostSessionId, hostSocket],
+      ...playerSockets.entries(),
+    ];
+    for (const [index, [sessionId, socket]] of preferenceSubmitters.entries()) {
+      const rolePreferenceIds = [
+        ...roleIds.slice(index),
+        ...roleIds.slice(0, index),
+      ];
+      const preferenceResponse = await emitAck(
+        socket,
+        'mm_submit_role_preferences',
+        {
+          roomId,
+          sessionId,
+          roleIds: rolePreferenceIds,
+        }
+      );
+      assertCondition(
+        preferenceResponse?.success,
+        'mm_submit_role_preferences failed',
+        preferenceResponse
+      );
+    }
+
     const startResponse = await emitAck(hostSocket, 'mm_host_start_game', {
       roomId,
       sessionId: hostSessionId,

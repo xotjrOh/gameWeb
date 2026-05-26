@@ -4,6 +4,7 @@ import { validatePlayer, validateRoom } from '../utils/validation';
 import {
   appendMurderMysteryAnnouncement,
   buildMurderMysterySnapshot,
+  clearMurderMysteryRolePreferences,
   finalizeMurderMysteryVote,
   moveMurderMysteryToNextPhase,
   reportMurderMysterySpecialEvent,
@@ -14,6 +15,7 @@ import {
   setMurderMysteryInvestigationReservation,
   startMurderMysteryGame,
   submitMurderMysteryInvestigation,
+  submitMurderMysteryRolePreferences,
   submitMurderMysteryVote,
   updateMurderMysterySeatPosition,
 } from '../services/murderMysteryStateMachine';
@@ -106,6 +108,52 @@ const murderMysteryGameHandler = (
       resetMurderMysterySeatLayout(room);
       emitMurderMysterySnapshots(room, io);
       return callback({ success: true });
+    } catch (error) {
+      return callback({ success: false, message: (error as Error).message });
+    }
+  });
+
+  socket.on(
+    'mm_submit_role_preferences',
+    ({ roomId, sessionId, roleIds }, callback) => {
+      try {
+        const room = toMurderMysteryRoom(validateRoom(roomId));
+        validatePlayer(room, sessionId);
+        const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
+
+        const result = submitMurderMysteryRolePreferences(
+          room,
+          scenario,
+          sessionId,
+          roleIds
+        );
+
+        emitMurderMysterySnapshots(room, io);
+        io.emit('room-updated', rooms);
+        return callback({
+          success: true,
+          message: result.locked
+            ? '모든 선호가 모여 캐릭터 배정이 완료되었습니다.'
+            : '캐릭터 선호를 제출했습니다.',
+        });
+      } catch (error) {
+        return callback({ success: false, message: (error as Error).message });
+      }
+    }
+  );
+
+  socket.on('mm_clear_role_preferences', ({ roomId, sessionId }, callback) => {
+    try {
+      const room = toMurderMysteryRoom(validateRoom(roomId));
+      validatePlayer(room, sessionId);
+
+      clearMurderMysteryRolePreferences(room, sessionId);
+      emitMurderMysterySnapshots(room, io);
+      io.emit('room-updated', rooms);
+      return callback({
+        success: true,
+        message: '캐릭터 선호 제출을 취소했습니다.',
+      });
     } catch (error) {
       return callback({ success: false, message: (error as Error).message });
     }

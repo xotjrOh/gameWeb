@@ -55,6 +55,8 @@ interface MurderMysteryTableExperienceProps {
   onStartGame: () => void;
   onNextPhase: () => void;
   onFinalizeVote: () => void;
+  onSubmitRolePreferences: (roleIds: string[]) => void;
+  onClearRolePreferences: () => void;
   onUpdateSeatPosition: (
     playerId: string,
     position: MurderMysterySeatPosition
@@ -718,13 +720,235 @@ const SeatCompass = ({
   );
 };
 
+const RoleSelectionPanel = ({
+  roleSelection,
+  draftRolePreferenceIds,
+  onSetRoleRank,
+  onSubmit,
+  onClear,
+}: {
+  roleSelection: MurderMysteryStateSnapshot['roleSelection'];
+  draftRolePreferenceIds: string[];
+  onSetRoleRank: (roleId: string, rankIndex: number) => void;
+  onSubmit: () => void;
+  onClear: () => void;
+}) => {
+  const roleById = new Map(roleSelection.roles.map((role) => [role.id, role]));
+  const orderedRoles = draftRolePreferenceIds
+    .map((roleId) => roleById.get(roleId))
+    .filter(Boolean) as MurderMysteryStateSnapshot['roleSelection']['roles'];
+  const assignedPlayerNameById = new Map(
+    roleSelection.players.map((player) => [player.playerId, player.playerName])
+  );
+  const hasSubmitted =
+    roleSelection.yourPreferenceRoleIds.length === roleSelection.roles.length;
+  const canSubmit =
+    roleSelection.status === 'open' &&
+    draftRolePreferenceIds.length === roleSelection.roles.length &&
+    new Set(draftRolePreferenceIds).size === roleSelection.roles.length;
+
+  return (
+    <Box
+      sx={{
+        p: { xs: 1.2, sm: 1.5 },
+        borderRadius: 2,
+        backgroundColor: 'rgba(255,255,255,0.07)',
+        border: '1px solid rgba(255,255,255,0.14)',
+      }}
+    >
+      <Stack spacing={1.3}>
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={1}
+          alignItems={{ xs: 'stretch', sm: 'center' }}
+        >
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography fontWeight={950}>캐릭터 선택</Typography>
+            <Typography variant="caption" sx={{ color: '#d8d0bd' }}>
+              공개 표지만 보고 동시에 선호를 제출합니다. 순위는 본인에게만
+              보입니다.
+            </Typography>
+          </Box>
+          <Chip
+            color={roleSelection.status === 'locked' ? 'success' : 'default'}
+            label={
+              roleSelection.status === 'locked'
+                ? '배정 완료'
+                : `제출 ${roleSelection.submittedCount}/${roleSelection.requiredPlayerCount}`
+            }
+          />
+        </Stack>
+
+        <Stack direction="row" spacing={0.8} flexWrap="wrap" useFlexGap>
+          {roleSelection.players.map((player) => (
+            <Chip
+              key={player.playerId}
+              size="small"
+              color={player.submitted ? 'success' : 'default'}
+              label={`${player.playerName} ${player.submitted ? '제출' : '대기'}`}
+            />
+          ))}
+        </Stack>
+
+        {roleSelection.status === 'locked' ? (
+          <Stack spacing={1}>
+            {roleSelection.roles.map((role) => (
+              <Box
+                key={role.id}
+                sx={{
+                  p: 1.1,
+                  borderRadius: 1.5,
+                  backgroundColor: 'rgba(247,241,222,0.12)',
+                  border: '1px solid rgba(247,241,222,0.15)',
+                }}
+              >
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  sx={{ mb: 0.5 }}
+                >
+                  <Typography fontWeight={950} sx={{ flex: 1 }}>
+                    {role.displayName}
+                  </Typography>
+                  <Chip
+                    size="small"
+                    label={
+                      role.assignedPlayerId
+                        ? (assignedPlayerNameById.get(role.assignedPlayerId) ??
+                          '배정됨')
+                        : '미배정'
+                    }
+                  />
+                </Stack>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: '#d8d0bd',
+                    whiteSpace: 'pre-wrap',
+                    lineHeight: 1.55,
+                  }}
+                >
+                  {role.publicText}
+                </Typography>
+              </Box>
+            ))}
+          </Stack>
+        ) : (
+          <>
+            <Box
+              sx={{
+                p: 1,
+                borderRadius: 1.5,
+                backgroundColor: 'rgba(0,0,0,0.18)',
+              }}
+            >
+              <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
+                내 선호 순위
+              </Typography>
+              <Stack direction="row" spacing={0.8} flexWrap="wrap" useFlexGap>
+                {orderedRoles.map((role, index) => (
+                  <Chip
+                    key={role.id}
+                    size="small"
+                    color={index === 0 ? 'warning' : 'default'}
+                    label={`${index + 1}순위 ${role.displayName}`}
+                  />
+                ))}
+              </Stack>
+            </Box>
+
+            <Stack spacing={1}>
+              {roleSelection.roles.map((role) => {
+                const currentRank = draftRolePreferenceIds.indexOf(role.id);
+                return (
+                  <Box
+                    key={role.id}
+                    sx={{
+                      p: 1.1,
+                      borderRadius: 1.5,
+                      backgroundColor: 'rgba(247,241,222,0.11)',
+                      border: '1px solid rgba(247,241,222,0.15)',
+                    }}
+                  >
+                    <Stack spacing={0.8}>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Typography fontWeight={950} sx={{ flex: 1 }}>
+                          {role.displayName}
+                        </Typography>
+                        <Chip
+                          size="small"
+                          label={
+                            currentRank >= 0
+                              ? `${currentRank + 1}순위`
+                              : '미선택'
+                          }
+                        />
+                      </Stack>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: '#d8d0bd',
+                          whiteSpace: 'pre-wrap',
+                          lineHeight: 1.55,
+                        }}
+                      >
+                        {role.publicText}
+                      </Typography>
+                      <Stack direction="row" spacing={0.6} flexWrap="wrap">
+                        {roleSelection.roles.map((rankRole, rankIndex) => (
+                          <Button
+                            key={`${role.id}:rank:${rankRole.id}`}
+                            size="small"
+                            variant={
+                              currentRank === rankIndex
+                                ? 'contained'
+                                : 'outlined'
+                            }
+                            color={rankIndex === 0 ? 'warning' : 'inherit'}
+                            onClick={() => onSetRoleRank(role.id, rankIndex)}
+                          >
+                            {rankIndex + 1}순위
+                          </Button>
+                        ))}
+                      </Stack>
+                    </Stack>
+                  </Box>
+                );
+              })}
+            </Stack>
+
+            <Stack direction="row" spacing={0.8} flexWrap="wrap" useFlexGap>
+              <Button
+                variant="contained"
+                color="warning"
+                disabled={!canSubmit}
+                onClick={onSubmit}
+              >
+                {hasSubmitted ? '선호 다시 제출' : '선호 제출'}
+              </Button>
+              {hasSubmitted ? (
+                <Button variant="outlined" color="inherit" onClick={onClear}>
+                  제출 취소
+                </Button>
+              ) : null}
+            </Stack>
+          </>
+        )}
+      </Stack>
+    </Box>
+  );
+};
+
 const MyDeskPanel = ({
   cardCount,
+  canOpenRulebook = true,
   onOpenRulebook,
   onOpenPrivateCards,
   compact = false,
 }: {
   cardCount: number;
+  canOpenRulebook?: boolean;
   onOpenRulebook: () => void;
   onOpenPrivateCards: () => void;
   compact?: boolean;
@@ -760,6 +984,7 @@ const MyDeskPanel = ({
           size="small"
           variant="contained"
           startIcon={<AutoStoriesIcon />}
+          disabled={!canOpenRulebook}
           onClick={onOpenRulebook}
           sx={{ flex: compact ? 1 : undefined }}
         >
@@ -1021,6 +1246,7 @@ const PublicCoverDialog = ({
   open,
   player,
   isSelf,
+  canOpenRulebook,
   fullScreen,
   onClose,
   onOpenRulebook,
@@ -1029,6 +1255,7 @@ const PublicCoverDialog = ({
   open: boolean;
   player: MurderMysteryPublicPlayerView | null;
   isSelf: boolean;
+  canOpenRulebook: boolean;
   fullScreen: boolean;
   onClose: () => void;
   onOpenRulebook: () => void;
@@ -1102,6 +1329,7 @@ const PublicCoverDialog = ({
           <Button
             variant="contained"
             startIcon={<AutoStoriesIcon />}
+            disabled={!canOpenRulebook}
             onClick={onOpenRulebook}
           >
             비공개 룰북 열기
@@ -1259,6 +1487,8 @@ export default function MurderMysteryTableExperience({
   onStartGame,
   onNextPhase,
   onFinalizeVote,
+  onSubmitRolePreferences,
+  onClearRolePreferences,
   onUpdateSeatPosition,
   onResetSeatLayout,
   onSubmitInvestigationByTarget,
@@ -1291,8 +1521,16 @@ export default function MurderMysteryTableExperience({
   const [isPrivateCardsOpen, setIsPrivateCardsOpen] = useState(false);
   const [selectedCard, setSelectedCard] = useState<AnyClueCard | null>(null);
   const [nowTick, setNowTick] = useState(Date.now());
+  const [draftRolePreferenceIds, setDraftRolePreferenceIds] = useState<
+    string[]
+  >([]);
 
   const playerIdsKey = snapshot.players.map((player) => player.id).join('|');
+  const roleIdsKey = snapshot.roleSelection.roles
+    .map((role) => role.id)
+    .join('|');
+  const ownPreferenceIdsKey =
+    snapshot.roleSelection.yourPreferenceRoleIds.join('|');
   const selfPlayer =
     snapshot.players.find((player) => player.id === sessionId) ?? null;
   const selectedPlayer =
@@ -1326,6 +1564,15 @@ export default function MurderMysteryTableExperience({
   const canActNow = Boolean(snapshot.investigation.turn?.canActNow);
   const canUseHostTools = isHostView;
   const canEditSeatLayout = snapshot.phase === 'LOBBY';
+  const hasRequiredPlayerCount =
+    snapshot.hostParticipation.currentPlayerCount >=
+    snapshot.hostParticipation.requiredPlayerCount;
+  const isRoleSelectionLocked = snapshot.roleSelection.status === 'locked';
+  const canStartGame =
+    canUseHostTools &&
+    snapshot.phase === 'LOBBY' &&
+    hasRequiredPlayerCount &&
+    isRoleSelectionLocked;
   const showNextPhaseTool =
     canUseHostTools &&
     phaseKind !== 'lobby' &&
@@ -1354,6 +1601,39 @@ export default function MurderMysteryTableExperience({
     }
     setSeatPositions(mergeLayout(playerIds, snapshot.seatLayoutByPlayerId));
   }, [playerIdsKey, snapshot.seatLayoutByPlayerId]);
+
+  useEffect(() => {
+    const roleIds = roleIdsKey ? roleIdsKey.split('|') : [];
+    const ownPreferenceIds = ownPreferenceIdsKey
+      ? ownPreferenceIdsKey.split('|')
+      : [];
+    setDraftRolePreferenceIds(
+      ownPreferenceIds.length === roleIds.length ? ownPreferenceIds : roleIds
+    );
+  }, [roleIdsKey, ownPreferenceIdsKey]);
+
+  const setRolePreferenceRank = (roleId: string, rankIndex: number) => {
+    const scenarioRoleIds = snapshot.roleSelection.roles.map((role) => role.id);
+    setDraftRolePreferenceIds((current) => {
+      const normalized = [
+        ...current.filter(
+          (currentRoleId) =>
+            currentRoleId !== roleId && scenarioRoleIds.includes(currentRoleId)
+        ),
+      ];
+      normalized.splice(
+        clamp(rankIndex, 0, scenarioRoleIds.length - 1),
+        0,
+        roleId
+      );
+      scenarioRoleIds.forEach((scenarioRoleId) => {
+        if (!normalized.includes(scenarioRoleId)) {
+          normalized.push(scenarioRoleId);
+        }
+      });
+      return normalized.slice(0, scenarioRoleIds.length);
+    });
+  };
 
   const updateSeatPositionFromPointer = (
     playerId: string,
@@ -1706,18 +1986,32 @@ export default function MurderMysteryTableExperience({
               />
             ))}
           </Stack>
+          <RoleSelectionPanel
+            roleSelection={snapshot.roleSelection}
+            draftRolePreferenceIds={draftRolePreferenceIds}
+            onSetRoleRank={setRolePreferenceRank}
+            onSubmit={() => onSubmitRolePreferences(draftRolePreferenceIds)}
+            onClear={onClearRolePreferences}
+          />
           {canUseHostTools ? (
             <Button
               variant="contained"
               startIcon={<PlayArrowIcon />}
               onClick={onStartGame}
-              disabled={
-                snapshot.hostParticipation.currentPlayerCount <
-                snapshot.hostParticipation.requiredPlayerCount
-              }
+              disabled={!canStartGame}
             >
               게임 시작
             </Button>
+          ) : null}
+          {!hasRequiredPlayerCount ? (
+            <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
+              모든 참가자가 입장하면 캐릭터 선호 제출을 완료할 수 있습니다.
+            </Typography>
+          ) : !isRoleSelectionLocked ? (
+            <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
+              모든 참가자의 캐릭터 선호가 제출되면 배정이 공개되고 게임을 시작할
+              수 있습니다.
+            </Typography>
           ) : null}
         </Stack>
       );
@@ -1845,14 +2139,17 @@ export default function MurderMysteryTableExperience({
             </Tooltip>
           ) : null}
           {canUseHostTools && snapshot.phase === 'LOBBY' ? (
-            <Tooltip title="게임 시작">
+            <Tooltip
+              title={
+                canStartGame
+                  ? '게임 시작'
+                  : '참가자 입장과 캐릭터 배정이 완료되어야 시작할 수 있습니다.'
+              }
+            >
               <span>
                 <IconButton
                   onClick={onStartGame}
-                  disabled={
-                    snapshot.hostParticipation.currentPlayerCount <
-                    snapshot.hostParticipation.requiredPlayerCount
-                  }
+                  disabled={!canStartGame}
                   sx={{ color: '#f8f1de' }}
                 >
                   <PlayArrowIcon />
@@ -1967,6 +2264,7 @@ export default function MurderMysteryTableExperience({
           >
             <MyDeskPanel
               cardCount={snapshot.clueVault.myClues.length}
+              canOpenRulebook={Boolean(snapshot.roleSheet)}
               onOpenRulebook={() => setIsRulebookOpen(true)}
               onOpenPrivateCards={() => setIsPrivateCardsOpen(true)}
             />
@@ -1988,6 +2286,7 @@ export default function MurderMysteryTableExperience({
           <MyDeskPanel
             compact
             cardCount={snapshot.clueVault.myClues.length}
+            canOpenRulebook={Boolean(snapshot.roleSheet)}
             onOpenRulebook={() => setIsRulebookOpen(true)}
             onOpenPrivateCards={() => setIsPrivateCardsOpen(true)}
           />
@@ -1998,6 +2297,7 @@ export default function MurderMysteryTableExperience({
         open={Boolean(selectedPlayer)}
         player={selectedPlayer}
         isSelf={selectedPlayer?.id === sessionId}
+        canOpenRulebook={Boolean(snapshot.roleSheet)}
         fullScreen={isSmall}
         onClose={() => setSelectedPlayerId(null)}
         onOpenRulebook={() => {

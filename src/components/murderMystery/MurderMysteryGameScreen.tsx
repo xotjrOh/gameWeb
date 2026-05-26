@@ -212,6 +212,21 @@ export default function MurderMysteryGameScreen({
     );
   };
 
+  const handleSubmitRolePreferences = (roleIds: string[]) => {
+    emitWithAck('mm_submit_role_preferences', {
+      roomId,
+      sessionId,
+      roleIds,
+    });
+  };
+
+  const handleClearRolePreferences = () => {
+    emitWithAck('mm_clear_role_preferences', {
+      roomId,
+      sessionId,
+    });
+  };
+
   const handleReportSpecialEvent = (
     eventId: string,
     outcome: MurderMysterySpecialEventOutcome
@@ -272,6 +287,8 @@ export default function MurderMysteryGameScreen({
           '최종 투표를 집계했습니다.'
         )
       }
+      onSubmitRolePreferences={handleSubmitRolePreferences}
+      onClearRolePreferences={handleClearRolePreferences}
       onUpdateSeatPosition={handleUpdateSeatPosition}
       onResetSeatLayout={() =>
         emitWithAck(
