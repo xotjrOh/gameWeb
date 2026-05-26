@@ -141,6 +141,7 @@ export const DEFAULT_GAME_DATA: {
       completedPlayerIds: [],
       turnStartedAt: null,
       reservationByPlayerId: {},
+      extraInvestigationPendingPlayerId: null,
     },
     pendingInvestigations: [],
     privateCardIdsByPlayerId: {},

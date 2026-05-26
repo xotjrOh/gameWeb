@@ -172,7 +172,15 @@ const murderMysteryGameHandler = (
         }
 
         emitMurderMysterySnapshots(room, io);
-        return callback({ success: true });
+        return callback({
+          success: true,
+          extraInvestigation:
+            result.mode === 'auto' ? result.extraInvestigation : false,
+          message:
+            result.mode === 'auto' && result.extraInvestigation
+              ? '전체 공개 단서입니다. 추가 조사가 가능합니다.'
+              : undefined,
+        });
       } catch (error) {
         return callback({ success: false, message: (error as Error).message });
       }

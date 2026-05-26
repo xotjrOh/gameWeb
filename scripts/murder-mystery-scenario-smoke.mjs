@@ -274,6 +274,14 @@ for (const entry of registry.scenarios) {
       }
       backIds.add(card.backId);
     }
+    if (
+      card.extraInvestigationOnReveal !== undefined &&
+      typeof card.extraInvestigationOnReveal !== 'boolean'
+    ) {
+      fail(
+        `${entry.file}: card(${card.id}) extraInvestigationOnReveal must be boolean`
+      );
+    }
     assertPublicAssetExists(
       card.imageSrc,
       `${entry.file}: card(${card.id}).imageSrc`
@@ -317,6 +325,7 @@ for (const entry of registry.scenarios) {
         );
       }
     }
+
   }
 
   if (

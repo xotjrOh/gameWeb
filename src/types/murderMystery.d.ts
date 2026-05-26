@@ -75,6 +75,7 @@ export interface MurderMysteryCardScenario {
   imageAlt?: string;
   backId?: string;
   back?: MurderMysteryCardBackStyle;
+  extraInvestigationOnReveal?: boolean;
   effects?: MurderMysteryCardEffect[];
 }
 
@@ -243,6 +244,7 @@ export interface MurderMysteryInvestigationTurnState {
   completedPlayerIds: string[];
   turnStartedAt: number | null;
   reservationByPlayerId: Record<string, string>;
+  extraInvestigationPendingPlayerId: string | null;
 }
 
 export interface MurderMysteryAnnouncement {
@@ -342,6 +344,7 @@ export interface MurderMysteryInvestigationBackCardView
   backId: string;
   targetId: string;
   targetLabel: string;
+  extraInvestigationOnReveal: boolean;
   isReservedByMe: boolean;
 }
 
@@ -380,6 +383,7 @@ export interface MurderMysteryInvestigationTurnView {
   nextRoundFirstPlayerId: string | null;
   players: MurderMysteryInvestigationTurnPlayerView[];
   canActNow: boolean;
+  extraInvestigationPending: boolean;
   allPlayersDone: boolean;
   myReservation: MurderMysteryInvestigationBackCardView | null;
 }
@@ -561,7 +565,9 @@ export interface MurderMysteryClientToServerEvents {
       targetId?: string;
       backId?: string;
     },
-    callback: (response: CommonResponse) => void
+    callback: (
+      response: CommonResponse & { extraInvestigation?: boolean }
+    ) => void
   ) => void;
   mm_set_investigation_reservation: (
     data: {

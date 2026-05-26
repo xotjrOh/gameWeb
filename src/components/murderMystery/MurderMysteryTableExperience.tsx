@@ -208,6 +208,7 @@ const EvidenceCardFace = ({
     >
       <Box
         sx={{
+          position: 'relative',
           height: '100%',
           minHeight: dense ? 146 : 224,
           borderRadius: 1,
@@ -224,6 +225,22 @@ const EvidenceCardFace = ({
           },
         }}
       >
+        {card.extraInvestigationOnReveal ? (
+          <Chip
+            size="small"
+            label="추가 조사"
+            color="info"
+            sx={{
+              position: 'absolute',
+              top: 6,
+              right: 6,
+              zIndex: 1,
+              height: 20,
+              fontSize: 11,
+              fontWeight: 900,
+            }}
+          />
+        ) : null}
         {card.imageSrc ? (
           <Box
             component="img"
@@ -375,6 +392,22 @@ const InvestigationCardBack = ({
                 height: '100%',
                 objectFit: 'cover',
                 opacity: 0.88,
+              }}
+            />
+          ) : null}
+          {back.extraInvestigationOnReveal ? (
+            <Chip
+              size="small"
+              label="추가 조사"
+              color="info"
+              sx={{
+                position: 'absolute',
+                top: 6,
+                right: 6,
+                height: 20,
+                fontSize: 11,
+                fontWeight: 900,
+                zIndex: 2,
               }}
             />
           ) : null}
@@ -1210,11 +1243,13 @@ export default function MurderMysteryTableExperience({
             {activeRound ? `${activeRound}라운드 조사` : '조사 대기'}
           </Typography>
           <Typography variant="body2" sx={{ color: '#d8d0bd' }}>
-            {canActNow
-              ? '내 차례입니다. 테이블 위 뒷면 카드 한 장을 가져가세요.'
-              : snapshot.investigation.turn?.myReservation
-                ? '예약 토큰이 꽂혀 있습니다. 내 차례가 오면 가져갈 수 있습니다.'
-                : '내 차례가 아니면 뒷면 카드를 눌러 예약할 수 있습니다.'}
+            {canActNow && snapshot.investigation.turn?.extraInvestigationPending
+              ? '전체 공개 단서를 확인했습니다. 한 번 더 조사할 수 있습니다.'
+              : canActNow
+                ? '내 차례입니다. 테이블 위 뒷면 카드 한 장을 가져가세요.'
+                : snapshot.investigation.turn?.myReservation
+                  ? '예약 토큰이 꽂혀 있습니다. 내 차례가 오면 가져갈 수 있습니다.'
+                  : '내 차례가 아니면 뒷면 카드를 눌러 예약할 수 있습니다.'}
           </Typography>
         </Box>
         <Chip

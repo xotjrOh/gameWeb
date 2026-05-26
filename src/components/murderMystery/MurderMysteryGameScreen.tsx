@@ -27,6 +27,7 @@ interface MurderMysteryGameScreenProps {
 interface AckResponse {
   success: boolean;
   message?: string;
+  extraInvestigation?: boolean;
 }
 
 export default function MurderMysteryGameScreen({
@@ -72,7 +73,7 @@ export default function MurderMysteryGameScreen({
       return;
     }
     enqueueSnackbar(
-      `핵심 증거 공개 진행: ${latestPartReveal.revealedCount}/${latestPartReveal.totalCount}`,
+      `공개 단서 진행: ${latestPartReveal.revealedCount}/${latestPartReveal.totalCount}`,
       { variant: 'info' }
     );
   }, [latestPartReveal, enqueueSnackbar]);
@@ -120,8 +121,9 @@ export default function MurderMysteryGameScreen({
         });
         return;
       }
-      if (successMessage) {
-        enqueueSnackbar(successMessage, { variant: 'success' });
+      const resolvedSuccessMessage = response.message ?? successMessage;
+      if (resolvedSuccessMessage) {
+        enqueueSnackbar(resolvedSuccessMessage, { variant: 'success' });
       }
     });
   };

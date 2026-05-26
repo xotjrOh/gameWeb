@@ -920,6 +920,12 @@ const normalizeCards = ({
           })
         : undefined;
 
+    assertCondition(
+      cardRecord.extraInvestigationOnReveal === undefined ||
+        typeof cardRecord.extraInvestigationOnReveal === 'boolean',
+      `${fileName}: card(${id}) extraInvestigationOnReveal must be boolean`
+    );
+
     return {
       id,
       title: requireString(
@@ -934,6 +940,8 @@ const normalizeCards = ({
       imageAlt: asNonEmptyString(cardRecord.imageAlt),
       backId: asNonEmptyString(cardRecord.backId),
       back: normalizeCardBackStyle(cardRecord.back),
+      extraInvestigationOnReveal:
+        cardRecord.extraInvestigationOnReveal === true ? true : undefined,
       effects,
     };
   });

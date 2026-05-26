@@ -284,6 +284,7 @@ const createInitialStateWithScenario = (
     completedPlayerIds: [],
     turnStartedAt: null,
     reservationByPlayerId: {},
+    extraInvestigationPendingPlayerId: null,
   },
   pendingInvestigations: [],
   privateCardIdsByPlayerId: {},
@@ -335,6 +336,7 @@ const clearInvestigationTurnState = (room: MurderMysteryRoom) => {
     completedPlayerIds: [],
     turnStartedAt: null,
     reservationByPlayerId: {},
+    extraInvestigationPendingPlayerId: null,
   };
 };
 
@@ -440,6 +442,7 @@ const initializeInvestigationTurnState = (
     completedPlayerIds: [],
     turnStartedAt: orderedPlayerIds.length > 0 ? Date.now() : null,
     reservationByPlayerId: {},
+    extraInvestigationPendingPlayerId: null,
   };
 };
 
@@ -451,6 +454,7 @@ const advanceInvestigationTurnState = (
   const turn = room.gameData.investigationTurn;
   turn.completedPlayerIds.push(actingPlayerId);
   delete turn.reservationByPlayerId[actingPlayerId];
+  turn.extraInvestigationPendingPlayerId = null;
   clearReservationForBackId(room, revealedBackId);
 
   const nextIndex = turn.currentPlayerIndex + 1;
@@ -783,6 +787,7 @@ const buildBackCardView = (
   if (!backId) {
     return null;
   }
+  const card = getCardById(scenario, cardId);
   const style = getCardBackStyle(scenario, target, cardId);
   return {
     backId,
@@ -790,6 +795,7 @@ const buildBackCardView = (
     targetLabel: target.label,
     imageSrc: style.imageSrc,
     shortLabel: style.shortLabel,
+    extraInvestigationOnReveal: Boolean(card?.extraInvestigationOnReveal),
     isReservedByMe:
       room.gameData.investigationTurn.reservationByPlayerId[viewerId] ===
       backId,
@@ -955,6 +961,8 @@ const buildInvestigationTurnView = (
     ),
     players,
     canActNow: viewerId === currentPlayerId,
+    extraInvestigationPending:
+      viewerId === turn.extraInvestigationPendingPlayerId,
     allPlayersDone:
       currentPlayerId === null && turn.orderedPlayerIds.length > 0,
     myReservation,
@@ -1465,11 +1473,6 @@ export const submitMurderMysteryInvestigation = (
       throw new Error('이미 다른 플레이어가 먼저 가져간 카드입니다.');
     }
 
-    room.gameData.investigationUsedByPlayerId[playerId] = {
-      ...usage,
-      [round]: getInvestigationUseCount(normalizedUsage, round, scenario) + 1,
-    };
-
     const revealResult = revealCardToPlayer(
       room,
       scenario,
@@ -1478,7 +1481,23 @@ export const submitMurderMysteryInvestigation = (
       cardId,
       round
     );
-    advanceInvestigationTurnState(room, playerId, backId);
+    const canGrantExtraInvestigation =
+      Boolean(revealResult.card.extraInvestigationOnReveal) &&
+      room.gameData.investigationTurn.extraInvestigationPendingPlayerId !==
+        playerId;
+
+    if (canGrantExtraInvestigation) {
+      clearReservationForBackId(room, backId);
+      room.gameData.investigationTurn.extraInvestigationPendingPlayerId =
+        playerId;
+      room.gameData.investigationTurn.turnStartedAt = Date.now();
+    } else {
+      room.gameData.investigationUsedByPlayerId[playerId] = {
+        ...usage,
+        [round]: getInvestigationUseCount(normalizedUsage, round, scenario) + 1,
+      };
+      advanceInvestigationTurnState(room, playerId, backId);
+    }
 
     return {
       mode: 'auto' as const,
@@ -1486,6 +1505,7 @@ export const submitMurderMysteryInvestigation = (
       backId,
       target,
       revealResult,
+      extraInvestigation: canGrantExtraInvestigation,
     };
   }
 
@@ -1522,12 +1542,11 @@ export const submitMurderMysteryInvestigation = (
     }
   }
 
-  room.gameData.investigationUsedByPlayerId[playerId] = {
-    ...usage,
-    [round]: getInvestigationUseCount(normalizedUsage, round, scenario) + 1,
-  };
-
   if (scenario.investigations.deliveryMode === 'manual') {
+    room.gameData.investigationUsedByPlayerId[playerId] = {
+      ...usage,
+      [round]: getInvestigationUseCount(normalizedUsage, round, scenario) + 1,
+    };
     const request: MurderMysteryPendingInvestigation = {
       requestId: makeId('mm_req'),
       playerId,
@@ -1552,12 +1571,22 @@ export const submitMurderMysteryInvestigation = (
     cardId,
     round
   );
+  const canGrantExtraInvestigation = Boolean(
+    revealResult.card.extraInvestigationOnReveal
+  );
+  if (!canGrantExtraInvestigation) {
+    room.gameData.investigationUsedByPlayerId[playerId] = {
+      ...usage,
+      [round]: getInvestigationUseCount(normalizedUsage, round, scenario) + 1,
+    };
+  }
 
   return {
     mode: 'auto' as const,
     cardId,
     target,
     revealResult,
+    extraInvestigation: canGrantExtraInvestigation,
   };
 };
 
