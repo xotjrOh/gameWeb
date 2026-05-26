@@ -720,6 +720,80 @@ const SeatCompass = ({
   );
 };
 
+const RolePublicCoverCard = ({
+  cover,
+  currentRank,
+  rankCount,
+  assignedPlayerName,
+  onSetRank,
+}: {
+  cover: MurderMysteryStateSnapshot['roleSelection']['publicCovers'][number];
+  currentRank: number;
+  rankCount: number;
+  assignedPlayerName?: string;
+  onSetRank?: (rankIndex: number) => void;
+}) => {
+  const canRank = Boolean(cover.selectable && onSetRank);
+
+  return (
+    <Box
+      sx={{
+        p: 1.1,
+        borderRadius: 1.5,
+        backgroundColor: cover.selectable
+          ? 'rgba(247,241,222,0.11)'
+          : 'rgba(109, 90, 66, 0.2)',
+        border: cover.selectable
+          ? '1px solid rgba(247,241,222,0.15)'
+          : '1px dashed rgba(247,241,222,0.28)',
+      }}
+    >
+      <Stack spacing={0.8}>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Typography fontWeight={950} sx={{ flex: 1 }}>
+            {cover.displayName}
+          </Typography>
+          {assignedPlayerName ? (
+            <Chip size="small" label={assignedPlayerName} />
+          ) : canRank ? (
+            <Chip
+              size="small"
+              label={currentRank >= 0 ? `${currentRank + 1}순위` : '미선택'}
+            />
+          ) : (
+            <Chip size="small" label="NPC 용의자" />
+          )}
+        </Stack>
+        <Typography
+          variant="body2"
+          sx={{
+            color: '#d8d0bd',
+            whiteSpace: 'pre-wrap',
+            lineHeight: 1.55,
+          }}
+        >
+          {cover.publicText}
+        </Typography>
+        {canRank ? (
+          <Stack direction="row" spacing={0.6} flexWrap="wrap">
+            {Array.from({ length: rankCount }, (_, rankIndex) => (
+              <Button
+                key={`${cover.id}:rank:${rankIndex}`}
+                size="small"
+                variant={currentRank === rankIndex ? 'contained' : 'outlined'}
+                color={rankIndex === 0 ? 'warning' : 'inherit'}
+                onClick={() => onSetRank?.(rankIndex)}
+              >
+                {rankIndex + 1}순위
+              </Button>
+            ))}
+          </Stack>
+        ) : null}
+      </Stack>
+    </Box>
+  );
+};
+
 const RoleSelectionPanel = ({
   roleSelection,
   draftRolePreferenceIds,
@@ -792,46 +866,21 @@ const RoleSelectionPanel = ({
 
         {roleSelection.status === 'locked' ? (
           <Stack spacing={1}>
-            {roleSelection.roles.map((role) => (
-              <Box
-                key={role.id}
-                sx={{
-                  p: 1.1,
-                  borderRadius: 1.5,
-                  backgroundColor: 'rgba(247,241,222,0.12)',
-                  border: '1px solid rgba(247,241,222,0.15)',
-                }}
-              >
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  alignItems="center"
-                  sx={{ mb: 0.5 }}
-                >
-                  <Typography fontWeight={950} sx={{ flex: 1 }}>
-                    {role.displayName}
-                  </Typography>
-                  <Chip
-                    size="small"
-                    label={
-                      role.assignedPlayerId
-                        ? (assignedPlayerNameById.get(role.assignedPlayerId) ??
-                          '배정됨')
-                        : '미배정'
-                    }
-                  />
-                </Stack>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: '#d8d0bd',
-                    whiteSpace: 'pre-wrap',
-                    lineHeight: 1.55,
-                  }}
-                >
-                  {role.publicText}
-                </Typography>
-              </Box>
+            {roleSelection.publicCovers.map((cover) => (
+              <RolePublicCoverCard
+                key={cover.id}
+                cover={cover}
+                currentRank={-1}
+                rankCount={roleSelection.roles.length}
+                assignedPlayerName={
+                  cover.assignedPlayerId
+                    ? (assignedPlayerNameById.get(cover.assignedPlayerId) ??
+                      '배정됨')
+                    : cover.selectable
+                      ? '미배정'
+                      : undefined
+                }
+              />
             ))}
           </Stack>
         ) : (
@@ -859,63 +908,23 @@ const RoleSelectionPanel = ({
             </Box>
 
             <Stack spacing={1}>
-              {roleSelection.roles.map((role) => {
-                const currentRank = draftRolePreferenceIds.indexOf(role.id);
-                return (
-                  <Box
-                    key={role.id}
-                    sx={{
-                      p: 1.1,
-                      borderRadius: 1.5,
-                      backgroundColor: 'rgba(247,241,222,0.11)',
-                      border: '1px solid rgba(247,241,222,0.15)',
-                    }}
-                  >
-                    <Stack spacing={0.8}>
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <Typography fontWeight={950} sx={{ flex: 1 }}>
-                          {role.displayName}
-                        </Typography>
-                        <Chip
-                          size="small"
-                          label={
-                            currentRank >= 0
-                              ? `${currentRank + 1}순위`
-                              : '미선택'
-                          }
-                        />
-                      </Stack>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color: '#d8d0bd',
-                          whiteSpace: 'pre-wrap',
-                          lineHeight: 1.55,
-                        }}
-                      >
-                        {role.publicText}
-                      </Typography>
-                      <Stack direction="row" spacing={0.6} flexWrap="wrap">
-                        {roleSelection.roles.map((rankRole, rankIndex) => (
-                          <Button
-                            key={`${role.id}:rank:${rankRole.id}`}
-                            size="small"
-                            variant={
-                              currentRank === rankIndex
-                                ? 'contained'
-                                : 'outlined'
-                            }
-                            color={rankIndex === 0 ? 'warning' : 'inherit'}
-                            onClick={() => onSetRoleRank(role.id, rankIndex)}
-                          >
-                            {rankIndex + 1}순위
-                          </Button>
-                        ))}
-                      </Stack>
-                    </Stack>
-                  </Box>
-                );
-              })}
+              {roleSelection.publicCovers.map((cover) => (
+                <RolePublicCoverCard
+                  key={cover.id}
+                  cover={cover}
+                  currentRank={
+                    cover.selectable
+                      ? draftRolePreferenceIds.indexOf(cover.id)
+                      : -1
+                  }
+                  rankCount={roleSelection.roles.length}
+                  onSetRank={
+                    cover.selectable
+                      ? (rankIndex) => onSetRoleRank(cover.id, rankIndex)
+                      : undefined
+                  }
+                />
+              ))}
             </Stack>
 
             <Stack direction="row" spacing={0.8} flexWrap="wrap" useFlexGap>

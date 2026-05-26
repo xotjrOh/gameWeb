@@ -2119,6 +2119,26 @@ export const buildMurderMysterySnapshot = (
           (entry) => room.gameData.roleByPlayerId[entry.id] === scenarioRole.id
         )?.id ?? null,
     })),
+    publicCovers: [
+      ...scenario.roles.map((scenarioRole) => ({
+        id: scenarioRole.id,
+        displayName: scenarioRole.displayName,
+        publicText: scenarioRole.publicText,
+        selectable: true,
+        assignedPlayerId:
+          room.players.find(
+            (entry) =>
+              room.gameData.roleByPlayerId[entry.id] === scenarioRole.id
+          )?.id ?? null,
+      })),
+      ...(scenario.publicCovers ?? []).map((cover) => ({
+        id: cover.id,
+        displayName: cover.displayName,
+        publicText: cover.publicText,
+        selectable: false,
+        assignedPlayerId: null,
+      })),
+    ],
     players: room.players.map((entry) => ({
       playerId: entry.id,
       playerName: entry.name,

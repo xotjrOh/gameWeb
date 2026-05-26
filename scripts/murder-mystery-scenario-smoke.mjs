@@ -325,7 +325,6 @@ for (const entry of registry.scenarios) {
         );
       }
     }
-
   }
 
   if (
@@ -355,8 +354,27 @@ for (const entry of registry.scenarios) {
   }
 
   const roleIds = new Set(scenario.roles.map((role) => role.id));
+  if (Array.isArray(scenario.publicCovers)) {
+    const publicCoverIds = new Set();
+    for (const [index, cover] of scenario.publicCovers.entries()) {
+      if (!cover.id || !cover.displayName || !cover.publicText) {
+        fail(
+          `${entry.file}: publicCovers[${index}] id/displayName/publicText are required`
+        );
+      }
+      if (roleIds.has(cover.id)) {
+        fail(`${entry.file}: publicCover(${cover.id}) duplicates a role id`);
+      }
+      if (publicCoverIds.has(cover.id)) {
+        fail(`${entry.file}: duplicated publicCover id (${cover.id})`);
+      }
+      publicCoverIds.add(cover.id);
+    }
+  }
   if (!roleIds.has(correctRoleId)) {
-    fail(`${entry.file}: finalVote.correctRoleId is unknown (${correctRoleId})`);
+    fail(
+      `${entry.file}: finalVote.correctRoleId is unknown (${correctRoleId})`
+    );
   }
   if (Array.isArray(scenario.finalVote.options)) {
     const optionIds = new Set();
@@ -380,7 +398,8 @@ for (const entry of registry.scenarios) {
     const correctOptionId =
       scenario.finalVote.correctOptionId ??
       scenario.finalVote.options.find(
-        (option) => option.optionType === 'role' && option.roleId === correctRoleId
+        (option) =>
+          option.optionType === 'role' && option.roleId === correctRoleId
       )?.id;
     if (!correctOptionId || !optionIds.has(correctOptionId)) {
       fail(
@@ -423,7 +442,9 @@ for (const entry of registry.scenarios) {
         !Array.isArray(event.reporterRoleIds) ||
         event.reporterRoleIds.length === 0
       ) {
-        fail(`${entry.file}: specialEvent(${event.id}) reporterRoleIds is required`);
+        fail(
+          `${entry.file}: specialEvent(${event.id}) reporterRoleIds is required`
+        );
       }
       for (const roleId of event.reporterRoleIds) {
         if (!roleIds.has(roleId)) {

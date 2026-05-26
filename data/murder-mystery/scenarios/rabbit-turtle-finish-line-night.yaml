@@ -175,24 +175,31 @@ roles:
   - id: rabbit_husband
     displayName: '남편토끼 윤유성'
     publicText: |
-      당신은 전성기 복귀를 노리던 육상 선수다. 딸 윤슬의 수술을 위해 용왕재단의 도움을 받아야 했고, 거북 오완주는 과거 선발전에서 당신을 쓰러뜨린 인물이다.
-      오늘 밤 당신은 거북과 직접 만났고, 그 사실만으로도 모두가 당신을 의심할 수 있다.
+      한때 스타였던 달리기 선수.
+      현재는 극심한 슬픔에 빠져 있는 것처럼 보인다.
     secretTextPath: rulesheets/rabbit-turtle-finish-line-night/rabbit_husband.txt
 
   - id: fox
     displayName: '여우 조희수'
     publicText: |
-      당신은 행사의 홍보와 기사를 맡은 기자다. 말과 제목으로 사람을 움직이는 데 능숙하지만, 오늘 밤에는 당신 역시 누군가를 몰래 따라다녔다.
-      사람들은 당신이 기삿거리 때문에 거북의 죽음을 이용하려 했다고 볼 수 있다.
+      세상에 불만이 많아 보이는 기자.
+      농담처럼 웃고 있어도 눈빛은 차갑고, 무엇 하나 순순히 받아들이지 않는 사람처럼 보인다.
     secretTextPath: rulesheets/rabbit-turtle-finish-line-night/fox.txt
 
   - id: jara
     displayName: '자라 서기준'
     isKiller: true
     publicText: |
-      당신은 용왕재단 의료동과 행사 동선을 관리하는 실무 책임자다. 침착하고 기록에 밝지만, 오늘 밤 재활수조실 주변을 가장 자유롭게 오갈 수 있었던 사람이기도 하다.
-      모두가 당신에게 현장 설명을 요구할 것이다.
+      정중하고 빈틈없는 관찰자.
+      차분한 말투는 믿음직하지만, 지나치게 흐트러짐 없는 태도는 어딘가 거리감을 남긴다.
     secretTextPath: rulesheets/rabbit-turtle-finish-line-night/jara.txt
+
+publicCovers:
+  - id: wife_npc
+    displayName: '아내토끼 한다정'
+    publicText: |
+      남편토끼의 아내.
+      불안과 슬픔이 뒤섞인 얼굴로, 무언가를 말하지 못하고 있는 듯 보인다.
 
 initialRoleCards:
   - roleId: fox

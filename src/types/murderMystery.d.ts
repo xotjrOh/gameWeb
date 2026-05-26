@@ -41,6 +41,12 @@ export interface MurderMysteryRoleScenario {
   dynamicDisplayNameRules?: MurderMysteryDynamicDisplayNameRule[];
 }
 
+export interface MurderMysteryPublicCoverScenario {
+  id: string;
+  displayName: string;
+  publicText: string;
+}
+
 export interface MurderMysteryPartScenario {
   id: string;
   name: string;
@@ -202,6 +208,7 @@ export interface MurderMysteryScenario {
     readAloud: string;
   };
   roles: MurderMysteryRoleScenario[];
+  publicCovers?: MurderMysteryPublicCoverScenario[];
   parts: MurderMysteryPartScenario[];
   initialRoleCards: MurderMysteryInitialRoleCardScenario[];
   specialEvents: MurderMysterySpecialEventScenario[];
@@ -274,6 +281,14 @@ export interface MurderMysteryRoleSelectionRoleView {
   assignedPlayerId: string | null;
 }
 
+export interface MurderMysteryRoleSelectionPublicCoverView {
+  id: string;
+  displayName: string;
+  publicText: string;
+  selectable: boolean;
+  assignedPlayerId: string | null;
+}
+
 export interface MurderMysteryRoleSelectionPlayerView {
   playerId: string;
   playerName: string;
@@ -283,6 +298,7 @@ export interface MurderMysteryRoleSelectionPlayerView {
 export interface MurderMysteryRoleSelectionView {
   status: MurderMysteryRoleSelectionStatus;
   roles: MurderMysteryRoleSelectionRoleView[];
+  publicCovers: MurderMysteryRoleSelectionPublicCoverView[];
   players: MurderMysteryRoleSelectionPlayerView[];
   requiredPlayerCount: number;
   submittedCount: number;
