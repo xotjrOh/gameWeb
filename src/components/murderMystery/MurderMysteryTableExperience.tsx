@@ -32,7 +32,6 @@ import {
   Style as StyleIcon,
   TaskAlt as TaskAltIcon,
   Timer as TimerIcon,
-  Visibility as VisibilityIcon,
 } from '@mui/icons-material';
 import {
   MurderMysteryCardScenario,
@@ -75,7 +74,6 @@ interface MurderMysteryTableExperienceProps {
 type PhaseKind = MurderMysteryStepKind | 'lobby';
 type AnyClueCard = MurderMysteryClueVaultCardView | MurderMysteryCardScenario;
 
-const SEAT_WIDTH = 230;
 const CARD_BACK_LABEL = '조사 카드';
 const PAGE_CHAR_LIMIT = 760;
 
@@ -129,6 +127,28 @@ const mergeLayout = (
     },
     {}
   );
+};
+
+const getSeatRelationLabel = (
+  position: MurderMysterySeatPosition,
+  isSelf: boolean
+) => {
+  if (isSelf) {
+    return '내 자리';
+  }
+  if (position.y < 35) {
+    return '맞은편';
+  }
+  if (position.y > 66) {
+    return '내 근처';
+  }
+  if (position.x < 38) {
+    return '왼쪽';
+  }
+  if (position.x > 62) {
+    return '오른쪽';
+  }
+  return '대각선';
 };
 
 const getCardSourceText = (card: AnyClueCard) => {
@@ -444,7 +464,7 @@ const InvestigationCardBack = ({
   );
 };
 
-const SeatToken = ({
+const SeatMarker = ({
   player,
   isSelf,
   canDrag,
@@ -453,10 +473,6 @@ const SeatToken = ({
   onPointerDown,
   onPointerMove,
   onPointerUp,
-  onOpenRulebook,
-  onOpenPrivateCards,
-  onOpenCover,
-  onOpenCard,
 }: {
   player: MurderMysteryPublicPlayerView;
   isSelf: boolean;
@@ -469,48 +485,70 @@ const SeatToken = ({
   ) => void;
   onPointerMove: (event: React.PointerEvent<HTMLDivElement>) => void;
   onPointerUp: (event: React.PointerEvent<HTMLDivElement>) => void;
-  onOpenRulebook: () => void;
-  onOpenPrivateCards: () => void;
-  onOpenCover: () => void;
-  onOpenCard: (card: AnyClueCard) => void;
-}) => (
-  <Box
-    onPointerDown={(event) => onPointerDown(event, player.id)}
-    onPointerMove={onPointerMove}
-    onPointerUp={onPointerUp}
-    sx={{
-      position: 'absolute',
-      left: `${position.x}%`,
-      top: `${position.y}%`,
-      width: { xs: 178, md: SEAT_WIDTH },
-      transform: 'translate(-50%, -50%)',
-      zIndex: isDragging ? 12 : isSelf ? 8 : 7,
-      touchAction: 'none',
-      cursor: canDrag ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
-      userSelect: 'none',
-    }}
-  >
+}) => {
+  const visualPosition = {
+    x: clamp(position.x, 14, 86),
+    y: clamp(position.y, 14, 86),
+  };
+  const relationLabel = getSeatRelationLabel(visualPosition, isSelf);
+
+  return (
     <Box
+      onPointerDown={(event) => onPointerDown(event, player.id)}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
       sx={{
-        borderRadius: 2,
-        border: isSelf
-          ? '2px solid rgba(245, 197, 66, 0.95)'
-          : '1px solid rgba(255,255,255,0.28)',
-        background:
-          'linear-gradient(180deg, rgba(247,243,231,0.96), rgba(226,216,194,0.94))',
-        color: '#2a231a',
-        boxShadow: isDragging
-          ? '0 22px 42px rgba(0,0,0,0.42)'
-          : '0 12px 28px rgba(0,0,0,0.3)',
-        overflow: 'hidden',
+        position: 'absolute',
+        left: `${visualPosition.x}%`,
+        top: `${visualPosition.y}%`,
+        width: { xs: 106, md: 124 },
+        transform: 'translate(-50%, -50%)',
+        zIndex: isDragging ? 6 : isSelf ? 5 : 4,
+        touchAction: 'none',
+        cursor: canDrag ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
+        userSelect: 'none',
       }}
     >
-      <Stack spacing={0.8} sx={{ p: { xs: 1, md: 1.2 } }}>
-        <Stack direction="row" spacing={0.8} alignItems="center">
+      <Box
+        sx={{
+          borderRadius: 999,
+          border: isSelf
+            ? '2px solid rgba(245, 197, 66, 0.98)'
+            : '1px solid rgba(255,255,255,0.3)',
+          background:
+            'linear-gradient(180deg, rgba(247,243,231,0.98), rgba(224,214,190,0.96))',
+          color: '#2a231a',
+          boxShadow: isDragging
+            ? '0 14px 34px rgba(0,0,0,0.42)'
+            : '0 8px 20px rgba(0,0,0,0.28)',
+          px: 1,
+          py: 0.7,
+        }}
+      >
+        <Stack direction="row" spacing={0.7} alignItems="center">
+          <Box
+            sx={{
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              flex: '0 0 auto',
+              backgroundColor: player.socketId ? '#2e7d32' : '#9e9e9e',
+              boxShadow: player.socketId
+                ? '0 0 0 3px rgba(46,125,50,0.18)'
+                : 'none',
+            }}
+          />
           <Box sx={{ minWidth: 0, flex: 1 }}>
             <Typography
-              fontWeight={900}
-              sx={{ lineHeight: 1.15, wordBreak: 'keep-all' }}
+              variant="caption"
+              fontWeight={950}
+              sx={{
+                display: 'block',
+                lineHeight: 1.1,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
             >
               {player.name}
             </Typography>
@@ -518,121 +556,226 @@ const SeatToken = ({
               variant="caption"
               sx={{
                 display: 'block',
-                color: '#695538',
-                fontWeight: 800,
+                color: '#6f5635',
+                lineHeight: 1.1,
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
               }}
             >
-              {player.roleDisplayName ?? '역할 배정 전'}
+              {player.roleDisplayName ?? relationLabel}
             </Typography>
           </Box>
-          {isSelf ? <Chip size="small" label="나" color="warning" /> : null}
+          {player.publicRevealedClues.length > 0 ? (
+            <Chip
+              size="small"
+              label={player.publicRevealedClues.length}
+              sx={{ height: 20, minWidth: 24, fontWeight: 900 }}
+            />
+          ) : null}
+        </Stack>
+      </Box>
+      <Typography
+        variant="caption"
+        sx={{
+          display: 'block',
+          mt: 0.25,
+          textAlign: 'center',
+          color: isSelf ? '#f5c542' : '#d8d0bd',
+          fontWeight: 900,
+          lineHeight: 1,
+          textShadow: '0 1px 4px rgba(0,0,0,0.55)',
+        }}
+      >
+        {relationLabel}
+      </Typography>
+    </Box>
+  );
+};
+
+const SeatCompass = ({
+  players,
+  sessionId,
+  positions,
+  tableRef,
+  canEdit,
+  canReset,
+  isCompact,
+  draggingPlayerId,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onReset,
+}: {
+  players: MurderMysteryPublicPlayerView[];
+  sessionId: string;
+  positions: Record<string, MurderMysterySeatPosition>;
+  tableRef: React.RefObject<HTMLDivElement>;
+  canEdit: boolean;
+  canReset: boolean;
+  isCompact: boolean;
+  draggingPlayerId: string | null;
+  onPointerDown: (
+    event: React.PointerEvent<HTMLDivElement>,
+    playerId: string
+  ) => void;
+  onPointerMove: (event: React.PointerEvent<HTMLDivElement>) => void;
+  onPointerUp: (event: React.PointerEvent<HTMLDivElement>) => void;
+  onReset: () => void;
+}) => {
+  const defaultPositions = useMemo(
+    () => buildDefaultLayout(players.map((player) => player.id)),
+    [players]
+  );
+
+  return (
+    <Box
+      sx={{
+        borderRadius: 3,
+        border: '1px solid rgba(255,255,255,0.14)',
+        backgroundColor: 'rgba(10, 18, 20, 0.82)',
+        boxShadow: '0 16px 40px rgba(0,0,0,0.26)',
+        p: { xs: 1.1, md: 1.35 },
+      }}
+    >
+      <Stack spacing={1}>
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Typography fontWeight={950}>
+              {canEdit ? '자리 맞추기' : '자리 나침반'}
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#d8d0bd' }}>
+              {canEdit
+                ? '자기 토큰만 움직여 실제 자리감을 맞추세요.'
+                : '누가 내 옆과 맞은편에 있는지만 확인합니다.'}
+            </Typography>
+          </Box>
+          {canReset ? (
+            <Tooltip title="자리 초기화">
+              <IconButton
+                size="small"
+                onClick={onReset}
+                sx={{ color: '#f8f1de' }}
+              >
+                <RestartAltIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          ) : null}
         </Stack>
 
         <Box
+          ref={tableRef}
           sx={{
-            borderRadius: 1,
-            p: 0.9,
-            backgroundColor: 'rgba(91, 69, 39, 0.11)',
-            minHeight: 62,
+            position: 'relative',
+            height: isCompact ? { xs: 132, md: 160 } : { xs: 210, md: 250 },
+            borderRadius: '50%',
+            overflow: 'visible',
+            background:
+              'radial-gradient(ellipse at center, rgba(98, 77, 47, 0.62) 0%, rgba(45, 67, 59, 0.72) 58%, rgba(8, 13, 17, 0.9) 100%)',
+            border: '1px solid rgba(255,255,255,0.16)',
           }}
         >
-          <Typography
-            variant="caption"
+          <Box
             sx={{
-              display: '-webkit-box',
-              WebkitBoxOrient: 'vertical',
-              WebkitLineClamp: 3,
-              overflow: 'hidden',
-              color: '#372c1f',
-              lineHeight: 1.35,
-              whiteSpace: 'pre-wrap',
+              position: 'absolute',
+              left: '50%',
+              top: '50%',
+              width: { xs: '42%', md: '46%' },
+              height: { xs: '34%', md: '38%' },
+              transform: 'translate(-50%, -50%)',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(247, 241, 222, 0.12)',
+              border: '1px dashed rgba(247,241,222,0.42)',
+              display: 'grid',
+              placeItems: 'center',
+              pointerEvents: 'none',
             }}
           >
-            {player.rolePublicText ?? '게임 시작 후 공개 정보가 배치됩니다.'}
-          </Typography>
+            <Typography
+              variant="caption"
+              fontWeight={950}
+              sx={{ color: 'rgba(248,241,222,0.76)' }}
+            >
+              TABLE
+            </Typography>
+          </Box>
+          {players.map((player) => (
+            <SeatMarker
+              key={player.id}
+              player={player}
+              isSelf={player.id === sessionId}
+              canDrag={canEdit && player.id === sessionId}
+              position={positions[player.id] ?? defaultPositions[player.id]}
+              isDragging={draggingPlayerId === player.id}
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+            />
+          ))}
         </Box>
-
-        <Stack direction="row" spacing={0.6} alignItems="center">
-          <Chip
-            size="small"
-            label={player.socketId ? '연결' : '대기'}
-            color={player.socketId ? 'success' : 'default'}
-          />
-          <Chip size="small" label={player.statusText} />
-          <Tooltip title="표지 보기">
-            <IconButton
-              data-seat-action
-              size="small"
-              onClick={(event) => {
-                event.stopPropagation();
-                onOpenCover();
-              }}
-              sx={{ ml: 'auto' }}
-            >
-              <VisibilityIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </Stack>
-
-        {player.publicRevealedClues.length > 0 ? (
-          <Stack
-            direction="row"
-            spacing={0.7}
-            sx={{ overflowX: 'auto', pb: 0.3 }}
-          >
-            {player.publicRevealedClues.slice(0, 4).map((card) => (
-              <Box
-                key={`${player.id}:${card.id}`}
-                data-seat-action
-                onPointerDown={(event) => event.stopPropagation()}
-              >
-                <EvidenceCardFace card={card} dense onOpen={onOpenCard} />
-              </Box>
-            ))}
-          </Stack>
-        ) : (
-          <Typography variant="caption" sx={{ color: '#6b6256' }}>
-            {canDrag
-              ? '드래그해서 실제 앉은 위치에 맞추세요.'
-              : '아직 이 자리에 공개 단서가 없습니다.'}
-          </Typography>
-        )}
-
-        {isSelf ? (
-          <Stack direction="row" spacing={0.7} data-seat-action>
-            <Button
-              size="small"
-              variant="contained"
-              startIcon={<AutoStoriesIcon />}
-              onPointerDown={(event) => event.stopPropagation()}
-              onClick={(event) => {
-                event.stopPropagation();
-                onOpenRulebook();
-              }}
-              sx={{ flex: 1, minWidth: 0 }}
-            >
-              룰북
-            </Button>
-            <Button
-              size="small"
-              variant="outlined"
-              startIcon={<Inventory2Icon />}
-              onPointerDown={(event) => event.stopPropagation()}
-              onClick={(event) => {
-                event.stopPropagation();
-                onOpenPrivateCards();
-              }}
-              sx={{ flex: 1, minWidth: 0 }}
-            >
-              내 카드
-            </Button>
-          </Stack>
-        ) : null}
       </Stack>
     </Box>
+  );
+};
+
+const MyDeskPanel = ({
+  cardCount,
+  onOpenRulebook,
+  onOpenPrivateCards,
+  compact = false,
+}: {
+  cardCount: number;
+  onOpenRulebook: () => void;
+  onOpenPrivateCards: () => void;
+  compact?: boolean;
+}) => (
+  <Box
+    sx={{
+      p: compact ? 1 : 1.2,
+      borderRadius: compact ? 0 : 2,
+      backgroundColor: 'rgba(247, 241, 222, 0.94)',
+      color: '#2b241c',
+      boxShadow: compact ? '0 -10px 28px rgba(0,0,0,0.28)' : 'none',
+    }}
+  >
+    <Stack
+      direction="row"
+      spacing={1}
+      alignItems="center"
+      justifyContent="space-between"
+    >
+      <Box
+        sx={{
+          minWidth: 0,
+          display: compact ? { xs: 'none', sm: 'block' } : 'block',
+        }}
+      >
+        <Typography fontWeight={950}>내 책상</Typography>
+        <Typography variant="caption" sx={{ color: '#695538' }}>
+          개인 정보는 내 화면에서만 열립니다.
+        </Typography>
+      </Box>
+      <Stack direction="row" spacing={0.8} sx={{ flex: compact ? 1 : 0 }}>
+        <Button
+          size="small"
+          variant="contained"
+          startIcon={<AutoStoriesIcon />}
+          onClick={onOpenRulebook}
+          sx={{ flex: compact ? 1 : undefined }}
+        >
+          룰북
+        </Button>
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={<Inventory2Icon />}
+          onClick={onOpenPrivateCards}
+          sx={{ flex: compact ? 1 : undefined }}
+        >
+          카드 {cardCount}
+        </Button>
+      </Stack>
+    </Stack>
   </Box>
 );
 
@@ -640,11 +783,13 @@ const RulebookModal = ({
   open,
   roleSheet,
   playerName,
+  fullScreen,
   onClose,
 }: {
   open: boolean;
   roleSheet: MurderMysteryRoleSheetView | null;
   playerName: string;
+  fullScreen: boolean;
   onClose: () => void;
 }) => {
   const pages = useMemo(
@@ -687,7 +832,13 @@ const RulebookModal = ({
   const isCover = pageIndex === 0;
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="md"
+      fullScreen={fullScreen}
+    >
       <DialogContent
         sx={{
           p: { xs: 1.2, sm: 2.2 },
@@ -708,7 +859,10 @@ const RulebookModal = ({
         <Box
           sx={{
             perspective: '1600px',
-            minHeight: { xs: 520, sm: 600 },
+            minHeight: {
+              xs: fullScreen ? 'calc(100vh - 32px)' : 520,
+              sm: 600,
+            },
             display: 'grid',
             placeItems: 'center',
           }}
@@ -717,7 +871,10 @@ const RulebookModal = ({
             key={`${roleSheet?.roleId ?? 'empty'}:${pageIndex}`}
             sx={{
               width: 'min(100%, 720px)',
-              minHeight: { xs: 500, sm: 560 },
+              minHeight: {
+                xs: fullScreen ? 'calc(100vh - 96px)' : 500,
+                sm: 560,
+              },
               borderRadius: 1,
               backgroundColor: '#fbf4df',
               color: '#2b241c',
@@ -752,7 +909,10 @@ const RulebookModal = ({
           >
             <Box
               sx={{
-                minHeight: { xs: 500, sm: 560 },
+                minHeight: {
+                  xs: fullScreen ? 'calc(100vh - 96px)' : 500,
+                  sm: 560,
+                },
                 p: { xs: 2.2, sm: 4 },
                 background:
                   'linear-gradient(90deg, rgba(89,66,43,0.13) 0, rgba(89,66,43,0.02) 8%, transparent 18%)',
@@ -861,21 +1021,31 @@ const PublicCoverDialog = ({
   open,
   player,
   isSelf,
+  fullScreen,
   onClose,
   onOpenRulebook,
+  onOpenCard,
 }: {
   open: boolean;
   player: MurderMysteryPublicPlayerView | null;
   isSelf: boolean;
+  fullScreen: boolean;
   onClose: () => void;
   onOpenRulebook: () => void;
+  onOpenCard: (card: AnyClueCard) => void;
 }) => (
-  <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+  <Dialog
+    open={open}
+    onClose={onClose}
+    fullWidth
+    maxWidth="sm"
+    fullScreen={fullScreen}
+  >
     <DialogTitle>
       <Stack direction="row" alignItems="center" spacing={1}>
         <AutoStoriesIcon />
         <Typography fontWeight={900} sx={{ flex: 1 }}>
-          공개 룰지 표지
+          자리 정보
         </Typography>
         <IconButton onClick={onClose}>
           <CloseIcon />
@@ -903,6 +1073,31 @@ const PublicCoverDialog = ({
         >
           {player?.rolePublicText ?? '게임 시작 후 공개 정보가 표시됩니다.'}
         </Box>
+        {player?.publicRevealedClues.length ? (
+          <Stack spacing={1}>
+            <Typography fontWeight={900}>
+              이 자리에 공개된 단서 {player.publicRevealedClues.length}장
+            </Typography>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{ overflowX: 'auto', pb: 1 }}
+            >
+              {player.publicRevealedClues.map((card) => (
+                <EvidenceCardFace
+                  key={`${player.id}:${card.id}`}
+                  card={card}
+                  dense
+                  onOpen={onOpenCard}
+                />
+              ))}
+            </Stack>
+          </Stack>
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            아직 이 자리에 공개 단서가 없습니다.
+          </Typography>
+        )}
         {isSelf ? (
           <Button
             variant="contained"
@@ -919,12 +1114,20 @@ const PublicCoverDialog = ({
 
 const CardDetailDialog = ({
   card,
+  fullScreen,
   onClose,
 }: {
   card: AnyClueCard | null;
+  fullScreen: boolean;
   onClose: () => void;
 }) => (
-  <Dialog open={Boolean(card)} onClose={onClose} fullWidth maxWidth="sm">
+  <Dialog
+    open={Boolean(card)}
+    onClose={onClose}
+    fullWidth
+    maxWidth="sm"
+    fullScreen={fullScreen}
+  >
     <DialogTitle>
       <Stack direction="row" alignItems="center" spacing={1}>
         <StyleIcon />
@@ -973,15 +1176,23 @@ const CardDetailDialog = ({
 const PrivateCardsDialog = ({
   open,
   cards,
+  fullScreen,
   onClose,
   onOpenCard,
 }: {
   open: boolean;
   cards: MurderMysteryClueVaultCardView[];
+  fullScreen: boolean;
   onClose: () => void;
   onOpenCard: (card: AnyClueCard) => void;
 }) => (
-  <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
+  <Dialog
+    open={open}
+    onClose={onClose}
+    fullWidth
+    maxWidth="md"
+    fullScreen={fullScreen}
+  >
     <DialogTitle>
       <Stack direction="row" alignItems="center" spacing={1}>
         <Inventory2Icon />
@@ -1152,8 +1363,8 @@ export default function MurderMysteryTableExperience({
     if (!rect) {
       return;
     }
-    const x = clamp(((event.clientX - rect.left) / rect.width) * 100, 8, 92);
-    const y = clamp(((event.clientY - rect.top) / rect.height) * 100, 10, 90);
+    const x = clamp(((event.clientX - rect.left) / rect.width) * 100, 14, 86);
+    const y = clamp(((event.clientY - rect.top) / rect.height) * 100, 14, 86);
     setSeatPositions((current) => ({
       ...current,
       [playerId]: { x, y },
@@ -1435,6 +1646,46 @@ export default function MurderMysteryTableExperience({
     </Stack>
   );
 
+  const renderSpecialEvents = () =>
+    snapshot.specialEvents.length > 0 ? (
+      <Stack spacing={1}>
+        {snapshot.specialEvents.map((event) => (
+          <Box
+            key={event.id}
+            sx={{
+              p: 1.2,
+              borderRadius: 2,
+              backgroundColor: 'rgba(15, 19, 24, 0.88)',
+              border: '1px solid rgba(255,255,255,0.16)',
+            }}
+          >
+            <Typography fontWeight={900}>{event.label}</Typography>
+            <Typography variant="caption" sx={{ color: '#d8d0bd' }}>
+              {event.description}
+            </Typography>
+            <Stack direction="row" spacing={0.7} sx={{ mt: 1 }}>
+              <Button
+                size="small"
+                variant="contained"
+                color="warning"
+                onClick={() => onReportSpecialEvent(event.id, 'reveal')}
+              >
+                공개
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                color="inherit"
+                onClick={() => onReportSpecialEvent(event.id, 'seal')}
+              >
+                폐기
+              </Button>
+            </Stack>
+          </Box>
+        ))}
+      </Stack>
+    ) : null;
+
   const renderPhaseBody = () => {
     if (phaseKind === 'lobby') {
       return (
@@ -1443,7 +1694,8 @@ export default function MurderMysteryTableExperience({
             자리와 닉네임 확인
           </Typography>
           <Typography sx={{ color: '#d8d0bd' }}>
-            각자 자기 닉네임 좌석을 실제 앉은 위치에 맞게 드래그하세요.
+            위쪽 자리 맞추기 테이블에서 자기 토큰을 움직여 실제 자리감을
+            맞추세요.
           </Typography>
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
             {snapshot.players.map((player) => (
@@ -1524,7 +1776,10 @@ export default function MurderMysteryTableExperience({
   return (
     <Box
       sx={{
+        height: '100dvh',
         minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
         background:
           'radial-gradient(circle at 50% 42%, #244a42 0%, #183a36 42%, #171c23 100%)',
         color: '#f8f1de',
@@ -1548,6 +1803,7 @@ export default function MurderMysteryTableExperience({
         sx={{
           position: 'relative',
           zIndex: 20,
+          flexShrink: 0,
           px: { xs: 1, md: 2 },
           py: 1,
           backgroundColor: 'rgba(9,13,18,0.58)',
@@ -1627,33 +1883,66 @@ export default function MurderMysteryTableExperience({
       </Stack>
 
       <Box
-        ref={tableRef}
+        component="main"
         sx={{
           position: 'relative',
-          height: {
-            xs: 'calc(100vh - 96px)',
-            md: 'calc(100vh - 58px)',
+          zIndex: 2,
+          flex: 1,
+          minHeight: 0,
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: 'minmax(0, 1fr)',
+            lg: '280px minmax(0, 1fr) 260px',
           },
-          minHeight: { xs: 720, md: 700 },
+          gridTemplateRows: {
+            xs: 'auto minmax(0, 1fr)',
+            lg: 'minmax(0, 1fr)',
+          },
+          gap: { xs: 1, lg: 1.4 },
+          p: { xs: 1, md: 1.4 },
+          pb: { xs: 10, lg: 1.4 },
+          overflow: 'hidden',
         }}
       >
+        <Stack
+          spacing={1}
+          sx={{
+            gridColumn: { xs: '1', lg: '1' },
+            gridRow: { xs: '1', lg: '1' },
+            minHeight: 0,
+            overflow: { xs: 'visible', lg: 'auto' },
+            pr: { lg: 0.2 },
+          }}
+        >
+          <SeatCompass
+            players={snapshot.players}
+            sessionId={sessionId}
+            positions={seatPositions}
+            tableRef={tableRef}
+            canEdit={canEditSeatLayout}
+            canReset={canUseHostTools && snapshot.phase === 'LOBBY'}
+            isCompact={phaseKind !== 'lobby'}
+            draggingPlayerId={draggingPlayerId}
+            onPointerDown={handleSeatPointerDown}
+            onPointerMove={handleSeatPointerMove}
+            onPointerUp={handleSeatPointerUp}
+            onReset={resetSeats}
+          />
+          {renderSpecialEvents()}
+        </Stack>
+
         <Box
           sx={{
-            position: 'absolute',
-            left: '50%',
-            top: '50%',
-            width: { xs: '88vw', md: '58vw' },
-            maxWidth: 900,
-            minWidth: { xs: 330, md: 620 },
-            maxHeight: { xs: '62vh', md: '70vh' },
-            transform: 'translate(-50%, -50%)',
+            gridColumn: { xs: '1', lg: '2' },
+            gridRow: { xs: '2', lg: '1' },
+            minHeight: 0,
             borderRadius: 4,
             border: '1px solid rgba(255,255,255,0.18)',
             backgroundColor: 'rgba(14, 23, 25, 0.86)',
             boxShadow: '0 28px 70px rgba(0,0,0,0.42)',
             p: { xs: 1.3, md: 2 },
+            pb: { xs: 8.5, lg: 2 },
             overflow: 'auto',
-            zIndex: 4,
           }}
         >
           <Stack spacing={1.8}>
@@ -1667,142 +1956,73 @@ export default function MurderMysteryTableExperience({
           </Stack>
         </Box>
 
-        {snapshot.specialEvents.length > 0 ? (
+        {!isSmall ? (
           <Stack
             spacing={1}
             sx={{
-              position: 'absolute',
-              left: { xs: 12, md: 24 },
-              bottom: { xs: 16, md: 24 },
-              width: { xs: 260, md: 330 },
-              zIndex: 15,
+              gridColumn: { lg: '3' },
+              gridRow: { lg: '1' },
+              alignSelf: 'end',
             }}
           >
-            {snapshot.specialEvents.map((event) => (
-              <Box
-                key={event.id}
-                sx={{
-                  p: 1.2,
-                  borderRadius: 2,
-                  backgroundColor: 'rgba(15, 19, 24, 0.88)',
-                  border: '1px solid rgba(255,255,255,0.16)',
-                }}
-              >
-                <Typography fontWeight={900}>{event.label}</Typography>
-                <Typography variant="caption" sx={{ color: '#d8d0bd' }}>
-                  {event.description}
-                </Typography>
-                <Stack direction="row" spacing={0.7} sx={{ mt: 1 }}>
-                  <Button
-                    size="small"
-                    variant="contained"
-                    color="warning"
-                    onClick={() => onReportSpecialEvent(event.id, 'reveal')}
-                  >
-                    공개
-                  </Button>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    color="inherit"
-                    onClick={() => onReportSpecialEvent(event.id, 'seal')}
-                  >
-                    폐기
-                  </Button>
-                </Stack>
-              </Box>
-            ))}
+            <MyDeskPanel
+              cardCount={snapshot.clueVault.myClues.length}
+              onOpenRulebook={() => setIsRulebookOpen(true)}
+              onOpenPrivateCards={() => setIsPrivateCardsOpen(true)}
+            />
           </Stack>
         ) : null}
+      </Box>
 
-        {!isSmall ? (
-          <Box
-            sx={{
-              position: 'absolute',
-              right: 24,
-              bottom: 24,
-              width: 250,
-              zIndex: 15,
-              p: 1.2,
-              borderRadius: 2,
-              backgroundColor: 'rgba(247, 241, 222, 0.94)',
-              color: '#2b241c',
-              boxShadow: '0 14px 30px rgba(0,0,0,0.32)',
-            }}
-          >
-            <Typography fontWeight={950}>내 책상</Typography>
-            <Typography variant="caption" sx={{ color: '#695538' }}>
-              개인 카드와 비공개 룰북은 이 화면에서만 열립니다.
-            </Typography>
-            <Stack direction="row" spacing={0.8} sx={{ mt: 1 }}>
-              <Button
-                size="small"
-                variant="contained"
-                startIcon={<AutoStoriesIcon />}
-                onClick={() => setIsRulebookOpen(true)}
-              >
-                룰북
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                startIcon={<Inventory2Icon />}
-                onClick={() => setIsPrivateCardsOpen(true)}
-              >
-                카드 {snapshot.clueVault.myClues.length}
-              </Button>
-            </Stack>
-          </Box>
-        ) : null}
-
-        {snapshot.players.map((player) => (
-          <SeatToken
-            key={player.id}
-            player={player}
-            isSelf={player.id === sessionId}
-            canDrag={canEditSeatLayout && player.id === sessionId}
-            position={
-              seatPositions[player.id] ??
-              buildDefaultLayout(snapshot.players.map((entry) => entry.id))[
-                player.id
-              ]
-            }
-            isDragging={draggingPlayerId === player.id}
-            onPointerDown={handleSeatPointerDown}
-            onPointerMove={handleSeatPointerMove}
-            onPointerUp={handleSeatPointerUp}
+      {isSmall ? (
+        <Box
+          sx={{
+            position: 'fixed',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 30,
+            borderTop: '1px solid rgba(255,255,255,0.18)',
+          }}
+        >
+          <MyDeskPanel
+            compact
+            cardCount={snapshot.clueVault.myClues.length}
             onOpenRulebook={() => setIsRulebookOpen(true)}
             onOpenPrivateCards={() => setIsPrivateCardsOpen(true)}
-            onOpenCover={() => setSelectedPlayerId(player.id)}
-            onOpenCard={setSelectedCard}
           />
-        ))}
-      </Box>
+        </Box>
+      ) : null}
 
       <PublicCoverDialog
         open={Boolean(selectedPlayer)}
         player={selectedPlayer}
         isSelf={selectedPlayer?.id === sessionId}
+        fullScreen={isSmall}
         onClose={() => setSelectedPlayerId(null)}
         onOpenRulebook={() => {
           setSelectedPlayerId(null);
           setIsRulebookOpen(true);
         }}
+        onOpenCard={setSelectedCard}
       />
       <RulebookModal
         open={isRulebookOpen}
         roleSheet={snapshot.roleSheet}
         playerName={selfPlayer?.name ?? ''}
+        fullScreen={isSmall}
         onClose={() => setIsRulebookOpen(false)}
       />
       <PrivateCardsDialog
         open={isPrivateCardsOpen}
         cards={snapshot.clueVault.myClues}
+        fullScreen={isSmall}
         onClose={() => setIsPrivateCardsOpen(false)}
         onOpenCard={setSelectedCard}
       />
       <CardDetailDialog
         card={selectedCard}
+        fullScreen={isSmall}
         onClose={() => setSelectedCard(null)}
       />
     </Box>
