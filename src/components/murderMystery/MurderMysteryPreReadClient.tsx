@@ -70,7 +70,15 @@ export default function MurderMysteryPreReadClient({
     section === 'rolebook' ? secretPages.length + 1 : prologuePages.length;
   const maxPageIndex = Math.max(pageCount - 1, 0);
   const isRolebookCover = section === 'rolebook' && pageIndex === 0;
-  const progress = Math.round(((pageIndex + 1) / pageCount) * 100);
+  const clampPageIndex = (nextPageIndex: number) =>
+    Math.min(Math.max(nextPageIndex, 0), maxPageIndex);
+  const getProgressRatioForPage = (targetPageIndex: number) =>
+    pageCount > 0 ? (clampPageIndex(targetPageIndex) + 1) / pageCount : 0;
+  const getPageIndexForProgressRatio = (ratio: number) =>
+    clampPageIndex(Math.round(ratio * pageCount - 1));
+  const progressRatio = getProgressRatioForPage(pageIndex);
+  const previewProgressRatio = previewRatio ?? progressRatio;
+  const progress = Math.round(previewProgressRatio * 100);
   const canScrubProgress =
     pageCount > 1 && !(section === 'rolebook' && isSecretPaginating);
   const progressMarkers = useMemo(
@@ -150,7 +158,7 @@ export default function MurderMysteryPreReadClient({
   }, [isSecretPaginating, pageIndex, section, storageKey]);
 
   const goTo = (nextPageIndex: number) => {
-    setPageIndex(Math.min(Math.max(nextPageIndex, 0), maxPageIndex));
+    setPageIndex(clampPageIndex(nextPageIndex));
   };
 
   const getProgressRatio = (clientX: number, target: HTMLElement) => {
@@ -158,13 +166,22 @@ export default function MurderMysteryPreReadClient({
     return Math.min(Math.max((clientX - rect.left) / rect.width, 0), 1);
   };
 
+  const getSnappedProgress = (clientX: number, target: HTMLElement) => {
+    const pageIndexForPosition = getPageIndexForProgressRatio(
+      getProgressRatio(clientX, target)
+    );
+    return {
+      pageIndex: pageIndexForPosition,
+      ratio: getProgressRatioForPage(pageIndexForPosition),
+    };
+  };
+
   const goToProgressPosition = (clientX: number, target: HTMLElement) => {
     if (!canScrubProgress) {
       return;
     }
 
-    const ratio = getProgressRatio(clientX, target);
-    goTo(Math.round(ratio * pageCount - 1));
+    goTo(getSnappedProgress(clientX, target).pageIndex);
   };
 
   const handleProgressClick = (event: ReactMouseEvent<HTMLElement>) => {
@@ -181,7 +198,9 @@ export default function MurderMysteryPreReadClient({
 
     event.currentTarget.setPointerCapture(event.pointerId);
     setIsScrubbingProgress(true);
-    setPreviewRatio(getProgressRatio(event.clientX, event.currentTarget));
+    setPreviewRatio(
+      getSnappedProgress(event.clientX, event.currentTarget).ratio
+    );
   };
 
   const handleProgressPointerMove = (event: ReactPointerEvent<HTMLElement>) => {
@@ -189,7 +208,9 @@ export default function MurderMysteryPreReadClient({
       return;
     }
 
-    setPreviewRatio(getProgressRatio(event.clientX, event.currentTarget));
+    setPreviewRatio(
+      getSnappedProgress(event.clientX, event.currentTarget).ratio
+    );
   };
 
   const endProgressScrub = (event: ReactPointerEvent<HTMLElement>) => {
@@ -357,7 +378,11 @@ export default function MurderMysteryPreReadClient({
               borderRadius: 999,
               backgroundColor: 'rgba(247,241,222,0.16)',
               '& .MuiLinearProgress-bar': {
-                backgroundColor: '#f59e0b',
+                backgroundColor:
+                  previewRatio !== null ? 'rgba(245, 158, 11, 0.5)' : '#f59e0b',
+                transition: isScrubbingProgress
+                  ? 'transform 90ms ease-out'
+                  : undefined,
               },
             }}
           />
@@ -368,13 +393,14 @@ export default function MurderMysteryPreReadClient({
                 position: 'absolute',
                 top: '50%',
                 left: 0,
-                width: `${previewRatio * 100}%`,
+                width: `${previewProgressRatio * 100}%`,
                 height: 7,
                 transform: 'translateY(-50%)',
                 borderRadius: 999,
-                backgroundColor: 'rgba(245, 158, 11, 0.34)',
+                backgroundColor: 'rgba(245, 158, 11, 0.18)',
                 boxShadow: '0 0 12px rgba(245, 158, 11, 0.2)',
                 pointerEvents: 'none',
+                transition: 'width 90ms ease-out',
               }}
             />
           )}
@@ -392,7 +418,7 @@ export default function MurderMysteryPreReadClient({
               }}
               sx={{
                 position: 'absolute',
-                left: `${((marker.pageIndex + 1) / pageCount) * 100}%`,
+                left: `${getProgressRatioForPage(marker.pageIndex) * 100}%`,
                 top: marker.isPrimary ? 1 : 4,
                 width: marker.isPrimary ? 12 : 10,
                 height: marker.isPrimary ? 20 : 15,
