@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type {
   KeyboardEvent as ReactKeyboardEvent,
   MouseEvent as ReactMouseEvent,
+  PointerEvent as ReactPointerEvent,
 } from 'react';
 import {
   Box,
@@ -58,11 +59,15 @@ export default function MurderMysteryPreReadClient({
   const storageKey = `murderMystery:preReadProgress:${token}`;
   const [section, setSection] = useState<PreReadSection>('rolebook');
   const [pageIndex, setPageIndex] = useState(0);
+  const [previewRatio, setPreviewRatio] = useState<number | null>(null);
+  const [isScrubbingProgress, setIsScrubbingProgress] = useState(false);
   const pageCount =
     section === 'rolebook' ? secretPages.length + 1 : prologuePages.length;
   const maxPageIndex = Math.max(pageCount - 1, 0);
   const isRolebookCover = section === 'rolebook' && pageIndex === 0;
   const progress = Math.round(((pageIndex + 1) / pageCount) * 100);
+  const canScrubProgress =
+    pageCount > 1 && !(section === 'rolebook' && isSecretPaginating);
   const progressMarkers = useMemo(
     () =>
       section === 'rolebook'
@@ -143,18 +148,55 @@ export default function MurderMysteryPreReadClient({
     setPageIndex(Math.min(Math.max(nextPageIndex, 0), maxPageIndex));
   };
 
+  const getProgressRatio = (clientX: number, target: HTMLElement) => {
+    const rect = target.getBoundingClientRect();
+    return Math.min(Math.max((clientX - rect.left) / rect.width, 0), 1);
+  };
+
   const goToProgressPosition = (clientX: number, target: HTMLElement) => {
-    if (pageCount <= 1 || (section === 'rolebook' && isSecretPaginating)) {
+    if (!canScrubProgress) {
       return;
     }
 
-    const rect = target.getBoundingClientRect();
-    const ratio = Math.min(Math.max((clientX - rect.left) / rect.width, 0), 1);
+    const ratio = getProgressRatio(clientX, target);
     goTo(Math.round(ratio * pageCount - 1));
   };
 
   const handleProgressClick = (event: ReactMouseEvent<HTMLElement>) => {
+    if (isScrubbingProgress) {
+      return;
+    }
     goToProgressPosition(event.clientX, event.currentTarget);
+  };
+
+  const handleProgressPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
+    if (!canScrubProgress) {
+      return;
+    }
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setIsScrubbingProgress(true);
+    setPreviewRatio(getProgressRatio(event.clientX, event.currentTarget));
+  };
+
+  const handleProgressPointerMove = (event: ReactPointerEvent<HTMLElement>) => {
+    if (!isScrubbingProgress || !canScrubProgress) {
+      return;
+    }
+
+    setPreviewRatio(getProgressRatio(event.clientX, event.currentTarget));
+  };
+
+  const endProgressScrub = (event: ReactPointerEvent<HTMLElement>) => {
+    if (!isScrubbingProgress) {
+      return;
+    }
+
+    if (canScrubProgress) {
+      goToProgressPosition(event.clientX, event.currentTarget);
+    }
+    setIsScrubbingProgress(false);
+    setPreviewRatio(null);
   };
 
   const handleProgressKeyDown = (event: ReactKeyboardEvent<HTMLElement>) => {
@@ -278,12 +320,18 @@ export default function MurderMysteryPreReadClient({
           aria-valuenow={pageIndex + 1}
           tabIndex={0}
           onClick={handleProgressClick}
+          onPointerDown={handleProgressPointerDown}
+          onPointerMove={handleProgressPointerMove}
+          onPointerUp={endProgressScrub}
+          onPointerCancel={endProgressScrub}
           onKeyDown={handleProgressKeyDown}
           sx={{
             position: 'relative',
             height: 22,
-            cursor: pageCount > 1 ? 'pointer' : 'default',
+            cursor: canScrubProgress ? 'pointer' : 'default',
             outline: 'none',
+            touchAction: 'none',
+            userSelect: 'none',
             '&:focus-visible': {
               borderRadius: 999,
               boxShadow: '0 0 0 2px rgba(245,158,11,0.62)',
@@ -308,6 +356,23 @@ export default function MurderMysteryPreReadClient({
               },
             }}
           />
+          {previewRatio !== null && (
+            <Box
+              aria-hidden
+              sx={{
+                position: 'absolute',
+                top: '50%',
+                left: 0,
+                width: `${previewRatio * 100}%`,
+                height: 7,
+                transform: 'translateY(-50%)',
+                borderRadius: 999,
+                backgroundColor: 'rgba(245, 158, 11, 0.34)',
+                boxShadow: '0 0 12px rgba(245, 158, 11, 0.2)',
+                pointerEvents: 'none',
+              }}
+            />
+          )}
           {progressMarkers.map((marker) => (
             <Box
               key={`${marker.pageIndex}:${marker.label}`}
@@ -315,6 +380,7 @@ export default function MurderMysteryPreReadClient({
               type="button"
               title={`${marker.label}로 이동`}
               aria-label={`${marker.label}로 이동`}
+              onPointerDown={(event) => event.stopPropagation()}
               onClick={(event) => {
                 event.stopPropagation();
                 goTo(marker.pageIndex);
