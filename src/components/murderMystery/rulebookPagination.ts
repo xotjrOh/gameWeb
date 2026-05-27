@@ -140,6 +140,17 @@ const doesTextFit = (element: HTMLElement, value: string) => {
   return element.scrollHeight <= element.clientHeight + 1;
 };
 
+const removePageBoundaryBreaks = (value: string) =>
+  value.replace(/^\n+/, '').replace(/\n+$/, '');
+
+const skipPageLeadingBreaks = (value: string, index: number) => {
+  let nextIndex = index;
+  while (nextIndex < value.length && value[nextIndex] === '\n') {
+    nextIndex += 1;
+  }
+  return nextIndex;
+};
+
 const paginateMeasuredRulebookText = (
   text: string,
   element: HTMLElement,
@@ -185,8 +196,11 @@ const paginateMeasuredRulebookText = (
       best = Math.min(start + 1, normalized.length);
     }
 
-    pages.push(normalized.slice(start, best));
-    start = best;
+    const pageText = removePageBoundaryBreaks(normalized.slice(start, best));
+    if (pageText) {
+      pages.push(pageText);
+    }
+    start = skipPageLeadingBreaks(normalized, best);
   }
 
   return pages.length > 0 ? pages : [fallbackText];

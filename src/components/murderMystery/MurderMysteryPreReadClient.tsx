@@ -230,7 +230,7 @@ export default function MurderMysteryPreReadClient({
         <Box
           sx={{
             position: 'relative',
-            height: { xs: '76dvh', sm: 680 },
+            height: { xs: '76dvh', sm: 'clamp(780px, 84dvh, 960px)' },
             overflow: 'hidden',
             p: { xs: 1.7, sm: 3 },
             borderRadius: 2,

@@ -1299,7 +1299,7 @@ const RulebookModal = ({
             perspective: '1600px',
             height: {
               xs: fullScreen ? 'calc(100vh - 32px)' : 700,
-              sm: 780,
+              sm: 940,
             },
             display: 'grid',
             placeItems: 'center',
@@ -1311,7 +1311,7 @@ const RulebookModal = ({
               width: 'min(100%, 720px)',
               height: {
                 xs: fullScreen ? 'calc(100vh - 96px)' : 660,
-                sm: 720,
+                sm: 860,
               },
               borderRadius: 1,
               backgroundColor: '#fbf4df',
@@ -1349,7 +1349,7 @@ const RulebookModal = ({
               sx={{
                 height: {
                   xs: fullScreen ? 'calc(100vh - 96px)' : 660,
-                  sm: 720,
+                  sm: 860,
                 },
                 p: { xs: 2.2, sm: 4 },
                 background:
