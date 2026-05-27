@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Box,
   Button,
@@ -12,8 +12,10 @@ import {
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { CharacterBookCover } from '@/components/murderMystery/CharacterPortraitFrame';
-
-const PAGE_CHAR_LIMIT = 840;
+import {
+  normalizeRulebookText,
+  useMeasuredRulebookPages,
+} from '@/components/murderMystery/rulebookPagination';
 
 type PreReadSection = 'prologue' | 'rolebook';
 
@@ -28,32 +30,6 @@ interface MurderMysteryPreReadClientProps {
   secretText: string;
 }
 
-const splitPages = (text: string) => {
-  const paragraphs = text
-    .replace(/\r\n/g, '\n')
-    .trim()
-    .split(/\n{2,}/)
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-
-  const pages: string[] = [];
-  let current = '';
-  paragraphs.forEach((paragraph) => {
-    const next = current ? `${current}\n\n${paragraph}` : paragraph;
-    if (next.length > PAGE_CHAR_LIMIT && current) {
-      pages.push(current);
-      current = paragraph;
-      return;
-    }
-    current = next;
-  });
-
-  if (current) {
-    pages.push(current);
-  }
-  return pages.length > 0 ? pages : ['읽을 내용이 없습니다.'];
-};
-
 const isPreReadSection = (value: unknown): value is PreReadSection =>
   value === 'prologue' || value === 'rolebook';
 
@@ -67,8 +43,13 @@ export default function MurderMysteryPreReadClient({
   introText,
   secretText,
 }: MurderMysteryPreReadClientProps) {
-  const prologuePages = useMemo(() => splitPages(introText), [introText]);
-  const secretPages = useMemo(() => splitPages(secretText), [secretText]);
+  const secretMeasureRef = useRef<HTMLParagraphElement | null>(null);
+  const prologuePages = useMemo(
+    () => [normalizeRulebookText(introText) || '읽을 내용이 없습니다.'],
+    [introText]
+  );
+  const { pages: secretPages, isPaginating: isSecretPaginating } =
+    useMeasuredRulebookPages(secretText, secretMeasureRef);
   const storageKey = `murderMystery:preReadProgress:${token}`;
   const [section, setSection] = useState<PreReadSection>('rolebook');
   const [pageIndex, setPageIndex] = useState(0);
@@ -92,17 +73,31 @@ export default function MurderMysteryPreReadClient({
           savedSection === 'rolebook'
             ? secretPages.length + 1
             : prologuePages.length;
-        setPageIndex(
-          Math.min(Math.max(savedPageIndex, 0), Math.max(savedPageCount - 1, 0))
-        );
+        if (savedSection !== 'rolebook' || !isSecretPaginating) {
+          setPageIndex(
+            Math.min(
+              Math.max(savedPageIndex, 0),
+              Math.max(savedPageCount - 1, 0)
+            )
+          );
+        }
       }
     } catch {
       setSection('rolebook');
       setPageIndex(0);
     }
-  }, [prologuePages.length, secretPages.length, storageKey]);
+  }, [
+    isSecretPaginating,
+    prologuePages.length,
+    secretPages.length,
+    storageKey,
+  ]);
 
   useEffect(() => {
+    if (section === 'rolebook' && isSecretPaginating) {
+      return;
+    }
+
     try {
       window.localStorage.setItem(
         storageKey,
@@ -111,7 +106,7 @@ export default function MurderMysteryPreReadClient({
     } catch {
       // 읽기 위치 저장은 편의 기능이므로 실패해도 진행을 막지 않는다.
     }
-  }, [pageIndex, section, storageKey]);
+  }, [isSecretPaginating, pageIndex, section, storageKey]);
 
   const goTo = (nextPageIndex: number) => {
     setPageIndex(Math.min(Math.max(nextPageIndex, 0), maxPageIndex));
@@ -234,8 +229,10 @@ export default function MurderMysteryPreReadClient({
 
         <Box
           sx={{
-            minHeight: { xs: '58dvh', sm: 520 },
-            p: { xs: 2, sm: 3 },
+            position: 'relative',
+            height: { xs: '76dvh', sm: 680 },
+            overflow: 'hidden',
+            p: { xs: 1.7, sm: 3 },
             borderRadius: 2,
             backgroundColor: '#f5ecd5',
             color: '#241b12',
@@ -243,44 +240,74 @@ export default function MurderMysteryPreReadClient({
             boxShadow: '0 24px 70px rgba(0,0,0,0.35)',
           }}
         >
-          {isRolebookCover ? (
-            <CharacterBookCover
-              displayName={roleDisplayName}
-              publicText={rolePublicText}
-              portraitSrc={portraitSrc}
-              portraitAlt={portraitAlt}
-            />
-          ) : section === 'prologue' ? (
-            <Typography
-              sx={{
-                whiteSpace: 'pre-wrap',
-                fontSize: { xs: 16, sm: 17 },
-                lineHeight: 1.78,
-                wordBreak: 'keep-all',
-              }}
-            >
-              {prologuePages[pageIndex]}
-            </Typography>
-          ) : (
-            <Stack spacing={1.4}>
-              <Typography
-                variant="overline"
-                sx={{ color: '#8b6239', fontWeight: 900 }}
-              >
-                비공개 룰지 {pageIndex}쪽
-              </Typography>
+          <Box
+            sx={{ position: 'relative', height: '100%', overflow: 'hidden' }}
+          >
+            {isRolebookCover ? (
+              <CharacterBookCover
+                displayName={roleDisplayName}
+                publicText={rolePublicText}
+                portraitSrc={portraitSrc}
+                portraitAlt={portraitAlt}
+                sx={{ height: '100%', minHeight: 0 }}
+              />
+            ) : section === 'prologue' ? (
               <Typography
                 sx={{
                   whiteSpace: 'pre-wrap',
-                  fontSize: { xs: 16, sm: 17 },
-                  lineHeight: 1.78,
+                  fontSize: { xs: 15, sm: 17 },
+                  lineHeight: { xs: 1.55, sm: 1.78 },
                   wordBreak: 'keep-all',
+                  height: '100%',
+                  overflowY: 'auto',
+                }}
+              >
+                {prologuePages[pageIndex]}
+              </Typography>
+            ) : isSecretPaginating ? (
+              <Typography
+                sx={{
+                  display: 'grid',
+                  placeItems: 'center',
+                  height: '100%',
+                  color: '#6b5639',
+                  fontWeight: 800,
+                }}
+              >
+                페이지를 맞추는 중입니다.
+              </Typography>
+            ) : (
+              <Typography
+                sx={{
+                  whiteSpace: 'pre-wrap',
+                  fontSize: { xs: 15, sm: 17 },
+                  lineHeight: { xs: 1.55, sm: 1.78 },
+                  wordBreak: 'keep-all',
+                  height: '100%',
+                  overflow: 'hidden',
                 }}
               >
                 {secretPages[pageIndex - 1]}
               </Typography>
-            </Stack>
-          )}
+            )}
+            <Typography
+              ref={secretMeasureRef}
+              aria-hidden
+              sx={{
+                position: 'absolute',
+                inset: 0,
+                zIndex: -1,
+                visibility: 'hidden',
+                pointerEvents: 'none',
+                whiteSpace: 'pre-wrap',
+                fontSize: { xs: 15, sm: 17 },
+                lineHeight: { xs: 1.55, sm: 1.78 },
+                wordBreak: 'keep-all',
+                height: '100%',
+                overflow: 'hidden',
+              }}
+            />
+          </Box>
         </Box>
 
         <Stack direction="row" spacing={1} alignItems="center">

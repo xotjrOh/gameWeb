@@ -170,11 +170,12 @@ export function CharacterBookCover({
           position: 'relative',
           overflow: 'hidden',
           minHeight: { xs: 400, sm: 540 },
-          display: 'grid',
-          alignContent: 'start',
-          gap: { xs: 1.55, sm: 2.8 },
-          px: { xs: 2.2, sm: 3.4 },
-          py: { xs: 1.9, sm: 3.2 },
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'stretch',
+          gap: { xs: 1.05, sm: 1.8 },
+          px: { xs: 1.7, sm: 3.2 },
+          py: { xs: 1.25, sm: 2.5 },
           borderRadius: 1.2,
           color: '#1f1710',
           background:
@@ -236,13 +237,19 @@ export function CharacterBookCover({
         alt={portraitAlt}
         label={displayName}
         sx={{
-          justifySelf: 'center',
-          width: { xs: 'min(62vw, 222px)', sm: 292 },
-          mt: { xs: -0.4, sm: -0.8 },
+          alignSelf: 'center',
+          width: { xs: 'min(82vw, 300px)', sm: 330 },
+          mt: { xs: -0.2, sm: -0.5 },
           boxShadow: '0 16px 38px rgba(49, 33, 18, 0.16)',
         }}
       />
-      <Box sx={{ position: 'relative', zIndex: 1 }}>
+      <Box
+        sx={{
+          position: 'relative',
+          zIndex: 1,
+          px: { xs: 1.2, sm: 1.4 },
+        }}
+      >
         <Typography
           component="h2"
           sx={{
@@ -254,7 +261,9 @@ export function CharacterBookCover({
         >
           {displayName}
         </Typography>
-        <Divider sx={{ my: 2.1, borderColor: 'rgba(75,54,33,0.26)' }} />
+        <Divider
+          sx={{ my: { xs: 1.2, sm: 1.7 }, borderColor: 'rgba(75,54,33,0.26)' }}
+        />
         <Typography
           variant="overline"
           sx={{
@@ -270,7 +279,7 @@ export function CharacterBookCover({
             mt: 0.65,
             whiteSpace: 'pre-wrap',
             color: '#51402b',
-            lineHeight: 1.72,
+            lineHeight: { xs: 1.55, sm: 1.68 },
             fontWeight: 760,
             wordBreak: 'keep-all',
           }}

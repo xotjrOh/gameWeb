@@ -49,6 +49,10 @@ import {
 import CharacterPortraitFrame, {
   CharacterBookCover,
 } from '@/components/murderMystery/CharacterPortraitFrame';
+import {
+  normalizeRulebookText,
+  useMeasuredRulebookPages,
+} from '@/components/murderMystery/rulebookPagination';
 
 interface MurderMysteryTableExperienceProps {
   roomId: string;
@@ -83,7 +87,6 @@ type AnyClueCard = MurderMysteryClueVaultCardView | MurderMysteryCardScenario;
 type RulebookSection = 'prologue' | 'rolebook';
 
 const CARD_BACK_LABEL = '조사 카드';
-const PAGE_CHAR_LIMIT = 760;
 const ROLE_RANK_COLORS = [
   {
     background: '#f59e0b',
@@ -186,46 +189,6 @@ const getCardSourceText = (card: AnyClueCard) => {
 
 const getRoleRankColor = (rankIndex: number) =>
   ROLE_RANK_COLORS[rankIndex] ?? ROLE_RANK_COLORS[ROLE_RANK_COLORS.length - 1];
-
-const splitRulebookPages = (text: string) => {
-  const paragraphs = text
-    .replace(/\r\n/g, '\n')
-    .trim()
-    .split(/\n{2,}/)
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-
-  const pages: string[] = [];
-  let current = '';
-
-  paragraphs.forEach((paragraph) => {
-    const isSectionHeading =
-      paragraph.length <= 40 &&
-      !paragraph.includes('.') &&
-      !paragraph.includes('。') &&
-      !paragraph.includes('?') &&
-      !paragraph.includes('!');
-    const next = current ? `${current}\n\n${paragraph}` : paragraph;
-
-    if (
-      current &&
-      (next.length > PAGE_CHAR_LIMIT ||
-        (isSectionHeading && current.length > 240))
-    ) {
-      pages.push(current);
-      current = paragraph;
-      return;
-    }
-
-    current = next;
-  });
-
-  if (current) {
-    pages.push(current);
-  }
-
-  return pages.length > 0 ? pages : ['비공개 룰지가 아직 배정되지 않았습니다.'];
-};
 
 const EvidenceCardFace = ({
   card,
@@ -1194,12 +1157,14 @@ const RulebookModal = ({
   fullScreen: boolean;
   onClose: () => void;
 }) => {
-  const secretPages = useMemo(
-    () => splitRulebookPages(roleSheet?.secretText ?? ''),
-    [roleSheet?.secretText]
-  );
+  const secretMeasureRef = useRef<HTMLParagraphElement | null>(null);
+  const { pages: secretPages, isPaginating: isSecretPaginating } =
+    useMeasuredRulebookPages(roleSheet?.secretText ?? '', secretMeasureRef, {
+      enabled: open,
+      fallbackText: '비공개 룰지가 아직 배정되지 않았습니다.',
+    });
   const prologuePages = useMemo(
-    () => splitRulebookPages(introText),
+    () => [normalizeRulebookText(introText) || '읽을 내용이 없습니다.'],
     [introText]
   );
   const [section, setSection] = useState<RulebookSection>('rolebook');
@@ -1213,6 +1178,10 @@ const RulebookModal = ({
     setSection('rolebook');
     setPageIndex(0);
   }, [roleSheet?.roleId]);
+
+  useEffect(() => {
+    setPageIndex((current) => clamp(current, 0, maxPageIndex));
+  }, [maxPageIndex]);
 
   useEffect(() => {
     if (!open) {
@@ -1328,9 +1297,9 @@ const RulebookModal = ({
         <Box
           sx={{
             perspective: '1600px',
-            minHeight: {
-              xs: fullScreen ? 'calc(100vh - 32px)' : 520,
-              sm: 600,
+            height: {
+              xs: fullScreen ? 'calc(100vh - 32px)' : 700,
+              sm: 780,
             },
             display: 'grid',
             placeItems: 'center',
@@ -1340,9 +1309,9 @@ const RulebookModal = ({
             key={`${roleSheet?.roleId ?? 'empty'}:${section}:${pageIndex}`}
             sx={{
               width: 'min(100%, 720px)',
-              minHeight: {
-                xs: fullScreen ? 'calc(100vh - 96px)' : 500,
-                sm: 560,
+              height: {
+                xs: fullScreen ? 'calc(100vh - 96px)' : 660,
+                sm: 720,
               },
               borderRadius: 1,
               backgroundColor: '#fbf4df',
@@ -1378,67 +1347,94 @@ const RulebookModal = ({
           >
             <Box
               sx={{
-                minHeight: {
-                  xs: fullScreen ? 'calc(100vh - 96px)' : 500,
-                  sm: 560,
+                height: {
+                  xs: fullScreen ? 'calc(100vh - 96px)' : 660,
+                  sm: 720,
                 },
                 p: { xs: 2.2, sm: 4 },
                 background:
                   'linear-gradient(90deg, rgba(89,66,43,0.13) 0, rgba(89,66,43,0.02) 8%, transparent 18%)',
                 display: 'flex',
                 flexDirection: 'column',
+                overflow: 'hidden',
               }}
             >
-              {isRolebookCover ? (
-                <CharacterBookCover
-                  displayName={roleSheet?.displayName ?? '역할 미배정'}
-                  publicText={
-                    roleSheet?.publicText ??
-                    '게임 시작 후 공개 정보가 표시됩니다.'
-                  }
-                  portraitSrc={roleSheet?.portraitSrc}
-                  portraitAlt={roleSheet?.portraitAlt}
-                  sx={{ minHeight: { xs: 440, sm: 560 } }}
-                />
-              ) : section === 'prologue' ? (
-                <Stack spacing={1.8} sx={{ flex: 1 }}>
-                  <Typography
-                    variant="overline"
-                    sx={{ color: '#8b6239', fontWeight: 900 }}
-                  >
-                    프롤로그 / {pageIndex + 1}쪽
-                  </Typography>
+              <Box
+                sx={{
+                  position: 'relative',
+                  flex: 1,
+                  minHeight: 0,
+                  overflow: 'hidden',
+                }}
+              >
+                {isRolebookCover ? (
+                  <CharacterBookCover
+                    displayName={roleSheet?.displayName ?? '역할 미배정'}
+                    publicText={
+                      roleSheet?.publicText ??
+                      '게임 시작 후 공개 정보가 표시됩니다.'
+                    }
+                    portraitSrc={roleSheet?.portraitSrc}
+                    portraitAlt={roleSheet?.portraitAlt}
+                    sx={{ height: '100%', minHeight: 0 }}
+                  />
+                ) : section === 'prologue' ? (
                   <Typography
                     sx={{
                       whiteSpace: 'pre-wrap',
                       lineHeight: 1.72,
                       fontSize: { xs: 14.5, sm: 16 },
                       wordBreak: 'keep-all',
+                      overflowY: 'auto',
+                      height: '100%',
                     }}
                   >
                     {prologuePages[pageIndex]}
                   </Typography>
-                </Stack>
-              ) : (
-                <Stack spacing={1.8} sx={{ flex: 1 }}>
-                  <Typography
-                    variant="overline"
-                    sx={{ color: '#8b6239', fontWeight: 900 }}
-                  >
-                    비공개 룰지 / {pageIndex}쪽
-                  </Typography>
+                ) : isSecretPaginating ? (
                   <Typography
                     sx={{
+                      display: 'grid',
+                      placeItems: 'center',
+                      height: '100%',
+                      color: '#6f5d49',
+                      fontWeight: 850,
+                    }}
+                  >
+                    페이지를 맞추는 중입니다.
+                  </Typography>
+                ) : (
+                  <Typography
+                    sx={{
+                      height: '100%',
                       whiteSpace: 'pre-wrap',
-                      lineHeight: 1.72,
-                      fontSize: { xs: 14.5, sm: 16 },
+                      lineHeight: { xs: 1.64, sm: 1.72 },
+                      fontSize: { xs: 14.25, sm: 16 },
                       wordBreak: 'keep-all',
+                      overflow: 'hidden',
                     }}
                   >
                     {secretPages[pageIndex - 1]}
                   </Typography>
-                </Stack>
-              )}
+                )}
+                <Typography
+                  ref={secretMeasureRef}
+                  aria-hidden
+                  sx={{
+                    position: 'absolute',
+                    inset: 0,
+                    zIndex: -1,
+                    visibility: 'hidden',
+                    pointerEvents: 'none',
+                    height: '100%',
+                    whiteSpace: 'pre-wrap',
+                    lineHeight: { xs: 1.64, sm: 1.72 },
+                    fontSize: { xs: 14.25, sm: 16 },
+                    wordBreak: 'keep-all',
+                    overflow: 'hidden',
+                  }}
+                />
+              </Box>
 
               <Stack
                 direction="row"
