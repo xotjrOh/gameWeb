@@ -211,6 +211,10 @@ for (const entry of registry.scenarios) {
     if (!role.id || !role.displayName || !role.publicText) {
       fail(`${entry.file}: role fields are required (${role.id ?? 'unknown'})`);
     }
+    assertPublicAssetExists(
+      role.portraitSrc,
+      `${entry.file}: role(${role.id}).portraitSrc`
+    );
     if (role.secretTextPath) {
       if (path.isAbsolute(role.secretTextPath)) {
         fail(`${entry.file}: role(${role.id}) secretTextPath must be relative`);
@@ -368,6 +372,10 @@ for (const entry of registry.scenarios) {
       if (publicCoverIds.has(cover.id)) {
         fail(`${entry.file}: duplicated publicCover id (${cover.id})`);
       }
+      assertPublicAssetExists(
+        cover.portraitSrc,
+        `${entry.file}: publicCover(${cover.id}).portraitSrc`
+      );
       publicCoverIds.add(cover.id);
     }
   }

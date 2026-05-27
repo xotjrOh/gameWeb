@@ -8,7 +8,9 @@ namespace NodeJS {
     GOOGLE_CLIENT_SECRET: string;
     NEXTAUTH_SECRET: string;
     NEXTAUTH_URL: string;
+    MURDER_MYSTERY_SHARE_SECRET?: string;
     NEXT_PUBLIC_SITE_URL: string;
+    NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY?: string;
     NEXT_PUBLIC_APP_VERSION?: string;
     NEXT_PUBLIC_SITE_VERSION?: string;
     NEXT_PUBLIC_SOCKET_DEBUG?: '0' | '1';

@@ -802,6 +802,12 @@ const normalizeRoles = ({
         displayName,
         publicText,
         secretText,
+        ...(asNonEmptyString(roleRecord.portraitSrc)
+          ? { portraitSrc: asNonEmptyString(roleRecord.portraitSrc) }
+          : {}),
+        ...(asNonEmptyString(roleRecord.portraitAlt)
+          ? { portraitAlt: asNonEmptyString(roleRecord.portraitAlt) }
+          : {}),
         ...(secretTextPath ? { secretTextPath } : {}),
         dynamicDisplayNameRules: normalizeDynamicDisplayNameRules({
           rawRules: roleRecord.dynamicDisplayNameRules,
@@ -860,6 +866,12 @@ const normalizePublicCovers = ({
         coverRecord.publicText,
         `${fileName}: publicCover(${id}) publicText is required`
       ),
+      ...(asNonEmptyString(coverRecord.portraitSrc)
+        ? { portraitSrc: asNonEmptyString(coverRecord.portraitSrc) }
+        : {}),
+      ...(asNonEmptyString(coverRecord.portraitAlt)
+        ? { portraitAlt: asNonEmptyString(coverRecord.portraitAlt) }
+        : {}),
     };
   });
 };

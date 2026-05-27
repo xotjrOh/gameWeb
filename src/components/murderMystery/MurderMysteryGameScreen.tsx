@@ -14,6 +14,7 @@ import useRedirectIfNotHost from '@/hooks/useRedirectIfNotHost';
 import useUpdateSocketId from '@/hooks/useUpdateSocketId';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
+import { getKakaoShareErrorMessage, shareKakaoText } from '@/lib/kakaoShare';
 import {
   MurderMysterySeatPosition,
   MurderMysterySpecialEventOutcome,
@@ -33,37 +34,10 @@ interface AckResponse {
 interface RoleShareAckResponse extends AckResponse {
   title?: string;
   text?: string;
+  linkPath?: string;
 }
 
-type RoleShareMode = 'share' | 'copy';
-
 const MURDER_MYSTERY_LOBBY_PATH = '/games/murder_mystery';
-
-const copyTextToClipboard = async (text: string) => {
-  if (navigator.clipboard?.writeText) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch {
-      // Fall through to the textarea fallback.
-    }
-  }
-
-  const textArea = document.createElement('textarea');
-  textArea.value = text;
-  textArea.setAttribute('readonly', 'true');
-  textArea.style.position = 'fixed';
-  textArea.style.left = '-9999px';
-  textArea.style.top = '0';
-  document.body.appendChild(textArea);
-  textArea.select();
-
-  try {
-    return document.execCommand('copy');
-  } finally {
-    document.body.removeChild(textArea);
-  }
-};
 
 export default function MurderMysteryGameScreen({
   roomId,
@@ -314,7 +288,7 @@ export default function MurderMysteryGameScreen({
     });
   };
 
-  const handleShareRoleSheet = async (roleId: string, mode: RoleShareMode) => {
+  const handleShareRoleSheet = async (roleId: string) => {
     const response = await emitWithAckPayload<
       { roomId: string; sessionId: string; roleId: string },
       RoleShareAckResponse
@@ -324,33 +298,22 @@ export default function MurderMysteryGameScreen({
       roleId,
     });
 
-    if (!response?.title || !response.text) {
+    if (!response?.title || !response.text || !response.linkPath) {
       return;
     }
 
-    if (mode === 'share' && navigator.share) {
-      try {
-        await navigator.share({
-          title: response.title,
-          text: response.text,
-        });
-        enqueueSnackbar('공유 화면을 열었습니다.', { variant: 'success' });
-        return;
-      } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') {
-          enqueueSnackbar('공유를 취소했습니다.', { variant: 'info' });
-          return;
-        }
-      }
+    try {
+      await shareKakaoText({
+        title: response.title,
+        text: response.text,
+        linkUrl: new URL(response.linkPath, window.location.origin).href,
+      });
+      enqueueSnackbar('카카오톡 공유 화면을 열었습니다.', {
+        variant: 'success',
+      });
+    } catch (error) {
+      enqueueSnackbar(getKakaoShareErrorMessage(error), { variant: 'error' });
     }
-
-    const copied = await copyTextToClipboard(response.text);
-    enqueueSnackbar(
-      copied
-        ? '공유할 룰지 본문을 복사했습니다.'
-        : '룰지 본문 복사에 실패했습니다.',
-      { variant: copied ? 'success' : 'error' }
-    );
   };
 
   const handleReportSpecialEvent = (

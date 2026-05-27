@@ -21,7 +21,6 @@ import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
   Close as CloseIcon,
-  ContentCopy as ContentCopyIcon,
   HowToVote as HowToVoteIcon,
   Inventory2 as Inventory2Icon,
   IosShare as IosShareIcon,
@@ -47,8 +46,9 @@ import {
   MurderMysteryStateSnapshot,
   MurderMysteryStepKind,
 } from '@/types/murderMystery';
-
-type RoleShareMode = 'share' | 'copy';
+import CharacterPortraitFrame, {
+  CharacterBookCover,
+} from '@/components/murderMystery/CharacterPortraitFrame';
 
 interface MurderMysteryTableExperienceProps {
   roomId: string;
@@ -61,7 +61,7 @@ interface MurderMysteryTableExperienceProps {
   onFinalizeVote: () => void;
   onSubmitRolePreferences: (roleIds: string[]) => void;
   onClearRolePreferences: () => void;
-  onShareRoleSheet: (roleId: string, mode: RoleShareMode) => void;
+  onShareRoleSheet: (roleId: string) => void;
   onUpdateSeatPosition: (
     playerId: string,
     position: MurderMysterySeatPosition
@@ -80,9 +80,27 @@ interface MurderMysteryTableExperienceProps {
 
 type PhaseKind = MurderMysteryStepKind | 'lobby';
 type AnyClueCard = MurderMysteryClueVaultCardView | MurderMysteryCardScenario;
+type RulebookSection = 'prologue' | 'rolebook';
 
 const CARD_BACK_LABEL = '조사 카드';
 const PAGE_CHAR_LIMIT = 760;
+const ROLE_RANK_COLORS = [
+  {
+    background: '#f59e0b',
+    border: '#fbbf24',
+    text: '#241706',
+  },
+  {
+    background: '#2563eb',
+    border: '#60a5fa',
+    text: '#f8fbff',
+  },
+  {
+    background: '#16a34a',
+    border: '#4ade80',
+    text: '#f5fff8',
+  },
+] as const;
 
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
@@ -165,6 +183,9 @@ const getCardSourceText = (card: AnyClueCard) => {
   }
   return '';
 };
+
+const getRoleRankColor = (rankIndex: number) =>
+  ROLE_RANK_COLORS[rankIndex] ?? ROLE_RANK_COLORS[ROLE_RANK_COLORS.length - 1];
 
 const splitRulebookPages = (text: string) => {
   const paragraphs = text
@@ -754,44 +775,101 @@ const RolePublicCoverCard = ({
       }}
     >
       <Stack spacing={0.8}>
-        <Stack direction="row" spacing={1} alignItems="center">
-          <Typography fontWeight={950} sx={{ flex: 1 }}>
-            {cover.displayName}
-          </Typography>
-          {assignedPlayerName ? (
-            <Chip size="small" label={assignedPlayerName} />
-          ) : canRank ? (
-            <Chip
-              size="small"
-              label={currentRank >= 0 ? `${currentRank + 1}순위` : '미선택'}
-            />
-          ) : (
-            <Chip size="small" label="NPC 용의자" />
-          )}
+        <Stack direction="row" spacing={1} alignItems="flex-start">
+          <CharacterPortraitFrame
+            src={cover.portraitSrc}
+            alt={cover.portraitAlt}
+            label={cover.displayName}
+            variant="thumbnail"
+            sx={{ width: 72 }}
+          />
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Typography fontWeight={950} sx={{ flex: 1 }}>
+                {cover.displayName}
+              </Typography>
+              {assignedPlayerName ? (
+                <Chip size="small" label={assignedPlayerName} />
+              ) : canRank ? (
+                <Chip
+                  size="small"
+                  label={currentRank >= 0 ? `${currentRank + 1}순위` : '미선택'}
+                  sx={
+                    currentRank >= 0
+                      ? {
+                          fontWeight: 850,
+                          color: getRoleRankColor(currentRank).text,
+                          backgroundColor:
+                            getRoleRankColor(currentRank).background,
+                          border: `1px solid ${getRoleRankColor(currentRank).border}`,
+                        }
+                      : undefined
+                  }
+                />
+              ) : (
+                <Chip size="small" label="NPC 용의자" />
+              )}
+            </Stack>
+            <Typography
+              variant="body2"
+              sx={{
+                mt: 0.5,
+                color: '#d8d0bd',
+                whiteSpace: 'pre-wrap',
+                lineHeight: 1.55,
+              }}
+            >
+              {cover.publicText}
+            </Typography>
+          </Box>
         </Stack>
-        <Typography
-          variant="body2"
-          sx={{
-            color: '#d8d0bd',
-            whiteSpace: 'pre-wrap',
-            lineHeight: 1.55,
-          }}
-        >
-          {cover.publicText}
-        </Typography>
         {canRank ? (
           <Stack direction="row" spacing={0.6} flexWrap="wrap">
-            {Array.from({ length: rankCount }, (_, rankIndex) => (
-              <Button
-                key={`${cover.id}:rank:${rankIndex}`}
-                size="small"
-                variant={currentRank === rankIndex ? 'contained' : 'outlined'}
-                color={rankIndex === 0 ? 'warning' : 'inherit'}
-                onClick={() => onSetRank?.(rankIndex)}
-              >
-                {rankIndex + 1}순위
-              </Button>
-            ))}
+            {Array.from({ length: rankCount }, (_, rankIndex) => {
+              const rankColor = getRoleRankColor(rankIndex);
+              const isSelected = currentRank === rankIndex;
+
+              return (
+                <Button
+                  key={`${cover.id}:rank:${rankIndex}`}
+                  size="small"
+                  variant="outlined"
+                  aria-pressed={isSelected}
+                  onClick={() => onSetRank?.(rankIndex)}
+                  sx={{
+                    minWidth: 66,
+                    fontWeight: 900,
+                    color: isSelected ? rankColor.text : '#e8dec4',
+                    borderColor: isSelected
+                      ? rankColor.border
+                      : 'rgba(248, 241, 222, 0.34)',
+                    backgroundColor: isSelected
+                      ? rankColor.background
+                      : 'rgba(7, 11, 13, 0.42)',
+                    boxShadow: isSelected
+                      ? `0 0 0 2px ${rankColor.border}, 0 8px 18px rgba(0,0,0,0.28)`
+                      : 'inset 0 0 0 1px rgba(0,0,0,0.22)',
+                    opacity: isSelected ? 1 : 0.72,
+                    transform: isSelected ? 'translateY(-1px)' : 'none',
+                    transition:
+                      'background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease, opacity 140ms ease, transform 140ms ease',
+                    '&:hover': {
+                      borderColor: isSelected
+                        ? rankColor.border
+                        : 'rgba(248, 241, 222, 0.68)',
+                      backgroundColor: isSelected
+                        ? rankColor.background
+                        : 'rgba(248, 241, 222, 0.12)',
+                      color: isSelected ? rankColor.text : '#fff6db',
+                      opacity: 1,
+                      filter: 'brightness(1.08)',
+                    },
+                  }}
+                >
+                  {rankIndex + 1}순위
+                </Button>
+              );
+            })}
           </Stack>
         ) : null}
       </Stack>
@@ -901,14 +979,23 @@ const RoleSelectionPanel = ({
                 내 선호 순위
               </Typography>
               <Stack direction="row" spacing={0.8} flexWrap="wrap" useFlexGap>
-                {orderedRoles.map((role, index) => (
-                  <Chip
-                    key={role.id}
-                    size="small"
-                    color={index === 0 ? 'warning' : 'default'}
-                    label={`${index + 1}순위 ${role.displayName}`}
-                  />
-                ))}
+                {orderedRoles.map((role, index) => {
+                  const rankColor = getRoleRankColor(index);
+
+                  return (
+                    <Chip
+                      key={role.id}
+                      size="small"
+                      label={`${index + 1}순위 ${role.displayName}`}
+                      sx={{
+                        fontWeight: 850,
+                        color: rankColor.text,
+                        backgroundColor: rankColor.background,
+                        border: `1px solid ${rankColor.border}`,
+                      }}
+                    />
+                  );
+                })}
               </Stack>
             </Box>
 
@@ -959,7 +1046,7 @@ const RolePreSharePanel = ({
   onShareRoleSheet,
 }: {
   roles: MurderMysteryStateSnapshot['roleSelection']['roles'];
-  onShareRoleSheet: (roleId: string, mode: RoleShareMode) => void;
+  onShareRoleSheet: (roleId: string) => void;
 }) => (
   <Box
     sx={{
@@ -973,7 +1060,7 @@ const RolePreSharePanel = ({
       <Box>
         <Typography fontWeight={950}>사전 룰지 공유</Typography>
         <Typography variant="caption" sx={{ color: '#d8d0bd' }}>
-          이 기능은 읽기용이며 실제 캐릭터 배정은 별도 진행됩니다.
+          카카오톡 링크로 프롤로그와 인물북을 공유합니다.
         </Typography>
       </Box>
       <Stack spacing={1}>
@@ -988,38 +1075,38 @@ const RolePreSharePanel = ({
             }}
           >
             <Stack spacing={0.9}>
-              <Box>
-                <Typography fontWeight={900}>{role.displayName}</Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    mt: 0.3,
-                    color: '#d8d0bd',
-                    whiteSpace: 'pre-wrap',
-                    lineHeight: 1.55,
-                  }}
-                >
-                  {role.publicText}
-                </Typography>
-              </Box>
+              <Stack direction="row" spacing={1} alignItems="flex-start">
+                <CharacterPortraitFrame
+                  src={role.portraitSrc}
+                  alt={role.portraitAlt}
+                  label={role.displayName}
+                  variant="thumbnail"
+                  sx={{ width: 64 }}
+                />
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography fontWeight={900}>{role.displayName}</Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      mt: 0.3,
+                      color: '#d8d0bd',
+                      whiteSpace: 'pre-wrap',
+                      lineHeight: 1.55,
+                    }}
+                  >
+                    {role.publicText}
+                  </Typography>
+                </Box>
+              </Stack>
               <Stack direction="row" spacing={0.8} flexWrap="wrap" useFlexGap>
                 <Button
                   size="small"
                   variant="contained"
                   color="warning"
                   startIcon={<IosShareIcon />}
-                  onClick={() => onShareRoleSheet(role.id, 'share')}
+                  onClick={() => onShareRoleSheet(role.id)}
                 >
                   카카오톡 공유
-                </Button>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="inherit"
-                  startIcon={<ContentCopyIcon />}
-                  onClick={() => onShareRoleSheet(role.id, 'copy')}
-                >
-                  텍스트 복사
                 </Button>
               </Stack>
             </Stack>
@@ -1097,24 +1184,33 @@ const MyDeskPanel = ({
 const RulebookModal = ({
   open,
   roleSheet,
-  playerName,
+  introText,
   fullScreen,
   onClose,
 }: {
   open: boolean;
   roleSheet: MurderMysteryRoleSheetView | null;
-  playerName: string;
+  introText: string;
   fullScreen: boolean;
   onClose: () => void;
 }) => {
-  const pages = useMemo(
+  const secretPages = useMemo(
     () => splitRulebookPages(roleSheet?.secretText ?? ''),
     [roleSheet?.secretText]
   );
+  const prologuePages = useMemo(
+    () => splitRulebookPages(introText),
+    [introText]
+  );
+  const [section, setSection] = useState<RulebookSection>('rolebook');
   const [pageIndex, setPageIndex] = useState(0);
   const [direction, setDirection] = useState<1 | -1>(1);
+  const pageCount =
+    section === 'rolebook' ? secretPages.length + 1 : prologuePages.length;
+  const maxPageIndex = Math.max(pageCount - 1, 0);
 
   useEffect(() => {
+    setSection('rolebook');
     setPageIndex(0);
   }, [roleSheet?.roleId]);
 
@@ -1128,7 +1224,7 @@ const RulebookModal = ({
       }
       if (event.key === 'ArrowRight') {
         setDirection(1);
-        setPageIndex((current) => Math.min(current + 1, pages.length));
+        setPageIndex((current) => Math.min(current + 1, maxPageIndex));
       }
       if (event.key === 'ArrowLeft') {
         setDirection(-1);
@@ -1137,14 +1233,23 @@ const RulebookModal = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, onClose, pages.length]);
+  }, [maxPageIndex, open, onClose]);
 
   const goTo = (nextIndex: number) => {
     setDirection(nextIndex > pageIndex ? 1 : -1);
-    setPageIndex(clamp(nextIndex, 0, pages.length));
+    setPageIndex(clamp(nextIndex, 0, maxPageIndex));
   };
 
-  const isCover = pageIndex === 0;
+  const selectSection = (nextSection: RulebookSection) => {
+    if (section === nextSection) {
+      return;
+    }
+    setDirection(nextSection === 'rolebook' ? 1 : -1);
+    setSection(nextSection);
+    setPageIndex(0);
+  };
+
+  const isRolebookCover = section === 'rolebook' && pageIndex === 0;
 
   return (
     <Dialog
@@ -1164,11 +1269,60 @@ const RulebookModal = ({
       >
         <Stack direction="row" alignItems="center" sx={{ mb: 1 }}>
           <Typography fontWeight={900} sx={{ flex: 1 }}>
-            비공개 룰북
+            룰북
           </Typography>
           <IconButton onClick={onClose} sx={{ color: '#f7f0df' }}>
             <CloseIcon />
           </IconButton>
+        </Stack>
+
+        <Stack
+          direction="row"
+          spacing={0.5}
+          sx={{
+            mb: 1.2,
+            p: 0.45,
+            borderRadius: 999,
+            backgroundColor: 'rgba(247,241,222,0.11)',
+            border: '1px solid rgba(247,241,222,0.16)',
+          }}
+        >
+          <Button
+            fullWidth
+            color="inherit"
+            variant={section === 'prologue' ? 'contained' : 'text'}
+            onClick={() => selectSection('prologue')}
+            sx={{
+              borderRadius: 999,
+              color: section === 'prologue' ? '#211711' : '#f7f1de',
+              backgroundColor:
+                section === 'prologue' ? '#f5ecd5' : 'transparent',
+              '&:hover': {
+                backgroundColor:
+                  section === 'prologue' ? '#f5ecd5' : 'rgba(247,241,222,0.1)',
+              },
+            }}
+          >
+            프롤로그
+          </Button>
+          <Button
+            fullWidth
+            color="inherit"
+            variant={section === 'rolebook' ? 'contained' : 'text'}
+            onClick={() => selectSection('rolebook')}
+            sx={{
+              borderRadius: 999,
+              color: section === 'rolebook' ? '#211711' : '#f7f1de',
+              backgroundColor:
+                section === 'rolebook' ? '#f5ecd5' : 'transparent',
+              '&:hover': {
+                backgroundColor:
+                  section === 'rolebook' ? '#f5ecd5' : 'rgba(247,241,222,0.1)',
+              },
+            }}
+          >
+            인물북
+          </Button>
         </Stack>
 
         <Box
@@ -1183,7 +1337,7 @@ const RulebookModal = ({
           }}
         >
           <Box
-            key={`${roleSheet?.roleId ?? 'empty'}:${pageIndex}`}
+            key={`${roleSheet?.roleId ?? 'empty'}:${section}:${pageIndex}`}
             sx={{
               width: 'min(100%, 720px)',
               minHeight: {
@@ -1235,54 +1389,24 @@ const RulebookModal = ({
                 flexDirection: 'column',
               }}
             >
-              {isCover ? (
-                <Stack spacing={2.2} sx={{ flex: 1 }}>
-                  <Chip
-                    icon={<AutoStoriesIcon />}
-                    label="룰북 표지"
-                    sx={{ alignSelf: 'flex-start', fontWeight: 800 }}
-                  />
-                  <Box
-                    sx={{ flex: 1, display: 'grid', alignContent: 'center' }}
-                  >
-                    <Typography
-                      variant="h3"
-                      fontWeight={950}
-                      sx={{
-                        fontSize: { xs: 34, sm: 52 },
-                        lineHeight: 1.05,
-                        wordBreak: 'keep-all',
-                      }}
-                    >
-                      {roleSheet?.displayName ?? '역할 미배정'}
-                    </Typography>
-                    <Typography
-                      sx={{ mt: 1.4, color: '#6c4d33', fontWeight: 800 }}
-                    >
-                      {playerName}
-                    </Typography>
-                    <Divider
-                      sx={{ my: 2.4, borderColor: 'rgba(75,54,33,0.25)' }}
-                    />
-                    <Typography
-                      sx={{
-                        whiteSpace: 'pre-wrap',
-                        lineHeight: 1.75,
-                        color: '#392f25',
-                      }}
-                    >
-                      {roleSheet?.publicText ??
-                        '게임 시작 후 공개 정보가 표시됩니다.'}
-                    </Typography>
-                  </Box>
-                </Stack>
-              ) : (
+              {isRolebookCover ? (
+                <CharacterBookCover
+                  displayName={roleSheet?.displayName ?? '역할 미배정'}
+                  publicText={
+                    roleSheet?.publicText ??
+                    '게임 시작 후 공개 정보가 표시됩니다.'
+                  }
+                  portraitSrc={roleSheet?.portraitSrc}
+                  portraitAlt={roleSheet?.portraitAlt}
+                  sx={{ minHeight: { xs: 440, sm: 560 } }}
+                />
+              ) : section === 'prologue' ? (
                 <Stack spacing={1.8} sx={{ flex: 1 }}>
                   <Typography
                     variant="overline"
                     sx={{ color: '#8b6239', fontWeight: 900 }}
                   >
-                    {roleSheet?.displayName} / {pageIndex}쪽
+                    프롤로그 / {pageIndex + 1}쪽
                   </Typography>
                   <Typography
                     sx={{
@@ -1292,7 +1416,26 @@ const RulebookModal = ({
                       wordBreak: 'keep-all',
                     }}
                   >
-                    {pages[pageIndex - 1]}
+                    {prologuePages[pageIndex]}
+                  </Typography>
+                </Stack>
+              ) : (
+                <Stack spacing={1.8} sx={{ flex: 1 }}>
+                  <Typography
+                    variant="overline"
+                    sx={{ color: '#8b6239', fontWeight: 900 }}
+                  >
+                    비공개 룰지 / {pageIndex}쪽
+                  </Typography>
+                  <Typography
+                    sx={{
+                      whiteSpace: 'pre-wrap',
+                      lineHeight: 1.72,
+                      fontSize: { xs: 14.5, sm: 16 },
+                      wordBreak: 'keep-all',
+                    }}
+                  >
+                    {secretPages[pageIndex - 1]}
                   </Typography>
                 </Stack>
               )}
@@ -1314,11 +1457,11 @@ const RulebookModal = ({
                   variant="caption"
                   sx={{ flex: 1, textAlign: 'center', color: '#6f5d49' }}
                 >
-                  {pageIndex + 1} / {pages.length + 1}
+                  {pageIndex + 1} / {pageCount}
                 </Typography>
                 <Button
                   endIcon={<ChevronRightIcon />}
-                  disabled={pageIndex >= pages.length}
+                  disabled={pageIndex >= maxPageIndex}
                   onClick={() => goTo(pageIndex + 1)}
                 >
                   다음
@@ -1371,14 +1514,23 @@ const PublicCoverDialog = ({
     </DialogTitle>
     <DialogContent>
       <Stack spacing={1.8}>
-        <Box>
-          <Typography variant="h5" fontWeight={950}>
-            {player?.roleDisplayName ?? '역할 미배정'}
-          </Typography>
-          <Typography color="text.secondary" fontWeight={800}>
-            {player?.name}
-          </Typography>
-        </Box>
+        <Stack direction="row" spacing={1.4} alignItems="flex-start">
+          <CharacterPortraitFrame
+            src={player?.rolePortraitSrc ?? undefined}
+            alt={player?.rolePortraitAlt ?? undefined}
+            label={player?.roleDisplayName ?? '역할 미배정'}
+            variant="thumbnail"
+            sx={{ width: 96 }}
+          />
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Typography variant="h5" fontWeight={950}>
+              {player?.roleDisplayName ?? '역할 미배정'}
+            </Typography>
+            <Typography color="text.secondary" fontWeight={800}>
+              {player?.name}
+            </Typography>
+          </Box>
+        </Stack>
         <Box
           sx={{
             p: 2,
@@ -2406,7 +2558,7 @@ export default function MurderMysteryTableExperience({
       <RulebookModal
         open={isRulebookOpen}
         roleSheet={snapshot.roleSheet}
-        playerName={selfPlayer?.name ?? ''}
+        introText={snapshot.scenario.intro.readAloud}
         fullScreen={isSmall}
         onClose={() => setIsRulebookOpen(false)}
       />

@@ -31,6 +31,7 @@ import {
   getNextPhase,
 } from './murderMysteryValidation';
 import { getMurderMysteryScenario } from './murderMysteryScenarioService';
+import { createMurderMysteryPreReadToken } from '@/lib/murderMysteryPreReadToken';
 
 const pickRandom = <T>(items: T[]): T =>
   items[Math.floor(Math.random() * items.length)];
@@ -46,6 +47,13 @@ const shuffled = <T>(items: T[]): T[] => {
 
 const makeId = (prefix: string) =>
   `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+const KAKAO_TEXT_TEMPLATE_LIMIT = 200;
+
+const fitKakaoTextTemplate = (text: string) =>
+  text.length > KAKAO_TEXT_TEMPLATE_LIMIT
+    ? `${text.slice(0, KAKAO_TEXT_TEMPLATE_LIMIT - 3)}...`
+    : text;
 
 const clampSeatCoordinate = (value: number, min: number, max: number) =>
   Math.min(Math.max(Number.isFinite(value) ? value : min, min), max);
@@ -1395,19 +1403,6 @@ export const clearMurderMysteryRolePreferences = (
   delete room.gameData.rolePreferencesByPlayerId[playerId];
 };
 
-const buildMurderMysteryRoomLink = (roomId: string) => {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXTAUTH_URL ?? '';
-  if (!baseUrl) {
-    return '';
-  }
-  try {
-    return new URL(`/murder_mystery/${roomId}`, baseUrl).toString();
-  } catch {
-    return '';
-  }
-};
-
 export const buildMurderMysteryRoleShareText = (
   room: MurderMysteryRoom,
   scenario: MurderMysteryScenario,
@@ -1422,36 +1417,26 @@ export const buildMurderMysteryRoleShareText = (
     throw new Error('공유할 수 없는 역할입니다.');
   }
 
-  const roomLink = buildMurderMysteryRoomLink(room.roomId);
-  const title = `${scenario.title} - ${role.displayName} 비공개 룰지`;
-  const textParts = [
-    scenario.title,
-    '',
-    '사전 비공개 룰지 공유',
-    '',
-    '[중요 안내]',
-    '이 문서는 사전 읽기용입니다. 실제 캐릭터 배정은 게임 방에서 별도로 진행되며, 이 공유가 최종 배정을 확정하지 않습니다.',
-    '',
-    '[프롤로그]',
-    scenario.intro.readAloud.trim(),
-    '',
-    '[역할]',
-    role.displayName,
-    '',
-    '[공개정보]',
-    role.publicText.trim(),
-    '',
-    '[비공개 룰지]',
-    role.secretText.trim(),
-    '',
-    '[입장 정보]',
-    `방 코드: ${room.roomId}`,
-    roomLink ? `입장 링크: ${roomLink}` : '',
-  ].filter(Boolean);
+  const token = createMurderMysteryPreReadToken({
+    scenarioId: scenario.id,
+    roleId,
+    issuedAt: Date.now(),
+  });
+  const linkPath = `/murder_mystery/pre-read/${token}`;
+  const title = '머더미스터리';
+  const text = fitKakaoTextTemplate(
+    [
+      scenario.title,
+      '',
+      `${role.displayName} 사전 룰지입니다.`,
+      '링크에서 프롤로그와 인물북을 읽어주세요.',
+    ].join('\n')
+  );
 
   return {
     title,
-    text: textParts.join('\n'),
+    text,
+    linkPath,
   };
 };
 
@@ -2085,6 +2070,8 @@ export const buildMurderMysterySnapshot = (
           room.gameData.roleDisplayNameByPlayerId[viewerId] ?? role.displayName,
         publicText: role.publicText,
         secretText: role.secretText,
+        ...(role.portraitSrc ? { portraitSrc: role.portraitSrc } : {}),
+        ...(role.portraitAlt ? { portraitAlt: role.portraitAlt } : {}),
       }
     : null;
 
@@ -2174,6 +2161,12 @@ export const buildMurderMysterySnapshot = (
       id: scenarioRole.id,
       displayName: scenarioRole.displayName,
       publicText: scenarioRole.publicText,
+      ...(scenarioRole.portraitSrc
+        ? { portraitSrc: scenarioRole.portraitSrc }
+        : {}),
+      ...(scenarioRole.portraitAlt
+        ? { portraitAlt: scenarioRole.portraitAlt }
+        : {}),
       assignedPlayerId:
         room.players.find(
           (entry) => room.gameData.roleByPlayerId[entry.id] === scenarioRole.id
@@ -2184,6 +2177,12 @@ export const buildMurderMysterySnapshot = (
         id: scenarioRole.id,
         displayName: scenarioRole.displayName,
         publicText: scenarioRole.publicText,
+        ...(scenarioRole.portraitSrc
+          ? { portraitSrc: scenarioRole.portraitSrc }
+          : {}),
+        ...(scenarioRole.portraitAlt
+          ? { portraitAlt: scenarioRole.portraitAlt }
+          : {}),
         selectable: true,
         assignedPlayerId:
           room.players.find(
@@ -2195,6 +2194,8 @@ export const buildMurderMysterySnapshot = (
         id: cover.id,
         displayName: cover.displayName,
         publicText: cover.publicText,
+        ...(cover.portraitSrc ? { portraitSrc: cover.portraitSrc } : {}),
+        ...(cover.portraitAlt ? { portraitAlt: cover.portraitAlt } : {}),
         selectable: false,
         assignedPlayerId: null,
       })),
@@ -2257,6 +2258,8 @@ export const buildMurderMysterySnapshot = (
           entryRole?.displayName ??
           null,
         rolePublicText: entryRole?.publicText ?? null,
+        rolePortraitSrc: entryRole?.portraitSrc ?? null,
+        rolePortraitAlt: entryRole?.portraitAlt ?? null,
         statusText:
           (entry as { statusText?: '감시' | '격리' | '결박' }).statusText ??
           '감시',

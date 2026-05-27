@@ -100,6 +100,7 @@ const murderMysteryGameHandler = (
           success: true,
           title: payload.title,
           text: payload.text,
+          linkPath: payload.linkPath,
         });
       } catch (error) {
         return callback({ success: false, message: (error as Error).message });

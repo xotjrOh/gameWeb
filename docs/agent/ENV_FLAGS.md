@@ -26,9 +26,19 @@
 - `APP_VERSION`
   - 서버 버전 강제 경로의 진실원이다. 없으면 `/api/version`은 `SERVER_VERSION` 또는 `dev`를 사용한다.
   - 사용 파일: [src/app/api/version/route.ts](/c:/Users/xotjr/Desktop/react/next-game-web/src/app/api/version/route.ts), [src/pages/api/socket/io.ts](/c:/Users/xotjr/Desktop/react/next-game-web/src/pages/api/socket/io.ts)
+- `MURDER_MYSTERY_SHARE_SECRET`
+  - 머더미스터리 사전 룰지 읽기 링크의 HMAC 서명 fallback secret이다.
+  - 기본적으로 `NEXTAUTH_SECRET`을 먼저 사용하며, `NEXTAUTH_SECRET`이 없을 때만 이 값을 사용한다.
+  - 사용 파일: [src/lib/murderMysteryPreReadToken.ts](/c:/Users/xotjr/Desktop/react/next-game-web/src/lib/murderMysteryPreReadToken.ts)
 
 ## Socket / Client Flags
 
+- `NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY`
+  - 카카오 JavaScript SDK 초기화에 쓰는 브라우저 공개 키다.
+  - 로그인용 `KAKAO_CLIENT_ID`와 다르며, 카카오톡 공유 기능에서만 사용한다.
+  - 카카오 텍스트 템플릿 본문은 200자 이하만 가능하므로, 긴 룰지는 `/murder_mystery/pre-read/[token]` 링크로 공유한다.
+  - JavaScript SDK 도메인과 제품 링크 관리 웹 도메인에 로컬/배포 도메인을 모두 등록해야 한다.
+  - 사용 파일: [src/lib/kakaoShare.ts](/c:/Users/xotjr/Desktop/react/next-game-web/src/lib/kakaoShare.ts)
 - `NEXT_PUBLIC_SOCKET_DEBUG`
   - 클라이언트 소켓 생명주기/이벤트 로그를 켠다.
   - 사용 파일: [src/components/provider/SocketProvider.tsx](/c:/Users/xotjr/Desktop/react/next-game-web/src/components/provider/SocketProvider.tsx), [src/components/GameRooms.tsx](/c:/Users/xotjr/Desktop/react/next-game-web/src/components/GameRooms.tsx)

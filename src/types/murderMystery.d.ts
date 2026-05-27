@@ -37,6 +37,8 @@ export interface MurderMysteryRoleScenario {
   displayName: string;
   publicText: string;
   secretText: string;
+  portraitSrc?: string;
+  portraitAlt?: string;
   secretTextPath?: string;
   dynamicDisplayNameRules?: MurderMysteryDynamicDisplayNameRule[];
 }
@@ -45,6 +47,8 @@ export interface MurderMysteryPublicCoverScenario {
   id: string;
   displayName: string;
   publicText: string;
+  portraitSrc?: string;
+  portraitAlt?: string;
 }
 
 export interface MurderMysteryPartScenario {
@@ -278,6 +282,8 @@ export interface MurderMysteryRoleSelectionRoleView {
   id: string;
   displayName: string;
   publicText: string;
+  portraitSrc?: string;
+  portraitAlt?: string;
   assignedPlayerId: string | null;
 }
 
@@ -285,6 +291,8 @@ export interface MurderMysteryRoleSelectionPublicCoverView {
   id: string;
   displayName: string;
   publicText: string;
+  portraitSrc?: string;
+  portraitAlt?: string;
   selectable: boolean;
   assignedPlayerId: string | null;
 }
@@ -341,6 +349,8 @@ export interface MurderMysteryRoleSheetView {
   displayName: string;
   publicText: string;
   secretText: string;
+  portraitSrc?: string;
+  portraitAlt?: string;
 }
 
 export interface MurderMysteryPublicPlayerView {
@@ -351,6 +361,8 @@ export interface MurderMysteryPublicPlayerView {
   roleId: string | null;
   roleDisplayName: string | null;
   rolePublicText: string | null;
+  rolePortraitSrc: string | null;
+  rolePortraitAlt: string | null;
   statusText: MurderMysteryPlayerStatus;
   publicRevealedClues: MurderMysteryClueVaultCardView[];
 }
@@ -590,7 +602,11 @@ export interface MurderMysteryClientToServerEvents {
   mm_host_get_role_share_text: (
     data: { roomId: string; sessionId: string; roleId: string },
     callback: (
-      response: CommonResponse & { title?: string; text?: string }
+      response: CommonResponse & {
+        title?: string;
+        text?: string;
+        linkPath?: string;
+      }
     ) => void
   ) => void;
   mm_update_seat_position: (

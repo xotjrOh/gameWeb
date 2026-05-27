@@ -448,12 +448,39 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       shareResponse?.success &&
         typeof shareResponse.title === 'string' &&
         typeof shareResponse.text === 'string' &&
-        shareResponse.text.includes('[프롤로그]') &&
+        shareResponse.title === '머더미스터리' &&
         shareResponse.text.includes(firstRole.displayName) &&
-        shareResponse.text.includes('[비공개 룰지]') &&
-        shareResponse.text.includes('최종 배정을 확정하지 않습니다.'),
-      'mm_host_get_role_share_text should return pre-share text',
+        !shareResponse.text.includes('방 코드') &&
+        shareResponse.text.length <= 200 &&
+        typeof shareResponse.linkPath === 'string' &&
+        shareResponse.linkPath.startsWith('/murder_mystery/pre-read/'),
+      'mm_host_get_role_share_text should return kakao-safe pre-read link text',
       shareResponse
+    );
+    const preReadUrl = new URL(shareResponse.linkPath, baseUrl);
+    const preReadResponse = await fetch(preReadUrl);
+    const preReadHtml = await preReadResponse.text();
+    assertCondition(
+      preReadResponse.ok &&
+        preReadHtml.includes(firstRole.displayName) &&
+        preReadHtml.includes('프롤로그') &&
+        preReadHtml.includes('인물북'),
+      'pre-read link should render selected role sheet',
+      { status: preReadResponse.status, url: preReadUrl.toString() }
+    );
+
+    const tamperedLinkPath = `${shareResponse.linkPath.slice(0, -1)}${
+      shareResponse.linkPath.endsWith('a') ? 'b' : 'a'
+    }`;
+    const tamperedPreReadResponse = await fetch(
+      new URL(tamperedLinkPath, baseUrl)
+    );
+    const tamperedPreReadHtml = await tamperedPreReadResponse.text();
+    assertCondition(
+      tamperedPreReadResponse.ok &&
+        tamperedPreReadHtml.includes('유효하지 않은 링크입니다.'),
+      'tampered pre-read token should render invalid link screen',
+      { status: tamperedPreReadResponse.status }
     );
 
     const nonHostShareSessionId = playerInfos[0].sessionId;
