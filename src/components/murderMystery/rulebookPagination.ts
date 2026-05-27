@@ -17,6 +17,15 @@ export const normalizeRulebookText = (text: string) =>
 const isSectionHeading = (value: string) =>
   SECTION_HEADING_PATTERN.test(value.trim());
 
+export const getRulebookPageHeading = (pageText: string) => {
+  const firstLine = pageText
+    .split('\n')
+    .map((line) => line.trim())
+    .find(Boolean);
+
+  return firstLine && isSectionHeading(firstLine) ? firstLine : null;
+};
+
 const findNextSectionHeadingIndex = (text: string, startIndex: number) => {
   let lineStart = 0;
 

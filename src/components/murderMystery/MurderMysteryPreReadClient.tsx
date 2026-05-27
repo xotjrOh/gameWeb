@@ -1,6 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type {
+  KeyboardEvent as ReactKeyboardEvent,
+  MouseEvent as ReactMouseEvent,
+} from 'react';
 import {
   Box,
   Button,
@@ -13,6 +17,7 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { CharacterBookCover } from '@/components/murderMystery/CharacterPortraitFrame';
 import {
+  getRulebookPageHeading,
   normalizeRulebookText,
   useMeasuredRulebookPages,
 } from '@/components/murderMystery/rulebookPagination';
@@ -58,6 +63,32 @@ export default function MurderMysteryPreReadClient({
   const maxPageIndex = Math.max(pageCount - 1, 0);
   const isRolebookCover = section === 'rolebook' && pageIndex === 0;
   const progress = Math.round(((pageIndex + 1) / pageCount) * 100);
+  const progressMarkers = useMemo(
+    () =>
+      section === 'rolebook'
+        ? secretPages
+            .map((page, index) => {
+              const heading = getRulebookPageHeading(page);
+              return heading
+                ? {
+                    pageIndex: index + 1,
+                    label: heading,
+                    isPrimary: heading.includes('당일의 기억'),
+                  }
+                : null;
+            })
+            .filter(
+              (
+                marker
+              ): marker is {
+                pageIndex: number;
+                label: string;
+                isPrimary: boolean;
+              } => Boolean(marker)
+            )
+        : [],
+    [section, secretPages]
+  );
 
   useEffect(() => {
     try {
@@ -110,6 +141,31 @@ export default function MurderMysteryPreReadClient({
 
   const goTo = (nextPageIndex: number) => {
     setPageIndex(Math.min(Math.max(nextPageIndex, 0), maxPageIndex));
+  };
+
+  const goToProgressPosition = (clientX: number, target: HTMLElement) => {
+    if (pageCount <= 1 || (section === 'rolebook' && isSecretPaginating)) {
+      return;
+    }
+
+    const rect = target.getBoundingClientRect();
+    const ratio = Math.min(Math.max((clientX - rect.left) / rect.width, 0), 1);
+    goTo(Math.round(ratio * pageCount - 1));
+  };
+
+  const handleProgressClick = (event: ReactMouseEvent<HTMLElement>) => {
+    goToProgressPosition(event.clientX, event.currentTarget);
+  };
+
+  const handleProgressKeyDown = (event: ReactKeyboardEvent<HTMLElement>) => {
+    if (event.key === 'Home') {
+      event.preventDefault();
+      goTo(0);
+    }
+    if (event.key === 'End') {
+      event.preventDefault();
+      goTo(maxPageIndex);
+    }
   };
 
   const selectSection = (nextSection: PreReadSection) => {
@@ -214,18 +270,91 @@ export default function MurderMysteryPreReadClient({
           </Button>
         </Stack>
 
-        <LinearProgress
-          variant="determinate"
-          value={progress}
+        <Box
+          role="slider"
+          aria-label="페이지 진행바"
+          aria-valuemin={1}
+          aria-valuemax={pageCount}
+          aria-valuenow={pageIndex + 1}
+          tabIndex={0}
+          onClick={handleProgressClick}
+          onKeyDown={handleProgressKeyDown}
           sx={{
-            height: 7,
-            borderRadius: 999,
-            backgroundColor: 'rgba(247,241,222,0.16)',
-            '& .MuiLinearProgress-bar': {
-              backgroundColor: '#f59e0b',
+            position: 'relative',
+            height: 22,
+            cursor: pageCount > 1 ? 'pointer' : 'default',
+            outline: 'none',
+            '&:focus-visible': {
+              borderRadius: 999,
+              boxShadow: '0 0 0 2px rgba(245,158,11,0.62)',
             },
           }}
-        />
+          title="클릭해서 해당 위치의 페이지로 이동"
+        >
+          <LinearProgress
+            variant="determinate"
+            value={progress}
+            sx={{
+              position: 'absolute',
+              top: '50%',
+              left: 0,
+              right: 0,
+              height: 7,
+              transform: 'translateY(-50%)',
+              borderRadius: 999,
+              backgroundColor: 'rgba(247,241,222,0.16)',
+              '& .MuiLinearProgress-bar': {
+                backgroundColor: '#f59e0b',
+              },
+            }}
+          />
+          {progressMarkers.map((marker) => (
+            <Box
+              key={`${marker.pageIndex}:${marker.label}`}
+              component="button"
+              type="button"
+              title={`${marker.label}로 이동`}
+              aria-label={`${marker.label}로 이동`}
+              onClick={(event) => {
+                event.stopPropagation();
+                goTo(marker.pageIndex);
+              }}
+              sx={{
+                position: 'absolute',
+                left: `${((marker.pageIndex + 1) / pageCount) * 100}%`,
+                top: marker.isPrimary ? 1 : 4,
+                width: marker.isPrimary ? 12 : 10,
+                height: marker.isPrimary ? 20 : 15,
+                p: 0,
+                border: 0,
+                borderRadius: 999,
+                background: 'transparent',
+                transform: 'translateX(-50%)',
+                cursor: 'pointer',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  left: '50%',
+                  top: 0,
+                  width: marker.isPrimary ? 3 : 2,
+                  height: '100%',
+                  borderRadius: 999,
+                  backgroundColor: marker.isPrimary
+                    ? '#fff7dc'
+                    : 'rgba(247,241,222,0.72)',
+                  boxShadow: marker.isPrimary
+                    ? '0 0 0 1px rgba(245,158,11,0.45), 0 0 10px rgba(245,158,11,0.5)'
+                    : '0 0 0 1px rgba(16,25,24,0.38)',
+                  transform: 'translateX(-50%)',
+                },
+                '&:focus-visible': {
+                  outline: '2px solid #f59e0b',
+                  outlineOffset: 2,
+                },
+              }}
+            />
+          ))}
+        </Box>
 
         <Box
           sx={{
