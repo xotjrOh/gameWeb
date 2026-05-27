@@ -8,11 +8,126 @@ interface RulebookPaginationOptions {
   charsPerLine?: number;
 }
 
+export interface RulebookTextSegment {
+  text: string;
+  highlighted: boolean;
+}
+
+export const RULEBOOK_HIGHLIGHT_MARK_STYLE = {
+  color: '#120c05',
+  fontWeight: 900,
+  backgroundImage:
+    'linear-gradient(transparent 46%, rgba(245, 158, 11, 0.34) 46%, rgba(245, 158, 11, 0.34) 91%, transparent 91%)',
+  backgroundRepeat: 'no-repeat',
+  backgroundSize: '100% 100%',
+  backgroundPosition: '0 0',
+  textDecoration: 'underline',
+  textDecorationColor: 'rgba(120, 77, 22, 0.42)',
+  textDecorationThickness: '0.08em',
+  textUnderlineOffset: '0.18em',
+} as const;
+
 const SECTION_HEADING_PATTERN =
   /^(?:<[^<>\n]{1,80}>|[^<>\n]{1,40}\s-\s[^<>\n]{1,40})$/;
 
 export const normalizeRulebookText = (text: string) =>
   text.replace(/\r\n/g, '\n').trim();
+
+const normalizeRulebookHighlights = (highlights: string[] = []) =>
+  Array.from(
+    new Set(
+      highlights
+        .map((highlight) => highlight.replace(/\r\n/g, '\n').trim())
+        .filter(Boolean)
+    )
+  ).sort((a, b) => b.length - a.length);
+
+export const getRulebookTextSegments = (
+  text: string,
+  highlights: string[] = []
+): RulebookTextSegment[] => {
+  const normalizedHighlights = normalizeRulebookHighlights(highlights);
+  if (!text || normalizedHighlights.length === 0) {
+    return text ? [{ text, highlighted: false }] : [];
+  }
+
+  const segments: RulebookTextSegment[] = [];
+  let index = 0;
+
+  while (index < text.length) {
+    let matchedStart = -1;
+    let matchedHighlight = '';
+
+    normalizedHighlights.forEach((highlight) => {
+      const start = text.indexOf(highlight, index);
+      if (start === -1) {
+        return;
+      }
+
+      if (
+        matchedStart === -1 ||
+        start < matchedStart ||
+        (start === matchedStart && highlight.length > matchedHighlight.length)
+      ) {
+        matchedStart = start;
+        matchedHighlight = highlight;
+      }
+    });
+
+    if (matchedStart === -1) {
+      segments.push({ text: text.slice(index), highlighted: false });
+      break;
+    }
+
+    if (matchedStart > index) {
+      segments.push({
+        text: text.slice(index, matchedStart),
+        highlighted: false,
+      });
+    }
+
+    segments.push({ text: matchedHighlight, highlighted: true });
+    index = matchedStart + matchedHighlight.length;
+  }
+
+  return segments.filter((segment) => segment.text.length > 0);
+};
+
+const renderRulebookTextForMeasurement = (
+  element: HTMLElement,
+  value: string,
+  highlights: string[] = []
+) => {
+  element.replaceChildren();
+  const segments = getRulebookTextSegments(value || ' ', highlights);
+
+  segments.forEach((segment) => {
+    if (!segment.highlighted) {
+      element.appendChild(document.createTextNode(segment.text));
+      return;
+    }
+
+    const strong = document.createElement('strong');
+    strong.style.color = RULEBOOK_HIGHLIGHT_MARK_STYLE.color;
+    strong.style.fontWeight = String(RULEBOOK_HIGHLIGHT_MARK_STYLE.fontWeight);
+    strong.style.backgroundImage =
+      RULEBOOK_HIGHLIGHT_MARK_STYLE.backgroundImage;
+    strong.style.backgroundRepeat =
+      RULEBOOK_HIGHLIGHT_MARK_STYLE.backgroundRepeat;
+    strong.style.backgroundSize = RULEBOOK_HIGHLIGHT_MARK_STYLE.backgroundSize;
+    strong.style.backgroundPosition =
+      RULEBOOK_HIGHLIGHT_MARK_STYLE.backgroundPosition;
+    strong.style.textDecoration = RULEBOOK_HIGHLIGHT_MARK_STYLE.textDecoration;
+    strong.style.textDecorationColor =
+      RULEBOOK_HIGHLIGHT_MARK_STYLE.textDecorationColor;
+    strong.style.textDecorationThickness =
+      RULEBOOK_HIGHLIGHT_MARK_STYLE.textDecorationThickness;
+    strong.style.textUnderlineOffset =
+      RULEBOOK_HIGHLIGHT_MARK_STYLE.textUnderlineOffset;
+    strong.textContent = segment.text;
+    element.appendChild(strong);
+  });
+};
 
 const isSectionHeading = (value: string) =>
   SECTION_HEADING_PATTERN.test(value.trim());
@@ -144,8 +259,12 @@ export const splitRulebookTextPages = (
   return pages.length > 0 ? pages : [fallbackText];
 };
 
-const doesTextFit = (element: HTMLElement, value: string) => {
-  element.textContent = value || ' ';
+const doesTextFit = (
+  element: HTMLElement,
+  value: string,
+  highlights: string[]
+) => {
+  renderRulebookTextForMeasurement(element, value, highlights);
   return element.scrollHeight <= element.clientHeight + 1;
 };
 
@@ -163,7 +282,8 @@ const skipPageLeadingBreaks = (value: string, index: number) => {
 const paginateMeasuredRulebookText = (
   text: string,
   element: HTMLElement,
-  fallbackText: string
+  fallbackText: string,
+  highlights: string[]
 ) => {
   const normalized = normalizeRulebookText(text);
   if (!normalized) {
@@ -193,7 +313,7 @@ const paginateMeasuredRulebookText = (
       const mid = Math.floor((low + high) / 2);
       const candidate = normalized.slice(start, mid);
 
-      if (doesTextFit(element, candidate)) {
+      if (doesTextFit(element, candidate, highlights)) {
         best = mid;
         low = mid + 1;
       } else {
@@ -218,6 +338,7 @@ const paginateMeasuredRulebookText = (
 interface UseMeasuredRulebookPagesOptions {
   enabled?: boolean;
   fallbackText?: string;
+  highlights?: string[];
 }
 
 export const useMeasuredRulebookPages = (
@@ -227,6 +348,10 @@ export const useMeasuredRulebookPages = (
 ) => {
   const fallbackText = options.fallbackText ?? '읽을 내용이 없습니다.';
   const enabled = options.enabled ?? true;
+  const highlights = useMemo(
+    () => normalizeRulebookHighlights(options.highlights),
+    [options.highlights]
+  );
   const fallbackPages = useMemo(
     () => splitRulebookTextPages(text, fallbackText),
     [fallbackText, text]
@@ -259,7 +384,8 @@ export const useMeasuredRulebookPages = (
       const measuredPages = paginateMeasuredRulebookText(
         text,
         element,
-        fallbackText
+        fallbackText,
+        highlights
       );
 
       if (!measuredPages) {
@@ -291,7 +417,7 @@ export const useMeasuredRulebookPages = (
       window.cancelAnimationFrame(frameId);
       resizeObserver.disconnect();
     };
-  }, [enabled, fallbackPages, fallbackText, measureRef, text]);
+  }, [enabled, fallbackPages, fallbackText, highlights, measureRef, text]);
 
   return { pages, isPaginating };
 };

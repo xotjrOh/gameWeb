@@ -17,6 +17,7 @@ import {
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { CharacterBookCover } from '@/components/murderMystery/CharacterPortraitFrame';
+import RulebookRichText from '@/components/murderMystery/RulebookRichText';
 import {
   getRulebookPageHeading,
   normalizeRulebookText,
@@ -34,6 +35,7 @@ interface MurderMysteryPreReadClientProps {
   portraitAlt?: string;
   introText: string;
   secretText: string;
+  secretTextHighlights?: string[];
 }
 
 const isPreReadSection = (value: unknown): value is PreReadSection =>
@@ -48,6 +50,7 @@ export default function MurderMysteryPreReadClient({
   portraitAlt,
   introText,
   secretText,
+  secretTextHighlights = [],
 }: MurderMysteryPreReadClientProps) {
   const secretMeasureRef = useRef<HTMLParagraphElement | null>(null);
   const prologuePages = useMemo(
@@ -55,7 +58,9 @@ export default function MurderMysteryPreReadClient({
     [introText]
   );
   const { pages: secretPages, isPaginating: isSecretPaginating } =
-    useMeasuredRulebookPages(secretText, secretMeasureRef);
+    useMeasuredRulebookPages(secretText, secretMeasureRef, {
+      highlights: secretTextHighlights,
+    });
   const storageKey = `murderMystery:preReadProgress:${token}`;
   const [section, setSection] = useState<PreReadSection>('rolebook');
   const [pageIndex, setPageIndex] = useState(0);
@@ -482,7 +487,10 @@ export default function MurderMysteryPreReadClient({
                   overflow: 'hidden',
                 }}
               >
-                {secretPages[pageIndex - 1]}
+                <RulebookRichText
+                  text={secretPages[pageIndex - 1] ?? ''}
+                  highlights={secretTextHighlights}
+                />
               </Typography>
             )}
             <Typography

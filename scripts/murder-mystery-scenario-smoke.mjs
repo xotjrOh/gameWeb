@@ -215,6 +215,7 @@ for (const entry of registry.scenarios) {
       role.portraitSrc,
       `${entry.file}: role(${role.id}).portraitSrc`
     );
+    let secretText = '';
     if (role.secretTextPath) {
       if (path.isAbsolute(role.secretTextPath)) {
         fail(`${entry.file}: role(${role.id}) secretTextPath must be relative`);
@@ -226,12 +227,41 @@ for (const entry of registry.scenarios) {
       if (!fs.existsSync(secretTextPath)) {
         fail(`${entry.file}: role(${role.id}) secretTextPath is missing`);
       }
-      const secretText = fs.readFileSync(secretTextPath, 'utf8');
+      secretText = fs.readFileSync(secretTextPath, 'utf8');
       if (!secretText.trim()) {
         fail(`${entry.file}: role(${role.id}) secretTextPath is empty`);
       }
     } else if (!role.secretText) {
       fail(`${entry.file}: role(${role.id}) secretText is required`);
+    } else {
+      secretText = role.secretText;
+    }
+    if (secretText.includes('**')) {
+      fail(
+        `${entry.file}: role(${role.id}) secretText must not contain markdown bold markers`
+      );
+    }
+    if (role.secretTextHighlights !== undefined) {
+      if (!Array.isArray(role.secretTextHighlights)) {
+        fail(
+          `${entry.file}: role(${role.id}) secretTextHighlights must be an array`
+        );
+      }
+      for (const [
+        highlightIndex,
+        highlight,
+      ] of role.secretTextHighlights.entries()) {
+        if (typeof highlight !== 'string' || !highlight.trim()) {
+          fail(
+            `${entry.file}: role(${role.id}) secretTextHighlights[${highlightIndex}] must be a non-empty string`
+          );
+        }
+        if (!secretText.includes(highlight)) {
+          fail(
+            `${entry.file}: role(${role.id}) secretTextHighlights[${highlightIndex}] is not found in secretText`
+          );
+        }
+      }
     }
   }
   if (!Array.isArray(scenario.cards) || scenario.cards.length === 0) {

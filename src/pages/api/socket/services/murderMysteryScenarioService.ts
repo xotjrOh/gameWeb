@@ -792,6 +792,15 @@ const normalizeRoles = ({
             roleRecord.secretText,
             `${fileName}: role(${id}) secretText is required`
           );
+      const secretTextHighlights = toStringArray(
+        roleRecord.secretTextHighlights
+      );
+      secretTextHighlights.forEach((highlight, highlightIndex) => {
+        assertCondition(
+          secretText.includes(highlight),
+          `${fileName}: role(${id}) secretTextHighlights[${highlightIndex}] is not found in secretText`
+        );
+      });
 
       if (roleRecord.isKiller === true) {
         killerRoleId = id;
@@ -802,6 +811,7 @@ const normalizeRoles = ({
         displayName,
         publicText,
         secretText,
+        ...(secretTextHighlights.length > 0 ? { secretTextHighlights } : {}),
         ...(asNonEmptyString(roleRecord.portraitSrc)
           ? { portraitSrc: asNonEmptyString(roleRecord.portraitSrc) }
           : {}),

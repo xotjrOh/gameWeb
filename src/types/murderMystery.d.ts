@@ -37,6 +37,7 @@ export interface MurderMysteryRoleScenario {
   displayName: string;
   publicText: string;
   secretText: string;
+  secretTextHighlights?: string[];
   portraitSrc?: string;
   portraitAlt?: string;
   secretTextPath?: string;
@@ -349,6 +350,7 @@ export interface MurderMysteryRoleSheetView {
   displayName: string;
   publicText: string;
   secretText: string;
+  secretTextHighlights?: string[];
   portraitSrc?: string;
   portraitAlt?: string;
 }

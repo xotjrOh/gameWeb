@@ -49,6 +49,7 @@ import {
 import CharacterPortraitFrame, {
   CharacterBookCover,
 } from '@/components/murderMystery/CharacterPortraitFrame';
+import RulebookRichText from '@/components/murderMystery/RulebookRichText';
 import {
   normalizeRulebookText,
   useMeasuredRulebookPages,
@@ -1162,6 +1163,7 @@ const RulebookModal = ({
     useMeasuredRulebookPages(roleSheet?.secretText ?? '', secretMeasureRef, {
       enabled: open,
       fallbackText: '비공개 룰지가 아직 배정되지 않았습니다.',
+      highlights: roleSheet?.secretTextHighlights,
     });
   const prologuePages = useMemo(
     () => [normalizeRulebookText(introText) || '읽을 내용이 없습니다.'],
@@ -1414,7 +1416,10 @@ const RulebookModal = ({
                       overflow: 'hidden',
                     }}
                   >
-                    {secretPages[pageIndex - 1]}
+                    <RulebookRichText
+                      text={secretPages[pageIndex - 1] ?? ''}
+                      highlights={roleSheet?.secretTextHighlights}
+                    />
                   </Typography>
                 )}
                 <Typography

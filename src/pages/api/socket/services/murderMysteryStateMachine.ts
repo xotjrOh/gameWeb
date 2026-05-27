@@ -2070,6 +2070,9 @@ export const buildMurderMysterySnapshot = (
           room.gameData.roleDisplayNameByPlayerId[viewerId] ?? role.displayName,
         publicText: role.publicText,
         secretText: role.secretText,
+        ...(role.secretTextHighlights
+          ? { secretTextHighlights: role.secretTextHighlights }
+          : {}),
         ...(role.portraitSrc ? { portraitSrc: role.portraitSrc } : {}),
         ...(role.portraitAlt ? { portraitAlt: role.portraitAlt } : {}),
       }
