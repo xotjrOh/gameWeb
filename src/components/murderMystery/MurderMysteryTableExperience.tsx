@@ -21,8 +21,10 @@ import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
   Close as CloseIcon,
+  ContentCopy as ContentCopyIcon,
   HowToVote as HowToVoteIcon,
   Inventory2 as Inventory2Icon,
+  IosShare as IosShareIcon,
   Lock as LockIcon,
   Logout as LogoutIcon,
   PlayArrow as PlayArrowIcon,
@@ -46,6 +48,8 @@ import {
   MurderMysteryStepKind,
 } from '@/types/murderMystery';
 
+type RoleShareMode = 'share' | 'copy';
+
 interface MurderMysteryTableExperienceProps {
   roomId: string;
   sessionId: string;
@@ -57,6 +61,7 @@ interface MurderMysteryTableExperienceProps {
   onFinalizeVote: () => void;
   onSubmitRolePreferences: (roleIds: string[]) => void;
   onClearRolePreferences: () => void;
+  onShareRoleSheet: (roleId: string, mode: RoleShareMode) => void;
   onUpdateSeatPosition: (
     playerId: string,
     position: MurderMysterySeatPosition
@@ -949,6 +954,82 @@ const RoleSelectionPanel = ({
   );
 };
 
+const RolePreSharePanel = ({
+  roles,
+  onShareRoleSheet,
+}: {
+  roles: MurderMysteryStateSnapshot['roleSelection']['roles'];
+  onShareRoleSheet: (roleId: string, mode: RoleShareMode) => void;
+}) => (
+  <Box
+    sx={{
+      p: { xs: 1.2, sm: 1.5 },
+      borderRadius: 2,
+      backgroundColor: 'rgba(247,241,222,0.09)',
+      border: '1px solid rgba(247,241,222,0.16)',
+    }}
+  >
+    <Stack spacing={1.2}>
+      <Box>
+        <Typography fontWeight={950}>사전 룰지 공유</Typography>
+        <Typography variant="caption" sx={{ color: '#d8d0bd' }}>
+          이 기능은 읽기용이며 실제 캐릭터 배정은 별도 진행됩니다.
+        </Typography>
+      </Box>
+      <Stack spacing={1}>
+        {roles.map((role) => (
+          <Box
+            key={role.id}
+            sx={{
+              p: 1.1,
+              borderRadius: 1.5,
+              backgroundColor: 'rgba(0,0,0,0.18)',
+              border: '1px solid rgba(255,255,255,0.11)',
+            }}
+          >
+            <Stack spacing={0.9}>
+              <Box>
+                <Typography fontWeight={900}>{role.displayName}</Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    mt: 0.3,
+                    color: '#d8d0bd',
+                    whiteSpace: 'pre-wrap',
+                    lineHeight: 1.55,
+                  }}
+                >
+                  {role.publicText}
+                </Typography>
+              </Box>
+              <Stack direction="row" spacing={0.8} flexWrap="wrap" useFlexGap>
+                <Button
+                  size="small"
+                  variant="contained"
+                  color="warning"
+                  startIcon={<IosShareIcon />}
+                  onClick={() => onShareRoleSheet(role.id, 'share')}
+                >
+                  카카오톡 공유
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="inherit"
+                  startIcon={<ContentCopyIcon />}
+                  onClick={() => onShareRoleSheet(role.id, 'copy')}
+                >
+                  텍스트 복사
+                </Button>
+              </Stack>
+            </Stack>
+          </Box>
+        ))}
+      </Stack>
+    </Stack>
+  </Box>
+);
+
 const MyDeskPanel = ({
   cardCount,
   canOpenRulebook = true,
@@ -1498,6 +1579,7 @@ export default function MurderMysteryTableExperience({
   onFinalizeVote,
   onSubmitRolePreferences,
   onClearRolePreferences,
+  onShareRoleSheet,
   onUpdateSeatPosition,
   onResetSeatLayout,
   onSubmitInvestigationByTarget,
@@ -2002,6 +2084,12 @@ export default function MurderMysteryTableExperience({
             onSubmit={() => onSubmitRolePreferences(draftRolePreferenceIds)}
             onClear={onClearRolePreferences}
           />
+          {canUseHostTools ? (
+            <RolePreSharePanel
+              roles={snapshot.roleSelection.roles}
+              onShareRoleSheet={onShareRoleSheet}
+            />
+          ) : null}
           {canUseHostTools ? (
             <Button
               variant="contained"

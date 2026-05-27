@@ -74,9 +74,8 @@ export default function MurderMysteryRulePage() {
                 입니다.
               </Typography>
               <Typography>
-                진행 단계는 오프닝, 3회 조사/토론, 최종 투표, 엔딩 순으로
-                이어지며, 각 조사 라운드에서 플레이어는 1회만 조사할 수
-                있습니다.
+                진행 단계는 오프닝, 2회 조사/토론, 최종 투표, 엔딩 순으로
+                이어지며, 각 조사 라운드에서 플레이어는 2회 조사할 수 있습니다.
               </Typography>
               <Typography>
                 플레이어 역할은 남편토끼 윤유성, 여우 조희수, 자라 서기준이며

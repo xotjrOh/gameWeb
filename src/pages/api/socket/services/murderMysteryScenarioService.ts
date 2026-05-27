@@ -819,6 +819,51 @@ const normalizeRoles = ({
   };
 };
 
+const normalizePublicCovers = ({
+  rawPublicCovers,
+  roleIds,
+  fileName,
+}: {
+  rawPublicCovers: unknown;
+  roleIds: Set<string>;
+  fileName: string;
+}): MurderMysteryScenario['publicCovers'] => {
+  const publicCoverList = Array.isArray(rawPublicCovers) ? rawPublicCovers : [];
+  const publicCoverIds = new Set<string>();
+
+  return publicCoverList.map((rawCover, index) => {
+    const coverRecord = requireRecord(
+      rawCover,
+      `${fileName}: publicCovers[${index}] must be object`
+    );
+    const id = requireString(
+      coverRecord.id,
+      `${fileName}: publicCovers[${index}].id is required`
+    );
+    assertCondition(
+      !roleIds.has(id),
+      `${fileName}: publicCover(${id}) duplicates a role id`
+    );
+    assertCondition(
+      !publicCoverIds.has(id),
+      `${fileName}: duplicated publicCover id (${id})`
+    );
+    publicCoverIds.add(id);
+
+    return {
+      id,
+      displayName: requireString(
+        coverRecord.displayName,
+        `${fileName}: publicCover(${id}) displayName is required`
+      ),
+      publicText: requireString(
+        coverRecord.publicText,
+        `${fileName}: publicCover(${id}) publicText is required`
+      ),
+    };
+  });
+};
+
 const normalizeParts = ({
   rawParts,
   fileName,
@@ -1118,6 +1163,12 @@ const normalizeScenarioSchema = (
     cardRoundById,
     fileName,
   });
+  const roleIds = new Set(roles.map((role) => role.id));
+  const publicCovers = normalizePublicCovers({
+    rawPublicCovers: scenarioRecord.publicCovers,
+    roleIds,
+    fileName,
+  });
   const parts = normalizeParts({
     rawParts: scenarioRecord.parts,
     fileName,
@@ -1184,6 +1235,7 @@ const normalizeScenarioSchema = (
       readAloud: introReadAloud,
     },
     roles,
+    publicCovers,
     parts,
     initialRoleCards,
     specialEvents,
@@ -1292,6 +1344,23 @@ const validateScenarioSchema = (
     assertCondition(
       role.displayName && role.publicText && role.secretText,
       `${fileName}: role fields must be complete (${role.id})`
+    );
+  });
+  const publicCoverIds = new Set<string>();
+  scenario.publicCovers?.forEach((cover) => {
+    assertCondition(cover.id, `${fileName}: publicCover.id is required`);
+    assertCondition(
+      !roleIds.has(cover.id),
+      `${fileName}: publicCover(${cover.id}) duplicates a role id`
+    );
+    assertCondition(
+      !publicCoverIds.has(cover.id),
+      `${fileName}: duplicated publicCover id (${cover.id})`
+    );
+    publicCoverIds.add(cover.id);
+    assertCondition(
+      cover.displayName && cover.publicText,
+      `${fileName}: publicCover fields must be complete (${cover.id})`
     );
   });
 

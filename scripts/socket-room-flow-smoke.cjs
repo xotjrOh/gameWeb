@@ -434,6 +434,44 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       lobbySnapshot.roleSelection
     );
 
+    const firstRole = lobbySnapshot.roleSelection.roles[0];
+    const shareResponse = await emitAck(
+      hostSocket,
+      'mm_host_get_role_share_text',
+      {
+        roomId,
+        sessionId: hostSessionId,
+        roleId: firstRole.id,
+      }
+    );
+    assertCondition(
+      shareResponse?.success &&
+        typeof shareResponse.title === 'string' &&
+        typeof shareResponse.text === 'string' &&
+        shareResponse.text.includes('[프롤로그]') &&
+        shareResponse.text.includes(firstRole.displayName) &&
+        shareResponse.text.includes('[비공개 룰지]') &&
+        shareResponse.text.includes('최종 배정을 확정하지 않습니다.'),
+      'mm_host_get_role_share_text should return pre-share text',
+      shareResponse
+    );
+
+    const nonHostShareSessionId = playerInfos[0].sessionId;
+    const nonHostShareResponse = await emitAck(
+      playerSockets.get(nonHostShareSessionId),
+      'mm_host_get_role_share_text',
+      {
+        roomId,
+        sessionId: nonHostShareSessionId,
+        roleId: firstRole.id,
+      }
+    );
+    assertCondition(
+      nonHostShareResponse?.success === false,
+      'non-host should not receive role share text',
+      nonHostShareResponse
+    );
+
     const preferenceSubmitters = [
       [hostSessionId, hostSocket],
       ...playerSockets.entries(),

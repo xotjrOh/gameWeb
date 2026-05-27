@@ -4,7 +4,6 @@ import {
   MurderMysteryAnnouncement,
   MurderMysteryStateSnapshot,
 } from '@/types/murderMystery';
-import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 
 interface PartRevealEvent {
   partId: string;
@@ -20,8 +19,10 @@ const useMurderMysteryGameData = (
   socket: ClientSocketType | null,
   sessionId: string
 ) => {
-  const { enqueueSnackbar } = useCustomSnackbar();
   const [snapshot, setSnapshot] = useState<MurderMysteryStateSnapshot | null>(
+    null
+  );
+  const [requestErrorMessage, setRequestErrorMessage] = useState<string | null>(
     null
   );
   const [latestAnnouncement, setLatestAnnouncement] =
@@ -30,6 +31,7 @@ const useMurderMysteryGameData = (
     useState<PartRevealEvent | null>(null);
   const hasReceivedSnapshotRef = useRef(false);
   const hasShownRequestErrorRef = useRef(false);
+  const hasTerminalRequestErrorRef = useRef(false);
 
   useEffect(() => {
     if (!socket || !roomId || !sessionId) {
@@ -37,11 +39,15 @@ const useMurderMysteryGameData = (
     }
     hasReceivedSnapshotRef.current = false;
     hasShownRequestErrorRef.current = false;
+    hasTerminalRequestErrorRef.current = false;
+    setRequestErrorMessage(null);
     let disposed = false;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
     const handleSnapshot = (data: MurderMysteryStateSnapshot) => {
       hasReceivedSnapshotRef.current = true;
+      hasTerminalRequestErrorRef.current = false;
+      setRequestErrorMessage(null);
       setSnapshot(data);
     };
 
@@ -61,20 +67,29 @@ const useMurderMysteryGameData = (
         if (!response.success) {
           if (!hasShownRequestErrorRef.current) {
             hasShownRequestErrorRef.current = true;
-            enqueueSnackbar(response.message ?? '상태 조회에 실패했습니다.', {
-              variant: 'error',
-            });
+            hasTerminalRequestErrorRef.current = true;
+            setRequestErrorMessage(
+              response.message ?? '상태 조회에 실패했습니다.'
+            );
           }
         }
       });
     };
 
     const scheduleRetry = () => {
-      if (disposed || hasReceivedSnapshotRef.current) {
+      if (
+        disposed ||
+        hasReceivedSnapshotRef.current ||
+        hasTerminalRequestErrorRef.current
+      ) {
         return;
       }
       retryTimer = setTimeout(() => {
-        if (disposed || hasReceivedSnapshotRef.current) {
+        if (
+          disposed ||
+          hasReceivedSnapshotRef.current ||
+          hasTerminalRequestErrorRef.current
+        ) {
           return;
         }
         requestSnapshot();
@@ -100,10 +115,11 @@ const useMurderMysteryGameData = (
       socket.off('mm_part_revealed', handlePartReveal);
       socket.off('connect', requestSnapshot);
     };
-  }, [socket?.id, roomId, sessionId, enqueueSnackbar]);
+  }, [socket?.id, roomId, sessionId]);
 
   return {
     snapshot,
+    requestErrorMessage,
     latestAnnouncement,
     latestPartReveal,
   };

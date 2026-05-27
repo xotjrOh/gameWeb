@@ -30,6 +30,41 @@ interface AckResponse {
   extraInvestigation?: boolean;
 }
 
+interface RoleShareAckResponse extends AckResponse {
+  title?: string;
+  text?: string;
+}
+
+type RoleShareMode = 'share' | 'copy';
+
+const MURDER_MYSTERY_LOBBY_PATH = '/games/murder_mystery';
+
+const copyTextToClipboard = async (text: string) => {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Fall through to the textarea fallback.
+    }
+  }
+
+  const textArea = document.createElement('textarea');
+  textArea.value = text;
+  textArea.setAttribute('readonly', 'true');
+  textArea.style.position = 'fixed';
+  textArea.style.left = '-9999px';
+  textArea.style.top = '0';
+  document.body.appendChild(textArea);
+  textArea.select();
+
+  try {
+    return document.execCommand('copy');
+  } finally {
+    document.body.removeChild(textArea);
+  }
+};
+
 export default function MurderMysteryGameScreen({
   roomId,
   isHostView,
@@ -46,11 +81,30 @@ export default function MurderMysteryGameScreen({
   useCheckVersion(socket);
   useUpdateSocketId(socket, session, roomId);
   useLeaveRoom(socket, dispatch);
-  useRedirectIfNotHost(roomId, isHostView);
-  useRedirectIfInvalidRoom(roomId, !isHostView);
+  useRedirectIfNotHost(roomId, isHostView, MURDER_MYSTERY_LOBBY_PATH);
+  useRedirectIfInvalidRoom(roomId, !isHostView, MURDER_MYSTERY_LOBBY_PATH);
 
-  const { snapshot, latestAnnouncement, latestPartReveal } =
-    useMurderMysteryGameData(roomId, socket, sessionId);
+  const {
+    snapshot,
+    requestErrorMessage,
+    latestAnnouncement,
+    latestPartReveal,
+  } = useMurderMysteryGameData(roomId, socket, sessionId);
+
+  useEffect(() => {
+    if (!requestErrorMessage) {
+      return;
+    }
+
+    enqueueSnackbar(
+      '방이 사라졌거나 접근할 수 없습니다. 대기방으로 이동합니다.',
+      {
+        variant: 'error',
+      }
+    );
+    socket?.emit('get-room-list');
+    router.replace(MURDER_MYSTERY_LOBBY_PATH);
+  }, [requestErrorMessage, enqueueSnackbar, router, socket]);
 
   useEffect(() => {
     if (!latestAnnouncement) {
@@ -155,6 +209,39 @@ export default function MurderMysteryGameScreen({
       });
     });
 
+  const emitWithAckPayload = <
+    TPayload extends object,
+    TResponse extends AckResponse,
+  >(
+    eventName: string,
+    payload: TPayload
+  ) =>
+    new Promise<TResponse | null>((resolve) => {
+      if (!socket) {
+        enqueueSnackbar('소켓 연결 대기 중입니다.', { variant: 'warning' });
+        resolve(null);
+        return;
+      }
+
+      const looseSocket = socket as unknown as {
+        emit: (
+          event: string,
+          data: unknown,
+          callback: (response: TResponse) => void
+        ) => void;
+      };
+      looseSocket.emit(eventName, payload, (response) => {
+        if (!response.success) {
+          enqueueSnackbar(response.message ?? '요청 처리에 실패했습니다.', {
+            variant: 'error',
+          });
+          resolve(null);
+          return;
+        }
+        resolve(response);
+      });
+    });
+
   const handleLeaveRoom = () => {
     if (!socket || !sessionId) {
       return;
@@ -227,6 +314,45 @@ export default function MurderMysteryGameScreen({
     });
   };
 
+  const handleShareRoleSheet = async (roleId: string, mode: RoleShareMode) => {
+    const response = await emitWithAckPayload<
+      { roomId: string; sessionId: string; roleId: string },
+      RoleShareAckResponse
+    >('mm_host_get_role_share_text', {
+      roomId,
+      sessionId,
+      roleId,
+    });
+
+    if (!response?.title || !response.text) {
+      return;
+    }
+
+    if (mode === 'share' && navigator.share) {
+      try {
+        await navigator.share({
+          title: response.title,
+          text: response.text,
+        });
+        enqueueSnackbar('공유 화면을 열었습니다.', { variant: 'success' });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          enqueueSnackbar('공유를 취소했습니다.', { variant: 'info' });
+          return;
+        }
+      }
+    }
+
+    const copied = await copyTextToClipboard(response.text);
+    enqueueSnackbar(
+      copied
+        ? '공유할 룰지 본문을 복사했습니다.'
+        : '룰지 본문 복사에 실패했습니다.',
+      { variant: copied ? 'success' : 'error' }
+    );
+  };
+
   const handleReportSpecialEvent = (
     eventId: string,
     outcome: MurderMysterySpecialEventOutcome
@@ -289,6 +415,7 @@ export default function MurderMysteryGameScreen({
       }
       onSubmitRolePreferences={handleSubmitRolePreferences}
       onClearRolePreferences={handleClearRolePreferences}
+      onShareRoleSheet={handleShareRoleSheet}
       onUpdateSeatPosition={handleUpdateSeatPosition}
       onResetSeatLayout={() =>
         emitWithAck(

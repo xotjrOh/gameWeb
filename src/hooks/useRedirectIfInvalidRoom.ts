@@ -6,7 +6,11 @@ import { setIsLoading } from '@/store/loadingSlice';
 import { useSocket } from '@/components/provider/SocketProvider';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 
-const useRedirectIfInvalidRoom = (roomId: string, enabled = true) => {
+const useRedirectIfInvalidRoom = (
+  roomId: string,
+  enabled = true,
+  redirectPath = '/'
+) => {
   const { socket } = useSocket();
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -28,7 +32,7 @@ const useRedirectIfInvalidRoom = (roomId: string, enabled = true) => {
             enqueueSnackbar('잘못된 접근입니다. 대기방으로 이동합니다.', {
               variant: 'error',
             });
-            router.replace('/');
+            router.replace(redirectPath);
             socket?.emit('get-room-list');
           }
         }
@@ -36,7 +40,16 @@ const useRedirectIfInvalidRoom = (roomId: string, enabled = true) => {
     } else if (status === 'loading') {
       dispatch(setIsLoading({ isLoading: true, reason: 'route-check' }));
     }
-  }, [enabled, socket?.id, status, roomId, session, router, dispatch]);
+  }, [
+    enabled,
+    socket?.id,
+    status,
+    roomId,
+    session,
+    router,
+    dispatch,
+    redirectPath,
+  ]);
 };
 
 export default useRedirectIfInvalidRoom;

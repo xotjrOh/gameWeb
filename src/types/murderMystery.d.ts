@@ -587,6 +587,12 @@ export interface MurderMysteryClientToServerEvents {
     data: { roomId: string; sessionId: string },
     callback: (response: CommonResponse) => void
   ) => void;
+  mm_host_get_role_share_text: (
+    data: { roomId: string; sessionId: string; roleId: string },
+    callback: (
+      response: CommonResponse & { title?: string; text?: string }
+    ) => void
+  ) => void;
   mm_update_seat_position: (
     data: {
       roomId: string;

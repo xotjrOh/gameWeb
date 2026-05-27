@@ -1395,6 +1395,66 @@ export const clearMurderMysteryRolePreferences = (
   delete room.gameData.rolePreferencesByPlayerId[playerId];
 };
 
+const buildMurderMysteryRoomLink = (roomId: string) => {
+  const baseUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXTAUTH_URL ?? '';
+  if (!baseUrl) {
+    return '';
+  }
+  try {
+    return new URL(`/murder_mystery/${roomId}`, baseUrl).toString();
+  } catch {
+    return '';
+  }
+};
+
+export const buildMurderMysteryRoleShareText = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  roleId: string
+) => {
+  if (room.gameData.phase !== 'LOBBY') {
+    throw new Error('대기실에서만 사전 룰지를 공유할 수 있습니다.');
+  }
+
+  const role = getRoleById(scenario, roleId);
+  if (!role) {
+    throw new Error('공유할 수 없는 역할입니다.');
+  }
+
+  const roomLink = buildMurderMysteryRoomLink(room.roomId);
+  const title = `${scenario.title} - ${role.displayName} 비공개 룰지`;
+  const textParts = [
+    scenario.title,
+    '',
+    '사전 비공개 룰지 공유',
+    '',
+    '[중요 안내]',
+    '이 문서는 사전 읽기용입니다. 실제 캐릭터 배정은 게임 방에서 별도로 진행되며, 이 공유가 최종 배정을 확정하지 않습니다.',
+    '',
+    '[프롤로그]',
+    scenario.intro.readAloud.trim(),
+    '',
+    '[역할]',
+    role.displayName,
+    '',
+    '[공개정보]',
+    role.publicText.trim(),
+    '',
+    '[비공개 룰지]',
+    role.secretText.trim(),
+    '',
+    '[입장 정보]',
+    `방 코드: ${room.roomId}`,
+    roomLink ? `입장 링크: ${roomLink}` : '',
+  ].filter(Boolean);
+
+  return {
+    title,
+    text: textParts.join('\n'),
+  };
+};
+
 export const startMurderMysteryGame = (
   room: MurderMysteryRoom,
   scenario: MurderMysteryScenario

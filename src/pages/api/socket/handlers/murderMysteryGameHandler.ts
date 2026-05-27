@@ -3,6 +3,7 @@ import { rooms } from '../state/gameState';
 import { validatePlayer, validateRoom } from '../utils/validation';
 import {
   appendMurderMysteryAnnouncement,
+  buildMurderMysteryRoleShareText,
   buildMurderMysterySnapshot,
   clearMurderMysteryRolePreferences,
   finalizeMurderMysteryVote,
@@ -83,6 +84,28 @@ const murderMysteryGameHandler = (
       return callback({ success: false, message: (error as Error).message });
     }
   });
+
+  socket.on(
+    'mm_host_get_role_share_text',
+    ({ roomId, sessionId, roleId }, callback) => {
+      try {
+        const room = toMurderMysteryRoom(validateRoom(roomId));
+        ensureMurderMysteryHost(room, sessionId);
+        ensureAllowedPhase(room, ['LOBBY']);
+
+        const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
+        const payload = buildMurderMysteryRoleShareText(room, scenario, roleId);
+
+        return callback({
+          success: true,
+          title: payload.title,
+          text: payload.text,
+        });
+      } catch (error) {
+        return callback({ success: false, message: (error as Error).message });
+      }
+    }
+  );
 
   socket.on(
     'mm_update_seat_position',
