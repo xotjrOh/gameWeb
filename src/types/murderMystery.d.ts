@@ -366,6 +366,7 @@ export interface MurderMysteryPublicPlayerView {
   rolePortraitSrc: string | null;
   rolePortraitAlt: string | null;
   statusText: MurderMysteryPlayerStatus;
+  heldCardBacks: MurderMysteryInvestigationBackCardView[];
   publicRevealedClues: MurderMysteryClueVaultCardView[];
 }
 

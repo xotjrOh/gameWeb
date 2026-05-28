@@ -109,6 +109,15 @@ const ROLE_RANK_COLORS = [
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
 
+const RECTANGULAR_SEAT_POSITIONS: MurderMysterySeatPosition[] = [
+  { x: 50, y: 18 },
+  { x: 24, y: 82 },
+  { x: 76, y: 82 },
+  { x: 24, y: 18 },
+  { x: 76, y: 18 },
+  { x: 50, y: 88 },
+];
+
 const formatSeconds = (seconds: number | null) => {
   if (seconds === null) {
     return '--:--';
@@ -127,6 +136,12 @@ const buildDefaultLayout = (playerIds: string[]) => {
   const count = Math.max(playerIds.length, 1);
   return playerIds.reduce<Record<string, MurderMysterySeatPosition>>(
     (acc, playerId, index) => {
+      if (count <= RECTANGULAR_SEAT_POSITIONS.length) {
+        acc[playerId] =
+          RECTANGULAR_SEAT_POSITIONS[index] ?? RECTANGULAR_SEAT_POSITIONS[0];
+        return acc;
+      }
+
       const angle = -Math.PI / 2 + (2 * Math.PI * index) / count;
       acc[playerId] = {
         x: 50 + Math.cos(angle) * 39,
@@ -456,6 +471,63 @@ const InvestigationCardBack = ({
   );
 };
 
+const HeldCardBackFace = ({
+  back,
+}: {
+  back: MurderMysteryInvestigationBackCardView;
+}) => (
+  <Box
+    sx={{
+      width: 92,
+      minWidth: 92,
+      height: 128,
+      borderRadius: 1,
+      overflow: 'hidden',
+      position: 'relative',
+      border: '1px solid rgba(46, 37, 26, 0.36)',
+      background:
+        'repeating-linear-gradient(135deg, #29323f 0, #29323f 7px, #1d2430 7px, #1d2430 14px)',
+      boxShadow: '0 10px 20px rgba(0,0,0,0.2)',
+    }}
+  >
+    {back.imageSrc ? (
+      <Box
+        component="img"
+        src={back.imageSrc}
+        alt={back.shortLabel ?? CARD_BACK_LABEL}
+        sx={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          opacity: 0.9,
+        }}
+      />
+    ) : null}
+    <Stack
+      spacing={0.45}
+      alignItems="center"
+      justifyContent="center"
+      sx={{
+        position: 'absolute',
+        inset: 0,
+        p: 0.9,
+        textAlign: 'center',
+        color: '#fff',
+        backgroundColor: back.imageSrc ? 'rgba(5, 9, 14, 0.36)' : 'none',
+        textShadow: '0 1px 4px rgba(0,0,0,0.64)',
+      }}
+    >
+      <LockIcon fontSize="small" sx={{ color: '#e9dcc2' }} />
+      <Typography variant="caption" fontWeight={950} sx={{ lineHeight: 1.18 }}>
+        {back.shortLabel ?? CARD_BACK_LABEL}
+      </Typography>
+      <Typography variant="caption" sx={{ lineHeight: 1.15, opacity: 0.86 }}>
+        {back.targetLabel}
+      </Typography>
+    </Stack>
+  </Box>
+);
+
 const SeatMarker = ({
   player,
   isSelf,
@@ -558,13 +630,28 @@ const SeatMarker = ({
               {player.roleDisplayName ?? relationLabel}
             </Typography>
           </Box>
-          {player.publicRevealedClues.length > 0 ? (
-            <Chip
-              size="small"
-              label={player.publicRevealedClues.length}
-              sx={{ height: 20, minWidth: 24, fontWeight: 900 }}
-            />
-          ) : null}
+          <Stack direction="row" spacing={0.35}>
+            {player.heldCardBacks.length > 0 ? (
+              <Chip
+                size="small"
+                label={player.heldCardBacks.length}
+                sx={{
+                  height: 20,
+                  minWidth: 24,
+                  fontWeight: 900,
+                  backgroundColor: '#2b3440',
+                  color: '#fff',
+                }}
+              />
+            ) : null}
+            {player.publicRevealedClues.length > 0 ? (
+              <Chip
+                size="small"
+                label={player.publicRevealedClues.length}
+                sx={{ height: 20, minWidth: 24, fontWeight: 900 }}
+              />
+            ) : null}
+          </Stack>
         </Stack>
       </Box>
       <Typography
@@ -585,7 +672,7 @@ const SeatMarker = ({
   );
 };
 
-const SeatCompass = ({
+const SeatTable = ({
   players,
   sessionId,
   positions,
@@ -634,12 +721,12 @@ const SeatCompass = ({
         <Stack direction="row" alignItems="center" spacing={1}>
           <Box sx={{ minWidth: 0, flex: 1 }}>
             <Typography fontWeight={950}>
-              {canEdit ? '자리 맞추기' : '자리 나침반'}
+              {canEdit ? '자리 맞추기' : '테이블 자리'}
             </Typography>
             <Typography variant="caption" sx={{ color: '#d8d0bd' }}>
               {canEdit
-                ? '자기 토큰만 움직여 실제 자리감을 맞추세요.'
-                : '누가 내 옆과 맞은편에 있는지만 확인합니다.'}
+                ? '자기 토큰을 직사각형 테이블 위 실제 자리감에 맞추세요.'
+                : '좌석을 누르면 공개정보와 카드 상태를 볼 수 있습니다.'}
             </Typography>
           </Box>
           {canReset ? (
@@ -659,12 +746,32 @@ const SeatCompass = ({
           ref={tableRef}
           sx={{
             position: 'relative',
-            height: isCompact ? { xs: 132, md: 160 } : { xs: 210, md: 250 },
-            borderRadius: '50%',
+            height: isCompact ? { xs: 142, md: 166 } : { xs: 226, md: 270 },
+            borderRadius: 5,
             overflow: 'visible',
             background:
-              'radial-gradient(ellipse at center, rgba(98, 77, 47, 0.62) 0%, rgba(45, 67, 59, 0.72) 58%, rgba(8, 13, 17, 0.9) 100%)',
+              'linear-gradient(135deg, rgba(113, 82, 49, 0.9), rgba(58, 74, 60, 0.82) 46%, rgba(30, 42, 38, 0.92))',
             border: '1px solid rgba(255,255,255,0.16)',
+            boxShadow:
+              'inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -18px 34px rgba(0,0,0,0.22)',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              inset: '18% 15%',
+              borderRadius: 4,
+              background:
+                'linear-gradient(180deg, rgba(248,241,222,0.12), rgba(248,241,222,0.05))',
+              border: '1px dashed rgba(247,241,222,0.38)',
+              pointerEvents: 'none',
+            },
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              inset: 10,
+              borderRadius: 4,
+              border: '1px solid rgba(0,0,0,0.2)',
+              pointerEvents: 'none',
+            },
           }}
         >
           <Box
@@ -672,10 +779,10 @@ const SeatCompass = ({
               position: 'absolute',
               left: '50%',
               top: '50%',
-              width: { xs: '42%', md: '46%' },
-              height: { xs: '34%', md: '38%' },
+              width: { xs: '48%', md: '52%' },
+              height: { xs: '30%', md: '34%' },
               transform: 'translate(-50%, -50%)',
-              borderRadius: '50%',
+              borderRadius: 4,
               backgroundColor: 'rgba(247, 241, 222, 0.12)',
               border: '1px dashed rgba(247,241,222,0.42)',
               display: 'grid',
@@ -688,7 +795,7 @@ const SeatCompass = ({
               fontWeight={950}
               sx={{ color: 'rgba(248,241,222,0.76)' }}
             >
-              TABLE
+              MYSTERY TABLE
             </Typography>
           </Box>
           {players.map((player) => (
@@ -1484,6 +1591,7 @@ const PublicCoverDialog = ({
   fullScreen,
   onClose,
   onOpenRulebook,
+  onOpenPrivateCards,
   onOpenCard,
 }: {
   open: boolean;
@@ -1493,6 +1601,7 @@ const PublicCoverDialog = ({
   fullScreen: boolean;
   onClose: () => void;
   onOpenRulebook: () => void;
+  onOpenPrivateCards: () => void;
   onOpenCard: (card: AnyClueCard) => void;
 }) => (
   <Dialog
@@ -1506,7 +1615,7 @@ const PublicCoverDialog = ({
       <Stack direction="row" alignItems="center" spacing={1}>
         <AutoStoriesIcon />
         <Typography fontWeight={900} sx={{ flex: 1 }}>
-          자리 정보
+          좌석 카드
         </Typography>
         <IconButton onClick={onClose}>
           <CloseIcon />
@@ -1530,23 +1639,70 @@ const PublicCoverDialog = ({
             <Typography color="text.secondary" fontWeight={800}>
               {player?.name}
             </Typography>
+            <Stack
+              direction="row"
+              spacing={0.7}
+              sx={{ mt: 0.8 }}
+              flexWrap="wrap"
+            >
+              <Chip
+                size="small"
+                label={player?.socketId ? '연결' : '대기'}
+                color={player?.socketId ? 'success' : 'default'}
+              />
+              <Chip
+                size="small"
+                label={`뒷면 ${player?.heldCardBacks.length ?? 0}장`}
+              />
+              <Chip
+                size="small"
+                label={`공개 ${player?.publicRevealedClues.length ?? 0}장`}
+              />
+            </Stack>
           </Box>
         </Stack>
-        <Box
-          sx={{
-            p: 2,
-            borderRadius: 1,
-            backgroundColor: 'rgba(85, 64, 37, 0.08)',
-            whiteSpace: 'pre-wrap',
-            lineHeight: 1.7,
-          }}
-        >
-          {player?.rolePublicText ?? '게임 시작 후 공개 정보가 표시됩니다.'}
-        </Box>
+        <Stack spacing={1}>
+          <Typography fontWeight={900}>캐릭터 공개정보</Typography>
+          <Box
+            sx={{
+              p: 2,
+              borderRadius: 1,
+              backgroundColor: 'rgba(85, 64, 37, 0.08)',
+              whiteSpace: 'pre-wrap',
+              lineHeight: 1.7,
+            }}
+          >
+            {player?.rolePublicText ?? '게임 시작 후 공개 정보가 표시됩니다.'}
+          </Box>
+        </Stack>
+        {player?.heldCardBacks.length ? (
+          <Stack spacing={1}>
+            <Typography fontWeight={900}>
+              가져간 카드의 뒷면 {player.heldCardBacks.length}장
+            </Typography>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{ overflowX: 'auto', pb: 1 }}
+            >
+              {player.heldCardBacks.map((back) => (
+                <HeldCardBackFace
+                  key={`${player.id}:held:${back.backId}`}
+                  back={back}
+                />
+              ))}
+            </Stack>
+          </Stack>
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            아직 이 자리에 가져간 조사 카드가 없습니다.
+          </Typography>
+        )}
+        <Box sx={{ height: 1, backgroundColor: 'rgba(0,0,0,0.08)' }} />
         {player?.publicRevealedClues.length ? (
           <Stack spacing={1}>
             <Typography fontWeight={900}>
-              이 자리에 공개된 단서 {player.publicRevealedClues.length}장
+              공개된 카드 앞면 {player.publicRevealedClues.length}장
             </Typography>
             <Stack
               direction="row"
@@ -1565,18 +1721,29 @@ const PublicCoverDialog = ({
           </Stack>
         ) : (
           <Typography variant="body2" color="text.secondary">
-            아직 이 자리에 공개 단서가 없습니다.
+            아직 이 자리에 공개 카드 앞면이 없습니다.
           </Typography>
         )}
         {isSelf ? (
-          <Button
-            variant="contained"
-            startIcon={<AutoStoriesIcon />}
-            disabled={!canOpenRulebook}
-            onClick={onOpenRulebook}
-          >
-            비공개 룰북 열기
-          </Button>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+            <Button
+              fullWidth
+              variant="contained"
+              startIcon={<AutoStoriesIcon />}
+              disabled={!canOpenRulebook}
+              onClick={onOpenRulebook}
+            >
+              비공개 룰북 열기
+            </Button>
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<Inventory2Icon />}
+              onClick={onOpenPrivateCards}
+            >
+              내 개인 카드
+            </Button>
+          </Stack>
         ) : null}
       </Stack>
     </DialogContent>
@@ -2461,7 +2628,7 @@ export default function MurderMysteryTableExperience({
             pr: { lg: 0.2 },
           }}
         >
-          <SeatCompass
+          <SeatTable
             players={snapshot.players}
             sessionId={sessionId}
             positions={seatPositions}
@@ -2553,6 +2720,10 @@ export default function MurderMysteryTableExperience({
         onOpenRulebook={() => {
           setSelectedPlayerId(null);
           setIsRulebookOpen(true);
+        }}
+        onOpenPrivateCards={() => {
+          setSelectedPlayerId(null);
+          setIsPrivateCardsOpen(true);
         }}
         onOpenCard={setSelectedCard}
       />

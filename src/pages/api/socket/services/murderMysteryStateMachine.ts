@@ -65,10 +65,23 @@ const normalizeSeatPosition = (
   y: clampSeatCoordinate(position.y, 10, 90),
 });
 
+const RECTANGULAR_SEAT_POSITIONS: MurderMysterySeatPosition[] = [
+  { x: 50, y: 18 },
+  { x: 24, y: 82 },
+  { x: 76, y: 82 },
+  { x: 24, y: 18 },
+  { x: 76, y: 18 },
+  { x: 50, y: 88 },
+];
+
 const buildDefaultSeatPosition = (
   index: number,
   count: number
 ): MurderMysterySeatPosition => {
+  if (count <= RECTANGULAR_SEAT_POSITIONS.length) {
+    return RECTANGULAR_SEAT_POSITIONS[index] ?? RECTANGULAR_SEAT_POSITIONS[0];
+  }
+
   const safeCount = Math.max(count, 1);
   const angle = -Math.PI / 2 + (2 * Math.PI * index) / safeCount;
   return {
@@ -810,6 +823,48 @@ const buildBackCardView = (
       room.gameData.investigationTurn.reservationByPlayerId[viewerId] ===
       backId,
   };
+};
+
+const buildHeldCardBackViews = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  cardIds: string[]
+): MurderMysteryInvestigationBackCardView[] => {
+  const backsByCardId = new Map<
+    string,
+    MurderMysteryInvestigationBackCardView
+  >();
+
+  scenario.investigations.rounds.forEach((roundConfig) => {
+    roundConfig.targets.forEach((target) => {
+      const revealedForTarget =
+        room.gameData.revealedCardIdsByTargetId[target.id] ?? [];
+      revealedForTarget.forEach((cardId) => {
+        if (!cardIds.includes(cardId) || backsByCardId.has(cardId)) {
+          return;
+        }
+        const backId = getBackIdForTargetCard(room, target.id, cardId);
+        const card = getCardById(scenario, cardId);
+        if (!backId || !card) {
+          return;
+        }
+        const style = getCardBackStyle(scenario, target, cardId);
+        backsByCardId.set(cardId, {
+          backId,
+          targetId: target.id,
+          targetLabel: target.label,
+          imageSrc: style.imageSrc,
+          shortLabel: style.shortLabel,
+          extraInvestigationOnReveal: Boolean(card.extraInvestigationOnReveal),
+          isReservedByMe: false,
+        });
+      });
+    });
+  });
+
+  return cardIds
+    .map((cardId) => backsByCardId.get(cardId))
+    .filter(Boolean) as MurderMysteryInvestigationBackCardView[];
 };
 
 const buildInvestigationTargetView = (
@@ -2266,6 +2321,11 @@ export const buildMurderMysterySnapshot = (
         statusText:
           (entry as { statusText?: '감시' | '격리' | '결박' }).statusText ??
           '감시',
+        heldCardBacks: buildHeldCardBackViews(
+          room,
+          scenario,
+          room.gameData.revealedCardsByPlayerId[entry.id] ?? []
+        ),
         publicRevealedClues: buildClueVaultCards(
           scenario,
           room.gameData.revealedCardsByPlayerId[entry.id] ?? [],
