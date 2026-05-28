@@ -95,6 +95,7 @@ const toTargetType = (value: unknown): MurderMysteryTargetType | undefined => {
 const toStepKind = (value: unknown): MurderMysteryStepKind | undefined => {
   if (
     value === 'intro' ||
+    value === 'role_reading' ||
     value === 'investigate' ||
     value === 'discuss' ||
     value === 'final_vote' ||

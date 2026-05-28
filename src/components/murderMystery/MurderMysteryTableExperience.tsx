@@ -63,6 +63,7 @@ interface MurderMysteryTableExperienceProps {
   onLeaveRoom: () => void;
   onStartGame: () => void;
   onNextPhase: () => void;
+  onMarkRoleSheetRead: () => void;
   onFinalizeVote: () => void;
   onSubmitRolePreferences: (roleIds: string[]) => void;
   onClearRolePreferences: () => void;
@@ -1896,6 +1897,7 @@ export default function MurderMysteryTableExperience({
   onLeaveRoom,
   onStartGame,
   onNextPhase,
+  onMarkRoleSheetRead,
   onFinalizeVote,
   onSubmitRolePreferences,
   onClearRolePreferences,
@@ -1967,6 +1969,8 @@ export default function MurderMysteryTableExperience({
           0
         )
       : null;
+  const isPhaseTimerExpired =
+    phaseRemainingSec === 0 && snapshot.phaseTimer.durationSec !== null;
   const activeRound = snapshot.investigation.round;
   const activeRoundView =
     snapshot.investigation.rounds.find(
@@ -1989,6 +1993,12 @@ export default function MurderMysteryTableExperience({
     phaseKind !== 'lobby' &&
     phaseKind !== 'final_vote' &&
     phaseKind !== 'endbook';
+  const canAdvancePhase =
+    phaseKind !== 'role_reading' || snapshot.roleReading.allReady;
+  const nextPhaseTooltip =
+    phaseKind === 'role_reading' && !snapshot.roleReading.allReady
+      ? '모든 플레이어가 다 읽었어요를 눌러야 진행할 수 있습니다.'
+      : '다음 단계';
   const canFinalizeVote =
     canUseHostTools &&
     phaseKind === 'final_vote' &&
@@ -2132,6 +2142,129 @@ export default function MurderMysteryTableExperience({
   const resetSeats = () => {
     onResetSeatLayout();
   };
+
+  const renderRoleReadingArea = () => (
+    <Stack spacing={1.8}>
+      <Stack spacing={0.8}>
+        <Typography variant="h5" fontWeight={950}>
+          비공개 룰지 읽기
+        </Typography>
+        <Typography sx={{ color: '#d8d0bd', lineHeight: 1.7 }}>
+          {currentStep?.description ??
+            '각자 비공개 룰지를 읽고, 준비가 되면 다 읽었어요를 눌러주세요.'}
+        </Typography>
+      </Stack>
+
+      <Box
+        sx={{
+          borderRadius: 3,
+          border: '1px solid rgba(255,255,255,0.14)',
+          backgroundColor: 'rgba(255,255,255,0.06)',
+          p: { xs: 1.3, md: 1.6 },
+        }}
+      >
+        <Stack spacing={1.2}>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1}
+            alignItems={{ xs: 'stretch', sm: 'center' }}
+            justifyContent="space-between"
+          >
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              <Chip
+                icon={<TimerIcon />}
+                label={
+                  isPhaseTimerExpired
+                    ? '권장 시간이 지났습니다'
+                    : `권장 시간 ${formatSeconds(phaseRemainingSec)}`
+                }
+                sx={{
+                  backgroundColor: isPhaseTimerExpired
+                    ? 'rgba(245, 158, 11, 0.2)'
+                    : 'rgba(255,255,255,0.12)',
+                  color: '#f8f1de',
+                }}
+              />
+              <Chip
+                icon={<TaskAltIcon />}
+                label={`${snapshot.roleReading.readyCount}/${snapshot.roleReading.totalCount} 읽음`}
+                color={snapshot.roleReading.allReady ? 'success' : 'default'}
+                sx={{
+                  color: snapshot.roleReading.allReady ? undefined : '#f8f1de',
+                  backgroundColor: snapshot.roleReading.allReady
+                    ? undefined
+                    : 'rgba(255,255,255,0.12)',
+                }}
+              />
+            </Stack>
+            {snapshot.roleReading.allReady ? (
+              <Typography variant="body2" sx={{ color: '#9fe3c0' }}>
+                모두 준비되었습니다. 1라운드 조사가 열립니다.
+              </Typography>
+            ) : (
+              <Typography variant="body2" sx={{ color: '#d8d0bd' }}>
+                시간이 끝나도 자동 진행되지 않습니다.
+              </Typography>
+            )}
+          </Stack>
+
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            {snapshot.roleReading.players.map((player) => (
+              <Chip
+                key={player.playerId}
+                label={`${player.playerName} · ${
+                  player.ready ? '읽음' : '대기'
+                }`}
+                color={player.ready ? 'success' : 'default'}
+                variant={player.ready ? 'filled' : 'outlined'}
+                sx={{
+                  borderColor: player.ready
+                    ? undefined
+                    : 'rgba(255,255,255,0.32)',
+                  color: player.ready ? undefined : '#f8f1de',
+                }}
+              />
+            ))}
+          </Stack>
+        </Stack>
+      </Box>
+
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={1}
+        alignItems={{ xs: 'stretch', sm: 'center' }}
+      >
+        <Button
+          variant="contained"
+          startIcon={<AutoStoriesIcon />}
+          disabled={!snapshot.roleSheet}
+          onClick={() => setIsRulebookOpen(true)}
+          sx={{
+            backgroundColor: '#4655c7',
+            '&:hover': { backgroundColor: '#3542a5' },
+          }}
+        >
+          비공개 룰북 열기
+        </Button>
+        <Button
+          variant={snapshot.roleReading.yourReady ? 'outlined' : 'contained'}
+          color={snapshot.roleReading.yourReady ? 'success' : 'warning'}
+          startIcon={<TaskAltIcon />}
+          disabled={!selfPlayer || snapshot.roleReading.yourReady}
+          onClick={onMarkRoleSheetRead}
+        >
+          {snapshot.roleReading.yourReady ? '읽음 완료' : '다 읽었어요'}
+        </Button>
+      </Stack>
+
+      {canUseHostTools ? (
+        <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
+          방장도 수동 진행 버튼을 볼 수 있지만, 모든 플레이어가 읽음 완료를
+          눌러야 활성화됩니다.
+        </Typography>
+      ) : null}
+    </Stack>
+  );
 
   const renderInvestigationArea = () => (
     <Stack spacing={1.6}>
@@ -2447,6 +2580,10 @@ export default function MurderMysteryTableExperience({
       );
     }
 
+    if (phaseKind === 'role_reading') {
+      return renderRoleReadingArea();
+    }
+
     if (phaseKind === 'investigate') {
       return renderInvestigationArea();
     }
@@ -2575,10 +2712,16 @@ export default function MurderMysteryTableExperience({
             </Tooltip>
           ) : null}
           {showNextPhaseTool ? (
-            <Tooltip title="다음 단계">
-              <IconButton onClick={onNextPhase} sx={{ color: '#f8f1de' }}>
-                <SkipNextIcon />
-              </IconButton>
+            <Tooltip title={nextPhaseTooltip}>
+              <span>
+                <IconButton
+                  onClick={onNextPhase}
+                  disabled={!canAdvancePhase}
+                  sx={{ color: '#f8f1de' }}
+                >
+                  <SkipNextIcon />
+                </IconButton>
+              </span>
             </Tooltip>
           ) : null}
           {canFinalizeVote ? (

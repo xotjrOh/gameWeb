@@ -7,6 +7,7 @@ import {
   buildMurderMysterySnapshot,
   clearMurderMysteryRolePreferences,
   finalizeMurderMysteryVote,
+  markMurderMysteryRoleSheetRead,
   moveMurderMysteryToNextPhase,
   reportMurderMysterySpecialEvent,
   resetMurderMysteryGame,
@@ -207,6 +208,29 @@ const murderMysteryGameHandler = (
       emitMurderMysterySnapshots(room, io);
       io.emit('room-updated', rooms);
       return callback({ success: true });
+    } catch (error) {
+      return callback({ success: false, message: (error as Error).message });
+    }
+  });
+
+  socket.on('mm_mark_role_sheet_read', ({ roomId, sessionId }, callback) => {
+    try {
+      const room = toMurderMysteryRoom(validateRoom(roomId));
+      validatePlayer(room, sessionId);
+      const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
+
+      const result = markMurderMysteryRoleSheetRead(room, scenario, sessionId);
+
+      emitMurderMysterySnapshots(room, io);
+      if (result.advanced) {
+        io.emit('room-updated', rooms);
+      }
+      return callback({
+        success: true,
+        message: result.advanced
+          ? '모두 읽음 완료. 1라운드 조사로 진행합니다.'
+          : '읽음 완료로 표시했습니다.',
+      });
     } catch (error) {
       return callback({ success: false, message: (error as Error).message });
     }

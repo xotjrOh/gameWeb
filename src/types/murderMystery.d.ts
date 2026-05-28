@@ -3,6 +3,7 @@ import { CommonResponse } from '@/types/socket';
 export type MurderMysteryPhase = string;
 export type MurderMysteryStepKind =
   | 'intro'
+  | 'role_reading'
   | 'investigate'
   | 'discuss'
   | 'final_vote'
@@ -314,6 +315,21 @@ export interface MurderMysteryRoleSelectionView {
   yourPreferenceRoleIds: string[];
 }
 
+export interface MurderMysteryRoleReadingPlayerView {
+  playerId: string;
+  playerName: string;
+  ready: boolean;
+  readyAt: number | null;
+}
+
+export interface MurderMysteryRoleReadingView {
+  readyCount: number;
+  totalCount: number;
+  allReady: boolean;
+  yourReady: boolean;
+  players: MurderMysteryRoleReadingPlayerView[];
+}
+
 export interface MurderMysteryGameData {
   scenarioId: string;
   scenarioTitle: string;
@@ -324,6 +340,7 @@ export interface MurderMysteryGameData {
   phaseDurationSec: number | null;
   roleSelectionStatus: MurderMysteryRoleSelectionStatus;
   rolePreferencesByPlayerId: Record<string, string[]>;
+  roleReadingReadyByPlayerId: Record<string, number>;
   roleByPlayerId: Record<string, string>;
   roleDisplayNameByPlayerId: Record<string, string>;
   investigationUsedByPlayerId: Record<string, MurderMysteryInvestigationUsage>;
@@ -521,6 +538,7 @@ export interface MurderMysteryStateSnapshot {
   specialEvents: MurderMysteryReportableSpecialEventView[];
   seatLayoutByPlayerId: Record<string, MurderMysterySeatPosition>;
   roleSelection: MurderMysteryRoleSelectionView;
+  roleReading: MurderMysteryRoleReadingView;
   phase: MurderMysteryPhase;
   phaseOrder: MurderMysteryPhase[];
   players: MurderMysteryPublicPlayerView[];
@@ -574,6 +592,10 @@ export interface MurderMysteryClientToServerEvents {
     callback: (response: CommonResponse) => void
   ) => void;
   mm_host_next_phase: (
+    data: { roomId: string; sessionId: string },
+    callback: (response: CommonResponse) => void
+  ) => void;
+  mm_mark_role_sheet_read: (
     data: { roomId: string; sessionId: string },
     callback: (response: CommonResponse) => void
   ) => void;

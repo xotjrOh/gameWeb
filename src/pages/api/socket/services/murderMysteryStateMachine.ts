@@ -123,6 +123,27 @@ const ensureMurderMysterySeatLayout = (room: MurderMysteryRoom) => {
   return room.gameData.seatLayoutByPlayerId;
 };
 
+const ensureRoleReadingReadyMap = (room: MurderMysteryRoom) => {
+  room.gameData.roleReadingReadyByPlayerId ??= {};
+  const activePlayerIds = new Set(room.players.map((player) => player.id));
+
+  Object.keys(room.gameData.roleReadingReadyByPlayerId).forEach((playerId) => {
+    if (!activePlayerIds.has(playerId)) {
+      delete room.gameData.roleReadingReadyByPlayerId[playerId];
+    }
+  });
+
+  return room.gameData.roleReadingReadyByPlayerId;
+};
+
+const areAllRoleSheetsRead = (room: MurderMysteryRoom) => {
+  const readyByPlayerId = ensureRoleReadingReadyMap(room);
+  return (
+    room.players.length > 0 &&
+    room.players.every((player) => Boolean(readyByPlayerId[player.id]))
+  );
+};
+
 const getRoundConfig = (
   scenario: MurderMysteryScenario,
   round: MurderMysteryInvestigationRound
@@ -295,6 +316,7 @@ const createInitialStateWithScenario = (
   phaseDurationSec: null,
   roleSelectionStatus: 'open',
   rolePreferencesByPlayerId: {},
+  roleReadingReadyByPlayerId: {},
   roleByPlayerId: {},
   roleDisplayNameByPlayerId: {},
   investigationUsedByPlayerId: {},
@@ -1345,6 +1367,7 @@ const applyMurderMysteryRoleAssignments = (
   ensureInvestigationUsageMap(room, scenario);
   room.gameData.roleByPlayerId = {};
   room.gameData.roleDisplayNameByPlayerId = {};
+  room.gameData.roleReadingReadyByPlayerId = {};
   room.gameData.privateCardIdsByPlayerId = {};
   room.gameData.revealedCardsByPlayerId = {};
 
@@ -1519,6 +1542,7 @@ export const startMurderMysteryGame = (
   room.gameData.revealedCardIds = [];
   room.gameData.revealedCardIdsByTargetId = {};
   room.gameData.revealedPartIds = [];
+  room.gameData.roleReadingReadyByPlayerId = {};
   room.gameData.specialEventStatusById =
     buildSpecialEventStatusTemplate(scenario);
   room.gameData.voteByPlayerId = {};
@@ -1612,6 +1636,11 @@ export const moveMurderMysteryToNextPhase = (
   if (currentStep.kind === 'endbook') {
     throw new Error('이미 엔딩북 단계입니다.');
   }
+  if (currentStep.kind === 'role_reading' && !areAllRoleSheetsRead(room)) {
+    throw new Error(
+      '모든 플레이어가 비공개 룰지를 읽어야 다음 단계로 이동할 수 있습니다.'
+    );
+  }
 
   let resolvedPending: ReturnType<typeof resolveAllPendingInvestigations> = [];
   if (
@@ -1649,6 +1678,49 @@ export const moveMurderMysteryToNextPhase = (
       : GAME_STATUS.IN_PROGRESS;
 
   return { resolvedPending };
+};
+
+export const markMurderMysteryRoleSheetRead = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  playerId: string
+) => {
+  const currentStep = getFlowStepByPhase(scenario, room.gameData.phase);
+  if (currentStep?.kind !== 'role_reading') {
+    throw new Error('비공개 룰지 읽기 단계에서만 실행할 수 있습니다.');
+  }
+  if (!room.players.some((player) => player.id === playerId)) {
+    throw new Error('참가자만 읽음 완료를 제출할 수 있습니다.');
+  }
+
+  const readyByPlayerId = ensureRoleReadingReadyMap(room);
+  readyByPlayerId[playerId] ??= Date.now();
+
+  if (!areAllRoleSheetsRead(room)) {
+    return { allReady: false, advanced: false };
+  }
+
+  const nextPhase = getNextPhase(room.gameData.phase, scenario);
+  if (!nextPhase) {
+    throw new Error('다음 단계로 이동할 수 없습니다.');
+  }
+
+  applyPhaseWithTimer(room, scenario, nextPhase);
+
+  const nextStep = getFlowStepByPhase(scenario, nextPhase);
+  if (nextStep?.kind === 'investigate' && nextStep.round) {
+    initializeInvestigationTurnState(room, scenario, nextStep.round);
+  }
+  if (nextStep?.enterAnnouncement) {
+    appendMurderMysteryAnnouncement(room, 'SYSTEM', nextStep.enterAnnouncement);
+  }
+
+  room.status =
+    nextStep?.kind === 'endbook'
+      ? GAME_STATUS.PENDING
+      : GAME_STATUS.IN_PROGRESS;
+
+  return { allReady: true, advanced: true };
 };
 
 export const submitMurderMysteryInvestigation = (
@@ -2275,6 +2347,24 @@ export const buildMurderMysterySnapshot = (
       ? (rolePreferencesByPlayerId[player.id] ?? [])
       : [],
   };
+  const roleReadingReadyByPlayerId = ensureRoleReadingReadyMap(room);
+  const roleReadingPlayers = room.players.map((entry) => ({
+    playerId: entry.id,
+    playerName: entry.name,
+    ready: Boolean(roleReadingReadyByPlayerId[entry.id]),
+    readyAt: roleReadingReadyByPlayerId[entry.id] ?? null,
+  }));
+  const roleReadingReadyCount = roleReadingPlayers.filter(
+    (entry) => entry.ready
+  ).length;
+  const roleReading = {
+    readyCount: roleReadingReadyCount,
+    totalCount: room.players.length,
+    allReady:
+      room.players.length > 0 && roleReadingReadyCount === room.players.length,
+    yourReady: player ? Boolean(roleReadingReadyByPlayerId[player.id]) : false,
+    players: roleReadingPlayers,
+  };
 
   return {
     roomId: room.roomId,
@@ -2295,6 +2385,7 @@ export const buildMurderMysterySnapshot = (
     specialEvents: reportableSpecialEvents,
     seatLayoutByPlayerId,
     roleSelection,
+    roleReading,
     phase: room.gameData.phase,
     phaseOrder: getMurderMysteryPhaseOrder(scenario),
     players: room.players.map((entry) => {

@@ -131,6 +131,7 @@ export const DEFAULT_GAME_DATA: {
     phaseDurationSec: null,
     roleSelectionStatus: 'open',
     rolePreferencesByPlayerId: {},
+    roleReadingReadyByPlayerId: {},
     roleByPlayerId: {},
     roleDisplayNameByPlayerId: {},
     investigationUsedByPlayerId: {},

@@ -46,6 +46,12 @@ flow:
       kind: intro
       durationSec: 180
       enterAnnouncement: '용궁섬의 행사 조명이 꺼지고, 재활수조실의 밤이 열립니다.'
+    - id: ROLE_READING
+      label: '비공개 룰지 읽기'
+      kind: role_reading
+      durationSec: 900
+      description: '각자 비공개 룰지를 읽고, 준비가 되면 다 읽었어요를 눌러주세요. 권장 시간이 지나도 모두 준비될 때까지 다음 단계로 넘어가지 않습니다.'
+      enterAnnouncement: '각자 비공개 룰지를 읽는 시간입니다. 모두 읽음 완료를 누르면 1라운드 조사가 시작됩니다.'
     - id: ROUND1_INVESTIGATE
       label: '1라운드 조사'
       kind: investigate

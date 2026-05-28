@@ -534,7 +534,7 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       startResponse
     );
 
-    const moveToInvestigateResponse = await emitAck(
+    const moveToRoleReadingResponse = await emitAck(
       hostSocket,
       'mm_host_next_phase',
       {
@@ -543,9 +543,9 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       }
     );
     assertCondition(
-      moveToInvestigateResponse?.success,
-      'mm_host_next_phase failed',
-      moveToInvestigateResponse
+      moveToRoleReadingResponse?.success,
+      'mm_host_next_phase to role reading failed',
+      moveToRoleReadingResponse
     );
 
     const sessionOrder = [
@@ -557,6 +557,70 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       [hostSessionId, hostSocket],
       ...playerSockets.entries(),
     ]);
+
+    const roleReadingSnapshot = await requestMurderSnapshot(
+      hostSocket,
+      roomId,
+      hostSessionId
+    );
+    assertCondition(
+      roleReadingSnapshot.phase === 'ROLE_READING' &&
+        roleReadingSnapshot.roleReading?.readyCount === 0 &&
+        roleReadingSnapshot.roleReading?.totalCount === maxPlayers,
+      'murder should enter role reading gate after intro',
+      roleReadingSnapshot.roleReading
+    );
+
+    const blockedRoleReadingNextResponse = await emitAck(
+      hostSocket,
+      'mm_host_next_phase',
+      {
+        roomId,
+        sessionId: hostSessionId,
+      }
+    );
+    assertCondition(
+      blockedRoleReadingNextResponse?.success === false,
+      'role reading gate should block host next before all players read',
+      blockedRoleReadingNextResponse
+    );
+
+    for (const [index, sessionId] of sessionOrder.entries()) {
+      const readResponse = await emitAck(
+        socketsBySession.get(sessionId),
+        'mm_mark_role_sheet_read',
+        {
+          roomId,
+          sessionId,
+        }
+      );
+      assertCondition(
+        readResponse?.success,
+        'mm_mark_role_sheet_read failed',
+        readResponse
+      );
+
+      const readSnapshot = await requestMurderSnapshot(
+        hostSocket,
+        roomId,
+        hostSessionId
+      );
+      if (index < sessionOrder.length - 1) {
+        assertCondition(
+          readSnapshot.phase === 'ROLE_READING',
+          'role reading gate advanced too early',
+          readSnapshot.roleReading
+        );
+      } else {
+        assertCondition(
+          readSnapshot.phase === 'ROUND1_INVESTIGATE' &&
+            readSnapshot.roleReading?.readyCount === maxPlayers,
+          'role reading gate did not auto-advance after all players read',
+          { phase: readSnapshot.phase, roleReading: readSnapshot.roleReading }
+        );
+      }
+    }
+
     const snapshotEntries = await Promise.all(
       sessionOrder.map(async (sessionId) => [
         sessionId,

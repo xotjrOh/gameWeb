@@ -369,6 +369,12 @@ export default function MurderMysteryGameScreen({
           '다음 단계로 진행했습니다.'
         )
       }
+      onMarkRoleSheetRead={() =>
+        emitWithAck('mm_mark_role_sheet_read', {
+          roomId,
+          sessionId,
+        })
+      }
       onFinalizeVote={() =>
         emitWithAck(
           'mm_host_finalize_vote',
