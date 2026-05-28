@@ -7,6 +7,7 @@ export type MurderMysteryStepKind =
   | 'investigate'
   | 'discuss'
   | 'final_vote'
+  | 'secret_review'
   | 'endbook';
 
 export type MurderMysteryPlayerStatus = '감시' | '격리' | '결박';
@@ -17,6 +18,7 @@ export type MurderMysteryTargetType = 'location' | 'character' | 'item';
 export type MurderMysterySpecialEventOutcome = 'reveal' | 'seal';
 export type MurderMysterySpecialEventStatus = 'pending' | 'revealed' | 'sealed';
 export type MurderMysteryRoleSelectionStatus = 'open' | 'locked';
+export type MurderMysterySecretGuessJudgement = 'correct' | 'incorrect';
 
 export interface MurderMysteryPlayersConfig {
   min: number;
@@ -198,6 +200,17 @@ export interface MurderMysteryFinalVoteOptionScenario {
   roleId?: string;
 }
 
+export interface MurderMysterySecretGoalResultScenario {
+  id: string;
+  label: string;
+  roleId: string;
+  guesserRoleId: string;
+  targetRoleId: string;
+  successWhen: 'correct' | 'notCorrect';
+  successText: string;
+  failureText: string;
+}
+
 export interface MurderMysteryScenario {
   id: string;
   title: string;
@@ -230,6 +243,8 @@ export interface MurderMysteryScenario {
     common: string;
     variantMatched: string;
     variantNotMatched: string;
+    voteVariants?: Record<string, string>;
+    secretGoalResults?: MurderMysterySecretGoalResultScenario[];
     closingLine: string;
   };
 }
@@ -273,6 +288,21 @@ export interface MurderMysteryFinalVoteResult {
   suspectPlayerId: string | null;
   matched: boolean;
   tally: Record<string, number>;
+}
+
+export interface MurderMysterySecretGuessInput {
+  targetPlayerId: string;
+  text: string;
+}
+
+export interface MurderMysterySecretGuessSubmission {
+  id: string;
+  authorPlayerId: string;
+  targetPlayerId: string;
+  text: string;
+  submittedAt: number;
+  judgement?: MurderMysterySecretGuessJudgement;
+  judgedAt?: number;
 }
 
 export interface MurderMysterySeatPosition {
@@ -357,6 +387,10 @@ export interface MurderMysteryGameData {
   voteByPlayerId: Record<string, string>;
   finalVoteResult: MurderMysteryFinalVoteResult | null;
   endbookVariant: 'matched' | 'notMatched' | null;
+  secretGuessSubmissionsById: Record<
+    string,
+    MurderMysterySecretGuessSubmission
+  >;
   announcements: MurderMysteryAnnouncement[];
   appliedDynamicRuleIds: Record<string, true>;
   seatLayoutByPlayerId: Record<string, MurderMysterySeatPosition>;
@@ -511,6 +545,31 @@ export interface MurderMysteryEndbookView {
   closingLine: string;
 }
 
+export interface MurderMysterySecretReviewTargetView {
+  playerId: string;
+  displayName: string;
+}
+
+export interface MurderMysterySecretReviewSubmissionView {
+  submissionId: string;
+  text: string;
+  judgement: MurderMysterySecretGuessJudgement | null;
+}
+
+export interface MurderMysterySecretReviewView {
+  enabled: boolean;
+  totalPlayers: number;
+  requiredSubmissionsPerPlayer: number;
+  submittedPlayers: number;
+  allSubmitted: boolean;
+  judgedSubmissions: number;
+  totalSubmissions: number;
+  allJudged: boolean;
+  yourSubmitted: boolean;
+  targetPlayers: MurderMysterySecretReviewTargetView[];
+  receivedGuesses: MurderMysterySecretReviewSubmissionView[];
+}
+
 export interface MurderMysteryReportableSpecialEventView {
   id: string;
   label: string;
@@ -563,6 +622,7 @@ export interface MurderMysteryStateSnapshot {
   };
   investigation: MurderMysteryInvestigationView;
   finalVote: MurderMysteryFinalVoteView;
+  secretReview: MurderMysterySecretReviewView;
   endbook: MurderMysteryEndbookView | null;
   isHostView: boolean;
   hostParticipation: {
@@ -687,6 +747,23 @@ export interface MurderMysteryClientToServerEvents {
       sessionId: string;
       voteOptionId?: string;
       suspectPlayerId?: string;
+    },
+    callback: (response: CommonResponse) => void
+  ) => void;
+  mm_submit_secret_guesses: (
+    data: {
+      roomId: string;
+      sessionId: string;
+      guesses: MurderMysterySecretGuessInput[];
+    },
+    callback: (response: CommonResponse) => void
+  ) => void;
+  mm_judge_secret_guess: (
+    data: {
+      roomId: string;
+      sessionId: string;
+      submissionId: string;
+      judgement: MurderMysterySecretGuessJudgement;
     },
     callback: (response: CommonResponse) => void
   ) => void;

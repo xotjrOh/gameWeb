@@ -21,6 +21,8 @@ import {
   MurderMysteryRoleSheetView,
   MurderMysteryScenario,
   MurderMysterySeatPosition,
+  MurderMysterySecretGuessInput,
+  MurderMysterySecretGuessJudgement,
   MurderMysterySpecialEventOutcome,
   MurderMysteryStateSnapshot,
 } from '@/types/murderMystery';
@@ -228,6 +230,61 @@ const getSpecialEventById = (
   eventId: string
 ) => scenario.specialEvents.find((event) => event.id === eventId);
 
+const getSecretReviewStep = (scenario: MurderMysteryScenario) =>
+  scenario.flow.steps.find((step) => step.kind === 'secret_review') ?? null;
+
+const getPlayerByRoleId = (room: MurderMysteryRoom, roleId: string) =>
+  room.players.find(
+    (player) => room.gameData.roleByPlayerId[player.id] === roleId
+  );
+
+const getPlayerDisplayName = (room: MurderMysteryRoom, playerId: string) => {
+  const player = room.players.find((entry) => entry.id === playerId);
+  if (!player) {
+    return '알 수 없음';
+  }
+  return room.gameData.roleDisplayNameByPlayerId[player.id] ?? player.name;
+};
+
+const getRequiredSecretSubmissionCount = (room: MurderMysteryRoom) =>
+  Math.max(room.players.length - 1, 0);
+
+const getSecretSubmissions = (room: MurderMysteryRoom) =>
+  Object.values(room.gameData.secretGuessSubmissionsById ?? {});
+
+const hasPlayerSubmittedSecretGuesses = (
+  room: MurderMysteryRoom,
+  playerId: string
+) =>
+  getSecretSubmissions(room).filter(
+    (submission) => submission.authorPlayerId === playerId
+  ).length >= getRequiredSecretSubmissionCount(room);
+
+const areAllSecretGuessesSubmitted = (room: MurderMysteryRoom) =>
+  room.players.length > 0 &&
+  room.players.every((player) =>
+    hasPlayerSubmittedSecretGuesses(room, player.id)
+  );
+
+const areAllSecretGuessesJudged = (room: MurderMysteryRoom) => {
+  const submissions = getSecretSubmissions(room);
+  const expectedCount =
+    room.players.length * getRequiredSecretSubmissionCount(room);
+  return (
+    expectedCount > 0 &&
+    submissions.length >= expectedCount &&
+    submissions.every((submission) => Boolean(submission.judgement))
+  );
+};
+
+const getAnonymousSortValue = (id: string) => {
+  let hash = 0;
+  for (let index = 0; index < id.length; index += 1) {
+    hash = (hash * 31 + id.charCodeAt(index)) >>> 0;
+  }
+  return hash;
+};
+
 const buildSpecialEventStatusTemplate = (
   scenario: MurderMysteryScenario
 ): MurderMysteryGameData['specialEventStatusById'] =>
@@ -341,6 +398,7 @@ const createInitialStateWithScenario = (
   voteByPlayerId: {},
   finalVoteResult: null,
   endbookVariant: null,
+  secretGuessSubmissionsById: {},
   announcements: [],
   appliedDynamicRuleIds: {},
   seatLayoutByPlayerId: {},
@@ -1056,6 +1114,105 @@ const buildInvestigationTurnView = (
   };
 };
 
+const buildSecretReviewView = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  viewerId: string
+) => {
+  const secretReviewStep = getSecretReviewStep(scenario);
+  const submissions = getSecretSubmissions(room);
+  const player = room.players.find((entry) => entry.id === viewerId) ?? null;
+  const requiredSubmissionsPerPlayer = getRequiredSecretSubmissionCount(room);
+  const submittedPlayers = room.players.filter((entry) =>
+    hasPlayerSubmittedSecretGuesses(room, entry.id)
+  ).length;
+  const totalSubmissions = room.players.length * requiredSubmissionsPerPlayer;
+  const allSubmitted = areAllSecretGuessesSubmitted(room);
+  const judgedSubmissions = submissions.filter((submission) =>
+    Boolean(submission.judgement)
+  ).length;
+
+  return {
+    enabled: Boolean(secretReviewStep),
+    totalPlayers: room.players.length,
+    requiredSubmissionsPerPlayer,
+    submittedPlayers,
+    allSubmitted,
+    judgedSubmissions,
+    totalSubmissions,
+    allJudged: areAllSecretGuessesJudged(room),
+    yourSubmitted: player
+      ? hasPlayerSubmittedSecretGuesses(room, player.id)
+      : false,
+    targetPlayers: player
+      ? room.players
+          .filter((entry) => entry.id !== player.id)
+          .map((entry) => ({
+            playerId: entry.id,
+            displayName: getPlayerDisplayName(room, entry.id),
+          }))
+      : [],
+    receivedGuesses:
+      player && allSubmitted
+        ? submissions
+            .filter((submission) => submission.targetPlayerId === player.id)
+            .sort(
+              (left, right) =>
+                getAnonymousSortValue(left.id) - getAnonymousSortValue(right.id)
+            )
+            .map((submission) => ({
+              submissionId: submission.id,
+              text: submission.text,
+              judgement: submission.judgement ?? null,
+            }))
+        : [],
+  };
+};
+
+const buildVoteVariantText = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario
+) => {
+  const voteVariants = scenario.endbook.voteVariants;
+  const result = room.gameData.finalVoteResult;
+  if (voteVariants) {
+    if (result?.voteOptionId && voteVariants[result.voteOptionId]) {
+      return voteVariants[result.voteOptionId];
+    }
+    if (!result?.voteOptionId && voteVariants.tie) {
+      return voteVariants.tie;
+    }
+    if (voteVariants.default) {
+      return voteVariants.default;
+    }
+  }
+  return room.gameData.endbookVariant === 'matched'
+    ? scenario.endbook.variantMatched
+    : scenario.endbook.variantNotMatched;
+};
+
+const buildSecretGoalResultTexts = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario
+) =>
+  (scenario.endbook.secretGoalResults ?? [])
+    .map((goal) => {
+      const guesser = getPlayerByRoleId(room, goal.guesserRoleId);
+      const target = getPlayerByRoleId(room, goal.targetRoleId);
+      if (!guesser || !target) {
+        return null;
+      }
+      const submission = getSecretSubmissions(room).find(
+        (entry) =>
+          entry.authorPlayerId === guesser.id &&
+          entry.targetPlayerId === target.id
+      );
+      const isCorrect = submission?.judgement === 'correct';
+      const success = goal.successWhen === 'correct' ? isCorrect : !isCorrect;
+      return success ? goal.successText : goal.failureText;
+    })
+    .filter(Boolean) as string[];
+
 const buildEndbookView = (
   room: MurderMysteryRoom,
   scenario: MurderMysteryScenario
@@ -1064,13 +1221,13 @@ const buildEndbookView = (
   if (currentStep?.kind !== 'endbook') {
     return null;
   }
-  const variant =
-    room.gameData.endbookVariant === 'matched'
-      ? scenario.endbook.variantMatched
-      : scenario.endbook.variantNotMatched;
+  const variantParts = [
+    buildVoteVariantText(room, scenario),
+    ...buildSecretGoalResultTexts(room, scenario),
+  ].filter((part) => part.trim().length > 0);
   return {
     common: scenario.endbook.common,
-    variant,
+    variant: variantParts.join('\n\n'),
     closingLine: scenario.endbook.closingLine,
   };
 };
@@ -1548,6 +1705,7 @@ export const startMurderMysteryGame = (
   room.gameData.voteByPlayerId = {};
   room.gameData.finalVoteResult = null;
   room.gameData.endbookVariant = null;
+  room.gameData.secretGuessSubmissionsById = {};
   room.gameData.appliedDynamicRuleIds = {};
   room.gameData.announcements = [];
   clearInvestigationTurnState(room);
@@ -1641,6 +1799,14 @@ export const moveMurderMysteryToNextPhase = (
       '모든 플레이어가 비공개 룰지를 읽어야 다음 단계로 이동할 수 있습니다.'
     );
   }
+  if (
+    currentStep.kind === 'secret_review' &&
+    !areAllSecretGuessesJudged(room)
+  ) {
+    throw new Error(
+      '모든 비밀 제출 채점이 끝나야 엔딩 단계로 이동할 수 있습니다.'
+    );
+  }
 
   let resolvedPending: ReturnType<typeof resolveAllPendingInvestigations> = [];
   if (
@@ -1664,6 +1830,7 @@ export const moveMurderMysteryToNextPhase = (
   if (nextStep?.kind === 'final_vote') {
     room.gameData.voteByPlayerId = {};
     room.gameData.finalVoteResult = null;
+    room.gameData.secretGuessSubmissionsById = {};
   }
   if (nextStep?.kind === 'investigate' && nextStep.round) {
     initializeInvestigationTurnState(room, scenario, nextStep.round);
@@ -2059,6 +2226,100 @@ export const submitMurderMysteryVote = (
   room.gameData.voteByPlayerId[playerId] = voteOptionId;
 };
 
+export const submitMurderMysterySecretGuesses = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  playerId: string,
+  guesses: MurderMysterySecretGuessInput[]
+) => {
+  room.gameData.secretGuessSubmissionsById ??= {};
+  const step = getFlowStepByPhase(scenario, room.gameData.phase);
+  if (step?.kind !== 'secret_review') {
+    throw new Error('지금은 비밀 제출 단계가 아닙니다.');
+  }
+  if (!room.players.some((player) => player.id === playerId)) {
+    throw new Error('참가자만 비밀을 제출할 수 있습니다.');
+  }
+  if (hasPlayerSubmittedSecretGuesses(room, playerId)) {
+    throw new Error('이미 비밀 추측을 제출했습니다.');
+  }
+  if (!Array.isArray(guesses)) {
+    throw new Error('비밀 추측을 제출해주세요.');
+  }
+
+  const expectedTargetIds = room.players
+    .filter((player) => player.id !== playerId)
+    .map((player) => player.id);
+  const expectedTargetIdSet = new Set(expectedTargetIds);
+  const submittedTargetIdSet = new Set<string>();
+
+  guesses.forEach((guess) => {
+    if (!expectedTargetIdSet.has(guess.targetPlayerId)) {
+      throw new Error('다른 플레이어에 대한 비밀만 제출할 수 있습니다.');
+    }
+    if (submittedTargetIdSet.has(guess.targetPlayerId)) {
+      throw new Error('같은 플레이어에 대한 비밀을 중복 제출할 수 없습니다.');
+    }
+    const text = guess.text.trim();
+    if (!text) {
+      throw new Error('비밀 추측 내용을 입력해주세요.');
+    }
+    if (text.length > 500) {
+      throw new Error('비밀 추측은 500자 이내로 입력해주세요.');
+    }
+    submittedTargetIdSet.add(guess.targetPlayerId);
+  });
+
+  if (submittedTargetIdSet.size !== expectedTargetIds.length) {
+    throw new Error('다른 모든 플레이어에 대한 비밀을 하나씩 제출해주세요.');
+  }
+
+  const submittedAt = Date.now();
+  guesses.forEach((guess) => {
+    const id = makeId('mm_secret');
+    room.gameData.secretGuessSubmissionsById[id] = {
+      id,
+      authorPlayerId: playerId,
+      targetPlayerId: guess.targetPlayerId,
+      text: guess.text.trim(),
+      submittedAt,
+    };
+  });
+};
+
+export const judgeMurderMysterySecretGuess = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  playerId: string,
+  submissionId: string,
+  judgement: MurderMysterySecretGuessJudgement
+) => {
+  room.gameData.secretGuessSubmissionsById ??= {};
+  const step = getFlowStepByPhase(scenario, room.gameData.phase);
+  if (step?.kind !== 'secret_review') {
+    throw new Error('지금은 비밀 채점 단계가 아닙니다.');
+  }
+  if (!areAllSecretGuessesSubmitted(room)) {
+    throw new Error(
+      '모든 플레이어가 비밀 추측을 제출한 뒤 채점할 수 있습니다.'
+    );
+  }
+  if (judgement !== 'correct' && judgement !== 'incorrect') {
+    throw new Error('채점 결과가 올바르지 않습니다.');
+  }
+
+  const submission = room.gameData.secretGuessSubmissionsById[submissionId];
+  if (!submission) {
+    throw new Error('비밀 제출을 찾을 수 없습니다.');
+  }
+  if (submission.targetPlayerId !== playerId) {
+    throw new Error('자신에게 도착한 비밀 제출만 채점할 수 있습니다.');
+  }
+
+  submission.judgement = judgement;
+  submission.judgedAt = Date.now();
+};
+
 const resolveFinalVoteOptionId = (
   room: MurderMysteryRoom,
   scenario: MurderMysteryScenario,
@@ -2152,6 +2413,21 @@ export const finalizeMurderMysteryVote = (
 
   room.gameData.finalVoteResult = result;
   room.gameData.endbookVariant = matched ? 'matched' : 'notMatched';
+
+  const secretReviewStep = getSecretReviewStep(scenario);
+  if (secretReviewStep) {
+    room.gameData.secretGuessSubmissionsById = {};
+    applyPhaseWithTimer(room, scenario, secretReviewStep.id);
+    if (secretReviewStep.enterAnnouncement) {
+      appendMurderMysteryAnnouncement(
+        room,
+        'SYSTEM',
+        secretReviewStep.enterAnnouncement
+      );
+    }
+    room.status = GAME_STATUS.IN_PROGRESS;
+    return result;
+  }
 
   const endbookStep = scenario.flow.steps.find(
     (flowStep) => flowStep.kind === 'endbook'
@@ -2470,6 +2746,7 @@ export const buildMurderMysterySnapshot = (
           : {},
       result: room.gameData.finalVoteResult,
     },
+    secretReview: buildSecretReviewView(room, scenario, viewerId),
     endbook: buildEndbookView(room, scenario),
     isHostView,
     hostParticipation: {

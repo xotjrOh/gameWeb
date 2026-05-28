@@ -11,6 +11,7 @@ import {
   Divider,
   IconButton,
   Stack,
+  TextField,
   Tooltip,
   Typography,
   useMediaQuery,
@@ -42,6 +43,8 @@ import {
   MurderMysteryPublicPlayerView,
   MurderMysteryRoleSheetView,
   MurderMysterySeatPosition,
+  MurderMysterySecretGuessInput,
+  MurderMysterySecretGuessJudgement,
   MurderMysterySpecialEventOutcome,
   MurderMysteryStateSnapshot,
   MurderMysteryStepKind,
@@ -78,6 +81,11 @@ interface MurderMysteryTableExperienceProps {
   onSetReservation: (backId: string) => void;
   onClearReservation: () => void;
   onSubmitVote: (voteOptionId: string) => void;
+  onSubmitSecretGuesses: (guesses: MurderMysterySecretGuessInput[]) => void;
+  onJudgeSecretGuess: (
+    submissionId: string,
+    judgement: MurderMysterySecretGuessJudgement
+  ) => void;
   onReportSpecialEvent: (
     eventId: string,
     outcome: MurderMysterySpecialEventOutcome
@@ -1909,6 +1917,8 @@ export default function MurderMysteryTableExperience({
   onSetReservation,
   onClearReservation,
   onSubmitVote,
+  onSubmitSecretGuesses,
+  onJudgeSecretGuess,
   onReportSpecialEvent,
 }: MurderMysteryTableExperienceProps) {
   const theme = useTheme();
@@ -1937,8 +1947,14 @@ export default function MurderMysteryTableExperience({
   const [draftRolePreferenceIds, setDraftRolePreferenceIds] = useState<
     string[]
   >([]);
+  const [secretGuessDrafts, setSecretGuessDrafts] = useState<
+    Record<string, string>
+  >({});
 
   const playerIdsKey = snapshot.players.map((player) => player.id).join('|');
+  const secretTargetIdsKey = snapshot.secretReview.targetPlayers
+    .map((player) => player.playerId)
+    .join('|');
   const roleIdsKey = snapshot.roleSelection.roles
     .map((role) => role.id)
     .join('|');
@@ -1994,11 +2010,14 @@ export default function MurderMysteryTableExperience({
     phaseKind !== 'final_vote' &&
     phaseKind !== 'endbook';
   const canAdvancePhase =
-    phaseKind !== 'role_reading' || snapshot.roleReading.allReady;
+    (phaseKind !== 'role_reading' || snapshot.roleReading.allReady) &&
+    (phaseKind !== 'secret_review' || snapshot.secretReview.allJudged);
   const nextPhaseTooltip =
     phaseKind === 'role_reading' && !snapshot.roleReading.allReady
       ? '모든 플레이어가 다 읽었어요를 눌러야 진행할 수 있습니다.'
-      : '다음 단계';
+      : phaseKind === 'secret_review' && !snapshot.secretReview.allJudged
+        ? '모든 비밀 채점이 끝나야 엔딩으로 진행할 수 있습니다.'
+        : '다음 단계';
   const canFinalizeVote =
     canUseHostTools &&
     phaseKind === 'final_vote' &&
@@ -2032,6 +2051,17 @@ export default function MurderMysteryTableExperience({
       ownPreferenceIds.length === roleIds.length ? ownPreferenceIds : roleIds
     );
   }, [roleIdsKey, ownPreferenceIdsKey]);
+
+  useEffect(() => {
+    setSecretGuessDrafts((current) =>
+      Object.fromEntries(
+        snapshot.secretReview.targetPlayers.map((player) => [
+          player.playerId,
+          current[player.playerId] ?? '',
+        ])
+      )
+    );
+  }, [secretTargetIdsKey, snapshot.secretReview.targetPlayers]);
 
   const setRolePreferenceRank = (roleId: string, rankIndex: number) => {
     const scenarioRoleIds = snapshot.roleSelection.roles.map((role) => role.id);
@@ -2470,6 +2500,157 @@ export default function MurderMysteryTableExperience({
     </Stack>
   );
 
+  const renderSecretReviewArea = () => {
+    const review = snapshot.secretReview;
+    const canSubmitGuesses =
+      !review.yourSubmitted &&
+      review.targetPlayers.length > 0 &&
+      review.targetPlayers.every(
+        (player) => secretGuessDrafts[player.playerId]?.trim().length > 0
+      );
+
+    if (isHostView && review.targetPlayers.length === 0) {
+      return (
+        <Stack spacing={1.6}>
+          <Box>
+            <Typography variant="h5" fontWeight={950}>
+              비밀 제출/채점
+            </Typography>
+            <Typography sx={{ color: '#d8d0bd' }}>
+              진행자는 제출과 채점 진행률만 확인합니다.
+            </Typography>
+          </Box>
+          <Chip
+            label={`제출 ${review.submittedPlayers} / ${review.totalPlayers}`}
+          />
+          <Chip
+            label={`채점 ${review.judgedSubmissions} / ${review.totalSubmissions}`}
+          />
+        </Stack>
+      );
+    }
+
+    return (
+      <Stack spacing={1.6}>
+        <Box>
+          <Typography variant="h5" fontWeight={950}>
+            비밀 제출/채점
+          </Typography>
+          <Typography sx={{ color: '#d8d0bd' }}>
+            다른 두 사람이 숨긴 비밀을 익명으로 적고, 모두 제출되면 자신에게
+            도착한 추측을 채점하세요.
+          </Typography>
+        </Box>
+        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+          <Chip
+            label={`제출 ${review.submittedPlayers} / ${review.totalPlayers}`}
+          />
+          <Chip
+            label={`채점 ${review.judgedSubmissions} / ${review.totalSubmissions}`}
+          />
+        </Stack>
+        {!review.allSubmitted ? (
+          review.yourSubmitted ? (
+            <Typography sx={{ color: '#d8d0bd' }}>
+              제출 완료. 다른 플레이어의 제출을 기다리는 중입니다.
+            </Typography>
+          ) : (
+            <Stack spacing={1.2}>
+              {review.targetPlayers.map((player) => (
+                <TextField
+                  key={player.playerId}
+                  label={`${player.displayName}의 비밀`}
+                  value={secretGuessDrafts[player.playerId] ?? ''}
+                  multiline
+                  minRows={2}
+                  inputProps={{ maxLength: 500 }}
+                  onChange={(event) =>
+                    setSecretGuessDrafts((current) => ({
+                      ...current,
+                      [player.playerId]: event.target.value,
+                    }))
+                  }
+                  sx={{
+                    '& .MuiInputBase-root': {
+                      color: '#f8f1de',
+                      backgroundColor: 'rgba(10, 13, 18, 0.54)',
+                    },
+                    '& .MuiInputLabel-root': { color: '#d8d0bd' },
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(255,255,255,0.2)',
+                    },
+                  }}
+                />
+              ))}
+              <Button
+                variant="contained"
+                color="warning"
+                disabled={!canSubmitGuesses}
+                onClick={() =>
+                  onSubmitSecretGuesses(
+                    review.targetPlayers.map((player) => ({
+                      targetPlayerId: player.playerId,
+                      text: secretGuessDrafts[player.playerId] ?? '',
+                    }))
+                  )
+                }
+              >
+                비밀 추측 제출
+              </Button>
+            </Stack>
+          )
+        ) : (
+          <Stack spacing={1.2}>
+            {review.receivedGuesses.map((guess, index) => (
+              <Box
+                key={guess.submissionId}
+                sx={{
+                  p: 1.4,
+                  borderRadius: 2,
+                  backgroundColor: 'rgba(15, 19, 24, 0.78)',
+                  border: '1px solid rgba(255,255,255,0.16)',
+                }}
+              >
+                <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
+                  익명 제출 {index + 1}
+                </Typography>
+                <Typography sx={{ whiteSpace: 'pre-wrap', my: 1 }}>
+                  {guess.text}
+                </Typography>
+                <Stack direction="row" spacing={0.8}>
+                  <Button
+                    size="small"
+                    variant={
+                      guess.judgement === 'correct' ? 'contained' : 'outlined'
+                    }
+                    color="success"
+                    onClick={() =>
+                      onJudgeSecretGuess(guess.submissionId, 'correct')
+                    }
+                  >
+                    맞음
+                  </Button>
+                  <Button
+                    size="small"
+                    variant={
+                      guess.judgement === 'incorrect' ? 'contained' : 'outlined'
+                    }
+                    color="inherit"
+                    onClick={() =>
+                      onJudgeSecretGuess(guess.submissionId, 'incorrect')
+                    }
+                  >
+                    아님
+                  </Button>
+                </Stack>
+              </Box>
+            ))}
+          </Stack>
+        )}
+      </Stack>
+    );
+  };
+
   const renderSpecialEvents = () =>
     snapshot.specialEvents.length > 0 ? (
       <Stack spacing={1}>
@@ -2605,6 +2786,10 @@ export default function MurderMysteryTableExperience({
 
     if (phaseKind === 'final_vote') {
       return renderVoteArea();
+    }
+
+    if (phaseKind === 'secret_review') {
+      return renderSecretReviewArea();
     }
 
     return (

@@ -7,6 +7,7 @@ import {
   buildMurderMysterySnapshot,
   clearMurderMysteryRolePreferences,
   finalizeMurderMysteryVote,
+  judgeMurderMysterySecretGuess,
   markMurderMysteryRoleSheetRead,
   moveMurderMysteryToNextPhase,
   reportMurderMysterySpecialEvent,
@@ -18,6 +19,7 @@ import {
   startMurderMysteryGame,
   submitMurderMysteryInvestigation,
   submitMurderMysteryRolePreferences,
+  submitMurderMysterySecretGuesses,
   submitMurderMysteryVote,
   updateMurderMysterySeatPosition,
 } from '../services/murderMysteryStateMachine';
@@ -420,6 +422,48 @@ const murderMysteryGameHandler = (
           );
           io.emit('room-updated', rooms);
         }
+
+        emitMurderMysterySnapshots(room, io);
+        return callback({ success: true });
+      } catch (error) {
+        return callback({ success: false, message: (error as Error).message });
+      }
+    }
+  );
+
+  socket.on(
+    'mm_submit_secret_guesses',
+    ({ roomId, sessionId, guesses }, callback) => {
+      try {
+        const room = toMurderMysteryRoom(validateRoom(roomId));
+        const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
+        validatePlayer(room, sessionId);
+
+        submitMurderMysterySecretGuesses(room, scenario, sessionId, guesses);
+
+        emitMurderMysterySnapshots(room, io);
+        return callback({ success: true });
+      } catch (error) {
+        return callback({ success: false, message: (error as Error).message });
+      }
+    }
+  );
+
+  socket.on(
+    'mm_judge_secret_guess',
+    ({ roomId, sessionId, submissionId, judgement }, callback) => {
+      try {
+        const room = toMurderMysteryRoom(validateRoom(roomId));
+        const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
+        validatePlayer(room, sessionId);
+
+        judgeMurderMysterySecretGuess(
+          room,
+          scenario,
+          sessionId,
+          submissionId,
+          judgement
+        );
 
         emitMurderMysterySnapshots(room, io);
         return callback({ success: true });

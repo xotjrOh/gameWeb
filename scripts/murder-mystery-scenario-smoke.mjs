@@ -27,6 +27,7 @@ const toStepKind = (value) =>
   value === 'investigate' ||
   value === 'discuss' ||
   value === 'final_vote' ||
+  value === 'secret_review' ||
   value === 'endbook'
     ? value
     : null;

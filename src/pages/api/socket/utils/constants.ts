@@ -156,6 +156,7 @@ export const DEFAULT_GAME_DATA: {
     voteByPlayerId: {},
     finalVoteResult: null,
     endbookVariant: null,
+    secretGuessSubmissionsById: {},
     announcements: [],
     appliedDynamicRuleIds: {},
     seatLayoutByPlayerId: {},

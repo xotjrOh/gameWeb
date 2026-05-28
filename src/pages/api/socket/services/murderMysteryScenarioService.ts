@@ -99,6 +99,7 @@ const toStepKind = (value: unknown): MurderMysteryStepKind | undefined => {
     value === 'investigate' ||
     value === 'discuss' ||
     value === 'final_vote' ||
+    value === 'secret_review' ||
     value === 'endbook'
   ) {
     return value;
@@ -1141,6 +1142,81 @@ const normalizeFinalVoteOptions = ({
   });
 };
 
+const normalizeEndbookVoteVariants = (
+  rawVoteVariants: unknown
+): MurderMysteryScenario['endbook']['voteVariants'] => {
+  if (!isRecord(rawVoteVariants)) {
+    return undefined;
+  }
+  const entries = Object.entries(rawVoteVariants).filter(
+    (entry): entry is [string, string] =>
+      typeof entry[0] === 'string' &&
+      entry[0].length > 0 &&
+      typeof entry[1] === 'string' &&
+      entry[1].length > 0
+  );
+  if (entries.length === 0) {
+    return undefined;
+  }
+  return Object.fromEntries(entries);
+};
+
+const normalizeEndbookSecretGoalResults = ({
+  rawSecretGoalResults,
+  fileName,
+}: {
+  rawSecretGoalResults: unknown;
+  fileName: string;
+}): MurderMysteryScenario['endbook']['secretGoalResults'] => {
+  if (!Array.isArray(rawSecretGoalResults)) {
+    return undefined;
+  }
+
+  return rawSecretGoalResults.map((rawGoal, index) => {
+    const goalRecord = requireRecord(
+      rawGoal,
+      `${fileName}: endbook.secretGoalResults[${index}] must be object`
+    );
+    assertCondition(
+      goalRecord.successWhen === 'correct' ||
+        goalRecord.successWhen === 'notCorrect',
+      `${fileName}: endbook.secretGoalResults[${index}].successWhen is invalid`
+    );
+
+    return {
+      id: requireString(
+        goalRecord.id,
+        `${fileName}: endbook.secretGoalResults[${index}].id is required`
+      ),
+      label: requireString(
+        goalRecord.label,
+        `${fileName}: endbook.secretGoalResults[${index}].label is required`
+      ),
+      roleId: requireString(
+        goalRecord.roleId,
+        `${fileName}: endbook.secretGoalResults[${index}].roleId is required`
+      ),
+      guesserRoleId: requireString(
+        goalRecord.guesserRoleId,
+        `${fileName}: endbook.secretGoalResults[${index}].guesserRoleId is required`
+      ),
+      targetRoleId: requireString(
+        goalRecord.targetRoleId,
+        `${fileName}: endbook.secretGoalResults[${index}].targetRoleId is required`
+      ),
+      successWhen: goalRecord.successWhen as 'correct' | 'notCorrect',
+      successText: requireString(
+        goalRecord.successText,
+        `${fileName}: endbook.secretGoalResults[${index}].successText is required`
+      ),
+      failureText: requireString(
+        goalRecord.failureText,
+        `${fileName}: endbook.secretGoalResults[${index}].failureText is required`
+      ),
+    };
+  });
+};
+
 const normalizeScenarioSchema = (
   rawScenario: unknown,
   fileName: string
@@ -1283,6 +1359,11 @@ const normalizeScenarioSchema = (
         endbookRecord.variantNotMatched,
         `${fileName}: endbook.variantNotMatched is required`
       ),
+      voteVariants: normalizeEndbookVoteVariants(endbookRecord.voteVariants),
+      secretGoalResults: normalizeEndbookSecretGoalResults({
+        rawSecretGoalResults: endbookRecord.secretGoalResults,
+        fileName,
+      }),
       closingLine: requireString(
         endbookRecord.closingLine,
         `${fileName}: endbook.closingLine is required`
@@ -1710,6 +1791,27 @@ const validateScenarioSchema = (
     finalVoteOptionIds.has(scenario.finalVote.correctOptionId),
     `${fileName}: finalVote.correctOptionId is unknown (${scenario.finalVote.correctOptionId})`
   );
+
+  const secretGoalIds = new Set<string>();
+  scenario.endbook.secretGoalResults?.forEach((goal) => {
+    assertCondition(
+      !secretGoalIds.has(goal.id),
+      `${fileName}: duplicated endbook secretGoalResults id (${goal.id})`
+    );
+    secretGoalIds.add(goal.id);
+    assertCondition(
+      roleIds.has(goal.roleId),
+      `${fileName}: endbook secretGoalResults(${goal.id}) references unknown roleId (${goal.roleId})`
+    );
+    assertCondition(
+      roleIds.has(goal.guesserRoleId),
+      `${fileName}: endbook secretGoalResults(${goal.id}) references unknown guesserRoleId (${goal.guesserRoleId})`
+    );
+    assertCondition(
+      roleIds.has(goal.targetRoleId),
+      `${fileName}: endbook secretGoalResults(${goal.id}) references unknown targetRoleId (${goal.targetRoleId})`
+    );
+  });
 
   scenario.roles.forEach((role) => {
     role.dynamicDisplayNameRules?.forEach((rule) => {

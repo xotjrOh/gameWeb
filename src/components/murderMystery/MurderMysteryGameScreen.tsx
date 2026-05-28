@@ -17,6 +17,8 @@ import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 import { getKakaoShareErrorMessage, shareKakaoText } from '@/lib/kakaoShare';
 import {
   MurderMysterySeatPosition,
+  MurderMysterySecretGuessInput,
+  MurderMysterySecretGuessJudgement,
   MurderMysterySpecialEventOutcome,
 } from '@/types/murderMystery';
 
@@ -273,6 +275,27 @@ export default function MurderMysteryGameScreen({
     );
   };
 
+  const handleSubmitSecretGuesses = (
+    guesses: MurderMysterySecretGuessInput[]
+  ) => {
+    emitWithAck(
+      'mm_submit_secret_guesses',
+      { roomId, sessionId, guesses },
+      '비밀 추측을 제출했습니다.'
+    );
+  };
+
+  const handleJudgeSecretGuess = (
+    submissionId: string,
+    judgement: MurderMysterySecretGuessJudgement
+  ) => {
+    emitWithAck(
+      'mm_judge_secret_guess',
+      { roomId, sessionId, submissionId, judgement },
+      '채점을 저장했습니다.'
+    );
+  };
+
   const handleSubmitRolePreferences = (roleIds: string[]) => {
     emitWithAck('mm_submit_role_preferences', {
       roomId,
@@ -398,6 +421,8 @@ export default function MurderMysteryGameScreen({
       onSetReservation={handleSetInvestigationReservation}
       onClearReservation={handleClearInvestigationReservation}
       onSubmitVote={handleSubmitVote}
+      onSubmitSecretGuesses={handleSubmitSecretGuesses}
+      onJudgeSecretGuess={handleJudgeSecretGuess}
       onReportSpecialEvent={handleReportSpecialEvent}
     />
   );
