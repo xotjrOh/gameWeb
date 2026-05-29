@@ -284,6 +284,29 @@ const getPlayerDisplayName = (room: MurderMysteryRoom, playerId: string) => {
   return room.gameData.roleDisplayNameByPlayerId[player.id] ?? player.name;
 };
 
+type MurderMysteryInvestigationTarget =
+  MurderMysteryScenario['investigations']['rounds'][number]['targets'][number];
+
+const isInvestigationTargetOwnedByPlayer = (
+  room: MurderMysteryRoom,
+  target: MurderMysteryInvestigationTarget,
+  playerId: string
+) =>
+  Boolean(
+    target.ownerRoleId &&
+      room.gameData.roleByPlayerId[playerId] === target.ownerRoleId
+  );
+
+const assertCanInvestigateTarget = (
+  room: MurderMysteryRoom,
+  target: MurderMysteryInvestigationTarget,
+  playerId: string
+) => {
+  if (isInvestigationTargetOwnedByPlayer(room, target, playerId)) {
+    throw new Error('본인의 소지품은 조사할 수 없습니다.');
+  }
+};
+
 const getRequiredSecretSubmissionCount = (room: MurderMysteryRoom) =>
   Math.max(room.players.length - 1, 0);
 
@@ -1063,6 +1086,7 @@ const buildInvestigationTargetView = (
     revealedClues,
     remainingClues,
     isExhausted: remainingClues === 0,
+    isOwnedByViewer: isInvestigationTargetOwnedByPlayer(room, target, viewerId),
     availableBacks,
   };
 };
@@ -2013,6 +2037,7 @@ export const submitMurderMysteryInvestigation = (
     if (!target || !target.cardPool.includes(cardId)) {
       throw new Error('이 라운드에서 선택할 수 없는 조사 카드입니다.');
     }
+    assertCanInvestigateTarget(room, target, playerId);
     if (isCardRevealedForTarget(room, scenario, target.id, cardId)) {
       throw new Error('이미 다른 플레이어가 먼저 가져간 카드입니다.');
     }
@@ -2062,6 +2087,7 @@ export const submitMurderMysteryInvestigation = (
   if (!target) {
     throw new Error('존재하지 않는 조사 대상입니다.');
   }
+  assertCanInvestigateTarget(room, target, playerId);
 
   const remainingCards = getRemainingCardIdsByTarget(
     room,
@@ -2170,6 +2196,7 @@ export const setMurderMysteryInvestigationReservation = (
   if (!target || !target.cardPool.includes(cardId)) {
     throw new Error('이 라운드에서 예약할 수 없는 카드입니다.');
   }
+  assertCanInvestigateTarget(room, target, playerId);
   if (isCardRevealedForTarget(room, scenario, targetId, cardId)) {
     throw new Error('이미 다른 플레이어가 먼저 가져간 카드입니다.');
   }

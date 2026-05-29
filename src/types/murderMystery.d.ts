@@ -116,6 +116,9 @@ export interface MurderMysteryInvestigationTargetScenario {
   description?: string;
   targetType: MurderMysteryTargetType;
   entityKey: string;
+  containerId?: string;
+  containerLabel?: string;
+  ownerRoleId?: string;
   sectionId?: string;
   order?: number;
   icon?: string;
@@ -471,6 +474,7 @@ export interface MurderMysteryInvestigationTargetView
   revealedClues: number;
   remainingClues: number;
   isExhausted: boolean;
+  isOwnedByViewer: boolean;
   availableBacks: MurderMysteryInvestigationBackCardView[];
 }
 

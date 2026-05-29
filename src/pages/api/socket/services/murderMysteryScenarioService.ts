@@ -274,6 +274,9 @@ const normalizeInvestigationTargets = ({
       asNonEmptyString(targetRecord.name) ??
       id;
     const description = asNonEmptyString(targetRecord.description);
+    const containerId = asNonEmptyString(targetRecord.containerId);
+    const containerLabel = asNonEmptyString(targetRecord.containerLabel);
+    const ownerRoleId = asNonEmptyString(targetRecord.ownerRoleId);
     const sectionId = asNonEmptyString(targetRecord.sectionId);
     const order = asInteger(targetRecord.order);
     const icon = asNonEmptyString(targetRecord.icon);
@@ -300,6 +303,9 @@ const normalizeInvestigationTargets = ({
       description,
       targetType,
       entityKey,
+      containerId,
+      containerLabel,
+      ownerRoleId,
       sectionId,
       order,
       icon,
@@ -1577,6 +1583,12 @@ const validateScenarioSchema = (
         Array.isArray(target.cardPool) && target.cardPool.length > 0,
         `${fileName}: target (${target.id}) cardPool is required`
       );
+      if (target.ownerRoleId) {
+        assertCondition(
+          roleIds.has(target.ownerRoleId),
+          `${fileName}: target (${target.id}) ownerRoleId references unknown role (${target.ownerRoleId})`
+        );
+      }
       target.cardPool.forEach((cardId) => {
         assertCondition(
           cardIds.has(cardId),

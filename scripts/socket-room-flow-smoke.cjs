@@ -753,6 +753,25 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       'current investigation player missing'
     );
 
+    const currentPlayerSnapshot = snapshotsBySession.get(currentPlayerId);
+    assertCondition(
+      currentPlayerSnapshot?.roleSheet?.roleId === 'jara',
+      'round 1 first investigation turn should be jara',
+      {
+        currentPlayerId,
+        roleId: currentPlayerSnapshot?.roleSheet?.roleId,
+      }
+    );
+    const turnRoleSequence =
+      currentPlayerSnapshot?.investigation.turn?.players
+        ?.slice(0, 3)
+        .map((player) => player.roleId) ?? [];
+    assertCondition(
+      turnRoleSequence.join('>') === 'jara>fox>rabbit_husband',
+      'investigation turn order should be jara -> fox -> rabbit_husband',
+      turnRoleSequence
+    );
+
     const nonCurrentPlayerId = playerSessionIds.find(
       (sessionId) => sessionId !== currentPlayerId
     );
@@ -763,12 +782,57 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
 
     const currentPlayerSocket = socketsBySession.get(currentPlayerId);
     let nonCurrentPlayerSocket = socketsBySession.get(nonCurrentPlayerId);
-    const currentPlayerSnapshot = snapshotsBySession.get(currentPlayerId);
+    const ownTarget =
+      currentPlayerSnapshot?.investigation.rounds
+        ?.find((round) => round.round === 1)
+        ?.targets.find(
+          (target) => target.isOwnedByViewer && target.availableBacks.length > 0
+        ) ?? null;
+    const ownBackId = ownTarget?.availableBacks[0]?.backId ?? null;
+    assertCondition(
+      Boolean(ownBackId),
+      'current player own-item backId missing'
+    );
+
+    const ownReserveResponse = await emitAck(
+      currentPlayerSocket,
+      'mm_set_investigation_reservation',
+      {
+        roomId,
+        sessionId: currentPlayerId,
+        backId: ownBackId,
+      }
+    );
+    assertCondition(
+      ownReserveResponse?.success === false &&
+        ownReserveResponse?.message === '본인의 소지품은 조사할 수 없습니다.',
+      'current player should not be able to reserve own belongings',
+      ownReserveResponse
+    );
+
+    const ownPickResponse = await emitAck(
+      currentPlayerSocket,
+      'mm_submit_investigation',
+      {
+        roomId,
+        sessionId: currentPlayerId,
+        backId: ownBackId,
+      }
+    );
+    assertCondition(
+      ownPickResponse?.success === false &&
+        ownPickResponse?.message === '본인의 소지품은 조사할 수 없습니다.',
+      'current player should not be able to pick own belongings',
+      ownPickResponse
+    );
+
     const backId =
       currentPlayerSnapshot?.investigation.rounds
         ?.find((round) => round.round === 1)
-        ?.targets.find((target) => target.availableBacks.length > 0)
-        ?.availableBacks[0]?.backId ?? null;
+        ?.targets.find(
+          (target) =>
+            !target.isOwnedByViewer && target.availableBacks.length > 0
+        )?.availableBacks[0]?.backId ?? null;
     assertCondition(Boolean(backId), 'map-mode backId missing from snapshot');
 
     const reserveResponse = await emitAck(
@@ -875,6 +939,16 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       refreshedCurrentSnapshot?.clueVault?.myClues?.length === 1,
       'picked card did not reach the current player clue vault'
     );
+    refreshedSnapshots.forEach(([sessionId, snapshot]) => {
+      const holder = snapshot.players.find(
+        (player) => player.id === currentPlayerId
+      );
+      assertCondition(
+        holder?.heldCardBacks.some((back) => back.backId === backId),
+        'all player snapshots should show the clue back held by the picker',
+        { viewerSessionId: sessionId, holder }
+      );
+    });
     assertCondition(
       !refreshedReservedSnapshot?.investigation.turn?.myReservation,
       'reservation should clear after another player takes the card'
@@ -892,6 +966,17 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
         refreshedCurrentSnapshot.investigation.turn.currentPlayerId !==
           currentPlayerId,
       'investigation turn did not advance after pick'
+    );
+    const nextTurnPlayer =
+      refreshedCurrentSnapshot?.investigation.turn?.players.find(
+        (player) =>
+          player.playerId ===
+          refreshedCurrentSnapshot.investigation.turn?.currentPlayerId
+      );
+    assertCondition(
+      nextTurnPlayer?.roleId === 'fox',
+      'investigation turn should advance from jara to fox',
+      nextTurnPlayer
     );
 
     const round1ToDiscussResponse = await emitAck(

@@ -41,6 +41,7 @@ import {
   MurderMysteryClueVaultCardView,
   MurderMysteryFinalVoteOptionScenario,
   MurderMysteryInvestigationBackCardView,
+  MurderMysteryInvestigationTargetView,
   MurderMysteryPublicPlayerView,
   MurderMysteryPublicScriptView,
   MurderMysteryRoleSheetView,
@@ -89,6 +90,27 @@ interface MurderMysteryTableExperienceProps {
 
 type PhaseKind = MurderMysteryStepKind | 'lobby';
 type AnyClueCard = MurderMysteryClueVaultCardView | MurderMysteryCardScenario;
+type ParticipantLabelSource = {
+  name?: string | null;
+  displayName?: string | null;
+  roleDisplayName?: string | null;
+};
+type InvestigationTargetGroup = {
+  id: string;
+  label: string;
+  order: number;
+  totalClues: number;
+  remainingClues: number;
+  isOwnedByViewer: boolean;
+  targets: MurderMysteryInvestigationTargetView[];
+};
+type ClueTakeNotice = {
+  id: string;
+  playerId: string;
+  playerLabel: string;
+  backLabel: string;
+  targetLabel: string;
+};
 type BgmTrack = {
   src: string;
   label: string;
@@ -232,6 +254,52 @@ const getCardSourceText = (card: AnyClueCard) => {
     return clueCard.sourceTargetLabels.join(', ');
   }
   return '';
+};
+
+const formatParticipantLabel = (player?: ParticipantLabelSource | null) => {
+  const roleLabel = player?.roleDisplayName ?? player?.displayName ?? '';
+  const nickname = player?.name ?? '';
+  if (roleLabel && nickname && roleLabel !== nickname) {
+    return `${roleLabel} (${nickname})`;
+  }
+  return roleLabel || nickname || '알 수 없음';
+};
+
+const buildInvestigationTargetGroups = (
+  targets: MurderMysteryInvestigationTargetView[]
+): InvestigationTargetGroup[] => {
+  const groups = new Map<string, InvestigationTargetGroup>();
+
+  targets.forEach((target) => {
+    const groupId = target.containerId ?? `target:${target.id}`;
+    const current = groups.get(groupId);
+    if (current) {
+      current.targets.push(target);
+      current.order = Math.min(
+        current.order,
+        target.order ?? Number.MAX_SAFE_INTEGER
+      );
+      current.totalClues += target.totalClues;
+      current.remainingClues += target.remainingClues;
+      current.isOwnedByViewer =
+        current.isOwnedByViewer || target.isOwnedByViewer;
+      return;
+    }
+
+    groups.set(groupId, {
+      id: groupId,
+      label: target.containerLabel ?? target.label,
+      order: target.order ?? Number.MAX_SAFE_INTEGER,
+      totalClues: target.totalClues,
+      remainingClues: target.remainingClues,
+      isOwnedByViewer: target.isOwnedByViewer,
+      targets: [target],
+    });
+  });
+
+  return [...groups.values()].sort(
+    (a, b) => a.order - b.order || a.label.localeCompare(b.label)
+  );
 };
 
 const getRoleRankColor = (rankIndex: number) =>
@@ -429,7 +497,7 @@ const FloatingActionDock = ({
       right: { xs: 10, md: 'auto' },
       bottom: { xs: bottomOffset.xs, md: bottomOffset.md },
       transform: { xs: 'none', md: 'translateX(-50%)' },
-      zIndex: 1000,
+      zIndex: 1500,
       width: { xs: 'auto', md: 'min(760px, calc(100vw - 320px))' },
       maxWidth: { md: 760 },
       pointerEvents: 'auto',
@@ -504,6 +572,59 @@ const FloatingActionDock = ({
     </Box>
   </Box>
 );
+
+const ClueTakeOverlay = ({ notice }: { notice: ClueTakeNotice | null }) => {
+  if (!notice) {
+    return null;
+  }
+
+  return (
+    <Box
+      sx={{
+        position: 'fixed',
+        left: { xs: 10, md: '50%' },
+        right: { xs: 10, md: 'auto' },
+        top: { xs: 72, md: 78 },
+        transform: { xs: 'none', md: 'translateX(-50%)' },
+        zIndex: 1600,
+        width: { xs: 'auto', md: 'min(720px, calc(100vw - 320px))' },
+        pointerEvents: 'none',
+      }}
+    >
+      <Box
+        sx={{
+          p: { xs: 1.1, md: 1.25 },
+          borderRadius: 2,
+          border: '1px solid rgba(142, 202, 230, 0.78)',
+          background:
+            'linear-gradient(180deg, rgba(10, 18, 24, 0.98), rgba(31, 43, 47, 0.98))',
+          color: '#f8f1de',
+          boxShadow: '0 18px 44px rgba(0,0,0,0.48)',
+          backdropFilter: 'blur(14px)',
+        }}
+      >
+        <Stack direction="row" spacing={1} alignItems="center">
+          <StyleIcon sx={{ color: '#8ecae6', flex: '0 0 auto' }} />
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              fontWeight={950}
+              sx={{ fontSize: { xs: 14, md: 16 }, lineHeight: 1.35 }}
+            >
+              {notice.playerLabel}이 ‘{notice.backLabel}’ 뒷면 단서를
+              가져갔습니다.
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{ display: 'block', color: '#d8d0bd', mt: 0.2 }}
+            >
+              출처: {notice.targetLabel}
+            </Typography>
+          </Box>
+        </Stack>
+      </Box>
+    </Box>
+  );
+};
 
 const EvidenceCardFace = ({
   card,
@@ -640,17 +761,24 @@ const EvidenceCardFace = ({
 const InvestigationCardBack = ({
   back,
   canActNow,
+  disabled = false,
+  disabledReason,
   onTake,
   onReserve,
   onClearReservation,
 }: {
   back: MurderMysteryInvestigationBackCardView;
   canActNow: boolean;
+  disabled?: boolean;
+  disabledReason?: string;
   onTake: (backId: string) => void;
   onReserve: (backId: string) => void;
   onClearReservation: () => void;
 }) => {
   const handleClick = () => {
+    if (disabled) {
+      return;
+    }
     if (back.isReservedByMe) {
       onClearReservation();
       return;
@@ -665,25 +793,29 @@ const InvestigationCardBack = ({
   return (
     <Tooltip
       title={
-        back.isReservedByMe
-          ? '예약 해제'
-          : canActNow
-            ? '내 조사 차례입니다. 이 카드를 가져옵니다.'
-            : '내 차례 전까지 이 카드를 예약합니다.'
+        disabled
+          ? (disabledReason ?? '지금은 선택할 수 없습니다.')
+          : back.isReservedByMe
+            ? '예약 해제'
+            : canActNow
+              ? '내 조사 차례입니다. 이 카드를 가져옵니다.'
+              : '내 차례 전까지 이 카드를 예약합니다.'
       }
     >
       <Box
         component="button"
         type="button"
         onClick={handleClick}
+        disabled={disabled}
         sx={{
           width: 88,
           height: 124,
           border: 0,
           p: 0,
           background: 'transparent',
-          cursor: 'pointer',
+          cursor: disabled ? 'not-allowed' : 'pointer',
           color: 'inherit',
+          opacity: disabled ? 0.48 : 1,
         }}
       >
         <Box
@@ -695,17 +827,21 @@ const InvestigationCardBack = ({
             overflow: 'hidden',
             border: back.isReservedByMe
               ? '2px solid #f5c542'
-              : canActNow
-                ? '2px solid #8ecae6'
-                : '1px solid rgba(255,255,255,0.35)',
+              : disabled
+                ? '1px solid rgba(255,255,255,0.18)'
+                : canActNow
+                  ? '2px solid #8ecae6'
+                  : '1px solid rgba(255,255,255,0.35)',
             background:
               'repeating-linear-gradient(135deg, #29323f 0, #29323f 7px, #1d2430 7px, #1d2430 14px)',
             boxShadow: '0 10px 20px rgba(0,0,0,0.32)',
             transform: back.isReservedByMe ? 'rotate(-3deg)' : 'rotate(1deg)',
             transition: 'transform 140ms ease',
-            '&:hover': {
-              transform: 'translateY(-4px) rotate(0deg)',
-            },
+            '&:hover': disabled
+              ? undefined
+              : {
+                  transform: 'translateY(-4px) rotate(0deg)',
+                },
           }}
         >
           {back.imageSrc ? (
@@ -751,6 +887,8 @@ const InvestigationCardBack = ({
           >
             {back.isReservedByMe ? (
               <PushPinIcon fontSize="small" sx={{ color: '#f5c542' }} />
+            ) : disabled ? (
+              <LockIcon fontSize="small" sx={{ color: '#9ca3af' }} />
             ) : canActNow ? (
               <TaskAltIcon fontSize="small" sx={{ color: '#8ecae6' }} />
             ) : (
@@ -831,6 +969,7 @@ const SeatMarker = ({
   player,
   isSelf,
   canDrag,
+  isClueTakeHighlighted,
   position,
   isDragging,
   onPointerDown,
@@ -840,6 +979,7 @@ const SeatMarker = ({
   player: MurderMysteryPublicPlayerView;
   isSelf: boolean;
   canDrag: boolean;
+  isClueTakeHighlighted: boolean;
   position: MurderMysterySeatPosition;
   isDragging: boolean;
   onPointerDown: (
@@ -877,13 +1017,17 @@ const SeatMarker = ({
           borderRadius: 999,
           border: isSelf
             ? '2px solid rgba(245, 197, 66, 0.98)'
-            : '1px solid rgba(255,255,255,0.3)',
+            : isClueTakeHighlighted
+              ? '2px solid rgba(142, 202, 230, 0.98)'
+              : '1px solid rgba(255,255,255,0.3)',
           background:
             'linear-gradient(180deg, rgba(247,243,231,0.98), rgba(224,214,190,0.96))',
           color: '#2a231a',
           boxShadow: isDragging
             ? '0 14px 34px rgba(0,0,0,0.42)'
-            : '0 8px 20px rgba(0,0,0,0.28)',
+            : isClueTakeHighlighted
+              ? '0 0 0 4px rgba(142,202,230,0.18), 0 14px 34px rgba(0,0,0,0.42)'
+              : '0 8px 20px rgba(0,0,0,0.28)',
           px: 1,
           py: 0.7,
         }}
@@ -938,8 +1082,10 @@ const SeatMarker = ({
                   height: 20,
                   minWidth: 24,
                   fontWeight: 900,
-                  backgroundColor: '#2b3440',
-                  color: '#fff',
+                  backgroundColor: isClueTakeHighlighted
+                    ? '#f5c542'
+                    : '#2b3440',
+                  color: isClueTakeHighlighted ? '#2a231a' : '#fff',
                 }}
               />
             ) : null}
@@ -979,6 +1125,7 @@ const SeatTable = ({
   canEdit,
   canReset,
   isCompact,
+  clueTakeHighlightPlayerId,
   draggingPlayerId,
   onPointerDown,
   onPointerMove,
@@ -992,6 +1139,7 @@ const SeatTable = ({
   canEdit: boolean;
   canReset: boolean;
   isCompact: boolean;
+  clueTakeHighlightPlayerId: string | null;
   draggingPlayerId: string | null;
   onPointerDown: (
     event: React.PointerEvent<HTMLDivElement>,
@@ -1103,6 +1251,7 @@ const SeatTable = ({
               player={player}
               isSelf={player.id === sessionId}
               canDrag={canEdit && player.id === sessionId}
+              isClueTakeHighlighted={clueTakeHighlightPlayerId === player.id}
               position={positions[player.id] ?? defaultPositions[player.id]}
               isDragging={draggingPlayerId === player.id}
               onPointerDown={onPointerDown}
@@ -2041,6 +2190,10 @@ export default function MurderMysteryTableExperience({
   const seatPositionsRef = useRef<Record<string, MurderMysterySeatPosition>>(
     {}
   );
+  const previousHeldBackIdsByPlayerRef = useRef<Record<
+    string,
+    Set<string>
+  > | null>(null);
   const dragStateRef = useRef<{
     playerId: string;
     pointerId: number;
@@ -2059,6 +2212,9 @@ export default function MurderMysteryTableExperience({
   const [isPublicScriptsOpen, setIsPublicScriptsOpen] = useState(false);
   const [isPrivateCardsOpen, setIsPrivateCardsOpen] = useState(false);
   const [selectedCard, setSelectedCard] = useState<AnyClueCard | null>(null);
+  const [clueTakeNotice, setClueTakeNotice] = useState<ClueTakeNotice | null>(
+    null
+  );
   const [nowTick, setNowTick] = useState(Date.now());
   const [draftRolePreferenceIds, setDraftRolePreferenceIds] = useState<
     string[]
@@ -2117,6 +2273,24 @@ export default function MurderMysteryTableExperience({
       (round) => round.round === activeRound
     ) ?? null;
   const canActNow = Boolean(snapshot.investigation.turn?.canActNow);
+  const getPlayerLabelById = useCallback(
+    (playerId?: string | null) => {
+      if (!playerId) {
+        return null;
+      }
+      const turnPlayer = snapshot.investigation.turn?.players.find(
+        (player) => player.playerId === playerId
+      );
+      const publicPlayer = snapshot.players.find(
+        (player) => player.id === playerId
+      );
+      return formatParticipantLabel(turnPlayer ?? publicPlayer);
+    },
+    [snapshot.investigation.turn?.players, snapshot.players]
+  );
+  const currentTurnLabel = getPlayerLabelById(
+    snapshot.investigation.turn?.currentPlayerId
+  );
   const canUseHostTools = isHostView;
   const canEditSeatLayout = snapshot.phase === 'LOBBY';
   const hasRequiredPlayerCount =
@@ -2184,6 +2358,58 @@ export default function MurderMysteryTableExperience({
     const timer = window.setInterval(() => setNowTick(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const previous = previousHeldBackIdsByPlayerRef.current;
+    const current: Record<string, Set<string>> = {};
+    let nextNotice: ClueTakeNotice | null = null;
+
+    snapshot.players.forEach((player) => {
+      const currentBackIds = new Set(
+        player.heldCardBacks.map((back) => back.backId)
+      );
+      const previousBackIds = previous?.[player.id];
+      current[player.id] = currentBackIds;
+
+      if (!previousBackIds) {
+        return;
+      }
+
+      const addedBack = player.heldCardBacks.find(
+        (back) => !previousBackIds.has(back.backId)
+      );
+      if (!addedBack) {
+        return;
+      }
+
+      nextNotice = {
+        id: `${player.id}:${addedBack.backId}:${Date.now()}`,
+        playerId: player.id,
+        playerLabel: formatParticipantLabel(player),
+        backLabel: addedBack.shortLabel ?? addedBack.targetLabel,
+        targetLabel: addedBack.targetLabel,
+      };
+    });
+
+    previousHeldBackIdsByPlayerRef.current = current;
+    if (nextNotice) {
+      setClueTakeNotice(nextNotice);
+    }
+  }, [snapshot.players]);
+
+  useEffect(() => {
+    if (!clueTakeNotice) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setClueTakeNotice((current) =>
+        current?.id === clueTakeNotice.id ? null : current
+      );
+    }, 5200);
+
+    return () => window.clearTimeout(timer);
+  }, [clueTakeNotice]);
 
   useEffect(() => {
     if (
@@ -2522,125 +2748,222 @@ export default function MurderMysteryTableExperience({
     </Stack>
   );
 
-  const renderInvestigationArea = () => (
-    <Stack spacing={1.6}>
-      <Stack
-        direction={{ xs: 'column', md: 'row' }}
-        spacing={1.4}
-        alignItems={{ xs: 'stretch', md: 'center' }}
-      >
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="h5" fontWeight={950}>
-            {activeRound ? `${activeRound}라운드 조사` : '조사 대기'}
-          </Typography>
-          <Typography variant="body2" sx={{ color: '#d8d0bd' }}>
-            {canActNow && snapshot.investigation.turn?.extraInvestigationPending
-              ? '전체 공개 단서를 확인했습니다. 한 번 더 조사할 수 있습니다.'
-              : canActNow
-                ? '내 차례입니다. 테이블 위 뒷면 카드 한 장을 가져가세요.'
-                : snapshot.investigation.turn?.myReservation
-                  ? '예약 토큰이 꽂혀 있습니다. 내 차례가 오면 가져갈 수 있습니다.'
-                  : '내 차례가 아니면 뒷면 카드를 눌러 예약할 수 있습니다.'}
-          </Typography>
-        </Box>
-        <Chip
-          color={canActNow ? 'warning' : 'default'}
-          label={
-            snapshot.investigation.turn?.currentPlayerId
-              ? canActNow
-                ? '내 조사 차례'
-                : '다른 플레이어 차례'
-              : '조사 차례 종료'
-          }
-        />
-      </Stack>
+  const renderInvestigationArea = () => {
+    const targetGroups = activeRoundView
+      ? buildInvestigationTargetGroups(activeRoundView.targets)
+      : [];
 
-      {snapshot.investigation.map?.scene.imageSrc ? (
-        <Box
-          sx={{
-            borderRadius: 2,
-            overflow: 'hidden',
-            border: '1px solid rgba(255,255,255,0.16)',
-            backgroundColor: '#101720',
-            maxHeight: { xs: 240, md: 330 },
-          }}
+    return (
+      <Stack spacing={1.6}>
+        <Stack
+          direction={{ xs: 'column', md: 'row' }}
+          spacing={1.4}
+          alignItems={{ xs: 'stretch', md: 'center' }}
         >
-          <Box
-            component="img"
-            src={snapshot.investigation.map.scene.imageSrc}
-            alt={snapshot.investigation.map.scene.alt}
-            sx={{
-              display: 'block',
-              width: '100%',
-              height: '100%',
-              maxHeight: { xs: 240, md: 330 },
-              objectFit: 'contain',
-            }}
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="h5" fontWeight={950}>
+              {activeRound ? `${activeRound}라운드 조사` : '조사 대기'}
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#d8d0bd' }}>
+              {canActNow &&
+              snapshot.investigation.turn?.extraInvestigationPending
+                ? '전체 공개 단서를 확인했습니다. 한 번 더 조사할 수 있습니다.'
+                : canActNow
+                  ? '내 차례입니다. 테이블 위 뒷면 카드 한 장을 가져가세요.'
+                  : snapshot.investigation.turn?.myReservation
+                    ? '예약 토큰이 꽂혀 있습니다. 내 차례가 오면 가져갈 수 있습니다.'
+                    : currentTurnLabel
+                      ? `${currentTurnLabel}의 단서 수집 차례입니다. 내 차례가 아니면 뒷면 카드를 눌러 예약할 수 있습니다.`
+                      : '내 차례가 아니면 뒷면 카드를 눌러 예약할 수 있습니다.'}
+            </Typography>
+          </Box>
+          <Chip
+            color={canActNow ? 'warning' : 'default'}
+            label={
+              snapshot.investigation.turn?.currentPlayerId
+                ? canActNow
+                  ? '내 조사 차례'
+                  : `${currentTurnLabel ?? '다른 플레이어'} 차례`
+                : '조사 차례 종료'
+            }
           />
-        </Box>
-      ) : null}
-
-      {activeRoundView ? (
-        <Stack spacing={1.2}>
-          {activeRoundView.targets.map((target) => (
-            <Box
-              key={target.id}
-              sx={{
-                p: 1.2,
-                borderRadius: 2,
-                backgroundColor: 'rgba(255,255,255,0.07)',
-                border: '1px solid rgba(255,255,255,0.14)',
-              }}
-            >
-              <Stack
-                direction={{ xs: 'column', md: 'row' }}
-                spacing={1.2}
-                alignItems={{ xs: 'stretch', md: 'center' }}
-              >
-                <Box sx={{ minWidth: { md: 170 }, flex: { xs: 1, md: 0 } }}>
-                  <Typography fontWeight={900}>{target.label}</Typography>
-                  <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
-                    남은 카드 {target.remainingClues} / 전체 {target.totalClues}
-                  </Typography>
-                </Box>
-                {target.availableBacks.length > 0 ? (
-                  <Stack
-                    direction="row"
-                    spacing={0.9}
-                    sx={{ overflowX: 'auto', pb: 0.4 }}
-                  >
-                    {target.availableBacks.map((back) => (
-                      <InvestigationCardBack
-                        key={back.backId}
-                        back={back}
-                        canActNow={canActNow}
-                        onTake={onSubmitInvestigationByBack}
-                        onReserve={onSetReservation}
-                        onClearReservation={onClearReservation}
-                      />
-                    ))}
-                  </Stack>
-                ) : (
-                  <Button
-                    disabled={target.isExhausted || snapshot.investigation.used}
-                    variant="outlined"
-                    color="inherit"
-                    onClick={() => onSubmitInvestigationByTarget(target.id)}
-                  >
-                    {target.isExhausted ? '소진됨' : '조사하기'}
-                  </Button>
-                )}
-              </Stack>
-            </Box>
-          ))}
         </Stack>
-      ) : (
-        <Typography sx={{ color: '#d8d0bd' }}>
-          현재 라운드에 배치된 조사 카드가 없습니다.
-        </Typography>
-      )}
-    </Stack>
-  );
+
+        {snapshot.investigation.map?.scene.imageSrc ? (
+          <Box
+            sx={{
+              borderRadius: 2,
+              overflow: 'hidden',
+              border: '1px solid rgba(255,255,255,0.16)',
+              backgroundColor: '#101720',
+              maxHeight: { xs: 240, md: 330 },
+            }}
+          >
+            <Box
+              component="img"
+              src={snapshot.investigation.map.scene.imageSrc}
+              alt={snapshot.investigation.map.scene.alt}
+              sx={{
+                display: 'block',
+                width: '100%',
+                height: '100%',
+                maxHeight: { xs: 240, md: 330 },
+                objectFit: 'contain',
+              }}
+            />
+          </Box>
+        ) : null}
+
+        {activeRoundView ? (
+          <Stack spacing={1.2}>
+            {targetGroups.map((group) => (
+              <Box
+                key={group.id}
+                sx={{
+                  p: 1.2,
+                  borderRadius: 2,
+                  backgroundColor: group.isOwnedByViewer
+                    ? 'rgba(80, 68, 55, 0.42)'
+                    : 'rgba(255,255,255,0.07)',
+                  border: group.isOwnedByViewer
+                    ? '1px solid rgba(245, 197, 66, 0.36)'
+                    : '1px solid rgba(255,255,255,0.14)',
+                }}
+              >
+                <Stack spacing={1}>
+                  <Stack
+                    direction={{ xs: 'column', md: 'row' }}
+                    spacing={1}
+                    alignItems={{ xs: 'stretch', md: 'center' }}
+                    justifyContent="space-between"
+                  >
+                    <Box>
+                      <Typography fontWeight={950}>{group.label}</Typography>
+                      <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
+                        남은 카드 {group.remainingClues} / 전체{' '}
+                        {group.totalClues}
+                      </Typography>
+                    </Box>
+                    <Stack direction="row" spacing={0.6} flexWrap="wrap">
+                      {group.isOwnedByViewer ? (
+                        <Chip
+                          size="small"
+                          color="warning"
+                          label="내 소지품 · 조사 불가"
+                        />
+                      ) : null}
+                      {group.targets.length > 1 ? (
+                        <Chip
+                          size="small"
+                          label={`묶음 ${group.targets.length}개`}
+                          sx={{
+                            backgroundColor: 'rgba(255,255,255,0.12)',
+                            color: '#f8f1de',
+                          }}
+                        />
+                      ) : null}
+                    </Stack>
+                  </Stack>
+
+                  {group.targets.map((target) => {
+                    const isTurnClosed =
+                      !snapshot.investigation.turn?.currentPlayerId ||
+                      Boolean(snapshot.investigation.turn?.allPlayersDone);
+                    const targetDisabled =
+                      target.isOwnedByViewer ||
+                      isTurnClosed ||
+                      snapshot.investigation.used;
+                    const disabledReason = target.isOwnedByViewer
+                      ? '본인의 소지품은 조사할 수 없습니다.'
+                      : isTurnClosed
+                        ? '현재 조사 가능한 차례가 없습니다.'
+                        : snapshot.investigation.used
+                          ? '이번 라운드 조사 기회를 이미 사용했습니다.'
+                          : undefined;
+
+                    return (
+                      <Box
+                        key={target.id}
+                        sx={{
+                          p: 1,
+                          borderRadius: 1.5,
+                          backgroundColor: 'rgba(0,0,0,0.14)',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                        }}
+                      >
+                        <Stack
+                          direction={{ xs: 'column', md: 'row' }}
+                          spacing={1.2}
+                          alignItems={{ xs: 'stretch', md: 'center' }}
+                        >
+                          <Box
+                            sx={{
+                              minWidth: { md: 170 },
+                              flex: { xs: 1, md: 0 },
+                            }}
+                          >
+                            <Typography fontWeight={900}>
+                              {target.label}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              sx={{ color: '#cfc5ad' }}
+                            >
+                              남은 카드 {target.remainingClues} / 전체{' '}
+                              {target.totalClues}
+                            </Typography>
+                          </Box>
+                          {target.availableBacks.length > 0 ? (
+                            <Stack
+                              direction="row"
+                              spacing={0.9}
+                              sx={{ overflowX: 'auto', pb: 0.4 }}
+                            >
+                              {target.availableBacks.map((back) => (
+                                <InvestigationCardBack
+                                  key={back.backId}
+                                  back={back}
+                                  canActNow={canActNow}
+                                  disabled={targetDisabled}
+                                  disabledReason={disabledReason}
+                                  onTake={onSubmitInvestigationByBack}
+                                  onReserve={onSetReservation}
+                                  onClearReservation={onClearReservation}
+                                />
+                              ))}
+                            </Stack>
+                          ) : (
+                            <Button
+                              disabled={target.isExhausted || targetDisabled}
+                              variant="outlined"
+                              color="inherit"
+                              onClick={() =>
+                                onSubmitInvestigationByTarget(target.id)
+                              }
+                            >
+                              {target.isExhausted
+                                ? '소진됨'
+                                : target.isOwnedByViewer
+                                  ? '내 소지품 조사 불가'
+                                  : '조사하기'}
+                            </Button>
+                          )}
+                        </Stack>
+                      </Box>
+                    );
+                  })}
+                </Stack>
+              </Box>
+            ))}
+          </Stack>
+        ) : (
+          <Typography sx={{ color: '#d8d0bd' }}>
+            현재 라운드에 배치된 조사 카드가 없습니다.
+          </Typography>
+        )}
+      </Stack>
+    );
+  };
 
   const renderPublicClues = () => (
     <Stack spacing={1.2}>
@@ -2888,7 +3211,7 @@ export default function MurderMysteryTableExperience({
     ) : null;
 
   const renderFloatingActionDock = () => {
-    if (hasOpenModal) {
+    if (hasOpenModal && !(phaseKind === 'investigate' && canActNow)) {
       return null;
     }
 
@@ -3007,12 +3330,16 @@ export default function MurderMysteryTableExperience({
           : '내 조사 차례입니다'
         : snapshot.investigation.turn?.myReservation
           ? '예약한 카드가 있습니다'
-          : '다른 플레이어 조사 차례입니다';
+          : currentTurnLabel
+            ? `${currentTurnLabel} 조사 차례입니다`
+            : '다른 플레이어 조사 차례입니다';
       description = canActNow
         ? '테이블의 뒷면 카드 중 하나를 선택하세요.'
         : snapshot.investigation.turn?.myReservation
           ? '내 차례가 오면 예약한 카드를 가져갈 수 있습니다.'
-          : '필요하면 내 차례 전에 카드를 예약해둘 수 있습니다.';
+          : currentTurnLabel
+            ? `${currentTurnLabel}이 단서를 가져갈 차례입니다. 필요하면 내 차례 전에 카드를 예약해둘 수 있습니다.`
+            : '필요하면 내 차례 전에 카드를 예약해둘 수 있습니다.';
       chips = activeRound ? (
         <Chip
           size="small"
@@ -3421,6 +3748,7 @@ export default function MurderMysteryTableExperience({
             canEdit={canEditSeatLayout}
             canReset={canUseHostTools && snapshot.phase === 'LOBBY'}
             isCompact={phaseKind !== 'lobby'}
+            clueTakeHighlightPlayerId={clueTakeNotice?.playerId ?? null}
             draggingPlayerId={draggingPlayerId}
             onPointerDown={handleSeatPointerDown}
             onPointerMove={handleSeatPointerMove}
@@ -3503,6 +3831,7 @@ export default function MurderMysteryTableExperience({
       ) : null}
 
       {renderFloatingActionDock()}
+      <ClueTakeOverlay notice={clueTakeNotice} />
 
       <PublicCoverDialog
         open={Boolean(selectedPlayer)}

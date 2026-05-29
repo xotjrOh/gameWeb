@@ -99,6 +99,10 @@ const normalizeInvestigations = (investigations) => {
               ? round.targets.map((target) => ({
                   id: target.id,
                   cardBack: target.cardBack,
+                  ownerRoleId:
+                    typeof target.ownerRoleId === 'string'
+                      ? target.ownerRoleId
+                      : null,
                   cardPool: Array.isArray(target.cardPool)
                     ? target.cardPool
                     : Array.isArray(target.cards)
@@ -117,6 +121,10 @@ const normalizeInvestigations = (investigations) => {
             targets: value.map((target) => ({
               id: target.id,
               cardBack: target.cardBack,
+              ownerRoleId:
+                typeof target.ownerRoleId === 'string'
+                  ? target.ownerRoleId
+                  : null,
               cardPool: Array.isArray(target.cardPool)
                 ? target.cardPool
                 : Array.isArray(target.cards)
@@ -390,6 +398,15 @@ for (const entry of registry.scenarios) {
   }
 
   const roleIds = new Set(scenario.roles.map((role) => role.id));
+  for (const round of rounds) {
+    for (const target of round.targets) {
+      if (target.ownerRoleId && !roleIds.has(target.ownerRoleId)) {
+        fail(
+          `${entry.file}: target(${target.id}) ownerRoleId references unknown role (${target.ownerRoleId})`
+        );
+      }
+    }
+  }
   if (Array.isArray(scenario.publicCovers)) {
     const publicCoverIds = new Set();
     for (const [index, cover] of scenario.publicCovers.entries()) {

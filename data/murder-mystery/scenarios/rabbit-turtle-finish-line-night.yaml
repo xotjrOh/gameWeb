@@ -305,10 +305,10 @@ investigations:
   depletionMode: global
   turnOrder:
     roleIds:
-      - rabbit_husband
-      - fox
       - jara
-    rotateFirstPlayerEachRound: true
+      - fox
+      - rabbit_husband
+    rotateFirstPlayerEachRound: false
   layout:
     sections:
       - id: pre_scene
@@ -488,6 +488,9 @@ investigations:
           description: '윤유성이 직접 가지고 다닌 검은 보온병의 마개 상태를 확인한다.'
           targetType: item
           entityKey: rabbit_black_thermos
+          containerId: belongings_rabbit_husband
+          containerLabel: '윤유성의 소지품'
+          ownerRoleId: rabbit_husband
           sectionId: pre_scene
           order: 10
           icon: '🧴'
@@ -501,6 +504,9 @@ investigations:
           description: '윤유성이 현장에서 챙긴 두꺼운 서류봉투를 확인한다.'
           targetType: item
           entityKey: turtle_envelope
+          containerId: belongings_rabbit_husband
+          containerLabel: '윤유성의 소지품'
+          ownerRoleId: rabbit_husband
           sectionId: pre_scene
           order: 20
           icon: '✉️'
@@ -514,6 +520,8 @@ investigations:
           description: '한다정이 손수건 안에 숨긴 작은 검은 고무링을 확인한다.'
           targetType: item
           entityKey: rubber_ring
+          containerId: belongings_rabbit_wife
+          containerLabel: '아내토끼의 소지품'
           sectionId: pre_scene
           order: 30
           icon: '⭕'
@@ -527,6 +535,8 @@ investigations:
           description: '한다정이 품에 넣어 둔 가족사진을 확인한다.'
           targetType: item
           entityKey: rabbit_family_photo
+          containerId: belongings_rabbit_wife
+          containerLabel: '아내토끼의 소지품'
           sectionId: pre_scene
           order: 40
           icon: '🖼️'
@@ -540,6 +550,9 @@ investigations:
           description: '의료동 약품함에서 사라진 주사기와 진정제 기록을 확인한다.'
           targetType: item
           entityKey: syringe_trace
+          containerId: belongings_fox
+          containerLabel: '조희수의 소지품'
+          ownerRoleId: fox
           sectionId: pre_scene
           order: 50
           icon: '💉'
@@ -553,6 +566,9 @@ investigations:
           description: '조희수가 품 안에 숨긴 빈 약병을 확인한다.'
           targetType: item
           entityKey: empty_vial
+          containerId: belongings_fox
+          containerLabel: '조희수의 소지품'
+          ownerRoleId: fox
           sectionId: pre_scene
           order: 60
           icon: '🧪'
@@ -566,6 +582,9 @@ investigations:
           description: '서기준이 보관하던 이식 후보 문서를 확인한다.'
           targetType: item
           entityKey: liver_compatibility
+          containerId: belongings_jara
+          containerLabel: '서기준의 소지품'
+          ownerRoleId: jara
           sectionId: pre_scene
           order: 70
           icon: '🩺'
@@ -579,6 +598,9 @@ investigations:
           description: '서기준이 숨겨 둔 구겨진 폴라로이드 사진을 확인한다.'
           targetType: item
           entityKey: past_killing_photo
+          containerId: belongings_jara
+          containerLabel: '서기준의 소지품'
+          ownerRoleId: jara
           sectionId: pre_scene
           order: 80
           icon: '📷'
@@ -607,6 +629,9 @@ investigations:
           description: '1라운드에서 확인하지 못한 윤유성의 검은 보온병을 다시 조사한다.'
           targetType: item
           entityKey: rabbit_black_thermos
+          containerId: belongings_rabbit_husband
+          containerLabel: '윤유성의 소지품'
+          ownerRoleId: rabbit_husband
           sectionId: pre_scene
           order: 10
           icon: '🧴'
@@ -620,6 +645,9 @@ investigations:
           description: '1라운드에서 확인하지 못한 거북 서류봉투를 다시 조사한다.'
           targetType: item
           entityKey: turtle_envelope
+          containerId: belongings_rabbit_husband
+          containerLabel: '윤유성의 소지품'
+          ownerRoleId: rabbit_husband
           sectionId: pre_scene
           order: 20
           icon: '✉️'
@@ -633,6 +661,8 @@ investigations:
           description: '1라운드에서 확인하지 못한 검은 고무링을 다시 조사한다.'
           targetType: item
           entityKey: rubber_ring
+          containerId: belongings_rabbit_wife
+          containerLabel: '아내토끼의 소지품'
           sectionId: pre_scene
           order: 30
           icon: '⭕'
@@ -646,6 +676,8 @@ investigations:
           description: '1라운드에서 확인하지 못한 가족사진을 다시 조사한다.'
           targetType: item
           entityKey: rabbit_family_photo
+          containerId: belongings_rabbit_wife
+          containerLabel: '아내토끼의 소지품'
           sectionId: pre_scene
           order: 40
           icon: '🖼️'
@@ -659,6 +691,9 @@ investigations:
           description: '1라운드에서 확인하지 못한 주사기를 다시 조사한다.'
           targetType: item
           entityKey: syringe_trace
+          containerId: belongings_fox
+          containerLabel: '조희수의 소지품'
+          ownerRoleId: fox
           sectionId: pre_scene
           order: 50
           icon: '💉'
@@ -672,6 +707,9 @@ investigations:
           description: '1라운드에서 확인하지 못한 빈 약병을 다시 조사한다.'
           targetType: item
           entityKey: empty_vial
+          containerId: belongings_fox
+          containerLabel: '조희수의 소지품'
+          ownerRoleId: fox
           sectionId: pre_scene
           order: 60
           icon: '🧪'
@@ -685,6 +723,9 @@ investigations:
           description: '1라운드에서 확인하지 못한 간 적합성 문서를 다시 조사한다.'
           targetType: item
           entityKey: liver_compatibility
+          containerId: belongings_jara
+          containerLabel: '서기준의 소지품'
+          ownerRoleId: jara
           sectionId: pre_scene
           order: 70
           icon: '🩺'
@@ -698,6 +739,9 @@ investigations:
           description: '1라운드에서 확인하지 못한 구겨진 폴라로이드를 다시 조사한다.'
           targetType: item
           entityKey: past_killing_photo
+          containerId: belongings_jara
+          containerLabel: '서기준의 소지품'
+          ownerRoleId: jara
           sectionId: pre_scene
           order: 80
           icon: '📷'
