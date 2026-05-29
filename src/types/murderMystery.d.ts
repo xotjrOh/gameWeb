@@ -184,6 +184,7 @@ export interface MurderMysteryFlowStepScenario {
   round?: number;
   durationSec?: number;
   description?: string;
+  readAloud?: string;
   enterAnnouncement?: string;
 }
 
@@ -360,6 +361,14 @@ export interface MurderMysteryRoleReadingView {
   players: MurderMysteryRoleReadingPlayerView[];
 }
 
+export interface MurderMysteryPublicScriptView {
+  stepId: string;
+  label: string;
+  readAloud: string;
+  unlocked: boolean;
+  current: boolean;
+}
+
 export interface MurderMysteryGameData {
   scenarioId: string;
   scenarioTitle: string;
@@ -371,6 +380,7 @@ export interface MurderMysteryGameData {
   roleSelectionStatus: MurderMysteryRoleSelectionStatus;
   rolePreferencesByPlayerId: Record<string, string[]>;
   roleReadingReadyByPlayerId: Record<string, number>;
+  initialRoleCardsGranted: boolean;
   roleByPlayerId: Record<string, string>;
   roleDisplayNameByPlayerId: Record<string, string>;
   investigationUsedByPlayerId: Record<string, MurderMysteryInvestigationUsage>;
@@ -598,6 +608,7 @@ export interface MurderMysteryStateSnapshot {
   seatLayoutByPlayerId: Record<string, MurderMysterySeatPosition>;
   roleSelection: MurderMysteryRoleSelectionView;
   roleReading: MurderMysteryRoleReadingView;
+  publicScripts: MurderMysteryPublicScriptView[];
   phase: MurderMysteryPhase;
   phaseOrder: MurderMysteryPhase[];
   players: MurderMysteryPublicPlayerView[];
@@ -656,6 +667,10 @@ export interface MurderMysteryClientToServerEvents {
     callback: (response: CommonResponse) => void
   ) => void;
   mm_mark_role_sheet_read: (
+    data: { roomId: string; sessionId: string },
+    callback: (response: CommonResponse) => void
+  ) => void;
+  mm_mark_phase_read: (
     data: { roomId: string; sessionId: string },
     callback: (response: CommonResponse) => void
   ) => void;

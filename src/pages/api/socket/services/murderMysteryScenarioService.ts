@@ -627,6 +627,7 @@ const normalizeFlow = ({
         round,
         durationSec: asPositiveInteger(stepRecord.durationSec),
         description: asNonEmptyString(stepRecord.description),
+        readAloud: asNonEmptyString(stepRecord.readAloud),
         enterAnnouncement: asNonEmptyString(stepRecord.enterAnnouncement),
       };
     });

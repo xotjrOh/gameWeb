@@ -378,13 +378,6 @@ export default function MurderMysteryGameScreen({
       isHostView={isHostView}
       snapshot={snapshot}
       onLeaveRoom={handleLeaveRoom}
-      onStartGame={() =>
-        emitWithAck(
-          'mm_host_start_game',
-          { roomId, sessionId },
-          '게임을 시작했습니다.'
-        )
-      }
       onNextPhase={() =>
         emitWithAck(
           'mm_host_next_phase',
@@ -393,7 +386,7 @@ export default function MurderMysteryGameScreen({
         )
       }
       onMarkRoleSheetRead={() =>
-        emitWithAck('mm_mark_role_sheet_read', {
+        emitWithAck('mm_mark_phase_read', {
           roomId,
           sessionId,
         })

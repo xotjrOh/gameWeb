@@ -42,40 +42,57 @@ intro:
 flow:
   steps:
     - id: INTRO
-      label: '오프닝'
+      label: '프롤로그'
       kind: intro
-      durationSec: 180
-      enterAnnouncement: '용궁섬의 행사 조명이 꺼지고, 재활수조실의 밤이 열립니다.'
+      durationSec: 240
+      description: '방장이 프롤로그를 소리 내어 읽고, 낭독이 끝나면 다음 단계로 진행합니다.'
+      enterAnnouncement: '캐릭터 배정이 완료되었습니다. 방장이 프롤로그를 낭독합니다.'
     - id: ROLE_READING
       label: '비공개 룰지 읽기'
       kind: role_reading
       durationSec: 900
       description: '각자 비공개 룰지를 읽고, 준비가 되면 다 읽었어요를 눌러주세요. 권장 시간이 지나도 모두 준비될 때까지 다음 단계로 넘어가지 않습니다.'
-      enterAnnouncement: '각자 비공개 룰지를 읽는 시간입니다. 모두 읽음 완료를 누르면 1라운드 조사가 시작됩니다.'
+      enterAnnouncement: '방장의 안내에 따라 각자 비공개 룰지를 읽는 시간입니다.'
+    - id: ROUND1_BRIEFING
+      label: '1라운드 조사 전 지문'
+      kind: intro
+      durationSec: 180
+      description: '경찰이 현장 사진을 찍어야 하므로 당분간 재활수조실은 출입 금지입니다. 우선 용의자끼리 대화를 나누고 서로의 소지품을 조사합니다.'
+      readAloud: |
+        경찰이 현장 사진을 찍어야 하므로 당분간 재활수조실은 출입 금지입니다.
+
+        그래서 우선 용의자인 사람끼리 대화를 나누고 서로의 소지품을 조사하기로 합니다.
+      enterAnnouncement: '1라운드 조사 전 지문입니다. 방장이 낭독한 뒤 1라운드 조사로 진행합니다.'
     - id: ROUND1_INVESTIGATE
       label: '1라운드 조사'
       kind: investigate
       round: 1
       durationSec: 420
-      description: '경찰이 현장 사진을 찍어야 하므로 당분간 재활수조실은 출입 금지입니다. 우선 용의자끼리 대화를 나누고 서로의 소지품을 조사합니다.'
-      enterAnnouncement: |
-        경찰이 현장 사진을 찍어야 하므로 당분간 재활수조실은 출입 금지입니다.
-        우선 용의자인 사람끼리 대화를 나누고 서로의 소지품을 조사하기로 합니다.
+      description: '용의자끼리 대화를 나누고 서로의 소지품을 조사합니다.'
+      enterAnnouncement: '개인 전달 카드가 배부되었습니다. 1라운드 조사를 시작합니다.'
     - id: ROUND1_DISCUSS
       label: '1라운드 토론'
       kind: discuss
       round: 1
       durationSec: 600
       description: '현장 통제가 풀리기 전까지 각자의 말과 숨긴 행동을 맞춰 보세요. 누가 먼저 기사 제목이 될지 정하는 시간입니다.'
+    - id: ROUND2_BRIEFING
+      label: '2라운드 조사 전 지문'
+      kind: intro
+      durationSec: 120
+      description: '방장이 2라운드 조사 전 지문을 낭독하고, 현장 조사로 넘어갑니다.'
+      readAloud: |
+        경찰의 현장 통제가 풀렸습니다.
+
+        이제 각자 조사하기로 합니다.
+      enterAnnouncement: '2라운드 조사 전 지문입니다. 방장이 낭독한 뒤 2라운드 조사로 진행합니다.'
     - id: ROUND2_INVESTIGATE
       label: '2라운드 조사'
       kind: investigate
       round: 2
       durationSec: 420
-      description: '경찰의 현장 통제가 풀렸습니다. 이제 각자 재활수조실과 남은 소지품을 조사하기로 합니다.'
-      enterAnnouncement: |
-        경찰의 현장 통제가 풀렸습니다.
-        이제 각자 조사하기로 합니다.
+      description: '재활수조실과 남은 소지품을 조사합니다.'
+      enterAnnouncement: '2라운드 조사를 시작합니다.'
     - id: ROUND2_DISCUSS
       label: '2라운드 토론'
       kind: discuss

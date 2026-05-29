@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Box,
   Button,
@@ -19,21 +19,22 @@ import {
 import { useTheme } from '@mui/material/styles';
 import {
   AutoStories as AutoStoriesIcon,
-  ChevronLeft as ChevronLeftIcon,
-  ChevronRight as ChevronRightIcon,
+  Article as ArticleIcon,
   Close as CloseIcon,
   HowToVote as HowToVoteIcon,
   Inventory2 as Inventory2Icon,
   IosShare as IosShareIcon,
   Lock as LockIcon,
   Logout as LogoutIcon,
-  PlayArrow as PlayArrowIcon,
+  MusicNote as MusicNoteIcon,
   PushPin as PushPinIcon,
   RestartAlt as RestartAltIcon,
   SkipNext as SkipNextIcon,
   Style as StyleIcon,
   TaskAlt as TaskAltIcon,
   Timer as TimerIcon,
+  VolumeOff as VolumeOffIcon,
+  VolumeUp as VolumeUpIcon,
 } from '@mui/icons-material';
 import {
   MurderMysteryCardScenario,
@@ -41,6 +42,7 @@ import {
   MurderMysteryFinalVoteOptionScenario,
   MurderMysteryInvestigationBackCardView,
   MurderMysteryPublicPlayerView,
+  MurderMysteryPublicScriptView,
   MurderMysteryRoleSheetView,
   MurderMysterySeatPosition,
   MurderMysterySecretGuessInput,
@@ -49,14 +51,8 @@ import {
   MurderMysteryStateSnapshot,
   MurderMysteryStepKind,
 } from '@/types/murderMystery';
-import CharacterPortraitFrame, {
-  CharacterBookCover,
-} from '@/components/murderMystery/CharacterPortraitFrame';
-import RulebookRichText from '@/components/murderMystery/RulebookRichText';
-import {
-  normalizeRulebookText,
-  useMeasuredRulebookPages,
-} from '@/components/murderMystery/rulebookPagination';
+import CharacterPortraitFrame from '@/components/murderMystery/CharacterPortraitFrame';
+import MurderMysteryRulebookReader from '@/components/murderMystery/MurderMysteryRulebookReader';
 
 interface MurderMysteryTableExperienceProps {
   roomId: string;
@@ -64,7 +60,6 @@ interface MurderMysteryTableExperienceProps {
   isHostView: boolean;
   snapshot: MurderMysteryStateSnapshot;
   onLeaveRoom: () => void;
-  onStartGame: () => void;
   onNextPhase: () => void;
   onMarkRoleSheetRead: () => void;
   onFinalizeVote: () => void;
@@ -94,9 +89,36 @@ interface MurderMysteryTableExperienceProps {
 
 type PhaseKind = MurderMysteryStepKind | 'lobby';
 type AnyClueCard = MurderMysteryClueVaultCardView | MurderMysteryCardScenario;
-type RulebookSection = 'prologue' | 'rolebook';
+type BgmTrack = {
+  src: string;
+  label: string;
+};
+type BgmPlaybackState = {
+  blocked: boolean;
+  playing: boolean;
+  muted: boolean;
+  label: string | null;
+};
 
 const CARD_BACK_LABEL = '조사 카드';
+const MURDER_MYSTERY_BGM_BY_SCENARIO: Record<
+  string,
+  {
+    roleReading: BgmTrack;
+    duringPlay: BgmTrack;
+  }
+> = {
+  'rabbit-turtle-finish-line-night': {
+    roleReading: {
+      src: '/audio/murder-mystery/rabbit-turtle-finish-line-night/role-reading.mp3',
+      label: '룰지 읽기 BGM',
+    },
+    duringPlay: {
+      src: '/audio/murder-mystery/rabbit-turtle-finish-line-night/during-play.mp3',
+      label: '플레이 BGM',
+    },
+  },
+};
 const ROLE_RANK_COLORS = [
   {
     background: '#f59e0b',
@@ -214,6 +236,273 @@ const getCardSourceText = (card: AnyClueCard) => {
 
 const getRoleRankColor = (rankIndex: number) =>
   ROLE_RANK_COLORS[rankIndex] ?? ROLE_RANK_COLORS[ROLE_RANK_COLORS.length - 1];
+
+const getMurderMysteryBgmTrack = (
+  snapshot: MurderMysteryStateSnapshot
+): BgmTrack | null => {
+  const bgmConfig = MURDER_MYSTERY_BGM_BY_SCENARIO[snapshot.scenario.id];
+  if (!bgmConfig || snapshot.phase === 'LOBBY') {
+    return null;
+  }
+
+  const currentPhaseIndex = snapshot.phaseOrder.indexOf(snapshot.phase);
+  const roleReadingPhaseIndex = snapshot.phaseOrder.indexOf('ROLE_READING');
+  if (
+    currentPhaseIndex >= 0 &&
+    roleReadingPhaseIndex >= 0 &&
+    currentPhaseIndex <= roleReadingPhaseIndex
+  ) {
+    return bgmConfig.roleReading;
+  }
+
+  return bgmConfig.duringPlay;
+};
+
+const BgmControl = ({
+  track,
+  startRequest = 0,
+  onPlaybackStateChange,
+}: {
+  track: BgmTrack | null;
+  startRequest?: number;
+  onPlaybackStateChange?: (state: BgmPlaybackState) => void;
+}) => {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [muted, setMuted] = useState(false);
+  const [userEnabled, setUserEnabled] = useState(true);
+
+  const startBgm = useCallback(() => {
+    setUserEnabled(true);
+    const audio = audioRef.current;
+    if (!audio || !track) {
+      return;
+    }
+    const nextSrc = new URL(track.src, window.location.href).href;
+    if (audio.src !== nextSrc) {
+      audio.src = track.src;
+      audio.currentTime = 0;
+    }
+    audio.loop = true;
+    audio.volume = 0.38;
+    audio.muted = muted;
+    audio
+      .play()
+      .then(() => {
+        setIsPlaying(true);
+        setIsBlocked(false);
+      })
+      .catch(() => {
+        setIsPlaying(false);
+        setIsBlocked(true);
+      });
+  }, [muted, track]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) {
+      return;
+    }
+    audio.volume = 0.38;
+    audio.muted = muted;
+  }, [muted]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) {
+      return;
+    }
+
+    if (!track || !userEnabled) {
+      audio.pause();
+      setIsPlaying(false);
+      setIsBlocked(false);
+      return;
+    }
+
+    const nextSrc = new URL(track.src, window.location.href).href;
+    if (audio.src !== nextSrc) {
+      audio.src = track.src;
+      audio.currentTime = 0;
+    }
+    audio.loop = true;
+    audio.volume = 0.38;
+    audio.muted = muted;
+
+    audio
+      .play()
+      .then(() => {
+        setIsPlaying(true);
+        setIsBlocked(false);
+      })
+      .catch(() => {
+        setIsPlaying(false);
+        setIsBlocked(true);
+      });
+  }, [muted, track, userEnabled]);
+
+  useEffect(() => {
+    onPlaybackStateChange?.({
+      blocked: isBlocked,
+      playing: isPlaying,
+      muted,
+      label: track?.label ?? null,
+    });
+  }, [isBlocked, isPlaying, muted, onPlaybackStateChange, track?.label]);
+
+  useEffect(() => {
+    if (startRequest > 0) {
+      startBgm();
+    }
+  }, [startBgm, startRequest]);
+
+  useEffect(
+    () => () => {
+      audioRef.current?.pause();
+    },
+    []
+  );
+
+  if (!track) {
+    return <audio ref={audioRef} preload="auto" />;
+  }
+
+  return (
+    <Stack direction="row" spacing={0.6} alignItems="center">
+      <audio ref={audioRef} preload="auto" />
+      {isBlocked || !isPlaying ? (
+        <Button
+          size="small"
+          variant="contained"
+          color="warning"
+          startIcon={<MusicNoteIcon />}
+          onClick={startBgm}
+          sx={{ fontWeight: 900 }}
+        >
+          BGM 시작
+        </Button>
+      ) : (
+        <Chip
+          icon={<MusicNoteIcon />}
+          label={track.label}
+          sx={{
+            backgroundColor: 'rgba(255,255,255,0.12)',
+            color: '#f8f1de',
+            fontWeight: 800,
+          }}
+        />
+      )}
+      <Tooltip title={muted ? 'BGM 소리 켜기' : 'BGM 음소거'}>
+        <IconButton
+          size="small"
+          onClick={() => setMuted((current) => !current)}
+          sx={{ color: '#f8f1de' }}
+        >
+          {muted ? <VolumeOffIcon /> : <VolumeUpIcon />}
+        </IconButton>
+      </Tooltip>
+    </Stack>
+  );
+};
+
+const FloatingActionDock = ({
+  title,
+  description,
+  chips,
+  actions,
+  auxiliaryActions,
+  bottomOffset,
+}: {
+  title: string;
+  description?: string;
+  chips?: React.ReactNode;
+  actions?: React.ReactNode;
+  auxiliaryActions?: React.ReactNode;
+  bottomOffset: { xs: number; md: number };
+}) => (
+  <Box
+    sx={{
+      position: 'fixed',
+      left: { xs: 10, md: '50%' },
+      right: { xs: 10, md: 'auto' },
+      bottom: { xs: bottomOffset.xs, md: bottomOffset.md },
+      transform: { xs: 'none', md: 'translateX(-50%)' },
+      zIndex: 1000,
+      width: { xs: 'auto', md: 'min(760px, calc(100vw - 320px))' },
+      maxWidth: { md: 760 },
+      pointerEvents: 'auto',
+    }}
+  >
+    <Box
+      sx={{
+        p: { xs: 1.05, md: 1.2 },
+        borderRadius: 2,
+        border: '1px solid rgba(245, 197, 66, 0.48)',
+        background:
+          'linear-gradient(180deg, rgba(38, 31, 23, 0.97), rgba(18, 22, 25, 0.97))',
+        color: '#f8f1de',
+        boxShadow: '0 18px 44px rgba(0,0,0,0.46)',
+        backdropFilter: 'blur(14px)',
+      }}
+    >
+      <Stack
+        direction={{ xs: 'column', md: 'row' }}
+        spacing={1}
+        alignItems={{ xs: 'stretch', md: 'center' }}
+      >
+        <Box sx={{ minWidth: 0, flex: 1 }}>
+          <Stack direction="row" spacing={0.7} alignItems="center" useFlexGap>
+            <Typography
+              fontWeight={950}
+              sx={{
+                fontSize: { xs: 14, md: 15 },
+                lineHeight: 1.25,
+                wordBreak: 'keep-all',
+              }}
+            >
+              {title}
+            </Typography>
+            {chips}
+          </Stack>
+          {description ? (
+            <Typography
+              variant="caption"
+              sx={{
+                display: 'block',
+                mt: 0.2,
+                color: '#d8d0bd',
+                lineHeight: 1.35,
+                wordBreak: 'keep-all',
+              }}
+            >
+              {description}
+            </Typography>
+          ) : null}
+        </Box>
+        {actions || auxiliaryActions ? (
+          <Stack
+            direction="row"
+            spacing={0.7}
+            alignItems="center"
+            justifyContent={{ xs: 'stretch', md: 'flex-end' }}
+            flexWrap="wrap"
+            useFlexGap
+            sx={{
+              '& > .MuiButton-root': {
+                flex: { xs: '1 1 auto', md: '0 0 auto' },
+                fontWeight: 900,
+              },
+            }}
+          >
+            {actions}
+            {auxiliaryActions}
+          </Stack>
+        ) : null}
+      </Stack>
+    </Box>
+  </Box>
+);
 
 const EvidenceCardFace = ({
   card,
@@ -1199,14 +1488,20 @@ const RolePreSharePanel = ({
 
 const MyDeskPanel = ({
   cardCount,
+  publicScriptCount,
   canOpenRulebook = true,
+  canOpenPublicScripts = true,
   onOpenRulebook,
+  onOpenPublicScripts,
   onOpenPrivateCards,
   compact = false,
 }: {
   cardCount: number;
+  publicScriptCount: number;
   canOpenRulebook?: boolean;
+  canOpenPublicScripts?: boolean;
   onOpenRulebook: () => void;
+  onOpenPublicScripts: () => void;
   onOpenPrivateCards: () => void;
   compact?: boolean;
 }) => (
@@ -1250,6 +1545,16 @@ const MyDeskPanel = ({
         <Button
           size="small"
           variant="outlined"
+          startIcon={<ArticleIcon />}
+          disabled={!canOpenPublicScripts}
+          onClick={onOpenPublicScripts}
+          sx={{ flex: compact ? 1 : undefined }}
+        >
+          낭독문 {publicScriptCount}
+        </Button>
+        <Button
+          size="small"
+          variant="outlined"
           startIcon={<Inventory2Icon />}
           onClick={onOpenPrivateCards}
           sx={{ flex: compact ? 1 : undefined }}
@@ -1274,33 +1579,6 @@ const RulebookModal = ({
   fullScreen: boolean;
   onClose: () => void;
 }) => {
-  const secretMeasureRef = useRef<HTMLParagraphElement | null>(null);
-  const { pages: secretPages, isPaginating: isSecretPaginating } =
-    useMeasuredRulebookPages(roleSheet?.secretText ?? '', secretMeasureRef, {
-      enabled: open,
-      fallbackText: '비공개 룰지가 아직 배정되지 않았습니다.',
-      highlights: roleSheet?.secretTextHighlights,
-    });
-  const prologuePages = useMemo(
-    () => [normalizeRulebookText(introText) || '읽을 내용이 없습니다.'],
-    [introText]
-  );
-  const [section, setSection] = useState<RulebookSection>('rolebook');
-  const [pageIndex, setPageIndex] = useState(0);
-  const [direction, setDirection] = useState<1 | -1>(1);
-  const pageCount =
-    section === 'rolebook' ? secretPages.length + 1 : prologuePages.length;
-  const maxPageIndex = Math.max(pageCount - 1, 0);
-
-  useEffect(() => {
-    setSection('rolebook');
-    setPageIndex(0);
-  }, [roleSheet?.roleId]);
-
-  useEffect(() => {
-    setPageIndex((current) => clamp(current, 0, maxPageIndex));
-  }, [maxPageIndex]);
-
   useEffect(() => {
     if (!open) {
       return;
@@ -1309,34 +1587,10 @@ const RulebookModal = ({
       if (event.key === 'Escape') {
         onClose();
       }
-      if (event.key === 'ArrowRight') {
-        setDirection(1);
-        setPageIndex((current) => Math.min(current + 1, maxPageIndex));
-      }
-      if (event.key === 'ArrowLeft') {
-        setDirection(-1);
-        setPageIndex((current) => Math.max(current - 1, 0));
-      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [maxPageIndex, open, onClose]);
-
-  const goTo = (nextIndex: number) => {
-    setDirection(nextIndex > pageIndex ? 1 : -1);
-    setPageIndex(clamp(nextIndex, 0, maxPageIndex));
-  };
-
-  const selectSection = (nextSection: RulebookSection) => {
-    if (section === nextSection) {
-      return;
-    }
-    setDirection(nextSection === 'rolebook' ? 1 : -1);
-    setSection(nextSection);
-    setPageIndex(0);
-  };
-
-  const isRolebookCover = section === 'rolebook' && pageIndex === 0;
+  }, [open, onClose]);
 
   return (
     <Dialog
@@ -1362,235 +1616,119 @@ const RulebookModal = ({
             <CloseIcon />
           </IconButton>
         </Stack>
-
-        <Stack
-          direction="row"
-          spacing={0.5}
-          sx={{
-            mb: 1.2,
-            p: 0.45,
-            borderRadius: 999,
-            backgroundColor: 'rgba(247,241,222,0.11)',
-            border: '1px solid rgba(247,241,222,0.16)',
-          }}
-        >
-          <Button
-            fullWidth
-            color="inherit"
-            variant={section === 'prologue' ? 'contained' : 'text'}
-            onClick={() => selectSection('prologue')}
-            sx={{
-              borderRadius: 999,
-              color: section === 'prologue' ? '#211711' : '#f7f1de',
-              backgroundColor:
-                section === 'prologue' ? '#f5ecd5' : 'transparent',
-              '&:hover': {
-                backgroundColor:
-                  section === 'prologue' ? '#f5ecd5' : 'rgba(247,241,222,0.1)',
-              },
-            }}
-          >
-            프롤로그
-          </Button>
-          <Button
-            fullWidth
-            color="inherit"
-            variant={section === 'rolebook' ? 'contained' : 'text'}
-            onClick={() => selectSection('rolebook')}
-            sx={{
-              borderRadius: 999,
-              color: section === 'rolebook' ? '#211711' : '#f7f1de',
-              backgroundColor:
-                section === 'rolebook' ? '#f5ecd5' : 'transparent',
-              '&:hover': {
-                backgroundColor:
-                  section === 'rolebook' ? '#f5ecd5' : 'rgba(247,241,222,0.1)',
-              },
-            }}
-          >
-            인물북
-          </Button>
-        </Stack>
-
-        <Box
-          sx={{
-            perspective: '1600px',
+        <MurderMysteryRulebookReader
+          storageKey={
+            roleSheet?.roleId
+              ? `murderMystery:inGameRulebook:${roleSheet.roleId}`
+              : undefined
+          }
+          roleDisplayName={roleSheet?.displayName ?? '역할 미배정'}
+          rolePublicText={
+            roleSheet?.publicText ?? '게임 시작 후 공개 정보가 표시됩니다.'
+          }
+          portraitSrc={roleSheet?.portraitSrc}
+          portraitAlt={roleSheet?.portraitAlt}
+          introText={introText}
+          secretText={roleSheet?.secretText ?? ''}
+          secretTextHighlights={roleSheet?.secretTextHighlights}
+          pageSx={{
             height: {
-              xs: fullScreen ? 'calc(100vh - 32px)' : 700,
-              sm: 940,
+              xs: fullScreen ? 'calc(100vh - 206px)' : 660,
+              sm: 760,
             },
-            display: 'grid',
-            placeItems: 'center',
           }}
-        >
-          <Box
-            key={`${roleSheet?.roleId ?? 'empty'}:${section}:${pageIndex}`}
-            sx={{
-              width: 'min(100%, 720px)',
-              height: {
-                xs: fullScreen ? 'calc(100vh - 96px)' : 660,
-                sm: 860,
-              },
-              borderRadius: 1,
-              backgroundColor: '#fbf4df',
-              color: '#2b241c',
-              boxShadow: '0 28px 64px rgba(0,0,0,0.48)',
-              border: '1px solid rgba(81, 61, 38, 0.55)',
-              transformStyle: 'preserve-3d',
-              animation:
-                direction === 1
-                  ? 'rulebookNext 260ms ease'
-                  : 'rulebookPrev 260ms ease',
-              '@keyframes rulebookNext': {
-                '0%': {
-                  opacity: 0.72,
-                  transform: 'rotateY(-13deg) translateX(12px)',
-                },
-                '100%': {
-                  opacity: 1,
-                  transform: 'rotateY(0deg) translateX(0)',
-                },
-              },
-              '@keyframes rulebookPrev': {
-                '0%': {
-                  opacity: 0.72,
-                  transform: 'rotateY(13deg) translateX(-12px)',
-                },
-                '100%': {
-                  opacity: 1,
-                  transform: 'rotateY(0deg) translateX(0)',
-                },
-              },
-            }}
-          >
-            <Box
-              sx={{
-                height: {
-                  xs: fullScreen ? 'calc(100vh - 96px)' : 660,
-                  sm: 860,
-                },
-                p: { xs: 2.2, sm: 4 },
-                background:
-                  'linear-gradient(90deg, rgba(89,66,43,0.13) 0, rgba(89,66,43,0.02) 8%, transparent 18%)',
-                display: 'flex',
-                flexDirection: 'column',
-                overflow: 'hidden',
-              }}
-            >
-              <Box
-                sx={{
-                  position: 'relative',
-                  flex: 1,
-                  minHeight: 0,
-                  overflow: 'hidden',
-                }}
-              >
-                {isRolebookCover ? (
-                  <CharacterBookCover
-                    displayName={roleSheet?.displayName ?? '역할 미배정'}
-                    publicText={
-                      roleSheet?.publicText ??
-                      '게임 시작 후 공개 정보가 표시됩니다.'
-                    }
-                    portraitSrc={roleSheet?.portraitSrc}
-                    portraitAlt={roleSheet?.portraitAlt}
-                    sx={{ height: '100%', minHeight: 0 }}
-                  />
-                ) : section === 'prologue' ? (
-                  <Typography
-                    sx={{
-                      whiteSpace: 'pre-wrap',
-                      lineHeight: 1.72,
-                      fontSize: { xs: 14.5, sm: 16 },
-                      wordBreak: 'keep-all',
-                      overflowY: 'auto',
-                      height: '100%',
-                    }}
-                  >
-                    {prologuePages[pageIndex]}
-                  </Typography>
-                ) : isSecretPaginating ? (
-                  <Typography
-                    sx={{
-                      display: 'grid',
-                      placeItems: 'center',
-                      height: '100%',
-                      color: '#6f5d49',
-                      fontWeight: 850,
-                    }}
-                  >
-                    페이지를 맞추는 중입니다.
-                  </Typography>
-                ) : (
-                  <Typography
-                    sx={{
-                      height: '100%',
-                      whiteSpace: 'pre-wrap',
-                      lineHeight: { xs: 1.64, sm: 1.72 },
-                      fontSize: { xs: 14.25, sm: 16 },
-                      wordBreak: 'keep-all',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <RulebookRichText
-                      text={secretPages[pageIndex - 1] ?? ''}
-                      highlights={roleSheet?.secretTextHighlights}
-                    />
-                  </Typography>
-                )}
-                <Typography
-                  ref={secretMeasureRef}
-                  aria-hidden
-                  sx={{
-                    position: 'absolute',
-                    inset: 0,
-                    zIndex: -1,
-                    visibility: 'hidden',
-                    pointerEvents: 'none',
-                    height: '100%',
-                    whiteSpace: 'pre-wrap',
-                    lineHeight: { xs: 1.64, sm: 1.72 },
-                    fontSize: { xs: 14.25, sm: 16 },
-                    wordBreak: 'keep-all',
-                    overflow: 'hidden',
-                  }}
-                />
-              </Box>
-
-              <Stack
-                direction="row"
-                alignItems="center"
-                spacing={1.2}
-                sx={{ mt: 3 }}
-              >
-                <Button
-                  startIcon={<ChevronLeftIcon />}
-                  disabled={pageIndex === 0}
-                  onClick={() => goTo(pageIndex - 1)}
-                >
-                  이전
-                </Button>
-                <Typography
-                  variant="caption"
-                  sx={{ flex: 1, textAlign: 'center', color: '#6f5d49' }}
-                >
-                  {pageIndex + 1} / {pageCount}
-                </Typography>
-                <Button
-                  endIcon={<ChevronRightIcon />}
-                  disabled={pageIndex >= maxPageIndex}
-                  onClick={() => goTo(pageIndex + 1)}
-                >
-                  다음
-                </Button>
-              </Stack>
-            </Box>
-          </Box>
-        </Box>
+          footerText="인게임 룰북은 본인 화면에서만 열립니다."
+        />
       </DialogContent>
     </Dialog>
   );
 };
+
+const PublicScriptsDialog = ({
+  open,
+  scripts,
+  fullScreen,
+  onClose,
+}: {
+  open: boolean;
+  scripts: MurderMysteryPublicScriptView[];
+  fullScreen: boolean;
+  onClose: () => void;
+}) => (
+  <Dialog
+    open={open}
+    onClose={onClose}
+    fullWidth
+    maxWidth="md"
+    fullScreen={fullScreen}
+  >
+    <DialogTitle
+      sx={{
+        backgroundColor: '#211b17',
+        color: '#f7f0df',
+        borderBottom: '1px solid rgba(255,255,255,0.12)',
+      }}
+    >
+      <Stack direction="row" alignItems="center" spacing={1}>
+        <ArticleIcon />
+        <Typography fontWeight={950} sx={{ flex: 1 }}>
+          공개 낭독문
+        </Typography>
+        <IconButton onClick={onClose} sx={{ color: '#f7f0df' }}>
+          <CloseIcon />
+        </IconButton>
+      </Stack>
+    </DialogTitle>
+    <DialogContent
+      sx={{
+        p: { xs: 1.4, sm: 2 },
+        background:
+          'linear-gradient(145deg, #201b18 0%, #3b3027 48%, #171c23 100%)',
+        color: '#f7f0df',
+      }}
+    >
+      {scripts.length > 0 ? (
+        <Stack spacing={1.4}>
+          {scripts.map((script) => (
+            <Box
+              key={script.stepId}
+              sx={{
+                p: { xs: 1.2, md: 1.6 },
+                borderRadius: 2,
+                border: script.current
+                  ? '1px solid rgba(245, 197, 66, 0.82)'
+                  : '1px solid rgba(255,255,255,0.14)',
+                backgroundColor: script.current
+                  ? 'rgba(245, 197, 66, 0.1)'
+                  : 'rgba(255,255,255,0.06)',
+              }}
+            >
+              <Stack spacing={1}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Typography fontWeight={950} sx={{ flex: 1 }}>
+                    {script.label}
+                  </Typography>
+                  <Chip
+                    size="small"
+                    color={script.current ? 'warning' : 'default'}
+                    label={script.current ? '현재 단계' : '공개됨'}
+                  />
+                </Stack>
+                <Typography sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.78 }}>
+                  {script.readAloud}
+                </Typography>
+              </Stack>
+            </Box>
+          ))}
+        </Stack>
+      ) : (
+        <Typography sx={{ color: '#d8d0bd' }}>
+          아직 다시 읽을 수 있는 공개 낭독문이 없습니다.
+        </Typography>
+      )}
+    </DialogContent>
+  </Dialog>
+);
 
 const PublicCoverDialog = ({
   open,
@@ -1903,7 +2041,6 @@ export default function MurderMysteryTableExperience({
   isHostView,
   snapshot,
   onLeaveRoom,
-  onStartGame,
   onNextPhase,
   onMarkRoleSheetRead,
   onFinalizeVote,
@@ -1924,6 +2061,8 @@ export default function MurderMysteryTableExperience({
   const theme = useTheme();
   const isSmall = useMediaQuery(theme.breakpoints.down('md'));
   const tableRef = useRef<HTMLDivElement | null>(null);
+  const phaseScrollRef = useRef<HTMLDivElement | null>(null);
+  const specialEventsRef = useRef<HTMLDivElement | null>(null);
   const seatPositionsRef = useRef<Record<string, MurderMysterySeatPosition>>(
     {}
   );
@@ -1935,12 +2074,14 @@ export default function MurderMysteryTableExperience({
     moved: boolean;
     canDrag: boolean;
   } | null>(null);
+  const previousPhaseRef = useRef(snapshot.phase);
   const [seatPositions, setSeatPositions] = useState<
     Record<string, MurderMysterySeatPosition>
   >({});
   const [draggingPlayerId, setDraggingPlayerId] = useState<string | null>(null);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [isRulebookOpen, setIsRulebookOpen] = useState(false);
+  const [isPublicScriptsOpen, setIsPublicScriptsOpen] = useState(false);
   const [isPrivateCardsOpen, setIsPrivateCardsOpen] = useState(false);
   const [selectedCard, setSelectedCard] = useState<AnyClueCard | null>(null);
   const [nowTick, setNowTick] = useState(Date.now());
@@ -1950,6 +2091,13 @@ export default function MurderMysteryTableExperience({
   const [secretGuessDrafts, setSecretGuessDrafts] = useState<
     Record<string, string>
   >({});
+  const [bgmStartRequest, setBgmStartRequest] = useState(0);
+  const [bgmPlaybackState, setBgmPlaybackState] = useState<BgmPlaybackState>({
+    blocked: false,
+    playing: false,
+    muted: false,
+    label: null,
+  });
 
   const playerIdsKey = snapshot.players.map((player) => player.id).join('|');
   const secretTargetIdsKey = snapshot.secretReview.targetPlayers
@@ -1987,6 +2135,7 @@ export default function MurderMysteryTableExperience({
       : null;
   const isPhaseTimerExpired =
     phaseRemainingSec === 0 && snapshot.phaseTimer.durationSec !== null;
+  const bgmTrack = getMurderMysteryBgmTrack(snapshot);
   const activeRound = snapshot.investigation.round;
   const activeRoundView =
     snapshot.investigation.rounds.find(
@@ -1999,11 +2148,6 @@ export default function MurderMysteryTableExperience({
     snapshot.hostParticipation.currentPlayerCount >=
     snapshot.hostParticipation.requiredPlayerCount;
   const isRoleSelectionLocked = snapshot.roleSelection.status === 'locked';
-  const canStartGame =
-    canUseHostTools &&
-    snapshot.phase === 'LOBBY' &&
-    hasRequiredPlayerCount &&
-    isRoleSelectionLocked;
   const showNextPhaseTool =
     canUseHostTools &&
     phaseKind !== 'lobby' &&
@@ -2024,11 +2168,57 @@ export default function MurderMysteryTableExperience({
     !snapshot.finalVote.result &&
     (snapshot.canUseHostGameMasterControls ||
       snapshot.finalVote.submittedVoters >= snapshot.finalVote.totalVoters);
+  const hasSubmittedRolePreferences =
+    snapshot.roleSelection.yourPreferenceRoleIds.length ===
+    snapshot.roleSelection.roles.length;
+  const canSubmitRolePreferences =
+    snapshot.roleSelection.status === 'open' &&
+    draftRolePreferenceIds.length === snapshot.roleSelection.roles.length &&
+    new Set(draftRolePreferenceIds).size ===
+      snapshot.roleSelection.roles.length;
+  const canSubmitSecretGuesses =
+    !snapshot.secretReview.yourSubmitted &&
+    snapshot.secretReview.targetPlayers.length > 0 &&
+    snapshot.secretReview.targetPlayers.every(
+      (player) => secretGuessDrafts[player.playerId]?.trim().length > 0
+    );
+  const hasPendingSecretJudgement =
+    snapshot.secretReview.allSubmitted &&
+    snapshot.secretReview.receivedGuesses.some((guess) => !guess.judgement);
+  const hasOpenModal =
+    isRulebookOpen ||
+    isPrivateCardsOpen ||
+    isPublicScriptsOpen ||
+    Boolean(selectedCard) ||
+    Boolean(selectedPlayer);
+  const shouldShowBgmStartAction =
+    Boolean(bgmTrack) && !bgmPlaybackState.playing;
+  const requestBgmStart = () =>
+    setBgmStartRequest((currentRequest) => currentRequest + 1);
+  const bringPhaseActionsIntoView = () => {
+    phaseScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const bringSpecialEventsIntoView = () => {
+    specialEventsRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+    });
+  };
 
   useEffect(() => {
     const timer = window.setInterval(() => setNowTick(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (
+      previousPhaseRef.current === 'ROLE_READING' &&
+      snapshot.phase !== 'ROLE_READING'
+    ) {
+      setIsRulebookOpen(false);
+    }
+    previousPhaseRef.current = snapshot.phase;
+  }, [snapshot.phase]);
 
   useEffect(() => {
     seatPositionsRef.current = seatPositions;
@@ -2173,6 +2363,112 @@ export default function MurderMysteryTableExperience({
     onResetSeatLayout();
   };
 
+  const renderIntroArea = () => {
+    const introText =
+      snapshot.publicScripts.find((script) => script.current)?.readAloud ??
+      currentStep?.readAloud ??
+      snapshot.scenario.intro.readAloud;
+    const isHostReading = canUseHostTools;
+
+    return (
+      <Stack spacing={1.8}>
+        <Box
+          sx={{
+            p: { xs: 1.6, md: 2.2 },
+            borderRadius: 3,
+            border: isHostReading
+              ? '1px solid rgba(245, 197, 66, 0.72)'
+              : '1px solid rgba(255,255,255,0.16)',
+            backgroundColor: isHostReading
+              ? 'rgba(245, 197, 66, 0.12)'
+              : 'rgba(255,255,255,0.06)',
+            boxShadow: isHostReading ? '0 18px 42px rgba(0,0,0,0.28)' : 'none',
+          }}
+        >
+          <Stack spacing={1.4}>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              <Chip
+                icon={<ArticleIcon />}
+                color={isHostReading ? 'warning' : 'default'}
+                label={currentStep?.label ?? '프롤로그'}
+              />
+              <Chip
+                icon={<TimerIcon />}
+                label={
+                  isPhaseTimerExpired
+                    ? '권장 시간이 지났습니다'
+                    : `권장 시간 ${formatSeconds(phaseRemainingSec)}`
+                }
+                sx={{
+                  backgroundColor: isPhaseTimerExpired
+                    ? 'rgba(245, 158, 11, 0.2)'
+                    : 'rgba(255,255,255,0.12)',
+                  color: '#f8f1de',
+                }}
+              />
+            </Stack>
+
+            <Box>
+              <Typography
+                variant="h4"
+                fontWeight={950}
+                sx={{
+                  fontSize: { xs: 26, md: 34 },
+                  lineHeight: 1.15,
+                  wordBreak: 'keep-all',
+                }}
+              >
+                {isHostReading
+                  ? '방장이 소리 내어 읽어주세요'
+                  : '방장이 낭독 중입니다'}
+              </Typography>
+              <Typography sx={{ mt: 0.8, color: '#d8d0bd', lineHeight: 1.65 }}>
+                {isHostReading
+                  ? '플레이어들이 같은 장면을 듣고 시작할 수 있도록 천천히 읽은 뒤 다음 단계로 넘기세요.'
+                  : '지문은 함께 볼 수 있지만, 진행은 방장이 낭독을 마친 뒤 넘어갑니다.'}
+              </Typography>
+            </Box>
+          </Stack>
+        </Box>
+
+        <Box
+          sx={{
+            p: { xs: 1.4, md: 2 },
+            borderRadius: 2,
+            border: '1px solid rgba(255,255,255,0.14)',
+            backgroundColor: 'rgba(11, 15, 20, 0.58)',
+          }}
+        >
+          <Typography sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.78 }}>
+            {introText}
+          </Typography>
+        </Box>
+
+        {isHostReading ? (
+          <Button
+            variant="contained"
+            color="warning"
+            size="large"
+            startIcon={<TaskAltIcon />}
+            onClick={onNextPhase}
+            sx={{
+              alignSelf: { xs: 'stretch', sm: 'flex-start' },
+              px: 3,
+              py: 1.25,
+              fontWeight: 950,
+            }}
+          >
+            낭독 완료, 다음으로
+          </Button>
+        ) : (
+          <Typography sx={{ color: '#d8d0bd' }}>
+            방장의 진행을 기다려주세요.
+          </Typography>
+        )}
+      </Stack>
+    );
+  };
+
   const renderRoleReadingArea = () => (
     <Stack spacing={1.8}>
       <Stack spacing={0.8}>
@@ -2229,7 +2525,7 @@ export default function MurderMysteryTableExperience({
             </Stack>
             {snapshot.roleReading.allReady ? (
               <Typography variant="body2" sx={{ color: '#9fe3c0' }}>
-                모두 준비되었습니다. 1라운드 조사가 열립니다.
+                모두 준비되었습니다. 1라운드 조사 전 지문으로 이동합니다.
               </Typography>
             ) : (
               <Typography variant="body2" sx={{ color: '#d8d0bd' }}>
@@ -2289,8 +2585,7 @@ export default function MurderMysteryTableExperience({
 
       {canUseHostTools ? (
         <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
-          방장도 수동 진행 버튼을 볼 수 있지만, 모든 플레이어가 읽음 완료를
-          눌러야 활성화됩니다.
+          모두가 다 읽었어요를 누르면 자동으로 조사 전 낭독 단계로 이동합니다.
         </Typography>
       ) : null}
     </Stack>
@@ -2691,6 +2986,302 @@ export default function MurderMysteryTableExperience({
       </Stack>
     ) : null;
 
+  const renderFloatingActionDock = () => {
+    if (hasOpenModal) {
+      return null;
+    }
+
+    let title = '';
+    let description = '';
+    let chips: React.ReactNode = null;
+    let actions: React.ReactNode = null;
+
+    if (phaseKind === 'lobby') {
+      if (snapshot.roleSelection.status === 'locked') {
+        title = '캐릭터 배정 완료';
+        description = '잠시 후 방장이 프롤로그 낭독을 시작합니다.';
+      } else {
+        title = hasSubmittedRolePreferences
+          ? '선호 제출 완료'
+          : '캐릭터 선호를 제출하세요';
+        description = hasSubmittedRolePreferences
+          ? '배정 전까지 선호 순위를 다시 제출하거나 취소할 수 있습니다.'
+          : '순위를 확인한 뒤 제출해야 캐릭터 배정이 진행됩니다.';
+        chips = (
+          <Chip
+            size="small"
+            label={`제출 ${snapshot.roleSelection.submittedCount}/${snapshot.roleSelection.requiredPlayerCount}`}
+            color={hasSubmittedRolePreferences ? 'success' : 'warning'}
+          />
+        );
+        actions = (
+          <>
+            <Button
+              size="small"
+              variant="contained"
+              color="warning"
+              disabled={!canSubmitRolePreferences}
+              onClick={() => onSubmitRolePreferences(draftRolePreferenceIds)}
+            >
+              {hasSubmittedRolePreferences ? '선호 다시 제출' : '선호 제출'}
+            </Button>
+            {hasSubmittedRolePreferences ? (
+              <Button
+                size="small"
+                variant="outlined"
+                color="inherit"
+                onClick={onClearRolePreferences}
+              >
+                제출 취소
+              </Button>
+            ) : null}
+          </>
+        );
+      }
+    } else if (phaseKind === 'intro') {
+      title = canUseHostTools
+        ? '방장이 낭독을 진행하세요'
+        : '방장이 낭독 중입니다';
+      description = canUseHostTools
+        ? '지문을 소리 내어 읽은 뒤 다음 단계로 넘기세요.'
+        : '지문을 함께 보며 방장의 진행을 기다려주세요.';
+      actions = canUseHostTools ? (
+        <Button
+          size="small"
+          variant="contained"
+          color="warning"
+          startIcon={<TaskAltIcon />}
+          onClick={onNextPhase}
+        >
+          낭독 완료, 다음으로
+        </Button>
+      ) : null;
+    } else if (phaseKind === 'role_reading') {
+      title = snapshot.roleReading.yourReady
+        ? '읽음 완료'
+        : '비공개 룰지를 읽고 완료를 눌러주세요';
+      description = snapshot.roleReading.yourReady
+        ? '다른 플레이어가 다 읽으면 자동으로 다음 낭독 단계로 이동합니다.'
+        : '룰북을 연 뒤 내용을 확인하고 다 읽었어요를 누르세요.';
+      chips = (
+        <Chip
+          size="small"
+          label={`${snapshot.roleReading.readyCount}/${snapshot.roleReading.totalCount} 읽음`}
+          color={snapshot.roleReading.allReady ? 'success' : 'warning'}
+        />
+      );
+      actions = (
+        <>
+          <Button
+            size="small"
+            variant="contained"
+            startIcon={<AutoStoriesIcon />}
+            disabled={!snapshot.roleSheet}
+            onClick={() => setIsRulebookOpen(true)}
+            sx={{
+              backgroundColor: '#4655c7',
+              '&:hover': { backgroundColor: '#3542a5' },
+            }}
+          >
+            비공개 룰북 열기
+          </Button>
+          {!snapshot.roleReading.yourReady ? (
+            <Button
+              size="small"
+              variant="contained"
+              color="warning"
+              startIcon={<TaskAltIcon />}
+              disabled={!selfPlayer}
+              onClick={onMarkRoleSheetRead}
+            >
+              다 읽었어요
+            </Button>
+          ) : null}
+        </>
+      );
+    } else if (phaseKind === 'investigate') {
+      title = canActNow
+        ? snapshot.investigation.turn?.extraInvestigationPending
+          ? '추가 조사 가능'
+          : '내 조사 차례입니다'
+        : snapshot.investigation.turn?.myReservation
+          ? '예약한 카드가 있습니다'
+          : '다른 플레이어 조사 차례입니다';
+      description = canActNow
+        ? '테이블의 뒷면 카드 중 하나를 선택하세요.'
+        : snapshot.investigation.turn?.myReservation
+          ? '내 차례가 오면 예약한 카드를 가져갈 수 있습니다.'
+          : '필요하면 내 차례 전에 카드를 예약해둘 수 있습니다.';
+      chips = activeRound ? (
+        <Chip
+          size="small"
+          color={canActNow ? 'warning' : 'default'}
+          label={`${activeRound}라운드`}
+        />
+      ) : null;
+      actions = (
+        <Button
+          size="small"
+          variant={canActNow ? 'contained' : 'outlined'}
+          color={canActNow ? 'warning' : 'inherit'}
+          onClick={bringPhaseActionsIntoView}
+        >
+          {canActNow ? '카드 선택하기' : '조사판 보기'}
+        </Button>
+      );
+    } else if (phaseKind === 'final_vote') {
+      title = snapshot.finalVote.yourVote
+        ? '최종 투표 제출 완료'
+        : '최종 투표를 선택하세요';
+      description = snapshot.finalVote.result
+        ? '투표가 집계되었습니다.'
+        : snapshot.finalVote.yourVote
+          ? '다른 플레이어의 투표와 집계를 기다려주세요.'
+          : '범인 지목은 엔딩 분기에 영향을 줍니다.';
+      chips = (
+        <Chip
+          size="small"
+          label={`투표 ${snapshot.finalVote.submittedVoters}/${snapshot.finalVote.totalVoters}`}
+          color={snapshot.finalVote.yourVote ? 'success' : 'warning'}
+        />
+      );
+      actions = (
+        <>
+          {!snapshot.finalVote.result && !snapshot.finalVote.yourVote ? (
+            <Button
+              size="small"
+              variant="contained"
+              color="warning"
+              startIcon={<HowToVoteIcon />}
+              onClick={bringPhaseActionsIntoView}
+            >
+              투표 선택하기
+            </Button>
+          ) : null}
+          {canFinalizeVote ? (
+            <Button
+              size="small"
+              variant="contained"
+              color="warning"
+              startIcon={<HowToVoteIcon />}
+              onClick={onFinalizeVote}
+            >
+              투표 집계
+            </Button>
+          ) : null}
+        </>
+      );
+    } else if (phaseKind === 'secret_review') {
+      const review = snapshot.secretReview;
+      title = !review.allSubmitted
+        ? review.yourSubmitted
+          ? '비밀 추측 제출 완료'
+          : '다른 사람의 비밀을 제출하세요'
+        : hasPendingSecretJudgement
+          ? '도착한 비밀 추측을 채점하세요'
+          : '비밀 제출/채점 완료';
+      description = !review.allSubmitted
+        ? review.yourSubmitted
+          ? '다른 플레이어의 제출을 기다리는 중입니다.'
+          : '다른 두 플레이어의 비밀을 모두 적어 제출하세요.'
+        : hasPendingSecretJudgement
+          ? '자신에게 도착한 익명 제출을 맞음/아님으로 채점하세요.'
+          : '방장이 엔딩으로 진행할 수 있습니다.';
+      chips = (
+        <Stack direction="row" spacing={0.5}>
+          <Chip
+            size="small"
+            label={`제출 ${review.submittedPlayers}/${review.totalPlayers}`}
+            color={review.allSubmitted ? 'success' : 'warning'}
+          />
+          <Chip
+            size="small"
+            label={`채점 ${review.judgedSubmissions}/${review.totalSubmissions}`}
+            color={review.allJudged ? 'success' : 'default'}
+          />
+        </Stack>
+      );
+      actions = !review.allSubmitted ? (
+        !review.yourSubmitted && canSubmitSecretGuesses ? (
+          <Button
+            size="small"
+            variant="contained"
+            color="warning"
+            onClick={() =>
+              onSubmitSecretGuesses(
+                review.targetPlayers.map((player) => ({
+                  targetPlayerId: player.playerId,
+                  text: secretGuessDrafts[player.playerId] ?? '',
+                }))
+              )
+            }
+          >
+            비밀 추측 제출
+          </Button>
+        ) : !review.yourSubmitted ? (
+          <Button
+            size="small"
+            variant="outlined"
+            color="inherit"
+            onClick={bringPhaseActionsIntoView}
+          >
+            입력란 보기
+          </Button>
+        ) : null
+      ) : hasPendingSecretJudgement ? (
+        <Button
+          size="small"
+          variant="contained"
+          color="warning"
+          onClick={bringPhaseActionsIntoView}
+        >
+          추측 채점하기
+        </Button>
+      ) : null;
+    }
+
+    const auxiliaryActions = (
+      <>
+        {snapshot.specialEvents.length > 0 ? (
+          <Button
+            size="small"
+            variant="outlined"
+            color="inherit"
+            onClick={bringSpecialEventsIntoView}
+          >
+            잠금 증언 확인
+          </Button>
+        ) : null}
+        {shouldShowBgmStartAction ? (
+          <Button
+            size="small"
+            variant="outlined"
+            color="inherit"
+            startIcon={<MusicNoteIcon />}
+            onClick={requestBgmStart}
+          >
+            BGM 시작
+          </Button>
+        ) : null}
+      </>
+    );
+
+    if (!title && !snapshot.specialEvents.length && !shouldShowBgmStartAction) {
+      return null;
+    }
+
+    return (
+      <FloatingActionDock
+        title={title || '놓치면 안 되는 액션'}
+        description={description}
+        chips={chips}
+        actions={actions}
+        auxiliaryActions={auxiliaryActions}
+        bottomOffset={{ xs: isSmall ? 74 : 16, md: 18 }}
+      />
+    );
+  };
+
   const renderPhaseBody = () => {
     if (phaseKind === 'lobby') {
       return (
@@ -2724,24 +3315,14 @@ export default function MurderMysteryTableExperience({
               onShareRoleSheet={onShareRoleSheet}
             />
           ) : null}
-          {canUseHostTools ? (
-            <Button
-              variant="contained"
-              startIcon={<PlayArrowIcon />}
-              onClick={onStartGame}
-              disabled={!canStartGame}
-            >
-              게임 시작
-            </Button>
-          ) : null}
           {!hasRequiredPlayerCount ? (
             <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
               모든 참가자가 입장하면 캐릭터 선호 제출을 완료할 수 있습니다.
             </Typography>
           ) : !isRoleSelectionLocked ? (
             <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
-              모든 참가자의 캐릭터 선호가 제출되면 배정이 공개되고 게임을 시작할
-              수 있습니다.
+              모든 참가자의 캐릭터 선호가 제출되면 배정이 공개되고 비공개 룰지
+              읽기가 바로 시작됩니다.
             </Typography>
           ) : null}
         </Stack>
@@ -2749,16 +3330,7 @@ export default function MurderMysteryTableExperience({
     }
 
     if (phaseKind === 'intro') {
-      return (
-        <Stack spacing={1.6}>
-          <Typography variant="h5" fontWeight={950}>
-            프롤로그
-          </Typography>
-          <Typography sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.75 }}>
-            {snapshot.scenario.intro.readAloud}
-          </Typography>
-        </Stack>
-      );
+      return renderIntroArea();
     }
 
     if (phaseKind === 'role_reading') {
@@ -2865,6 +3437,11 @@ export default function MurderMysteryTableExperience({
           flexWrap="wrap"
           useFlexGap
         >
+          <BgmControl
+            track={bgmTrack}
+            startRequest={bgmStartRequest}
+            onPlaybackStateChange={setBgmPlaybackState}
+          />
           <Chip
             icon={<TimerIcon />}
             label={formatSeconds(phaseRemainingSec)}
@@ -2875,25 +3452,6 @@ export default function MurderMysteryTableExperience({
               <IconButton onClick={resetSeats} sx={{ color: '#f8f1de' }}>
                 <RestartAltIcon />
               </IconButton>
-            </Tooltip>
-          ) : null}
-          {canUseHostTools && snapshot.phase === 'LOBBY' ? (
-            <Tooltip
-              title={
-                canStartGame
-                  ? '게임 시작'
-                  : '참가자 입장과 캐릭터 배정이 완료되어야 시작할 수 있습니다.'
-              }
-            >
-              <span>
-                <IconButton
-                  onClick={onStartGame}
-                  disabled={!canStartGame}
-                  sx={{ color: '#f8f1de' }}
-                >
-                  <PlayArrowIcon />
-                </IconButton>
-              </span>
             </Tooltip>
           ) : null}
           {showNextPhaseTool ? (
@@ -2942,7 +3500,7 @@ export default function MurderMysteryTableExperience({
           },
           gap: { xs: 1, lg: 1.4 },
           p: { xs: 1, md: 1.4 },
-          pb: { xs: 10, lg: 1.4 },
+          pb: hasOpenModal ? { xs: 10, lg: 1.4 } : { xs: 22, lg: 10 },
           overflow: 'hidden',
         }}
       >
@@ -2970,10 +3528,11 @@ export default function MurderMysteryTableExperience({
             onPointerUp={handleSeatPointerUp}
             onReset={resetSeats}
           />
-          {renderSpecialEvents()}
+          <Box ref={specialEventsRef}>{renderSpecialEvents()}</Box>
         </Stack>
 
         <Box
+          ref={phaseScrollRef}
           sx={{
             gridColumn: { xs: '1', lg: '2' },
             gridRow: { xs: '2', lg: '1' },
@@ -2983,7 +3542,7 @@ export default function MurderMysteryTableExperience({
             backgroundColor: 'rgba(14, 23, 25, 0.86)',
             boxShadow: '0 28px 70px rgba(0,0,0,0.42)',
             p: { xs: 1.3, md: 2 },
-            pb: { xs: 8.5, lg: 2 },
+            pb: hasOpenModal ? { xs: 8.5, lg: 2 } : { xs: 18, lg: 11 },
             overflow: 'auto',
           }}
         >
@@ -3009,8 +3568,11 @@ export default function MurderMysteryTableExperience({
           >
             <MyDeskPanel
               cardCount={snapshot.clueVault.myClues.length}
+              publicScriptCount={snapshot.publicScripts.length}
               canOpenRulebook={Boolean(snapshot.roleSheet)}
+              canOpenPublicScripts={snapshot.publicScripts.length > 0}
               onOpenRulebook={() => setIsRulebookOpen(true)}
+              onOpenPublicScripts={() => setIsPublicScriptsOpen(true)}
               onOpenPrivateCards={() => setIsPrivateCardsOpen(true)}
             />
           </Stack>
@@ -3031,12 +3593,17 @@ export default function MurderMysteryTableExperience({
           <MyDeskPanel
             compact
             cardCount={snapshot.clueVault.myClues.length}
+            publicScriptCount={snapshot.publicScripts.length}
             canOpenRulebook={Boolean(snapshot.roleSheet)}
+            canOpenPublicScripts={snapshot.publicScripts.length > 0}
             onOpenRulebook={() => setIsRulebookOpen(true)}
+            onOpenPublicScripts={() => setIsPublicScriptsOpen(true)}
             onOpenPrivateCards={() => setIsPrivateCardsOpen(true)}
           />
         </Box>
       ) : null}
+
+      {renderFloatingActionDock()}
 
       <PublicCoverDialog
         open={Boolean(selectedPlayer)}
@@ -3061,6 +3628,12 @@ export default function MurderMysteryTableExperience({
         introText={snapshot.scenario.intro.readAloud}
         fullScreen={isSmall}
         onClose={() => setIsRulebookOpen(false)}
+      />
+      <PublicScriptsDialog
+        open={isPublicScriptsOpen}
+        scripts={snapshot.publicScripts}
+        fullScreen={isSmall}
+        onClose={() => setIsPublicScriptsOpen(false)}
       />
       <PrivateCardsDialog
         open={isPrivateCardsOpen}

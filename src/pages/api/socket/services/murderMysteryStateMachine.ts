@@ -18,6 +18,7 @@ import {
   MurderMysteryPhase,
   MurderMysteryPartScenario,
   MurderMysteryPendingInvestigation,
+  MurderMysteryPublicScriptView,
   MurderMysteryRoleSheetView,
   MurderMysteryScenario,
   MurderMysterySeatPosition,
@@ -144,6 +145,43 @@ const areAllRoleSheetsRead = (room: MurderMysteryRoom) => {
     room.players.length > 0 &&
     room.players.every((player) => Boolean(readyByPlayerId[player.id]))
   );
+};
+
+const getFlowStepReadAloud = (
+  scenario: MurderMysteryScenario,
+  stepId: MurderMysteryPhase
+) => {
+  const step = getFlowStepByPhase(scenario, stepId);
+  if (!step) {
+    return '';
+  }
+  return (
+    step.readAloud ?? (step.kind === 'intro' ? scenario.intro.readAloud : '')
+  );
+};
+
+const buildPublicScripts = (
+  scenario: MurderMysteryScenario,
+  currentPhase: MurderMysteryPhase
+): MurderMysteryPublicScriptView[] => {
+  const currentStepIndex = scenario.flow.steps.findIndex(
+    (step) => step.id === currentPhase
+  );
+  if (currentStepIndex < 0) {
+    return [];
+  }
+
+  return scenario.flow.steps
+    .slice(0, currentStepIndex + 1)
+    .filter((step) => step.kind === 'intro')
+    .map((step) => ({
+      stepId: step.id,
+      label: step.label,
+      readAloud: getFlowStepReadAloud(scenario, step.id),
+      unlocked: true,
+      current: step.id === currentPhase,
+    }))
+    .filter((script) => script.readAloud.trim().length > 0);
 };
 
 const getRoundConfig = (
@@ -360,6 +398,56 @@ const applyPhaseWithTimer = (
   room.gameData.phaseDurationSec = getPhaseDurationSec(scenario, phase);
 };
 
+const grantInitialRoleCards = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario
+) => {
+  if (room.gameData.initialRoleCardsGranted) {
+    return;
+  }
+
+  room.players.forEach((player) => {
+    const roleId = room.gameData.roleByPlayerId[player.id];
+    const initialCardIds = scenario.initialRoleCards
+      .filter((entry) => entry.roleId === roleId)
+      .map((entry) => entry.cardId);
+    const currentCardIds =
+      room.gameData.privateCardIdsByPlayerId[player.id] ?? [];
+    room.gameData.privateCardIdsByPlayerId[player.id] = [
+      ...new Set([...currentCardIds, ...initialCardIds]),
+    ];
+  });
+
+  room.gameData.initialRoleCardsGranted = true;
+};
+
+const enterMurderMysteryPhase = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  nextPhase: MurderMysteryPhase
+) => {
+  applyPhaseWithTimer(room, scenario, nextPhase);
+
+  const nextStep = getFlowStepByPhase(scenario, nextPhase);
+  if (nextStep?.kind === 'final_vote') {
+    room.gameData.voteByPlayerId = {};
+    room.gameData.finalVoteResult = null;
+    room.gameData.secretGuessSubmissionsById = {};
+  }
+  if (nextStep?.kind === 'investigate' && nextStep.round) {
+    grantInitialRoleCards(room, scenario);
+    initializeInvestigationTurnState(room, scenario, nextStep.round);
+  }
+  if (nextStep?.enterAnnouncement) {
+    appendMurderMysteryAnnouncement(room, 'SYSTEM', nextStep.enterAnnouncement);
+  }
+
+  room.status =
+    nextStep?.kind === 'endbook'
+      ? GAME_STATUS.PENDING
+      : GAME_STATUS.IN_PROGRESS;
+};
+
 const createInitialStateWithScenario = (
   scenario: MurderMysteryScenario,
   hostParticipatesAsPlayer: boolean
@@ -374,6 +462,7 @@ const createInitialStateWithScenario = (
   roleSelectionStatus: 'open',
   rolePreferencesByPlayerId: {},
   roleReadingReadyByPlayerId: {},
+  initialRoleCardsGranted: false,
   roleByPlayerId: {},
   roleDisplayNameByPlayerId: {},
   investigationUsedByPlayerId: {},
@@ -1525,6 +1614,7 @@ const applyMurderMysteryRoleAssignments = (
   room.gameData.roleByPlayerId = {};
   room.gameData.roleDisplayNameByPlayerId = {};
   room.gameData.roleReadingReadyByPlayerId = {};
+  room.gameData.initialRoleCardsGranted = false;
   room.gameData.privateCardIdsByPlayerId = {};
   room.gameData.revealedCardsByPlayerId = {};
 
@@ -1536,10 +1626,7 @@ const applyMurderMysteryRoleAssignments = (
     }
     room.gameData.roleByPlayerId[player.id] = role.id;
     room.gameData.roleDisplayNameByPlayerId[player.id] = role.displayName;
-    room.gameData.privateCardIdsByPlayerId[player.id] =
-      scenario.initialRoleCards
-        .filter((entry) => entry.roleId === role.id)
-        .map((entry) => entry.cardId);
+    room.gameData.privateCardIdsByPlayerId[player.id] = [];
     room.gameData.revealedCardsByPlayerId[player.id] = [];
     room.gameData.investigationUsedByPlayerId[player.id] = {
       ...usageTemplate,
@@ -1586,11 +1673,7 @@ const resolveMurderMysteryRoleSelectionIfReady = (
 
   applyMurderMysteryRoleAssignments(room, scenario, roleIdByPlayerId);
   room.gameData.roleSelectionStatus = 'locked';
-  appendMurderMysteryAnnouncement(
-    room,
-    'SYSTEM',
-    '캐릭터 배정이 완료되었습니다. 이제 각자 자신의 비공개 룰북을 열 수 있습니다.'
-  );
+  startMurderMysteryGame(room, scenario);
   return true;
 };
 
@@ -1700,6 +1783,10 @@ export const startMurderMysteryGame = (
   room.gameData.revealedCardIdsByTargetId = {};
   room.gameData.revealedPartIds = [];
   room.gameData.roleReadingReadyByPlayerId = {};
+  room.gameData.initialRoleCardsGranted = false;
+  room.gameData.privateCardIdsByPlayerId = Object.fromEntries(
+    room.players.map((player) => [player.id, []])
+  );
   room.gameData.specialEventStatusById =
     buildSpecialEventStatusTemplate(scenario);
   room.gameData.voteByPlayerId = {};
@@ -1824,25 +1911,7 @@ export const moveMurderMysteryToNextPhase = (
     throw new Error('다음 단계로 이동할 수 없습니다.');
   }
 
-  applyPhaseWithTimer(room, scenario, nextPhase);
-
-  const nextStep = getFlowStepByPhase(scenario, nextPhase);
-  if (nextStep?.kind === 'final_vote') {
-    room.gameData.voteByPlayerId = {};
-    room.gameData.finalVoteResult = null;
-    room.gameData.secretGuessSubmissionsById = {};
-  }
-  if (nextStep?.kind === 'investigate' && nextStep.round) {
-    initializeInvestigationTurnState(room, scenario, nextStep.round);
-  }
-  if (nextStep?.enterAnnouncement) {
-    appendMurderMysteryAnnouncement(room, 'SYSTEM', nextStep.enterAnnouncement);
-  }
-
-  room.status =
-    nextStep?.kind === 'endbook'
-      ? GAME_STATUS.PENDING
-      : GAME_STATUS.IN_PROGRESS;
+  enterMurderMysteryPhase(room, scenario, nextPhase);
 
   return { resolvedPending };
 };
@@ -1872,22 +1941,23 @@ export const markMurderMysteryRoleSheetRead = (
     throw new Error('다음 단계로 이동할 수 없습니다.');
   }
 
-  applyPhaseWithTimer(room, scenario, nextPhase);
-
-  const nextStep = getFlowStepByPhase(scenario, nextPhase);
-  if (nextStep?.kind === 'investigate' && nextStep.round) {
-    initializeInvestigationTurnState(room, scenario, nextStep.round);
-  }
-  if (nextStep?.enterAnnouncement) {
-    appendMurderMysteryAnnouncement(room, 'SYSTEM', nextStep.enterAnnouncement);
-  }
-
-  room.status =
-    nextStep?.kind === 'endbook'
-      ? GAME_STATUS.PENDING
-      : GAME_STATUS.IN_PROGRESS;
+  enterMurderMysteryPhase(room, scenario, nextPhase);
 
   return { allReady: true, advanced: true };
+};
+
+export const markMurderMysteryPhaseRead = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  playerId: string
+) => {
+  const currentStep = getFlowStepByPhase(scenario, room.gameData.phase);
+  if (currentStep?.kind === 'role_reading') {
+    return markMurderMysteryRoleSheetRead(room, scenario, playerId);
+  }
+  throw new Error(
+    '비공개 룰지 읽기 단계에서만 읽음 완료를 제출할 수 있습니다.'
+  );
 };
 
 export const submitMurderMysteryInvestigation = (
@@ -2165,6 +2235,9 @@ export const reportMurderMysterySpecialEvent = (
 
   if (outcome !== 'reveal' && outcome !== 'seal') {
     throw new Error('지원하지 않는 특수 이벤트 처리입니다.');
+  }
+  if (!room.gameData.initialRoleCardsGranted) {
+    throw new Error('아직 특수 이벤트를 신고할 수 없습니다.');
   }
 
   const roleId = room.gameData.roleByPlayerId[playerId];
@@ -2509,19 +2582,20 @@ export const buildMurderMysterySnapshot = (
     cardSourceMap
   );
   const specialEventStatusById = room.gameData.specialEventStatusById ?? {};
-  const reportableSpecialEvents = roleId
-    ? scenario.specialEvents
-        .filter((event) => event.reporterRoleIds.includes(roleId))
-        .filter(
-          (event) =>
-            (specialEventStatusById[event.id] ?? 'pending') === 'pending'
-        )
-        .map((event) => ({
-          id: event.id,
-          label: event.label,
-          description: event.description,
-        }))
-    : [];
+  const reportableSpecialEvents =
+    roleId && room.gameData.initialRoleCardsGranted
+      ? scenario.specialEvents
+          .filter((event) => event.reporterRoleIds.includes(roleId))
+          .filter(
+            (event) =>
+              (specialEventStatusById[event.id] ?? 'pending') === 'pending'
+          )
+          .map((event) => ({
+            id: event.id,
+            label: event.label,
+            description: event.description,
+          }))
+      : [];
 
   const round = getInvestigationRoundByPhase(room.gameData.phase, scenario);
   const roundViews = buildInvestigationRoundViews(room, scenario, viewerId);
@@ -2641,6 +2715,7 @@ export const buildMurderMysterySnapshot = (
     yourReady: player ? Boolean(roleReadingReadyByPlayerId[player.id]) : false,
     players: roleReadingPlayers,
   };
+  const publicScripts = buildPublicScripts(scenario, room.gameData.phase);
 
   return {
     roomId: room.roomId,
@@ -2662,6 +2737,7 @@ export const buildMurderMysterySnapshot = (
     seatLayoutByPlayerId,
     roleSelection,
     roleReading,
+    publicScripts,
     phase: room.gameData.phase,
     phaseOrder: getMurderMysteryPhaseOrder(scenario),
     players: room.players.map((entry) => {

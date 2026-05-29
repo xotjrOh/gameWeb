@@ -524,30 +524,6 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       );
     }
 
-    const startResponse = await emitAck(hostSocket, 'mm_host_start_game', {
-      roomId,
-      sessionId: hostSessionId,
-    });
-    assertCondition(
-      startResponse?.success,
-      'mm_host_start_game failed',
-      startResponse
-    );
-
-    const moveToRoleReadingResponse = await emitAck(
-      hostSocket,
-      'mm_host_next_phase',
-      {
-        roomId,
-        sessionId: hostSessionId,
-      }
-    );
-    assertCondition(
-      moveToRoleReadingResponse?.success,
-      'mm_host_next_phase to role reading failed',
-      moveToRoleReadingResponse
-    );
-
     const sessionOrder = [
       hostSessionId,
       ...playerInfos.map((player) => player.sessionId),
@@ -558,6 +534,50 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       ...playerSockets.entries(),
     ]);
 
+    const introSnapshot = await requestMurderSnapshot(
+      hostSocket,
+      roomId,
+      hostSessionId
+    );
+    assertCondition(
+      introSnapshot.phase === 'INTRO' &&
+        introSnapshot.roleReading?.readyCount === 0 &&
+        introSnapshot.roleReading?.totalCount === maxPlayers &&
+        introSnapshot.myCards.length === 0 &&
+        introSnapshot.specialEvents.length === 0 &&
+        introSnapshot.publicScripts?.some(
+          (script) => script.stepId === 'INTRO' && script.current
+        ),
+      'murder should auto-enter host-read intro without private cards',
+      {
+        phase: introSnapshot.phase,
+        roleReading: introSnapshot.roleReading,
+        myCards: introSnapshot.myCards,
+        specialEvents: introSnapshot.specialEvents,
+        publicScripts: introSnapshot.publicScripts,
+      }
+    );
+
+    const introReadResponse = await emitAck(hostSocket, 'mm_mark_phase_read', {
+      roomId,
+      sessionId: hostSessionId,
+    });
+    assertCondition(
+      introReadResponse?.success === false,
+      'public intro should not accept per-player read completion',
+      introReadResponse
+    );
+
+    const introNextResponse = await emitAck(hostSocket, 'mm_host_next_phase', {
+      roomId,
+      sessionId: hostSessionId,
+    });
+    assertCondition(
+      introNextResponse?.success,
+      'host should advance from intro to role reading',
+      introNextResponse
+    );
+
     const roleReadingSnapshot = await requestMurderSnapshot(
       hostSocket,
       roomId,
@@ -565,10 +585,14 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
     );
     assertCondition(
       roleReadingSnapshot.phase === 'ROLE_READING' &&
-        roleReadingSnapshot.roleReading?.readyCount === 0 &&
-        roleReadingSnapshot.roleReading?.totalCount === maxPlayers,
-      'murder should enter role reading gate after intro',
-      roleReadingSnapshot.roleReading
+        roleReadingSnapshot.myCards.length === 0 &&
+        roleReadingSnapshot.specialEvents.length === 0,
+      'murder should enter role reading gate after host intro',
+      {
+        phase: roleReadingSnapshot.phase,
+        myCards: roleReadingSnapshot.myCards,
+        specialEvents: roleReadingSnapshot.specialEvents,
+      }
     );
 
     const blockedRoleReadingNextResponse = await emitAck(
@@ -588,7 +612,7 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
     for (const [index, sessionId] of sessionOrder.entries()) {
       const readResponse = await emitAck(
         socketsBySession.get(sessionId),
-        'mm_mark_role_sheet_read',
+        'mm_mark_phase_read',
         {
           roomId,
           sessionId,
@@ -596,7 +620,7 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       );
       assertCondition(
         readResponse?.success,
-        'mm_mark_role_sheet_read failed',
+        'mm_mark_phase_read failed',
         readResponse
       );
 
@@ -613,13 +637,82 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
         );
       } else {
         assertCondition(
-          readSnapshot.phase === 'ROUND1_INVESTIGATE' &&
+          readSnapshot.phase === 'ROUND1_BRIEFING' &&
             readSnapshot.roleReading?.readyCount === maxPlayers,
-          'role reading gate did not auto-advance after all players read',
+          'role reading gate did not auto-advance to round 1 briefing',
           { phase: readSnapshot.phase, roleReading: readSnapshot.roleReading }
         );
       }
     }
+
+    const briefingSnapshots = await Promise.all(
+      sessionOrder.map(async (sessionId) =>
+        requestMurderSnapshot(
+          socketsBySession.get(sessionId),
+          roomId,
+          sessionId
+        )
+      )
+    );
+    assertCondition(
+      briefingSnapshots.every(
+        (snapshot) =>
+          snapshot.phase === 'ROUND1_BRIEFING' &&
+          snapshot.myCards.length === 0 &&
+          snapshot.specialEvents.length === 0
+      ),
+      'round 1 briefing should still hide initial cards and locked testimony',
+      briefingSnapshots.map((snapshot) => ({
+        phase: snapshot.phase,
+        myCards: snapshot.myCards,
+        specialEvents: snapshot.specialEvents,
+      }))
+    );
+
+    const briefingReadResponse = await emitAck(
+      hostSocket,
+      'mm_mark_phase_read',
+      {
+        roomId,
+        sessionId: hostSessionId,
+      }
+    );
+    assertCondition(
+      briefingReadResponse?.success === false,
+      'round 1 briefing should not accept per-player read completion',
+      briefingReadResponse
+    );
+
+    const briefingNextResponse = await emitAck(
+      hostSocket,
+      'mm_host_next_phase',
+      {
+        roomId,
+        sessionId: hostSessionId,
+      }
+    );
+    assertCondition(
+      briefingNextResponse?.success,
+      'host should advance from round 1 briefing to investigation',
+      briefingNextResponse
+    );
+
+    const investigationEntrySnapshot = await requestMurderSnapshot(
+      hostSocket,
+      roomId,
+      hostSessionId
+    );
+    assertCondition(
+      investigationEntrySnapshot.phase === 'ROUND1_INVESTIGATE' &&
+        investigationEntrySnapshot.publicScripts?.some(
+          (script) => script.stepId === 'ROUND1_BRIEFING'
+        ),
+      'round 1 briefing did not unlock investigation or script archive',
+      {
+        phase: investigationEntrySnapshot.phase,
+        publicScripts: investigationEntrySnapshot.publicScripts,
+      }
+    );
 
     const snapshotEntries = await Promise.all(
       sessionOrder.map(async (sessionId) => [
@@ -632,6 +725,25 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       ])
     );
     let snapshotsBySession = new Map(snapshotEntries);
+
+    const foxSnapshot = [...snapshotsBySession.values()].find(
+      (snapshot) => snapshot.roleSheet?.roleId === 'fox'
+    );
+    assertCondition(
+      foxSnapshot?.myCards.some((card) => card.id === 'card_start_wife_pact'),
+      'fox should receive initial wife pact card after round 1 briefing',
+      foxSnapshot?.myCards
+    );
+    const reporterSnapshot = [...snapshotsBySession.values()].find((snapshot) =>
+      ['rabbit_husband', 'jara'].includes(snapshot.roleSheet?.roleId)
+    );
+    assertCondition(
+      reporterSnapshot?.specialEvents.some(
+        (event) => event.id === 'wife_suspicion_gate'
+      ),
+      'locked wife testimony should appear only after round 1 briefing',
+      reporterSnapshot?.specialEvents
+    );
 
     const currentPlayerId =
       snapshotsBySession.get(hostSessionId)?.investigation.turn
@@ -780,6 +892,90 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
         refreshedCurrentSnapshot.investigation.turn.currentPlayerId !==
           currentPlayerId,
       'investigation turn did not advance after pick'
+    );
+
+    const round1ToDiscussResponse = await emitAck(
+      socketsBySession.get(hostSessionId),
+      'mm_host_next_phase',
+      {
+        roomId,
+        sessionId: hostSessionId,
+      }
+    );
+    assertCondition(
+      round1ToDiscussResponse?.success,
+      'host should advance from round 1 investigation to discussion',
+      round1ToDiscussResponse
+    );
+
+    const discussToRound2BriefingResponse = await emitAck(
+      socketsBySession.get(hostSessionId),
+      'mm_host_next_phase',
+      {
+        roomId,
+        sessionId: hostSessionId,
+      }
+    );
+    assertCondition(
+      discussToRound2BriefingResponse?.success,
+      'host should advance from round 1 discussion to round 2 briefing',
+      discussToRound2BriefingResponse
+    );
+
+    const round2BriefingSnapshot = await requestMurderSnapshot(
+      hostSocket,
+      roomId,
+      hostSessionId
+    );
+    assertCondition(
+      round2BriefingSnapshot.phase === 'ROUND2_BRIEFING' &&
+        round2BriefingSnapshot.publicScripts?.some(
+          (script) => script.stepId === 'ROUND2_BRIEFING' && script.current
+        ),
+      'round 2 briefing should be a host-read public script stage',
+      {
+        phase: round2BriefingSnapshot.phase,
+        publicScripts: round2BriefingSnapshot.publicScripts,
+      }
+    );
+
+    const round2BriefingReadResponse = await emitAck(
+      socketsBySession.get(hostSessionId),
+      'mm_mark_phase_read',
+      {
+        roomId,
+        sessionId: hostSessionId,
+      }
+    );
+    assertCondition(
+      round2BriefingReadResponse?.success === false,
+      'round 2 briefing should not accept per-player read completion',
+      round2BriefingReadResponse
+    );
+
+    const round2BriefingNextResponse = await emitAck(
+      socketsBySession.get(hostSessionId),
+      'mm_host_next_phase',
+      {
+        roomId,
+        sessionId: hostSessionId,
+      }
+    );
+    assertCondition(
+      round2BriefingNextResponse?.success,
+      'host should advance from round 2 briefing to round 2 investigation',
+      round2BriefingNextResponse
+    );
+
+    const round2InvestigationSnapshot = await requestMurderSnapshot(
+      hostSocket,
+      roomId,
+      hostSessionId
+    );
+    assertCondition(
+      round2InvestigationSnapshot.phase === 'ROUND2_INVESTIGATE',
+      'round 2 briefing host-next did not enter round 2 investigation',
+      round2InvestigationSnapshot.phase
     );
 
     const resetResponse = await emitAck(

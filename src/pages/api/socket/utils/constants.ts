@@ -132,6 +132,7 @@ export const DEFAULT_GAME_DATA: {
     roleSelectionStatus: 'open',
     rolePreferencesByPlayerId: {},
     roleReadingReadyByPlayerId: {},
+    initialRoleCardsGranted: false,
     roleByPlayerId: {},
     roleDisplayNameByPlayerId: {},
     investigationUsedByPlayerId: {},

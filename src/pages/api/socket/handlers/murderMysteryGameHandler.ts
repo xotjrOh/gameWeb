@@ -8,7 +8,7 @@ import {
   clearMurderMysteryRolePreferences,
   finalizeMurderMysteryVote,
   judgeMurderMysterySecretGuess,
-  markMurderMysteryRoleSheetRead,
+  markMurderMysteryPhaseRead,
   moveMurderMysteryToNextPhase,
   reportMurderMysterySpecialEvent,
   resetMurderMysteryGame,
@@ -221,7 +221,7 @@ const murderMysteryGameHandler = (
       validatePlayer(room, sessionId);
       const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
 
-      const result = markMurderMysteryRoleSheetRead(room, scenario, sessionId);
+      const result = markMurderMysteryPhaseRead(room, scenario, sessionId);
 
       emitMurderMysterySnapshots(room, io);
       if (result.advanced) {
@@ -230,7 +230,30 @@ const murderMysteryGameHandler = (
       return callback({
         success: true,
         message: result.advanced
-          ? '모두 읽음 완료. 1라운드 조사로 진행합니다.'
+          ? '모두 읽음 완료. 다음 단계로 진행합니다.'
+          : '읽음 완료로 표시했습니다.',
+      });
+    } catch (error) {
+      return callback({ success: false, message: (error as Error).message });
+    }
+  });
+
+  socket.on('mm_mark_phase_read', ({ roomId, sessionId }, callback) => {
+    try {
+      const room = toMurderMysteryRoom(validateRoom(roomId));
+      validatePlayer(room, sessionId);
+      const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
+
+      const result = markMurderMysteryPhaseRead(room, scenario, sessionId);
+
+      emitMurderMysterySnapshots(room, io);
+      if (result.advanced) {
+        io.emit('room-updated', rooms);
+      }
+      return callback({
+        success: true,
+        message: result.advanced
+          ? '모두 읽음 완료. 다음 단계로 진행합니다.'
           : '읽음 완료로 표시했습니다.',
       });
     } catch (error) {
@@ -510,7 +533,7 @@ const murderMysteryGameHandler = (
       const announcement = appendMurderMysteryAnnouncement(
         room,
         'INTRO',
-        scenario.intro.readAloud
+        currentStep.readAloud ?? scenario.intro.readAloud
       );
       emitMurderMysteryAnnouncement(room, io, announcement);
       emitMurderMysterySnapshots(room, io);
