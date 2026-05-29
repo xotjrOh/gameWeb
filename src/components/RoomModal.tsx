@@ -77,7 +77,7 @@ export default function RoomModal({
   } = useForm<FormData>({
     defaultValues: {
       roomName: '',
-      gameType: 'horse',
+      gameType: 'murder_mystery',
       maxPlayers: undefined,
       scenarioId: '',
       hostNickname: '',
@@ -327,7 +327,7 @@ export default function RoomModal({
           <InputLabel id="game-type-label">게임 종류</InputLabel>
           <Select
             labelId="game-type-label"
-            defaultValue="horse"
+            defaultValue="murder_mystery"
             MenuProps={{
               PaperProps: { style: { maxHeight: 200, overflowY: 'auto' } },
             }}
@@ -339,11 +339,11 @@ export default function RoomModal({
               backgroundColor: 'rgba(255, 255, 255, 0.8)',
             }}
           >
+            <MenuItem value="murder_mystery">🕵️머더미스터리</MenuItem>
             <MenuItem value="horse">🏇경마게임</MenuItem>
             <MenuItem value="shuffle">🔀뒤죽박죽</MenuItem>
             <MenuItem value="animal">🦁동물 능력전</MenuItem>
             <MenuItem value="jamo">🔤단어게임</MenuItem>
-            <MenuItem value="murder_mystery">🕵️머더미스터리</MenuItem>
           </Select>
         </FormControl>
 

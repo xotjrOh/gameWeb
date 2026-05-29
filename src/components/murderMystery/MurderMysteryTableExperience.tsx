@@ -1250,14 +1250,10 @@ const RoleSelectionPanel = ({
   roleSelection,
   draftRolePreferenceIds,
   onSetRoleRank,
-  onSubmit,
-  onClear,
 }: {
   roleSelection: MurderMysteryStateSnapshot['roleSelection'];
   draftRolePreferenceIds: string[];
   onSetRoleRank: (roleId: string, rankIndex: number) => void;
-  onSubmit: () => void;
-  onClear: () => void;
 }) => {
   const roleById = new Map(roleSelection.roles.map((role) => [role.id, role]));
   const orderedRoles = draftRolePreferenceIds
@@ -1266,12 +1262,6 @@ const RoleSelectionPanel = ({
   const assignedPlayerNameById = new Map(
     roleSelection.players.map((player) => [player.playerId, player.playerName])
   );
-  const hasSubmitted =
-    roleSelection.yourPreferenceRoleIds.length === roleSelection.roles.length;
-  const canSubmit =
-    roleSelection.status === 'open' &&
-    draftRolePreferenceIds.length === roleSelection.roles.length &&
-    new Set(draftRolePreferenceIds).size === roleSelection.roles.length;
 
   return (
     <Box
@@ -1386,22 +1376,6 @@ const RoleSelectionPanel = ({
                   }
                 />
               ))}
-            </Stack>
-
-            <Stack direction="row" spacing={0.8} flexWrap="wrap" useFlexGap>
-              <Button
-                variant="contained"
-                color="warning"
-                disabled={!canSubmit}
-                onClick={onSubmit}
-              >
-                {hasSubmitted ? '선호 다시 제출' : '선호 제출'}
-              </Button>
-              {hasSubmitted ? (
-                <Button variant="outlined" color="inherit" onClick={onClear}>
-                  제출 취소
-                </Button>
-              ) : null}
             </Stack>
           </>
         )}
@@ -2444,27 +2418,11 @@ export default function MurderMysteryTableExperience({
           </Typography>
         </Box>
 
-        {isHostReading ? (
-          <Button
-            variant="contained"
-            color="warning"
-            size="large"
-            startIcon={<TaskAltIcon />}
-            onClick={onNextPhase}
-            sx={{
-              alignSelf: { xs: 'stretch', sm: 'flex-start' },
-              px: 3,
-              py: 1.25,
-              fontWeight: 950,
-            }}
-          >
-            낭독 완료, 다음으로
-          </Button>
-        ) : (
+        {!isHostReading ? (
           <Typography sx={{ color: '#d8d0bd' }}>
             방장의 진행을 기다려주세요.
           </Typography>
-        )}
+        ) : null}
       </Stack>
     );
   };
@@ -2554,34 +2512,6 @@ export default function MurderMysteryTableExperience({
           </Stack>
         </Stack>
       </Box>
-
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        spacing={1}
-        alignItems={{ xs: 'stretch', sm: 'center' }}
-      >
-        <Button
-          variant="contained"
-          startIcon={<AutoStoriesIcon />}
-          disabled={!snapshot.roleSheet}
-          onClick={() => setIsRulebookOpen(true)}
-          sx={{
-            backgroundColor: '#4655c7',
-            '&:hover': { backgroundColor: '#3542a5' },
-          }}
-        >
-          비공개 룰북 열기
-        </Button>
-        <Button
-          variant={snapshot.roleReading.yourReady ? 'outlined' : 'contained'}
-          color={snapshot.roleReading.yourReady ? 'success' : 'warning'}
-          startIcon={<TaskAltIcon />}
-          disabled={!selfPlayer || snapshot.roleReading.yourReady}
-          onClick={onMarkRoleSheetRead}
-        >
-          {snapshot.roleReading.yourReady ? '읽음 완료' : '다 읽었어요'}
-        </Button>
-      </Stack>
 
       {canUseHostTools ? (
         <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
@@ -2782,27 +2712,12 @@ export default function MurderMysteryTableExperience({
               : '투표 결과는 오답입니다.'}
           </Typography>
         </Box>
-      ) : canFinalizeVote ? (
-        <Button
-          variant="contained"
-          color="warning"
-          startIcon={<HowToVoteIcon />}
-          onClick={onFinalizeVote}
-        >
-          투표 집계
-        </Button>
       ) : null}
     </Stack>
   );
 
   const renderSecretReviewArea = () => {
     const review = snapshot.secretReview;
-    const canSubmitGuesses =
-      !review.yourSubmitted &&
-      review.targetPlayers.length > 0 &&
-      review.targetPlayers.every(
-        (player) => secretGuessDrafts[player.playerId]?.trim().length > 0
-      );
 
     if (isHostView && review.targetPlayers.length === 0) {
       return (
@@ -2877,21 +2792,6 @@ export default function MurderMysteryTableExperience({
                   }}
                 />
               ))}
-              <Button
-                variant="contained"
-                color="warning"
-                disabled={!canSubmitGuesses}
-                onClick={() =>
-                  onSubmitSecretGuesses(
-                    review.targetPlayers.map((player) => ({
-                      targetPlayerId: player.playerId,
-                      text: secretGuessDrafts[player.playerId] ?? '',
-                    }))
-                  )
-                }
-              >
-                비밀 추측 제출
-              </Button>
             </Stack>
           )
         ) : (
@@ -3306,8 +3206,6 @@ export default function MurderMysteryTableExperience({
             roleSelection={snapshot.roleSelection}
             draftRolePreferenceIds={draftRolePreferenceIds}
             onSetRoleRank={setRolePreferenceRank}
-            onSubmit={() => onSubmitRolePreferences(draftRolePreferenceIds)}
-            onClear={onClearRolePreferences}
           />
           {canUseHostTools ? (
             <RolePreSharePanel
