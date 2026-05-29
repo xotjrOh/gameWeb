@@ -267,6 +267,10 @@ export default function MurderMysteryGameScreen({
     );
   };
 
+  const handleRevealMyClue = (cardId: string) => {
+    emitWithAck('mm_reveal_my_clue', { roomId, sessionId, cardId });
+  };
+
   const handleSubmitVote = (voteOptionId: string) => {
     emitWithAck(
       'mm_submit_vote',
@@ -413,6 +417,7 @@ export default function MurderMysteryGameScreen({
       onSubmitInvestigationByBack={handleSubmitInvestigationByBack}
       onSetReservation={handleSetInvestigationReservation}
       onClearReservation={handleClearInvestigationReservation}
+      onRevealMyClue={handleRevealMyClue}
       onSubmitVote={handleSubmitVote}
       onSubmitSecretGuesses={handleSubmitSecretGuesses}
       onJudgeSecretGuess={handleJudgeSecretGuess}

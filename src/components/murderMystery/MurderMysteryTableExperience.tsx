@@ -76,6 +76,7 @@ interface MurderMysteryTableExperienceProps {
   onSubmitInvestigationByBack: (backId: string) => void;
   onSetReservation: (backId: string) => void;
   onClearReservation: () => void;
+  onRevealMyClue: (cardId: string) => void;
   onSubmitVote: (voteOptionId: string) => void;
   onSubmitSecretGuesses: (guesses: MurderMysterySecretGuessInput[]) => void;
   onJudgeSecretGuess: (
@@ -254,6 +255,15 @@ const getCardSourceText = (card: AnyClueCard) => {
     return clueCard.sourceTargetLabels.join(', ');
   }
   return '';
+};
+
+const getClueVaultCardState = (card: AnyClueCard) => {
+  const clueCard = card as MurderMysteryClueVaultCardView;
+  return {
+    isPublic: clueCard.isPublic === true,
+    canRevealPublicly:
+      clueCard.canRevealPublicly === true && Boolean(clueCard.backId),
+  };
 };
 
 const formatParticipantLabel = (player?: ParticipantLabelSource | null) => {
@@ -630,131 +640,160 @@ const EvidenceCardFace = ({
   card,
   dense = false,
   onOpen,
+  showPublicRevealControl = false,
+  onRevealPublicly,
 }: {
   card: AnyClueCard;
   dense?: boolean;
   onOpen: (card: AnyClueCard) => void;
+  showPublicRevealControl?: boolean;
+  onRevealPublicly?: (cardId: string) => void;
 }) => {
   const sourceText = getCardSourceText(card);
+  const { isPublic, canRevealPublicly } = getClueVaultCardState(card);
 
   return (
-    <Box
-      component="button"
-      type="button"
-      onClick={() => onOpen(card)}
-      sx={{
-        border: 0,
-        width: dense ? 112 : 174,
-        minHeight: dense ? 146 : 224,
-        p: 0,
-        backgroundColor: 'transparent',
-        color: 'inherit',
-        textAlign: 'left',
-        cursor: 'pointer',
-      }}
-    >
+    <Stack spacing={0.8} sx={{ width: dense ? 112 : 174, flex: '0 0 auto' }}>
       <Box
+        component="button"
+        type="button"
+        onClick={() => onOpen(card)}
         sx={{
-          position: 'relative',
-          height: '100%',
+          border: 0,
+          width: '100%',
           minHeight: dense ? 146 : 224,
-          borderRadius: 1,
-          overflow: 'hidden',
-          backgroundColor: '#f8f1de',
-          border: '1px solid rgba(53, 43, 30, 0.35)',
-          boxShadow: '0 12px 24px rgba(0,0,0,0.28)',
-          display: 'flex',
-          flexDirection: 'column',
-          transition: 'transform 140ms ease, box-shadow 140ms ease',
-          '&:hover': {
-            transform: 'translateY(-4px) rotate(-1deg)',
-            boxShadow: '0 18px 32px rgba(0,0,0,0.36)',
-          },
+          p: 0,
+          backgroundColor: 'transparent',
+          color: 'inherit',
+          textAlign: 'left',
+          cursor: 'pointer',
         }}
       >
-        {card.extraInvestigationOnReveal ? (
-          <Chip
-            size="small"
-            label="추가 조사"
-            color="info"
-            sx={{
-              position: 'absolute',
-              top: 6,
-              right: 6,
-              zIndex: 1,
-              height: 20,
-              fontSize: 11,
-              fontWeight: 900,
-            }}
-          />
-        ) : null}
-        {card.imageSrc ? (
-          <Box
-            component="img"
-            src={card.imageSrc}
-            alt={card.imageAlt ?? card.title}
-            sx={{
-              width: '100%',
-              height: dense ? 70 : 108,
-              objectFit: 'cover',
-              backgroundColor: '#ddd3bb',
-            }}
-          />
-        ) : (
-          <Box
-            sx={{
-              height: dense ? 70 : 108,
-              display: 'grid',
-              placeItems: 'center',
-              background:
-                'linear-gradient(135deg, #e7ddc3 0%, #f8f1de 48%, #d1c3a2 100%)',
-            }}
-          >
-            <StyleIcon sx={{ color: '#695538' }} />
-          </Box>
-        )}
-        <Stack spacing={0.55} sx={{ p: dense ? 1 : 1.2, flex: 1 }}>
-          <Typography
-            variant={dense ? 'caption' : 'body2'}
-            fontWeight={900}
-            sx={{
-              color: '#2d2419',
-              lineHeight: 1.25,
-              wordBreak: 'keep-all',
-            }}
-          >
-            {card.title}
-          </Typography>
-          {sourceText ? (
-            <Typography
-              variant="caption"
+        <Box
+          sx={{
+            position: 'relative',
+            height: '100%',
+            minHeight: dense ? 146 : 224,
+            borderRadius: 1,
+            overflow: 'hidden',
+            backgroundColor: '#f8f1de',
+            border: '1px solid rgba(53, 43, 30, 0.35)',
+            boxShadow: '0 12px 24px rgba(0,0,0,0.28)',
+            display: 'flex',
+            flexDirection: 'column',
+            transition: 'transform 140ms ease, box-shadow 140ms ease',
+            '&:hover': {
+              transform: 'translateY(-4px) rotate(-1deg)',
+              boxShadow: '0 18px 32px rgba(0,0,0,0.36)',
+            },
+          }}
+        >
+          {card.extraInvestigationOnReveal ? (
+            <Chip
+              size="small"
+              label="추가 조사"
+              color="info"
               sx={{
-                color: '#7a3324',
-                fontWeight: 700,
-                lineHeight: 1.2,
+                position: 'absolute',
+                top: 6,
+                right: 6,
+                zIndex: 1,
+                height: 20,
+                fontSize: 11,
+                fontWeight: 900,
+              }}
+            />
+          ) : null}
+          {card.imageSrc ? (
+            <Box
+              component="img"
+              src={card.imageSrc}
+              alt={card.imageAlt ?? card.title}
+              sx={{
+                width: '100%',
+                height: dense ? 70 : 108,
+                objectFit: 'cover',
+                backgroundColor: '#ddd3bb',
+              }}
+            />
+          ) : (
+            <Stack
+              spacing={0.4}
+              alignItems="center"
+              justifyContent="center"
+              sx={{
+                height: dense ? 70 : 108,
+                background:
+                  'linear-gradient(135deg, #e7ddc3 0%, #f8f1de 48%, #d1c3a2 100%)',
+                color: '#695538',
               }}
             >
-              {sourceText}
-            </Typography>
-          ) : null}
-          {!dense ? (
+              <StyleIcon fontSize={dense ? 'small' : 'medium'} />
+              {!dense ? (
+                <Typography variant="caption" fontWeight={900}>
+                  이미지 준비 중
+                </Typography>
+              ) : null}
+            </Stack>
+          )}
+          <Stack spacing={0.55} sx={{ p: dense ? 1 : 1.2, flex: 1 }}>
             <Typography
-              variant="caption"
+              variant={dense ? 'caption' : 'body2'}
+              fontWeight={900}
               sx={{
-                color: '#514538',
-                lineHeight: 1.45,
-                display: '-webkit-box',
-                WebkitBoxOrient: 'vertical',
-                WebkitLineClamp: 4,
-                overflow: 'hidden',
+                color: '#2d2419',
+                lineHeight: 1.25,
+                wordBreak: 'keep-all',
               }}
             >
-              {card.text}
+              {card.title}
             </Typography>
-          ) : null}
-        </Stack>
+            {sourceText ? (
+              <Typography
+                variant="caption"
+                sx={{
+                  color: '#7a3324',
+                  fontWeight: 700,
+                  lineHeight: 1.2,
+                }}
+              >
+                {sourceText}
+              </Typography>
+            ) : null}
+            {!dense ? (
+              <Typography
+                variant="caption"
+                sx={{
+                  color: '#514538',
+                  lineHeight: 1.45,
+                  display: '-webkit-box',
+                  WebkitBoxOrient: 'vertical',
+                  WebkitLineClamp: 4,
+                  overflow: 'hidden',
+                }}
+              >
+                {card.text}
+              </Typography>
+            ) : null}
+          </Stack>
+        </Box>
       </Box>
-    </Box>
+      {showPublicRevealControl ? (
+        canRevealPublicly ? (
+          <Button
+            size="small"
+            variant="contained"
+            color="warning"
+            onClick={() => onRevealPublicly?.(card.id)}
+            sx={{ fontWeight: 900 }}
+          >
+            전체공개하기
+          </Button>
+        ) : isPublic ? (
+          <Chip size="small" color="success" label="공개됨" />
+        ) : null
+      ) : null}
+    </Stack>
   );
 };
 
@@ -1874,181 +1913,197 @@ const PublicCoverDialog = ({
   onOpenRulebook: () => void;
   onOpenPrivateCards: () => void;
   onOpenCard: (card: AnyClueCard) => void;
-}) => (
-  <Dialog
-    open={open}
-    onClose={onClose}
-    fullWidth
-    maxWidth="sm"
-    fullScreen={fullScreen}
-  >
-    <DialogTitle>
-      <Stack direction="row" alignItems="center" spacing={1}>
-        <AutoStoriesIcon />
-        <Typography fontWeight={900} sx={{ flex: 1 }}>
-          좌석 카드
-        </Typography>
-        <IconButton onClick={onClose}>
-          <CloseIcon />
-        </IconButton>
-      </Stack>
-    </DialogTitle>
-    <DialogContent>
-      <Stack spacing={1.8}>
-        <Stack direction="row" spacing={1.4} alignItems="flex-start">
-          <CharacterPortraitFrame
-            src={player?.rolePortraitSrc ?? undefined}
-            alt={player?.rolePortraitAlt ?? undefined}
-            label={player?.roleDisplayName ?? '역할 미배정'}
-            variant="thumbnail"
-            sx={{ width: 96 }}
-          />
-          <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography variant="h5" fontWeight={950}>
-              {player?.roleDisplayName ?? '역할 미배정'}
-            </Typography>
-            <Typography color="text.secondary" fontWeight={800}>
-              {player?.name}
-            </Typography>
-            <Stack
-              direction="row"
-              spacing={0.7}
-              sx={{ mt: 0.8 }}
-              flexWrap="wrap"
+}) => {
+  const publicBackIds = new Set(
+    (player?.publicRevealedClues ?? [])
+      .map((card) => card.backId)
+      .filter(Boolean) as string[]
+  );
+  const privateCardBacks =
+    player?.heldCardBacks.filter((back) => !publicBackIds.has(back.backId)) ??
+    [];
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="sm"
+      fullScreen={fullScreen}
+    >
+      <DialogTitle>
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <AutoStoriesIcon />
+          <Typography fontWeight={900} sx={{ flex: 1 }}>
+            좌석 카드
+          </Typography>
+          <IconButton onClick={onClose}>
+            <CloseIcon />
+          </IconButton>
+        </Stack>
+      </DialogTitle>
+      <DialogContent>
+        <Stack spacing={1.8}>
+          <Stack direction="row" spacing={1.4} alignItems="flex-start">
+            <CharacterPortraitFrame
+              src={player?.rolePortraitSrc ?? undefined}
+              alt={player?.rolePortraitAlt ?? undefined}
+              label={player?.roleDisplayName ?? '역할 미배정'}
+              variant="thumbnail"
+              sx={{ width: 96 }}
+            />
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography variant="h5" fontWeight={950}>
+                {player?.roleDisplayName ?? '역할 미배정'}
+              </Typography>
+              <Typography color="text.secondary" fontWeight={800}>
+                {player?.name}
+              </Typography>
+              <Stack
+                direction="row"
+                spacing={0.7}
+                sx={{ mt: 0.8 }}
+                flexWrap="wrap"
+              >
+                <Chip
+                  size="small"
+                  label={player?.socketId ? '연결' : '대기'}
+                  color={player?.socketId ? 'success' : 'default'}
+                />
+                <Chip size="small" label={`공개 ${publicBackIds.size}장`} />
+                <Chip
+                  size="small"
+                  label={`비공개 ${privateCardBacks.length}장`}
+                />
+              </Stack>
+            </Box>
+          </Stack>
+          <Stack spacing={1}>
+            <Typography fontWeight={900}>캐릭터 공개정보</Typography>
+            <Box
+              sx={{
+                p: 2,
+                borderRadius: 1,
+                backgroundColor: 'rgba(85, 64, 37, 0.08)',
+                whiteSpace: 'pre-wrap',
+                lineHeight: 1.7,
+              }}
             >
-              <Chip
-                size="small"
-                label={player?.socketId ? '연결' : '대기'}
-                color={player?.socketId ? 'success' : 'default'}
-              />
-              <Chip
-                size="small"
-                label={`뒷면 ${player?.heldCardBacks.length ?? 0}장`}
-              />
-              <Chip
-                size="small"
-                label={`공개 ${player?.publicRevealedClues.length ?? 0}장`}
-              />
-            </Stack>
-          </Box>
-        </Stack>
-        <Stack spacing={1}>
-          <Typography fontWeight={900}>캐릭터 공개정보</Typography>
-          <Box
-            sx={{
-              p: 2,
-              borderRadius: 1,
-              backgroundColor: 'rgba(85, 64, 37, 0.08)',
-              whiteSpace: 'pre-wrap',
-              lineHeight: 1.7,
-            }}
-          >
-            {player?.rolePublicText ?? '게임 시작 후 공개 정보가 표시됩니다.'}
-          </Box>
-        </Stack>
-        {player?.heldCardBacks.length ? (
+              {player?.rolePublicText ?? '게임 시작 후 공개 정보가 표시됩니다.'}
+            </Box>
+          </Stack>
           <Stack spacing={1}>
             <Typography fontWeight={900}>
-              가져간 카드의 뒷면 {player.heldCardBacks.length}장
+              공개 카드 {player?.publicRevealedClues.length ?? 0}장
             </Typography>
-            <Stack
-              direction="row"
-              spacing={1}
-              sx={{ overflowX: 'auto', pb: 1 }}
-            >
-              {player.heldCardBacks.map((back) => (
-                <HeldCardBackFace
-                  key={`${player.id}:held:${back.backId}`}
-                  back={back}
-                />
-              ))}
-            </Stack>
+            {player?.publicRevealedClues.length ? (
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{ overflowX: 'auto', pb: 1 }}
+              >
+                {player.publicRevealedClues.map((card) => (
+                  <EvidenceCardFace
+                    key={`${player.id}:public:${card.id}`}
+                    card={card}
+                    dense
+                    onOpen={onOpenCard}
+                  />
+                ))}
+              </Stack>
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                아직 이 자리에 공개 카드가 없습니다.
+              </Typography>
+            )}
           </Stack>
-        ) : (
-          <Typography variant="body2" color="text.secondary">
-            아직 이 자리에 가져간 조사 카드가 없습니다.
-          </Typography>
-        )}
-        <Box sx={{ height: 1, backgroundColor: 'rgba(0,0,0,0.08)' }} />
-        {player?.publicRevealedClues.length ? (
+          <Box sx={{ height: 1, backgroundColor: 'rgba(0,0,0,0.08)' }} />
           <Stack spacing={1}>
             <Typography fontWeight={900}>
-              공개된 카드 앞면 {player.publicRevealedClues.length}장
+              비공개 카드 {privateCardBacks.length}장
             </Typography>
-            <Stack
-              direction="row"
-              spacing={1}
-              sx={{ overflowX: 'auto', pb: 1 }}
-            >
-              {player.publicRevealedClues.map((card) => (
-                <EvidenceCardFace
-                  key={`${player.id}:${card.id}`}
-                  card={card}
-                  dense
-                  onOpen={onOpenCard}
-                />
-              ))}
+            {privateCardBacks.length ? (
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{ overflowX: 'auto', pb: 1 }}
+              >
+                {privateCardBacks.map((back) => (
+                  <HeldCardBackFace
+                    key={`${player?.id}:private:${back.backId}`}
+                    back={back}
+                  />
+                ))}
+              </Stack>
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                아직 이 자리에 비공개 카드가 없습니다.
+              </Typography>
+            )}
+          </Stack>
+          {isSelf ? (
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+              <Button
+                fullWidth
+                variant="contained"
+                startIcon={<AutoStoriesIcon />}
+                disabled={!canOpenRulebook}
+                onClick={onOpenRulebook}
+              >
+                비공개 룰북 열기
+              </Button>
+              <Button
+                fullWidth
+                variant="outlined"
+                startIcon={<Inventory2Icon />}
+                onClick={onOpenPrivateCards}
+              >
+                내 개인 카드
+              </Button>
             </Stack>
-          </Stack>
-        ) : (
-          <Typography variant="body2" color="text.secondary">
-            아직 이 자리에 공개 카드 앞면이 없습니다.
-          </Typography>
-        )}
-        {isSelf ? (
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-            <Button
-              fullWidth
-              variant="contained"
-              startIcon={<AutoStoriesIcon />}
-              disabled={!canOpenRulebook}
-              onClick={onOpenRulebook}
-            >
-              비공개 룰북 열기
-            </Button>
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<Inventory2Icon />}
-              onClick={onOpenPrivateCards}
-            >
-              내 개인 카드
-            </Button>
-          </Stack>
-        ) : null}
-      </Stack>
-    </DialogContent>
-  </Dialog>
-);
+          ) : null}
+        </Stack>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 const CardDetailDialog = ({
   card,
-  fullScreen,
   onClose,
 }: {
   card: AnyClueCard | null;
-  fullScreen: boolean;
   onClose: () => void;
 }) => (
   <Dialog
     open={Boolean(card)}
     onClose={onClose}
-    fullWidth
-    maxWidth="sm"
-    fullScreen={fullScreen}
+    maxWidth={false}
+    PaperProps={{
+      sx: {
+        width: 'min(92vw, 520px)',
+        m: 1.5,
+        borderRadius: 2,
+        overflow: 'hidden',
+        backgroundColor: '#f8f1de',
+      },
+    }}
   >
-    <DialogTitle>
-      <Stack direction="row" alignItems="center" spacing={1}>
-        <StyleIcon />
-        <Typography fontWeight={900} sx={{ flex: 1 }}>
-          {card?.title}
-        </Typography>
-        <IconButton onClick={onClose}>
-          <CloseIcon />
-        </IconButton>
-      </Stack>
-    </DialogTitle>
-    <DialogContent>
+    <Box sx={{ position: 'relative' }}>
+      <IconButton
+        onClick={onClose}
+        sx={{
+          position: 'absolute',
+          top: 8,
+          right: 8,
+          zIndex: 2,
+          backgroundColor: 'rgba(0,0,0,0.46)',
+          color: '#fff',
+          '&:hover': { backgroundColor: 'rgba(0,0,0,0.62)' },
+        }}
+      >
+        <CloseIcon />
+      </IconButton>
       {card?.imageSrc ? (
         <Box
           component="img"
@@ -2056,29 +2111,52 @@ const CardDetailDialog = ({
           alt={card.imageAlt ?? card.title}
           sx={{
             width: '100%',
-            maxHeight: 360,
+            maxHeight: { xs: 320, sm: 380 },
             objectFit: 'contain',
-            borderRadius: 1,
             backgroundColor: '#171c23',
-            mb: 2,
+            display: 'block',
           }}
         />
-      ) : null}
-      <Stack spacing={1}>
-        {card ? (
+      ) : (
+        <Stack
+          spacing={1}
+          alignItems="center"
+          justifyContent="center"
+          sx={{
+            height: { xs: 260, sm: 320 },
+            background:
+              'linear-gradient(135deg, #e7ddc3 0%, #f8f1de 48%, #d1c3a2 100%)',
+            color: '#695538',
+          }}
+        >
+          <StyleIcon fontSize="large" />
+          <Typography fontWeight={950}>이미지 준비 중</Typography>
+        </Stack>
+      )}
+      <Stack spacing={1} sx={{ p: { xs: 1.4, sm: 1.8 } }}>
+        <Typography variant="h6" fontWeight={950} sx={{ color: '#2d2419' }}>
+          {card?.title}
+        </Typography>
+        {card && getCardSourceText(card) ? (
           <Typography
             variant="caption"
             fontWeight={900}
-            sx={{ color: 'primary.main' }}
+            sx={{ color: '#7a3324' }}
           >
             {getCardSourceText(card)}
           </Typography>
         ) : null}
-        <Typography sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.75 }}>
+        <Typography
+          sx={{
+            whiteSpace: 'pre-wrap',
+            lineHeight: 1.75,
+            color: '#2d2419',
+          }}
+        >
           {card?.text}
         </Typography>
       </Stack>
-    </DialogContent>
+    </Box>
   </Dialog>
 );
 
@@ -2088,12 +2166,14 @@ const PrivateCardsDialog = ({
   fullScreen,
   onClose,
   onOpenCard,
+  onRevealPublicly,
 }: {
   open: boolean;
   cards: MurderMysteryClueVaultCardView[];
   fullScreen: boolean;
   onClose: () => void;
   onOpenCard: (card: AnyClueCard) => void;
+  onRevealPublicly: (cardId: string) => void;
 }) => (
   <Dialog
     open={open}
@@ -2121,7 +2201,13 @@ const PrivateCardsDialog = ({
       ) : (
         <Stack direction="row" spacing={1.4} sx={{ overflowX: 'auto', pb: 2 }}>
           {cards.map((card) => (
-            <EvidenceCardFace key={card.id} card={card} onOpen={onOpenCard} />
+            <EvidenceCardFace
+              key={card.id}
+              card={card}
+              onOpen={onOpenCard}
+              showPublicRevealControl
+              onRevealPublicly={onRevealPublicly}
+            />
           ))}
         </Stack>
       )}
@@ -2177,6 +2263,7 @@ export default function MurderMysteryTableExperience({
   onSubmitInvestigationByBack,
   onSetReservation,
   onClearReservation,
+  onRevealMyClue,
   onSubmitVote,
   onSubmitSecretGuesses,
   onJudgeSecretGuess,
@@ -2202,6 +2289,9 @@ export default function MurderMysteryTableExperience({
     moved: boolean;
     canDrag: boolean;
   } | null>(null);
+  const modalHistoryDepthRef = useRef(0);
+  const openModalCountRef = useRef(0);
+  const suppressModalPopCountRef = useRef(0);
   const previousPhaseRef = useRef(snapshot.phase);
   const [seatPositions, setSeatPositions] = useState<
     Record<string, MurderMysterySeatPosition>
@@ -2334,12 +2424,13 @@ export default function MurderMysteryTableExperience({
   const hasPendingSecretJudgement =
     snapshot.secretReview.allSubmitted &&
     snapshot.secretReview.receivedGuesses.some((guess) => !guess.judgement);
-  const hasOpenModal =
-    isRulebookOpen ||
-    isPrivateCardsOpen ||
-    isPublicScriptsOpen ||
-    Boolean(selectedCard) ||
-    Boolean(selectedPlayer);
+  const openModalCount =
+    Number(isRulebookOpen) +
+    Number(isPrivateCardsOpen) +
+    Number(isPublicScriptsOpen) +
+    Number(Boolean(selectedCard)) +
+    Number(Boolean(selectedPlayer));
+  const hasOpenModal = openModalCount > 0;
   const shouldShowBgmStartAction =
     Boolean(bgmTrack) && !bgmPlaybackState.playing;
   const requestBgmStart = () =>
@@ -2353,11 +2444,94 @@ export default function MurderMysteryTableExperience({
       block: 'center',
     });
   };
+  const closeTopModalFromHistory = useCallback(() => {
+    if (selectedCard) {
+      setSelectedCard(null);
+      return;
+    }
+    if (isPrivateCardsOpen) {
+      setIsPrivateCardsOpen(false);
+      return;
+    }
+    if (isPublicScriptsOpen) {
+      setIsPublicScriptsOpen(false);
+      return;
+    }
+    if (isRulebookOpen) {
+      setIsRulebookOpen(false);
+      return;
+    }
+    if (selectedPlayer) {
+      setSelectedPlayerId(null);
+    }
+  }, [
+    isPrivateCardsOpen,
+    isPublicScriptsOpen,
+    isRulebookOpen,
+    selectedCard,
+    selectedPlayer,
+  ]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNowTick(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    openModalCountRef.current = openModalCount;
+  }, [openModalCount]);
+
+  useEffect(() => {
+    if (!isSmall) {
+      return;
+    }
+
+    const handlePopState = () => {
+      if (suppressModalPopCountRef.current > 0) {
+        suppressModalPopCountRef.current -= 1;
+        return;
+      }
+      if (modalHistoryDepthRef.current <= 0 || openModalCountRef.current <= 0) {
+        return;
+      }
+      modalHistoryDepthRef.current -= 1;
+      closeTopModalFromHistory();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [closeTopModalFromHistory, isSmall]);
+
+  useEffect(() => {
+    if (!isSmall) {
+      return;
+    }
+
+    const currentDepth = modalHistoryDepthRef.current;
+    if (openModalCount > currentDepth) {
+      Array.from({ length: openModalCount - currentDepth }).forEach(
+        (_, index) => {
+          window.history.pushState(
+            {
+              murderMysteryModal: true,
+              depth: currentDepth + index + 1,
+            },
+            '',
+            window.location.href
+          );
+        }
+      );
+      modalHistoryDepthRef.current = openModalCount;
+      return;
+    }
+
+    if (openModalCount < currentDepth) {
+      const delta = currentDepth - openModalCount;
+      suppressModalPopCountRef.current += delta;
+      modalHistoryDepthRef.current = openModalCount;
+      window.history.go(-delta);
+    }
+  }, [isSmall, openModalCount]);
 
   useEffect(() => {
     const previous = previousHeldBackIdsByPlayerRef.current;
@@ -3869,10 +4043,10 @@ export default function MurderMysteryTableExperience({
         fullScreen={isSmall}
         onClose={() => setIsPrivateCardsOpen(false)}
         onOpenCard={setSelectedCard}
+        onRevealPublicly={onRevealMyClue}
       />
       <CardDetailDialog
         card={selectedCard}
-        fullScreen={isSmall}
         onClose={() => setSelectedCard(null)}
       />
     </Box>

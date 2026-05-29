@@ -939,6 +939,12 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       refreshedCurrentSnapshot?.clueVault?.myClues?.length === 1,
       'picked card did not reach the current player clue vault'
     );
+    const pickedCard = refreshedCurrentSnapshot?.clueVault?.myClues?.[0];
+    assertCondition(
+      pickedCard?.canRevealPublicly === true && pickedCard?.isPublic === false,
+      'ordinary picked clue should be private and revealable by owner',
+      pickedCard
+    );
     refreshedSnapshots.forEach(([sessionId, snapshot]) => {
       const holder = snapshot.players.find(
         (player) => player.id === currentPlayerId
@@ -948,7 +954,92 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
         'all player snapshots should show the clue back held by the picker',
         { viewerSessionId: sessionId, holder }
       );
+      assertCondition(
+        !snapshot.clueVault.publicClues.some(
+          (card) => card.id === pickedCard?.id
+        ),
+        'ordinary picked clue should not enter public clues before owner reveal',
+        {
+          viewerSessionId: sessionId,
+          publicClues: snapshot.clueVault.publicClues,
+        }
+      );
     });
+
+    const nonOwnerRevealResponse = await emitAck(
+      nonCurrentPlayerSocket,
+      'mm_reveal_my_clue',
+      {
+        roomId,
+        sessionId: nonCurrentPlayerId,
+        cardId: pickedCard?.id,
+      }
+    );
+    assertCondition(
+      nonOwnerRevealResponse?.success === false,
+      'non-owner should not be able to publicly reveal another player clue',
+      nonOwnerRevealResponse
+    );
+
+    const ownerRevealResponse = await emitAck(
+      currentPlayerSocket,
+      'mm_reveal_my_clue',
+      {
+        roomId,
+        sessionId: currentPlayerId,
+        cardId: pickedCard?.id,
+      }
+    );
+    assertCondition(
+      ownerRevealResponse?.success,
+      'owner should be able to publicly reveal own investigation clue',
+      ownerRevealResponse
+    );
+
+    const publicRevealSnapshots = await Promise.all(
+      sessionOrder.map(async (sessionId) => [
+        sessionId,
+        await requestMurderSnapshot(
+          socketsBySession.get(sessionId),
+          roomId,
+          sessionId
+        ),
+      ])
+    );
+    snapshotsBySession = new Map(publicRevealSnapshots);
+    publicRevealSnapshots.forEach(([sessionId, snapshot]) => {
+      const holder = snapshot.players.find(
+        (player) => player.id === currentPlayerId
+      );
+      assertCondition(
+        snapshot.clueVault.publicClues.some(
+          (card) => card.id === pickedCard?.id
+        ),
+        'owner-revealed clue should appear in every public clue vault',
+        {
+          viewerSessionId: sessionId,
+          publicClues: snapshot.clueVault.publicClues,
+        }
+      );
+      assertCondition(
+        holder?.publicRevealedClues.some((card) => card.id === pickedCard?.id),
+        'owner-revealed clue should appear as public on holder seat',
+        { viewerSessionId: sessionId, holder }
+      );
+    });
+
+    const afterPublicRevealCurrentSnapshot =
+      snapshotsBySession.get(currentPlayerId);
+    const publicOwnerCard =
+      afterPublicRevealCurrentSnapshot?.clueVault.myClues.find(
+        (card) => card.id === pickedCard?.id
+      );
+    assertCondition(
+      publicOwnerCard?.isPublic === true &&
+        publicOwnerCard?.canRevealPublicly === false,
+      'publicly revealed own clue should stop showing revealable state',
+      publicOwnerCard
+    );
     assertCondition(
       !refreshedReservedSnapshot?.investigation.turn?.myReservation,
       'reservation should clear after another player takes the card'
@@ -1062,6 +1153,88 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       'round 2 briefing host-next did not enter round 2 investigation',
       round2InvestigationSnapshot.phase
     );
+
+    const round2SnapshotEntries = await Promise.all(
+      sessionOrder.map(async (sessionId) => [
+        sessionId,
+        await requestMurderSnapshot(
+          socketsBySession.get(sessionId),
+          roomId,
+          sessionId
+        ),
+      ])
+    );
+    const round2SnapshotsBySession = new Map(round2SnapshotEntries);
+    const round2CurrentPlayerId =
+      round2SnapshotsBySession.get(hostSessionId)?.investigation.turn
+        ?.currentPlayerId ?? null;
+    assertCondition(
+      Boolean(round2CurrentPlayerId),
+      'round 2 current investigation player missing'
+    );
+    const round2CurrentSnapshot = round2SnapshotsBySession.get(
+      round2CurrentPlayerId
+    );
+    const extraBack =
+      round2CurrentSnapshot?.investigation.rounds
+        ?.find((round) => round.round === 2)
+        ?.targets.flatMap((target) =>
+          target.isOwnedByViewer ? [] : target.availableBacks
+        )
+        .find((back) => back.extraInvestigationOnReveal) ?? null;
+    assertCondition(
+      Boolean(extraBack),
+      'round 2 extra-investigation back missing'
+    );
+
+    const extraPickResponse = await emitAck(
+      socketsBySession.get(round2CurrentPlayerId),
+      'mm_submit_investigation',
+      {
+        roomId,
+        sessionId: round2CurrentPlayerId,
+        backId: extraBack?.backId,
+      }
+    );
+    assertCondition(
+      extraPickResponse?.success && extraPickResponse.extraInvestigation,
+      'extra-investigation clue pick should succeed and grant an extra action',
+      extraPickResponse
+    );
+
+    const extraRevealSnapshots = await Promise.all(
+      sessionOrder.map(async (sessionId) => [
+        sessionId,
+        await requestMurderSnapshot(
+          socketsBySession.get(sessionId),
+          roomId,
+          sessionId
+        ),
+      ])
+    );
+    const extraOwnerSnapshot = extraRevealSnapshots.find(
+      ([sessionId]) => sessionId === round2CurrentPlayerId
+    )?.[1];
+    const extraPublicCard = extraOwnerSnapshot?.clueVault.myClues.find(
+      (card) => card.extraInvestigationOnReveal && card.isPublic
+    );
+    assertCondition(
+      Boolean(extraPublicCard),
+      'extra-investigation clue should be public immediately for owner',
+      extraOwnerSnapshot?.clueVault.myClues
+    );
+    extraRevealSnapshots.forEach(([sessionId, snapshot]) => {
+      assertCondition(
+        snapshot.clueVault.publicClues.some(
+          (card) => card.id === extraPublicCard?.id
+        ),
+        'extra-investigation clue should appear in every public clue vault immediately',
+        {
+          viewerSessionId: sessionId,
+          publicClues: snapshot.clueVault.publicClues,
+        }
+      );
+    });
 
     const resetResponse = await emitAck(
       socketsBySession.get(hostSessionId),

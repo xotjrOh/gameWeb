@@ -13,6 +13,7 @@ import {
   reportMurderMysterySpecialEvent,
   resetMurderMysteryGame,
   resetMurderMysterySeatLayout,
+  revealMurderMysteryOwnedClue,
   resolveMurderMysteryInvestigation,
   clearMurderMysteryInvestigationReservation,
   setMurderMysteryInvestigationReservation,
@@ -346,6 +347,42 @@ const murderMysteryGameHandler = (
       }
     }
   );
+
+  socket.on('mm_reveal_my_clue', ({ roomId, sessionId, cardId }, callback) => {
+    try {
+      const room = toMurderMysteryRoom(validateRoom(roomId));
+      validatePlayer(room, sessionId);
+      const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
+
+      const result = revealMurderMysteryOwnedClue(
+        room,
+        scenario,
+        sessionId,
+        cardId
+      );
+
+      result.revealedParts.forEach((part) => {
+        emitMurderMysteryPartRevealed(room, io, {
+          partId: part.id,
+          partName: part.name,
+          byPlayerId: sessionId,
+          cardId: result.card.id,
+          revealedCount: room.gameData.revealedPartIds.length,
+          totalCount: scenario.parts.length,
+        });
+      });
+
+      emitMurderMysterySnapshots(room, io);
+      return callback({
+        success: true,
+        message: result.alreadyPublic
+          ? '이미 전체 공개된 단서입니다.'
+          : '단서를 전체 공개했습니다.',
+      });
+    } catch (error) {
+      return callback({ success: false, message: (error as Error).message });
+    }
+  });
 
   socket.on(
     'mm_report_special_event',

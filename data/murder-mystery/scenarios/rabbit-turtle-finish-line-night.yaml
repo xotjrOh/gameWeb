@@ -495,7 +495,7 @@ investigations:
           order: 10
           icon: '🧴'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-desk.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/rabbit-husband.png'
             shortLabel: '윤유성 소지품 1'
           cardPool:
             - card_black_thermos
@@ -511,7 +511,7 @@ investigations:
           order: 20
           icon: '✉️'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/rabbit-husband.png'
             shortLabel: '윤유성 소지품 2'
           cardPool:
             - card_turtle_envelope
@@ -526,7 +526,7 @@ investigations:
           order: 30
           icon: '⭕'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-corridor.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/rabbit-wife.png'
             shortLabel: '아내토끼 소지품 1'
           cardPool:
             - card_rubber_ring
@@ -541,7 +541,7 @@ investigations:
           order: 40
           icon: '🖼️'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-corridor.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/rabbit-wife.png'
             shortLabel: '아내토끼 소지품 2'
           cardPool:
             - card_rabbit_family
@@ -557,7 +557,7 @@ investigations:
           order: 50
           icon: '💉'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/fox.png'
             shortLabel: '조희수 소지품 1'
           cardPool:
             - card_syringe_trace
@@ -573,7 +573,7 @@ investigations:
           order: 60
           icon: '🧪'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/fox.png'
             shortLabel: '조희수 소지품 2'
           cardPool:
             - card_empty_vial
@@ -589,7 +589,7 @@ investigations:
           order: 70
           icon: '🩺'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/jara.png'
             shortLabel: '서기준 소지품 1'
           cardPool:
             - card_liver_compatibility
@@ -605,7 +605,7 @@ investigations:
           order: 80
           icon: '📷'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/jara.png'
             shortLabel: '서기준 소지품 2'
           cardPool:
             - card_past_killing_photo
@@ -618,7 +618,7 @@ investigations:
           order: 90
           icon: '👑'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-witness.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/dragon-king.png'
             shortLabel: '용왕 소문'
           cardPool:
             - card_dragon_king_rumor
@@ -636,7 +636,7 @@ investigations:
           order: 10
           icon: '🧴'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-desk.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/rabbit-husband.png'
             shortLabel: '윤유성 소지품 1'
           cardPool:
             - card_black_thermos
@@ -652,7 +652,7 @@ investigations:
           order: 20
           icon: '✉️'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/rabbit-husband.png'
             shortLabel: '윤유성 소지품 2'
           cardPool:
             - card_turtle_envelope
@@ -667,7 +667,7 @@ investigations:
           order: 30
           icon: '⭕'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-corridor.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/rabbit-wife.png'
             shortLabel: '아내토끼 소지품 1'
           cardPool:
             - card_rubber_ring
@@ -682,7 +682,7 @@ investigations:
           order: 40
           icon: '🖼️'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-corridor.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/rabbit-wife.png'
             shortLabel: '아내토끼 소지품 2'
           cardPool:
             - card_rabbit_family
@@ -698,7 +698,7 @@ investigations:
           order: 50
           icon: '💉'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/fox.png'
             shortLabel: '조희수 소지품 1'
           cardPool:
             - card_syringe_trace
@@ -714,7 +714,7 @@ investigations:
           order: 60
           icon: '🧪'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/fox.png'
             shortLabel: '조희수 소지품 2'
           cardPool:
             - card_empty_vial
@@ -730,7 +730,7 @@ investigations:
           order: 70
           icon: '🩺'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/jara.png'
             shortLabel: '서기준 소지품 1'
           cardPool:
             - card_liver_compatibility
@@ -746,7 +746,7 @@ investigations:
           order: 80
           icon: '📷'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/jara.png'
             shortLabel: '서기준 소지품 2'
           cardPool:
             - card_past_killing_photo
@@ -759,7 +759,7 @@ investigations:
           order: 90
           icon: '👑'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-witness.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/dragon-king.png'
             shortLabel: '용왕 소문'
           cardPool:
             - card_dragon_king_rumor
@@ -772,7 +772,7 @@ investigations:
           order: 100
           icon: '💧'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-rehab.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/turtle.png'
             shortLabel: '사체'
           cardPool:
             - card_turtle_body

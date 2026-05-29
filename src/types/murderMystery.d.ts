@@ -541,6 +541,8 @@ export interface MurderMysteryClueVaultCardView
   extends MurderMysteryCardScenario {
   sourceTargetIds: string[];
   sourceTargetLabels: string[];
+  isPublic: boolean;
+  canRevealPublicly: boolean;
 }
 
 export interface MurderMysteryFinalVoteView {
@@ -757,6 +759,14 @@ export interface MurderMysteryClientToServerEvents {
     data: {
       roomId: string;
       sessionId: string;
+    },
+    callback: (response: CommonResponse) => void
+  ) => void;
+  mm_reveal_my_clue: (
+    data: {
+      roomId: string;
+      sessionId: string;
+      cardId: string;
     },
     callback: (response: CommonResponse) => void
   ) => void;

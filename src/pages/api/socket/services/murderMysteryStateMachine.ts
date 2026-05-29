@@ -725,7 +725,7 @@ const applyDynamicDisplayNameRules = (
   room: MurderMysteryRoom,
   scenario: MurderMysteryScenario,
   cardId: string,
-  round: MurderMysteryInvestigationRound
+  round?: MurderMysteryInvestigationRound
 ) => {
   let changed = false;
   scenario.roles.forEach((role) => {
@@ -762,11 +762,16 @@ const isCardRevealedForTarget = (
   targetId: string,
   cardId: string
 ) => {
-  if (scenario.investigations.depletionMode === 'global') {
-    return room.gameData.revealedCardIds.includes(cardId);
+  const revealedForTarget = (
+    room.gameData.revealedCardIdsByTargetId[targetId] ?? []
+  ).includes(cardId);
+  if (scenario.investigations.depletionMode === 'per_target') {
+    return revealedForTarget;
   }
-  return (room.gameData.revealedCardIdsByTargetId[targetId] ?? []).includes(
-    cardId
+  return (
+    Object.values(room.gameData.revealedCardIdsByTargetId).some((cardIds) =>
+      cardIds.includes(cardId)
+    ) || room.gameData.revealedCardIds.includes(cardId)
   );
 };
 
@@ -811,37 +816,12 @@ const pickCardFromTarget = (
   return pickRandom(remainingCardIds);
 };
 
-const revealCardToPlayer = (
+const applyPublicCardEffects = (
   room: MurderMysteryRoom,
   scenario: MurderMysteryScenario,
-  playerId: string,
-  targetId: string,
-  cardId: string,
-  round: MurderMysteryInvestigationRound
-): {
-  card: MurderMysteryCardScenario;
-  revealedParts: MurderMysteryPartScenario[];
-  changedRoleName: boolean;
-} => {
-  const card = getCardById(scenario, cardId);
-  if (!card) {
-    throw new Error('존재하지 않는 단서 카드입니다.');
-  }
-
-  room.gameData.revealedCardsByPlayerId[playerId] ??= [];
-  if (!room.gameData.revealedCardsByPlayerId[playerId].includes(cardId)) {
-    room.gameData.revealedCardsByPlayerId[playerId].push(cardId);
-  }
-
-  if (!room.gameData.revealedCardIds.includes(cardId)) {
-    room.gameData.revealedCardIds.push(cardId);
-  }
-
-  room.gameData.revealedCardIdsByTargetId[targetId] ??= [];
-  if (!room.gameData.revealedCardIdsByTargetId[targetId].includes(cardId)) {
-    room.gameData.revealedCardIdsByTargetId[targetId].push(cardId);
-  }
-
+  card: MurderMysteryCardScenario,
+  round?: MurderMysteryInvestigationRound
+) => {
   const revealedParts: MurderMysteryPartScenario[] = [];
   let changedRoleName = false;
 
@@ -871,7 +851,7 @@ const revealCardToPlayer = (
   const dynamicUpdated = applyDynamicDisplayNameRules(
     room,
     scenario,
-    cardId,
+    card.id,
     round
   );
   if (dynamicUpdated) {
@@ -888,7 +868,8 @@ const revealCardToPlayer = (
 const revealPublicCard = (
   room: MurderMysteryRoom,
   scenario: MurderMysteryScenario,
-  cardId: string
+  cardId: string,
+  round?: MurderMysteryInvestigationRound
 ): {
   card: MurderMysteryCardScenario;
   revealedParts: MurderMysteryPartScenario[];
@@ -903,36 +884,44 @@ const revealPublicCard = (
     room.gameData.revealedCardIds.push(cardId);
   }
 
-  const revealedParts: MurderMysteryPartScenario[] = [];
-  let changedRoleName = false;
+  return applyPublicCardEffects(room, scenario, card, round);
+};
 
-  card.effects?.forEach((effect) => {
-    if (effect.type === 'addPart') {
-      if (!room.gameData.revealedPartIds.includes(effect.partId)) {
-        room.gameData.revealedPartIds.push(effect.partId);
-        const foundPart = getPartById(scenario, effect.partId);
-        if (foundPart) {
-          revealedParts.push(foundPart);
-        }
-      }
-    }
+const revealCardToPlayer = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  playerId: string,
+  targetId: string,
+  cardId: string,
+  round: MurderMysteryInvestigationRound
+): {
+  card: MurderMysteryCardScenario;
+  revealedParts: MurderMysteryPartScenario[];
+  changedRoleName: boolean;
+} => {
+  const card = getCardById(scenario, cardId);
+  if (!card) {
+    throw new Error('존재하지 않는 단서 카드입니다.');
+  }
 
-    if (effect.type === 'revealRoleName') {
-      const updated = applyRoleNameByRoleId(
-        room,
-        effect.roleId,
-        effect.newDisplayName
-      );
-      if (updated) {
-        changedRoleName = true;
-      }
-    }
-  });
+  room.gameData.revealedCardsByPlayerId[playerId] ??= [];
+  if (!room.gameData.revealedCardsByPlayerId[playerId].includes(cardId)) {
+    room.gameData.revealedCardsByPlayerId[playerId].push(cardId);
+  }
+
+  room.gameData.revealedCardIdsByTargetId[targetId] ??= [];
+  if (!room.gameData.revealedCardIdsByTargetId[targetId].includes(cardId)) {
+    room.gameData.revealedCardIdsByTargetId[targetId].push(cardId);
+  }
+
+  if (card.extraInvestigationOnReveal) {
+    return revealPublicCard(room, scenario, cardId, round);
+  }
 
   return {
     card,
-    revealedParts,
-    changedRoleName,
+    revealedParts: [],
+    changedRoleName: false,
   };
 };
 
@@ -1503,7 +1492,11 @@ const buildClueVaultCards = (
     string,
     { sourceTargetIds: string[]; sourceTargetLabels: string[] }
   >,
-  fallbackSourceLabelByCardId: Record<string, string> = {}
+  fallbackSourceLabelByCardId: Record<string, string> = {},
+  options: {
+    publicCardIds?: Set<string>;
+    publiclyRevealableCardIds?: Set<string>;
+  } = {}
 ): MurderMysteryClueVaultCardView[] =>
   cardIds
     .map((cardId) => {
@@ -1528,6 +1521,11 @@ const buildClueVaultCards = (
         ...card,
         sourceTargetIds: source.sourceTargetIds,
         sourceTargetLabels,
+        isPublic: Boolean(options.publicCardIds?.has(cardId)),
+        canRevealPublicly: Boolean(
+          options.publiclyRevealableCardIds?.has(cardId) &&
+            !options.publicCardIds?.has(cardId)
+        ),
       };
     })
     .filter(Boolean) as MurderMysteryClueVaultCardView[];
@@ -2248,6 +2246,36 @@ export const resolveMurderMysteryInvestigation = (
   };
 };
 
+export const revealMurderMysteryOwnedClue = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  playerId: string,
+  cardId: string
+) => {
+  const card = getCardById(scenario, cardId);
+  if (!card) {
+    throw new Error('존재하지 않는 단서 카드입니다.');
+  }
+  if (!card.backId) {
+    throw new Error('조사로 획득한 단서만 전체 공개할 수 있습니다.');
+  }
+
+  const ownedCardIds = room.gameData.revealedCardsByPlayerId[playerId] ?? [];
+  if (!ownedCardIds.includes(cardId)) {
+    throw new Error('본인이 획득한 단서만 전체 공개할 수 있습니다.');
+  }
+
+  const alreadyPublic = room.gameData.revealedCardIds.includes(cardId);
+  const revealResult = revealPublicCard(room, scenario, cardId);
+
+  return {
+    alreadyPublic,
+    card: revealResult.card,
+    revealedParts: revealResult.revealedParts,
+    changedRoleName: revealResult.changedRoleName,
+  };
+};
+
 export const reportMurderMysterySpecialEvent = (
   room: MurderMysteryRoom,
   scenario: MurderMysteryScenario,
@@ -2587,12 +2615,20 @@ export const buildMurderMysterySnapshot = (
   const revealedPersonalCardIds = player
     ? (room.gameData.revealedCardsByPlayerId[player.id] ?? [])
     : [];
-  const myCardIds = [...privateCardIds, ...revealedPersonalCardIds];
+  const myCardIds = [
+    ...new Set([...privateCardIds, ...revealedPersonalCardIds]),
+  ];
   const myCards = myCardIds
     .map((cardId) => getCardById(scenario, cardId))
     .filter(Boolean) as MurderMysteryCardScenario[];
 
   const cardSourceMap = buildCardSourceMap(room, scenario);
+  const publicCardIdSet = new Set(room.gameData.revealedCardIds);
+  const publiclyRevealableMyCardIds = new Set(
+    revealedPersonalCardIds.filter((cardId) =>
+      Boolean(getCardById(scenario, cardId)?.backId)
+    )
+  );
   const privateCardSourceLabelMap = buildPrivateCardSourceLabelMap(
     scenario,
     roleId
@@ -2601,12 +2637,18 @@ export const buildMurderMysterySnapshot = (
     scenario,
     myCardIds,
     cardSourceMap,
-    privateCardSourceLabelMap
+    privateCardSourceLabelMap,
+    {
+      publicCardIds: publicCardIdSet,
+      publiclyRevealableCardIds: publiclyRevealableMyCardIds,
+    }
   );
   const clueVaultPublicClues = buildClueVaultCards(
     scenario,
     room.gameData.revealedCardIds,
-    cardSourceMap
+    cardSourceMap,
+    {},
+    { publicCardIds: publicCardIdSet }
   );
   const specialEventStatusById = room.gameData.specialEventStatusById ?? {};
   const reportableSpecialEvents =
@@ -2772,6 +2814,11 @@ export const buildMurderMysterySnapshot = (
       const entryRole = entryRoleId
         ? (getRoleById(scenario, entryRoleId) ?? null)
         : null;
+      const entryOwnedCardIds =
+        room.gameData.revealedCardsByPlayerId[entry.id] ?? [];
+      const entryPublicCardIds = entryOwnedCardIds.filter((cardId) =>
+        publicCardIdSet.has(cardId)
+      );
       return {
         id: entry.id,
         name: entry.name,
@@ -2794,12 +2841,14 @@ export const buildMurderMysterySnapshot = (
         heldCardBacks: buildHeldCardBackViews(
           room,
           scenario,
-          room.gameData.revealedCardsByPlayerId[entry.id] ?? []
+          entryOwnedCardIds
         ),
         publicRevealedClues: buildClueVaultCards(
           scenario,
-          room.gameData.revealedCardsByPlayerId[entry.id] ?? [],
-          cardSourceMap
+          entryPublicCardIds,
+          cardSourceMap,
+          {},
+          { publicCardIds: publicCardIdSet }
         ),
       };
     }),
