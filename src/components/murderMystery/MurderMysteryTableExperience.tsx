@@ -304,6 +304,7 @@ const BgmControl = ({
     if (!audio) {
       return;
     }
+    audio.loop = true;
     audio.volume = 0.38;
     audio.muted = muted;
   }, [muted]);
@@ -365,12 +366,12 @@ const BgmControl = ({
   );
 
   if (!track) {
-    return <audio ref={audioRef} preload="auto" />;
+    return <audio ref={audioRef} preload="auto" loop />;
   }
 
   return (
     <Stack direction="row" spacing={0.6} alignItems="center">
-      <audio ref={audioRef} preload="auto" />
+      <audio ref={audioRef} preload="auto" loop />
       {isBlocked || !isPlaying ? (
         <Button
           size="small"
