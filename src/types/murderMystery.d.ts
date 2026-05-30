@@ -40,11 +40,19 @@ export interface MurderMysteryRoleScenario {
   displayName: string;
   publicText: string;
   secretText: string;
+  personalGoal?: string;
+  ruleText?: string;
+  belongingHints?: MurderMysteryRoleBelongingHintScenario[];
   secretTextHighlights?: string[];
   portraitSrc?: string;
   portraitAlt?: string;
   secretTextPath?: string;
   dynamicDisplayNameRules?: MurderMysteryDynamicDisplayNameRule[];
+}
+
+export interface MurderMysteryRoleBelongingHintScenario {
+  label: string;
+  hint: string;
 }
 
 export interface MurderMysteryPublicCoverScenario {
@@ -414,6 +422,9 @@ export interface MurderMysteryRoleSheetView {
   displayName: string;
   publicText: string;
   secretText: string;
+  personalGoal?: string;
+  ruleText?: string;
+  belongingHints?: MurderMysteryRoleBelongingHintScenario[];
   secretTextHighlights?: string[];
   portraitSrc?: string;
   portraitAlt?: string;

@@ -756,6 +756,39 @@ const normalizeDynamicDisplayNameRules = ({
   });
 };
 
+const normalizeRoleBelongingHints = ({
+  rawHints,
+  roleId,
+  fileName,
+}: {
+  rawHints: unknown;
+  roleId: string;
+  fileName: string;
+}): MurderMysteryScenario['roles'][number]['belongingHints'] => {
+  if (!Array.isArray(rawHints)) {
+    return undefined;
+  }
+
+  const hints = rawHints.map((rawHint, index) => {
+    const hintRecord = requireRecord(
+      rawHint,
+      `${fileName}: role(${roleId}) belongingHints[${index}] must be object`
+    );
+    return {
+      label: requireString(
+        hintRecord.label,
+        `${fileName}: role(${roleId}) belongingHints[${index}].label is required`
+      ),
+      hint: requireString(
+        hintRecord.hint,
+        `${fileName}: role(${roleId}) belongingHints[${index}].hint is required`
+      ),
+    };
+  });
+
+  return hints.length > 0 ? hints : undefined;
+};
+
 const normalizeRoles = ({
   rawRoles,
   cardRoundById,
@@ -804,6 +837,13 @@ const normalizeRoles = ({
       const secretTextHighlights = toStringArray(
         roleRecord.secretTextHighlights
       );
+      const personalGoal = asNonEmptyString(roleRecord.personalGoal);
+      const ruleText = asNonEmptyString(roleRecord.ruleText);
+      const belongingHints = normalizeRoleBelongingHints({
+        rawHints: roleRecord.belongingHints,
+        roleId: id,
+        fileName,
+      });
       secretTextHighlights.forEach((highlight, highlightIndex) => {
         assertCondition(
           secretText.includes(highlight),
@@ -820,6 +860,9 @@ const normalizeRoles = ({
         displayName,
         publicText,
         secretText,
+        ...(personalGoal ? { personalGoal } : {}),
+        ...(ruleText ? { ruleText } : {}),
+        ...(belongingHints ? { belongingHints } : {}),
         ...(secretTextHighlights.length > 0 ? { secretTextHighlights } : {}),
         ...(asNonEmptyString(roleRecord.portraitSrc)
           ? { portraitSrc: asNonEmptyString(roleRecord.portraitSrc) }

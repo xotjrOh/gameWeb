@@ -1669,7 +1669,7 @@ const RolePreSharePanel = ({
       <Box>
         <Typography fontWeight={950}>사전 룰지 공유</Typography>
         <Typography variant="caption" sx={{ color: '#d8d0bd' }}>
-          카카오톡 링크로 프롤로그와 룰지를 공유합니다.
+          카카오톡 링크로 프롤로그, 룰지, 규칙을 공유합니다.
         </Typography>
       </Box>
       <Stack spacing={1}>
@@ -1877,6 +1877,9 @@ const RulebookModal = ({
           portraitAlt={roleSheet?.portraitAlt}
           introText={introText}
           secretText={roleSheet?.secretText ?? ''}
+          personalGoal={roleSheet?.personalGoal}
+          ruleText={roleSheet?.ruleText}
+          belongingHints={roleSheet?.belongingHints}
           secretTextHighlights={roleSheet?.secretTextHighlights}
           specialEvents={specialEvents}
           onReportSpecialEvent={onReportSpecialEvent}

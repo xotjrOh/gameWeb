@@ -2,6 +2,7 @@
 
 import { Box, Chip, Stack, Typography } from '@mui/material';
 import MurderMysteryRulebookReader from '@/components/murderMystery/MurderMysteryRulebookReader';
+import type { MurderMysteryRoleBelongingHintScenario } from '@/types/murderMystery';
 
 interface MurderMysteryPreReadClientProps {
   token: string;
@@ -12,6 +13,9 @@ interface MurderMysteryPreReadClientProps {
   portraitAlt?: string;
   introText: string;
   secretText: string;
+  personalGoal?: string;
+  ruleText?: string;
+  belongingHints?: MurderMysteryRoleBelongingHintScenario[];
   secretTextHighlights?: string[];
 }
 
@@ -24,6 +28,9 @@ export default function MurderMysteryPreReadClient({
   portraitAlt,
   introText,
   secretText,
+  personalGoal,
+  ruleText,
+  belongingHints,
   secretTextHighlights = [],
 }: MurderMysteryPreReadClientProps) {
   return (
@@ -74,8 +81,11 @@ export default function MurderMysteryPreReadClient({
           portraitAlt={portraitAlt}
           introText={introText}
           secretText={secretText}
+          personalGoal={personalGoal}
+          ruleText={ruleText}
+          belongingHints={belongingHints}
           secretTextHighlights={secretTextHighlights}
-          footerText="이 링크는 방 상태와 관계없이 사전 룰지만 보여줍니다."
+          footerText="이 링크는 방 상태와 관계없이 사전 룰지와 규칙을 보여줍니다."
         />
       </Stack>
     </Box>

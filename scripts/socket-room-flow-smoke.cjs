@@ -464,7 +464,8 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       preReadResponse.ok &&
         preReadHtml.includes(firstRole.displayName) &&
         preReadHtml.includes('프롤로그') &&
-        preReadHtml.includes('룰지'),
+        preReadHtml.includes('룰지') &&
+        preReadHtml.includes('규칙'),
       'pre-read link should render selected role sheet',
       { status: preReadResponse.status, url: preReadUrl.toString() }
     );

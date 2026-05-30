@@ -1984,7 +1984,7 @@ export const buildMurderMysteryRoleShareText = (
       scenario.title,
       '',
       `${role.displayName} 사전 룰지입니다.`,
-      '링크에서 프롤로그와 인물북을 읽어주세요.',
+      '링크에서 프롤로그, 룰지, 규칙을 읽어주세요.',
     ].join('\n')
   );
 
@@ -2817,6 +2817,9 @@ export const buildMurderMysterySnapshot = (
           room.gameData.roleDisplayNameByPlayerId[viewerId] ?? role.displayName,
         publicText: role.publicText,
         secretText: role.secretText,
+        ...(role.personalGoal ? { personalGoal: role.personalGoal } : {}),
+        ...(role.ruleText ? { ruleText: role.ruleText } : {}),
+        ...(role.belongingHints ? { belongingHints: role.belongingHints } : {}),
         ...(role.secretTextHighlights
           ? { secretTextHighlights: role.secretTextHighlights }
           : {}),

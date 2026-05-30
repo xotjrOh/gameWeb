@@ -69,6 +69,9 @@ export default function MurderMysteryPreReadPage({
         portraitAlt={role.portraitAlt}
         introText={scenario.intro.readAloud}
         secretText={role.secretText}
+        personalGoal={role.personalGoal}
+        ruleText={role.ruleText}
+        belongingHints={role.belongingHints}
         secretTextHighlights={role.secretTextHighlights}
       />
     );

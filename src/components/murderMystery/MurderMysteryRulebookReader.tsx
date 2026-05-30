@@ -26,6 +26,7 @@ import {
   useMeasuredRulebookPages,
 } from '@/components/murderMystery/rulebookPagination';
 import {
+  MurderMysteryRoleBelongingHintScenario,
   MurderMysteryReportableSpecialEventView,
   MurderMysterySpecialEventOutcome,
 } from '@/types/murderMystery';
@@ -40,6 +41,9 @@ interface MurderMysteryRulebookReaderProps {
   portraitAlt?: string;
   introText: string;
   secretText: string;
+  personalGoal?: string;
+  ruleText?: string;
+  belongingHints?: MurderMysteryRoleBelongingHintScenario[];
   secretTextHighlights?: string[];
   pageSx?: SxProps<Theme>;
   showProgressMarkers?: boolean;
@@ -65,6 +69,9 @@ export default function MurderMysteryRulebookReader({
   portraitAlt,
   introText,
   secretText,
+  personalGoal,
+  ruleText,
+  belongingHints = [],
   secretTextHighlights = [],
   pageSx,
   showProgressMarkers = true,
@@ -456,10 +463,71 @@ export default function MurderMysteryRulebookReader({
             >
               <Box>
                 <Typography fontWeight={950} sx={{ mb: 0.7 }}>
-                  조사 카드 공개 규칙
+                  내 목표
+                </Typography>
+                <Typography sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.72 }}>
+                  {personalGoal ||
+                    '역할 룰지의 비밀 정보와 당일의 기억을 바탕으로, 최종 지목과 비밀 제출에서 자신에게 유리한 결론을 만드세요.'}
+                </Typography>
+              </Box>
+              {ruleText ? (
+                <>
+                  <Divider sx={{ borderColor: 'rgba(36,27,18,0.16)' }} />
+                  <Box>
+                    <Typography fontWeight={950} sx={{ mb: 0.7 }}>
+                      내 행동 지침
+                    </Typography>
+                    <Typography
+                      sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.72 }}
+                    >
+                      {ruleText}
+                    </Typography>
+                  </Box>
+                </>
+              ) : null}
+              <Divider sx={{ borderColor: 'rgba(36,27,18,0.16)' }} />
+              <Box>
+                <Typography fontWeight={950} sx={{ mb: 0.7 }}>
+                  내 소지품 메모
+                </Typography>
+                {belongingHints.length > 0 ? (
+                  <Stack spacing={0.8}>
+                    {belongingHints.map((item) => (
+                      <Box
+                        key={`${item.label}:${item.hint}`}
+                        sx={{
+                          p: 1.1,
+                          borderRadius: 1.5,
+                          backgroundColor: 'rgba(36,27,18,0.06)',
+                          border: '1px solid rgba(36,27,18,0.14)',
+                        }}
+                      >
+                        <Typography fontWeight={900}>{item.label}</Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{ mt: 0.3, lineHeight: 1.62 }}
+                        >
+                          {item.hint}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Stack>
+                ) : (
+                  <Typography sx={{ color: '#6b5639', lineHeight: 1.68 }}>
+                    이 역할에 별도 소지품 메모가 없습니다.
+                  </Typography>
+                )}
+              </Box>
+              <Divider sx={{ borderColor: 'rgba(36,27,18,0.16)' }} />
+              <Box>
+                <Typography fontWeight={950} sx={{ mb: 0.7 }}>
+                  조사와 공개 규칙
                 </Typography>
                 <Typography sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.72 }}>
                   {[
+                    '각 조사 라운드에서 정해진 순서대로 2회 조사합니다.',
+                    '자신의 소지품은 원칙적으로 조사할 수 없지만, 남은 비소유 조사 카드가 없으면 마지막 선택으로 조사할 수 있습니다.',
+                    '예약한 카드는 내 차례가 되면 자동으로 가져오며, 같은 카드를 다시 누르면 예약이 취소됩니다.',
                     '조사로 가져간 단서의 앞면은 본인만 확인합니다.',
                     '본인이 전체공개하기를 누른 단서와 추가조사 단서는 모두가 공개 카드에서 볼 수 있습니다.',
                     '공개하지 않은 단서는 다른 플레이어에게 뒷면 출처만 보입니다.',
