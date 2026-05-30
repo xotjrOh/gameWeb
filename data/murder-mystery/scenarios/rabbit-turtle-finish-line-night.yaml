@@ -1011,7 +1011,6 @@ cards:
     title: '조희수 소지품 2'
     text: |
       조희수의 품 속에서 빈 약병이 발견되었다.
-      라벨 대부분은 피가 묻어 가려져 있다.
     backId: back_empty_vial
     effects:
       - type: addPart

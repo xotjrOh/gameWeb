@@ -291,6 +291,62 @@ const getClueVaultCardState = (card: AnyClueCard) => {
   };
 };
 
+const TextOnlyClueMedia = ({
+  dense = false,
+  detail = false,
+}: {
+  dense?: boolean;
+  detail?: boolean;
+}) => (
+  <Stack
+    spacing={detail ? 0.8 : 0.35}
+    alignItems="center"
+    justifyContent="center"
+    sx={{
+      position: 'relative',
+      height: detail ? { xs: 124, sm: 144 } : dense ? 70 : 108,
+      overflow: 'hidden',
+      background:
+        'linear-gradient(135deg, #e8dcc2 0%, #f8f1de 52%, #d4c29f 100%)',
+      color: '#5f4b2e',
+      '&::before': {
+        content: '""',
+        position: 'absolute',
+        inset: detail ? 14 : 8,
+        border: '1px solid rgba(95, 75, 46, 0.22)',
+        borderRadius: detail ? 1.4 : 0.8,
+      },
+      '&::after': {
+        content: '""',
+        position: 'absolute',
+        inset: 0,
+        opacity: 0.36,
+        background:
+          'radial-gradient(circle at 18% 22%, rgba(255,255,255,0.5), transparent 28%), radial-gradient(circle at 84% 72%, rgba(95,75,46,0.16), transparent 32%)',
+      },
+    }}
+  >
+    <ArticleIcon
+      fontSize={detail ? 'large' : dense ? 'small' : 'medium'}
+      sx={{ position: 'relative', zIndex: 1, opacity: 0.86 }}
+    />
+    {!dense || detail ? (
+      <Typography
+        variant="caption"
+        fontWeight={950}
+        sx={{
+          position: 'relative',
+          zIndex: 1,
+          letterSpacing: 0,
+          color: '#5b472b',
+        }}
+      >
+        조사 기록
+      </Typography>
+    ) : null}
+  </Stack>
+);
+
 const formatParticipantLabel = (player?: ParticipantLabelSource | null) => {
   const roleLabel = player?.roleDisplayName ?? player?.displayName ?? '';
   const nickname = player?.name ?? '';
@@ -748,24 +804,7 @@ const EvidenceCardFace = ({
               }}
             />
           ) : (
-            <Stack
-              spacing={0.4}
-              alignItems="center"
-              justifyContent="center"
-              sx={{
-                height: dense ? 70 : 108,
-                background:
-                  'linear-gradient(135deg, #e7ddc3 0%, #f8f1de 48%, #d1c3a2 100%)',
-                color: '#695538',
-              }}
-            >
-              <StyleIcon fontSize={dense ? 'small' : 'medium'} />
-              {!dense ? (
-                <Typography variant="caption" fontWeight={900}>
-                  이미지 준비 중
-                </Typography>
-              ) : null}
-            </Stack>
+            <TextOnlyClueMedia dense={dense} />
           )}
           <Stack spacing={0.55} sx={{ p: dense ? 1 : 1.2, flex: 1 }}>
             <Typography
@@ -2222,6 +2261,7 @@ const CardDetailDialog = ({
   const mediaRef = useRef<HTMLDivElement | null>(null);
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
   const canNavigate = totalCount > 1;
+  const hasImage = Boolean(card?.imageSrc);
 
   useEffect(() => {
     if (!card || !canNavigate) {
@@ -2325,7 +2365,7 @@ const CardDetailDialog = ({
             position: 'relative',
             cursor: canNavigate ? 'ew-resize' : 'default',
             touchAction: canNavigate ? 'pan-y' : 'auto',
-            backgroundColor: '#171c23',
+            backgroundColor: hasImage ? '#171c23' : '#f8f1de',
             userSelect: 'none',
           }}
         >
@@ -2343,20 +2383,7 @@ const CardDetailDialog = ({
               }}
             />
           ) : (
-            <Stack
-              spacing={1}
-              alignItems="center"
-              justifyContent="center"
-              sx={{
-                height: { xs: 260, sm: 320 },
-                background:
-                  'linear-gradient(135deg, #e7ddc3 0%, #f8f1de 48%, #d1c3a2 100%)',
-                color: '#695538',
-              }}
-            >
-              <StyleIcon fontSize="large" />
-              <Typography fontWeight={950}>이미지 준비 중</Typography>
-            </Stack>
+            <TextOnlyClueMedia detail />
           )}
           {canNavigate ? (
             <>

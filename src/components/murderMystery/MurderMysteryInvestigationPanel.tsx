@@ -14,6 +14,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import { Article as ArticleIcon } from '@mui/icons-material';
 import {
   MurderMysteryClueVaultCardView,
   MurderMysteryInvestigationTargetView,
@@ -71,7 +72,41 @@ const ClueCardImage = ({
         backgroundColor: 'rgba(15,23,42,0.04)',
       }}
     />
-  ) : null;
+  ) : (
+    <Stack
+      spacing={0.4}
+      alignItems="center"
+      justifyContent="center"
+      sx={{
+        width: '100%',
+        height: 120,
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: 'divider',
+        overflow: 'hidden',
+        position: 'relative',
+        background:
+          'linear-gradient(135deg, #e8dcc2 0%, #f8f1de 52%, #d4c29f 100%)',
+        color: '#5f4b2e',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          inset: 10,
+          border: '1px solid rgba(95, 75, 46, 0.22)',
+          borderRadius: 1,
+        },
+      }}
+    >
+      <ArticleIcon sx={{ position: 'relative', zIndex: 1, opacity: 0.86 }} />
+      <Typography
+        variant="caption"
+        fontWeight={900}
+        sx={{ position: 'relative', zIndex: 1 }}
+      >
+        조사 기록
+      </Typography>
+    </Stack>
+  );
 
 const getPlayerLabel = (
   playerId: string | null,
