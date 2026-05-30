@@ -82,7 +82,7 @@ flow:
       round: 1
       durationSec: 420
       description: '용의자끼리 대화를 나누고 서로의 소지품을 조사합니다.'
-      enterAnnouncement: '개인 전달 카드가 배부되었습니다. 1라운드 조사를 시작합니다.'
+      enterAnnouncement: '아내토끼가 여우에게 개인 전달 카드를 건넸습니다. 1라운드 조사를 시작합니다.'
     - id: ROUND1_DISCUSS
       label: '1라운드 토론'
       kind: discuss

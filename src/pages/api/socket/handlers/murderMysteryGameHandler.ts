@@ -57,6 +57,17 @@ const murderMysteryGameHandler = (
   io: Server<ClientToServerEvents, ServerToClientEvents>,
   socket: ServerSocketType
 ) => {
+  const emitMurderMysteryAnnouncementsSince = (
+    room: ReturnType<typeof toMurderMysteryRoom>,
+    startIndex: number
+  ) => {
+    room.gameData.announcements
+      .slice(startIndex)
+      .forEach((announcement) =>
+        emitMurderMysteryAnnouncement(room, io, announcement)
+      );
+  };
+
   const scheduleMurderMysteryPhaseTimer = (roomId: string) => {
     clearMurderMysteryPhaseTimer(roomId);
 
@@ -68,11 +79,13 @@ const murderMysteryGameHandler = (
     }
 
     const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
+    const announcementStartIndex = room.gameData.announcements.length;
     const advanced = advanceExpiredMurderMysteryDiscussionIfNeeded(
       room,
       scenario
     );
     if (advanced) {
+      emitMurderMysteryAnnouncementsSince(room, announcementStartIndex);
       emitMurderMysterySnapshots(room, io);
       io.emit('room-updated', rooms);
     }
@@ -99,12 +112,16 @@ const murderMysteryGameHandler = (
 
   const emitMurderMysterySnapshotsWithTimerSync = (
     room: ReturnType<typeof toMurderMysteryRoom>,
-    scenario = getMurderMysteryScenario(room.gameData.scenarioId)
+    scenario = getMurderMysteryScenario(room.gameData.scenarioId),
+    options: { announcementStartIndex?: number } = {}
   ) => {
+    const announcementStartIndex =
+      options.announcementStartIndex ?? room.gameData.announcements.length;
     const advanced = advanceExpiredMurderMysteryDiscussionIfNeeded(
       room,
       scenario
     );
+    emitMurderMysteryAnnouncementsSince(room, announcementStartIndex);
     emitMurderMysterySnapshots(room, io);
     scheduleMurderMysteryPhaseTimer(room.roomId);
     if (advanced) {
@@ -124,12 +141,15 @@ const murderMysteryGameHandler = (
 
       socket.join(roomId);
       const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
+      const announcementStartIndex = room.gameData.announcements.length;
       const advanced = advanceExpiredMurderMysteryDiscussionIfNeeded(
         room,
         scenario
       );
       if (advanced) {
-        emitMurderMysterySnapshotsWithTimerSync(room, scenario);
+        emitMurderMysterySnapshotsWithTimerSync(room, scenario, {
+          announcementStartIndex,
+        });
       }
       const snapshot = buildMurderMysterySnapshot(
         room,
@@ -153,8 +173,11 @@ const murderMysteryGameHandler = (
       ensureScenarioPlayerCount(room, scenario);
       room.host.socketId = socket.id;
 
+      const announcementStartIndex = room.gameData.announcements.length;
       startMurderMysteryGame(room, scenario);
-      emitMurderMysterySnapshotsWithTimerSync(room, scenario);
+      emitMurderMysterySnapshotsWithTimerSync(room, scenario, {
+        announcementStartIndex,
+      });
       io.emit('room-updated', rooms);
       return callback({ success: true });
     } catch (error) {
@@ -267,6 +290,7 @@ const murderMysteryGameHandler = (
       const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
       room.host.socketId = socket.id;
 
+      const announcementStartIndex = room.gameData.announcements.length;
       const { resolvedPending } = moveMurderMysteryToNextPhase(room, scenario);
       resolvedPending.forEach((resolved) => {
         resolved.revealResult.revealedParts.forEach((part) => {
@@ -281,7 +305,9 @@ const murderMysteryGameHandler = (
         });
       });
 
-      emitMurderMysterySnapshotsWithTimerSync(room, scenario);
+      emitMurderMysterySnapshotsWithTimerSync(room, scenario, {
+        announcementStartIndex,
+      });
       io.emit('room-updated', rooms);
       return callback({ success: true });
     } catch (error) {
@@ -295,9 +321,12 @@ const murderMysteryGameHandler = (
       validatePlayer(room, sessionId);
       const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
 
+      const announcementStartIndex = room.gameData.announcements.length;
       const result = markMurderMysteryPhaseRead(room, scenario, sessionId);
 
-      emitMurderMysterySnapshotsWithTimerSync(room, scenario);
+      emitMurderMysterySnapshotsWithTimerSync(room, scenario, {
+        announcementStartIndex,
+      });
       if (result.advanced) {
         io.emit('room-updated', rooms);
       }
@@ -318,9 +347,12 @@ const murderMysteryGameHandler = (
       validatePlayer(room, sessionId);
       const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
 
+      const announcementStartIndex = room.gameData.announcements.length;
       const result = markMurderMysteryPhaseRead(room, scenario, sessionId);
 
-      emitMurderMysterySnapshotsWithTimerSync(room, scenario);
+      emitMurderMysterySnapshotsWithTimerSync(room, scenario, {
+        announcementStartIndex,
+      });
       if (result.advanced) {
         io.emit('room-updated', rooms);
       }
@@ -470,6 +502,7 @@ const murderMysteryGameHandler = (
         validatePlayer(room, sessionId);
         const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
 
+        const announcementStartIndex = room.gameData.announcements.length;
         const result = reportMurderMysterySpecialEvent(
           room,
           scenario,
@@ -489,7 +522,9 @@ const murderMysteryGameHandler = (
           });
         });
 
-        emitMurderMysterySnapshotsWithTimerSync(room, scenario);
+        emitMurderMysterySnapshotsWithTimerSync(room, scenario, {
+          announcementStartIndex,
+        });
         return callback({ success: true });
       } catch (error) {
         return callback({ success: false, message: (error as Error).message });
@@ -618,6 +653,7 @@ const murderMysteryGameHandler = (
       const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
       room.host.socketId = socket.id;
 
+      const announcementStartIndex = room.gameData.announcements.length;
       const result = finalizeMurderMysteryVote(room, scenario);
       appendMurderMysteryAnnouncement(
         room,
@@ -627,7 +663,9 @@ const murderMysteryGameHandler = (
           : '최종 투표가 집계되었습니다. 사건 지목은 오답입니다.'
       );
 
-      emitMurderMysterySnapshotsWithTimerSync(room, scenario);
+      emitMurderMysterySnapshotsWithTimerSync(room, scenario, {
+        announcementStartIndex,
+      });
       io.emit('room-updated', rooms);
       return callback({ success: true });
     } catch (error) {

@@ -684,6 +684,15 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       briefingReadResponse
     );
 
+    const wifePactAnnouncementText =
+      '아내토끼가 여우에게 개인 전달 카드를 건넸습니다. 1라운드 조사를 시작합니다.';
+    const wifePactAnnouncementPromises = sessionOrder.map(async (sessionId) => [
+      sessionId,
+      await waitForEvent(socketsBySession.get(sessionId), 'mm_announcement', {
+        filter: (event) => event?.type === 'SYSTEM',
+      }),
+    ]);
+
     const briefingNextResponse = await emitAck(
       hostSocket,
       'mm_host_next_phase',
@@ -696,6 +705,17 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       briefingNextResponse?.success,
       'host should advance from round 1 briefing to investigation',
       briefingNextResponse
+    );
+    const wifePactAnnouncements = await Promise.all(
+      wifePactAnnouncementPromises
+    );
+    assertCondition(
+      wifePactAnnouncements.every(
+        ([, event]) =>
+          event?.type === 'SYSTEM' && event.text === wifePactAnnouncementText
+      ),
+      'wife pact handoff announcement should broadcast to every participant',
+      wifePactAnnouncements
     );
 
     const investigationEntrySnapshot = await requestMurderSnapshot(
