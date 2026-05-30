@@ -1020,7 +1020,7 @@ cards:
     title: '호스'
     text: |
       고무호스가 길게 말려 있다.
-      펼치면 길이가 약 5m, 직경은 2.6cm이고, 물기가 묻어 있다.
+      펼치면 길이가 약 5m, 직경은 2.3cm이고, 물기가 묻어 있다.
     imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/clue/rubber-hose.png'
     imageAlt: '물기가 남은 고무호스'
     backId: back_rubber_hose
@@ -1063,7 +1063,7 @@ cards:
     title: '어린이용 수조'
     text: |
       수조 벽면에 크기가 적혀있다. 2m × 1m, 높이 50cm다.
-      3.5cm의 물이 차있고, 벽면에 젖은 자국을 보니 물이 줄거나 늘어나지는 않은 것 같다.
+      약 3cm의 물이 차있고, 벽면에 젖은 자국을 보니 물이 줄거나 늘어나지는 않은 것 같다.
     backId: back_child_tank_waterline
     extraInvestigationOnReveal: true
     effects:
