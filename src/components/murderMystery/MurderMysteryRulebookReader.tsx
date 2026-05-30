@@ -10,6 +10,7 @@ import {
   Box,
   Button,
   Chip,
+  Divider,
   LinearProgress,
   Stack,
   Typography,
@@ -24,8 +25,12 @@ import {
   normalizeRulebookText,
   useMeasuredRulebookPages,
 } from '@/components/murderMystery/rulebookPagination';
+import {
+  MurderMysteryReportableSpecialEventView,
+  MurderMysterySpecialEventOutcome,
+} from '@/types/murderMystery';
 
-type RulebookSection = 'prologue' | 'rolebook';
+type RulebookSection = 'prologue' | 'rolebook' | 'rules';
 
 interface MurderMysteryRulebookReaderProps {
   storageKey?: string;
@@ -39,10 +44,15 @@ interface MurderMysteryRulebookReaderProps {
   pageSx?: SxProps<Theme>;
   showProgressMarkers?: boolean;
   footerText?: string;
+  specialEvents?: MurderMysteryReportableSpecialEventView[];
+  onReportSpecialEvent?: (
+    eventId: string,
+    outcome: MurderMysterySpecialEventOutcome
+  ) => void;
 }
 
 const isRulebookSection = (value: unknown): value is RulebookSection =>
-  value === 'prologue' || value === 'rolebook';
+  value === 'prologue' || value === 'rolebook' || value === 'rules';
 
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
@@ -59,6 +69,8 @@ export default function MurderMysteryRulebookReader({
   pageSx,
   showProgressMarkers = true,
   footerText,
+  specialEvents = [],
+  onReportSpecialEvent,
 }: MurderMysteryRulebookReaderProps) {
   const secretMeasureRef = useRef<HTMLDivElement | null>(null);
   const prologuePages = useMemo(
@@ -74,7 +86,11 @@ export default function MurderMysteryRulebookReader({
   const [previewRatio, setPreviewRatio] = useState<number | null>(null);
   const [isScrubbingProgress, setIsScrubbingProgress] = useState(false);
   const pageCount =
-    section === 'rolebook' ? secretPages.length + 1 : prologuePages.length;
+    section === 'rolebook'
+      ? secretPages.length + 1
+      : section === 'rules'
+        ? 1
+        : prologuePages.length;
   const maxPageIndex = Math.max(pageCount - 1, 0);
   const isRolebookCover = section === 'rolebook' && pageIndex === 0;
   const clampPageIndex = (nextPageIndex: number) =>
@@ -132,7 +148,9 @@ export default function MurderMysteryRulebookReader({
         const savedPageCount =
           savedSection === 'rolebook'
             ? secretPages.length + 1
-            : prologuePages.length;
+            : savedSection === 'rules'
+              ? 1
+              : prologuePages.length;
         setPageIndex(clamp(savedPageIndex, 0, Math.max(savedPageCount - 1, 0)));
       }
     } catch {
@@ -263,7 +281,7 @@ export default function MurderMysteryRulebookReader({
           border: '1px solid rgba(247,241,222,0.16)',
         }}
       >
-        {(['prologue', 'rolebook'] as const).map((nextSection) => (
+        {(['prologue', 'rolebook', 'rules'] as const).map((nextSection) => (
           <Button
             key={nextSection}
             fullWidth
@@ -281,7 +299,11 @@ export default function MurderMysteryRulebookReader({
               },
             }}
           >
-            {nextSection === 'prologue' ? '프롤로그' : '인물북'}
+            {nextSection === 'prologue'
+              ? '프롤로그'
+              : nextSection === 'rolebook'
+                ? '룰지'
+                : '규칙'}
           </Button>
         ))}
       </Stack>
@@ -422,6 +444,94 @@ export default function MurderMysteryRulebookReader({
             >
               {prologuePages[pageIndex]}
             </Typography>
+          ) : section === 'rules' ? (
+            <Stack
+              spacing={1.4}
+              sx={{
+                height: '100%',
+                overflowY: 'auto',
+                pr: 0.5,
+                wordBreak: 'keep-all',
+              }}
+            >
+              <Box>
+                <Typography fontWeight={950} sx={{ mb: 0.7 }}>
+                  조사 카드 공개 규칙
+                </Typography>
+                <Typography sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.72 }}>
+                  {[
+                    '조사로 가져간 단서의 앞면은 본인만 확인합니다.',
+                    '본인이 전체공개하기를 누른 단서와 추가조사 단서는 모두가 공개 카드에서 볼 수 있습니다.',
+                    '공개하지 않은 단서는 다른 플레이어에게 뒷면 출처만 보입니다.',
+                  ].join('\n')}
+                </Typography>
+              </Box>
+              <Divider sx={{ borderColor: 'rgba(36,27,18,0.16)' }} />
+              <Box>
+                <Typography fontWeight={950} sx={{ mb: 0.7 }}>
+                  잠금 증언
+                </Typography>
+                {specialEvents.length > 0 ? (
+                  <Stack spacing={1}>
+                    {specialEvents.map((event) => (
+                      <Box
+                        key={event.id}
+                        sx={{
+                          p: 1.2,
+                          borderRadius: 1.5,
+                          backgroundColor: 'rgba(36,27,18,0.07)',
+                          border: '1px solid rgba(36,27,18,0.16)',
+                        }}
+                      >
+                        <Typography fontWeight={950}>{event.label}</Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            mt: 0.5,
+                            whiteSpace: 'pre-wrap',
+                            lineHeight: 1.65,
+                          }}
+                        >
+                          {event.description}
+                        </Typography>
+                        <Stack
+                          direction="row"
+                          spacing={0.8}
+                          sx={{ mt: 1 }}
+                          flexWrap="wrap"
+                          useFlexGap
+                        >
+                          <Button
+                            size="small"
+                            variant="contained"
+                            color="warning"
+                            onClick={() =>
+                              onReportSpecialEvent?.(event.id, 'reveal')
+                            }
+                          >
+                            공개
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="inherit"
+                            onClick={() =>
+                              onReportSpecialEvent?.(event.id, 'seal')
+                            }
+                          >
+                            폐기
+                          </Button>
+                        </Stack>
+                      </Box>
+                    ))}
+                  </Stack>
+                ) : (
+                  <Typography sx={{ color: '#6b5639', lineHeight: 1.68 }}>
+                    현재 처리할 잠금 증언 조건이 없습니다.
+                  </Typography>
+                )}
+              </Box>
+            </Stack>
           ) : (
             <Typography
               component="div"

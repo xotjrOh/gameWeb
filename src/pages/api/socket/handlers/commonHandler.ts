@@ -8,7 +8,7 @@ import {
 } from '@/types/socket';
 import { Room, Player, GameType } from '@/types/room';
 import _ from 'lodash';
-import { rooms, incrementRoomId } from '../state/gameState';
+import { rooms, timers, incrementRoomId } from '../state/gameState';
 import { Lock } from '../state/globalState';
 import {
   MESSAGES,
@@ -360,6 +360,10 @@ const commonHandler = (
       validateCannotLeave(room);
       validateOnlyHostRemoveRoom(room, sessionId);
 
+      if (timers[roomId]) {
+        clearTimeout(timers[roomId]);
+        delete timers[roomId];
+      }
       delete rooms[roomId];
       io.to(roomId).emit('room-closed', {
         message: MESSAGES.ROOM_CLOSED_BY_HOST,

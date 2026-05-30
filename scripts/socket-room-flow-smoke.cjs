@@ -464,7 +464,7 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       preReadResponse.ok &&
         preReadHtml.includes(firstRole.displayName) &&
         preReadHtml.includes('프롤로그') &&
-        preReadHtml.includes('인물북'),
+        preReadHtml.includes('룰지'),
       'pre-read link should render selected role sheet',
       { status: preReadResponse.status, url: preReadUrl.toString() }
     );
@@ -772,9 +772,9 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       turnRoleSequence
     );
 
-    const nonCurrentPlayerId = playerSessionIds.find(
-      (sessionId) => sessionId !== currentPlayerId
-    );
+    const nonCurrentPlayerId =
+      currentPlayerSnapshot?.investigation.turn?.players?.[1]?.playerId ??
+      playerSessionIds.find((sessionId) => sessionId !== currentPlayerId);
     assertCondition(
       Boolean(nonCurrentPlayerId),
       'non-current non-host investigation player missing'
@@ -792,6 +792,12 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
     assertCondition(
       Boolean(ownBackId),
       'current player own-item backId missing'
+    );
+    assertCondition(
+      ownTarget?.canInvestigateByViewer === false &&
+        ownTarget?.isOwnedFallbackForViewer === false,
+      'own belongings should stay blocked while non-owned cards remain',
+      ownTarget
     );
 
     const ownReserveResponse = await emitAck(
@@ -826,14 +832,43 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       ownPickResponse
     );
 
-    const backId =
-      currentPlayerSnapshot?.investigation.rounds
+    const initialNonCurrentSnapshot =
+      snapshotsBySession.get(nonCurrentPlayerId);
+    const reserveBack =
+      initialNonCurrentSnapshot?.investigation.rounds
         ?.find((round) => round.round === 1)
         ?.targets.find(
           (target) =>
             !target.isOwnedByViewer && target.availableBacks.length > 0
-        )?.availableBacks[0]?.backId ?? null;
-    assertCondition(Boolean(backId), 'map-mode backId missing from snapshot');
+        )
+        ?.availableBacks.find((back) => !back.extraInvestigationOnReveal) ??
+      initialNonCurrentSnapshot?.investigation.rounds
+        ?.find((round) => round.round === 1)
+        ?.targets.find(
+          (target) =>
+            !target.isOwnedByViewer && target.availableBacks.length > 0
+        )?.availableBacks[0] ??
+      null;
+    const reserveBackId = reserveBack?.backId ?? null;
+    assertCondition(
+      Boolean(reserveBackId),
+      'map-mode reservation backId missing from non-current snapshot'
+    );
+
+    const pickBackId =
+      currentPlayerSnapshot?.investigation.rounds
+        ?.find((round) => round.round === 1)
+        ?.targets.flatMap((target) =>
+          target.isOwnedByViewer ? [] : target.availableBacks
+        )
+        .find(
+          (back) =>
+            back.backId !== reserveBackId && !back.extraInvestigationOnReveal
+        )?.backId ?? null;
+    assertCondition(
+      Boolean(pickBackId),
+      'map-mode pick backId missing from current player snapshot'
+    );
 
     const reserveResponse = await emitAck(
       nonCurrentPlayerSocket,
@@ -841,7 +876,7 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       {
         roomId,
         sessionId: nonCurrentPlayerId,
-        backId,
+        backId: reserveBackId,
       }
     );
     assertCondition(
@@ -856,8 +891,48 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       nonCurrentPlayerId
     );
     assertCondition(
-      nonCurrentSnapshot.investigation.turn?.myReservation?.backId === backId,
+      nonCurrentSnapshot.investigation.turn?.myReservation?.backId ===
+        reserveBackId,
       'reservation was not persisted for reserving player'
+    );
+
+    const clearReserveResponse = await emitAck(
+      nonCurrentPlayerSocket,
+      'mm_clear_investigation_reservation',
+      {
+        roomId,
+        sessionId: nonCurrentPlayerId,
+      }
+    );
+    assertCondition(
+      clearReserveResponse?.success,
+      'mm_clear_investigation_reservation failed',
+      clearReserveResponse
+    );
+
+    nonCurrentSnapshot = await requestMurderSnapshot(
+      nonCurrentPlayerSocket,
+      roomId,
+      nonCurrentPlayerId
+    );
+    assertCondition(
+      !nonCurrentSnapshot.investigation.turn?.myReservation,
+      'reservation was not cleared after explicit clear'
+    );
+
+    const secondReserveResponse = await emitAck(
+      nonCurrentPlayerSocket,
+      'mm_set_investigation_reservation',
+      {
+        roomId,
+        sessionId: nonCurrentPlayerId,
+        backId: reserveBackId,
+      }
+    );
+    assertCondition(
+      secondReserveResponse?.success,
+      'second mm_set_investigation_reservation failed',
+      secondReserveResponse
     );
 
     disconnectSocket(nonCurrentPlayerSocket);
@@ -887,7 +962,8 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       nonCurrentPlayerId
     );
     assertCondition(
-      nonCurrentSnapshot.investigation.turn?.myReservation?.backId === backId,
+      nonCurrentSnapshot.investigation.turn?.myReservation?.backId ===
+        reserveBackId,
       'reservation was not restored after re-entry'
     );
 
@@ -897,7 +973,7 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       {
         roomId,
         sessionId: nonCurrentPlayerId,
-        backId,
+        backId: reserveBackId,
       }
     );
     assertCondition(
@@ -911,7 +987,7 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       {
         roomId,
         sessionId: currentPlayerId,
-        backId,
+        backId: pickBackId,
       }
     );
     assertCondition(
@@ -950,7 +1026,7 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
         (player) => player.id === currentPlayerId
       );
       assertCondition(
-        holder?.heldCardBacks.some((back) => back.backId === backId),
+        holder?.heldCardBacks.some((back) => back.backId === pickBackId),
         'all player snapshots should show the clue back held by the picker',
         { viewerSessionId: sessionId, holder }
       );
@@ -959,6 +1035,38 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
           (card) => card.id === pickedCard?.id
         ),
         'ordinary picked clue should not enter public clues before owner reveal',
+        {
+          viewerSessionId: sessionId,
+          publicClues: snapshot.clueVault.publicClues,
+        }
+      );
+    });
+    const autoPickedCard = refreshedReservedSnapshot?.clueVault.myClues.find(
+      (card) => card.backId === reserveBackId
+    );
+    assertCondition(
+      autoPickedCard?.canRevealPublicly === true &&
+        autoPickedCard?.isPublic === false,
+      'reserved card should be automatically picked when the reserving turn starts',
+      {
+        reserveBackId,
+        myClues: refreshedReservedSnapshot?.clueVault.myClues,
+      }
+    );
+    refreshedSnapshots.forEach(([sessionId, snapshot]) => {
+      const holder = snapshot.players.find(
+        (player) => player.id === nonCurrentPlayerId
+      );
+      assertCondition(
+        holder?.heldCardBacks.some((back) => back.backId === reserveBackId),
+        'all player snapshots should show the automatically picked reserved back',
+        { viewerSessionId: sessionId, holder }
+      );
+      assertCondition(
+        !snapshot.clueVault.publicClues.some(
+          (card) => card.id === autoPickedCard?.id
+        ),
+        'automatically picked ordinary clue should remain private before owner reveal',
         {
           viewerSessionId: sessionId,
           publicClues: snapshot.clueVault.publicClues,
@@ -1042,15 +1150,18 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
     );
     assertCondition(
       !refreshedReservedSnapshot?.investigation.turn?.myReservation,
-      'reservation should clear after another player takes the card'
+      'reservation should clear after automatic pickup'
     );
     assertCondition(
       refreshedReservedSnapshot?.investigation.rounds
         ?.flatMap((round) => round.targets)
         ?.every((target) =>
-          target.availableBacks.every((entry) => entry.backId !== backId)
+          target.availableBacks.every(
+            (entry) =>
+              entry.backId !== pickBackId && entry.backId !== reserveBackId
+          )
         ),
-      'revealed backId should disappear from later snapshots'
+      'picked and auto-picked backIds should disappear from later snapshots'
     );
     assertCondition(
       refreshedCurrentSnapshot?.investigation.turn?.currentPlayerId &&
@@ -1065,23 +1176,87 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
           refreshedCurrentSnapshot.investigation.turn?.currentPlayerId
       );
     assertCondition(
-      nextTurnPlayer?.roleId === 'fox',
-      'investigation turn should advance from jara to fox',
+      nextTurnPlayer?.roleId === 'rabbit_husband',
+      'investigation turn should advance past the auto-picked fox turn',
       nextTurnPlayer
     );
 
-    const round1ToDiscussResponse = await emitAck(
-      socketsBySession.get(hostSessionId),
-      'mm_host_next_phase',
-      {
+    let autoDiscussSnapshot = await requestMurderSnapshot(
+      hostSocket,
+      roomId,
+      hostSessionId
+    );
+    let autoAdvancePickCount = 0;
+    while (
+      autoDiscussSnapshot.phase === 'ROUND1_INVESTIGATE' &&
+      autoAdvancePickCount < 8
+    ) {
+      const activePlayerId =
+        autoDiscussSnapshot.investigation.turn?.currentPlayerId;
+      assertCondition(
+        Boolean(activePlayerId),
+        'round 1 auto-advance active player missing',
+        autoDiscussSnapshot.investigation.turn
+      );
+      const activeSocket = socketsBySession.get(activePlayerId);
+      const activeSnapshot = await requestMurderSnapshot(
+        activeSocket,
         roomId,
-        sessionId: hostSessionId,
+        activePlayerId
+      );
+      const nextBack =
+        activeSnapshot.investigation.rounds
+          ?.find((round) => round.round === 1)
+          ?.targets.flatMap((target) =>
+            target.canInvestigateByViewer ? target.availableBacks : []
+          )
+          .find((back) => !back.extraInvestigationOnReveal) ??
+        activeSnapshot.investigation.rounds
+          ?.find((round) => round.round === 1)
+          ?.targets.flatMap((target) =>
+            target.canInvestigateByViewer ? target.availableBacks : []
+          )[0] ??
+        null;
+      assertCondition(
+        Boolean(nextBack?.backId),
+        'round 1 auto-advance card back missing',
+        activeSnapshot.investigation.rounds
+      );
+
+      const autoPickResponse = await emitAck(
+        activeSocket,
+        'mm_submit_investigation',
+        {
+          roomId,
+          sessionId: activePlayerId,
+          backId: nextBack.backId,
+        }
+      );
+      assertCondition(
+        autoPickResponse?.success,
+        'round 1 auto-advance pick failed',
+        autoPickResponse
+      );
+      autoAdvancePickCount += 1;
+      autoDiscussSnapshot = await requestMurderSnapshot(
+        hostSocket,
+        roomId,
+        hostSessionId
+      );
+    }
+    assertCondition(
+      autoDiscussSnapshot.phase === 'ROUND1_DISCUSS',
+      'round 1 investigation should auto-advance to discussion after all turns',
+      {
+        phase: autoDiscussSnapshot.phase,
+        turn: autoDiscussSnapshot.investigation.turn,
+        autoAdvancePickCount,
       }
     );
     assertCondition(
-      round1ToDiscussResponse?.success,
-      'host should advance from round 1 investigation to discussion',
-      round1ToDiscussResponse
+      autoDiscussSnapshot.phaseTimer?.durationSec === 600,
+      'round 1 discussion should expose the scenario time limit',
+      autoDiscussSnapshot.phaseTimer
     );
 
     const discussToRound2BriefingResponse = await emitAck(

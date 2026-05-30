@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -53,6 +53,9 @@ export default function MurderMysteryGameScreen({
   const sessionId = session?.user.id ?? '';
   const reservationChangeSourceRef = useRef<'self' | null>(null);
   const previousReservationBackIdRef = useRef<string | null>(null);
+  const [pendingReservationBackId, setPendingReservationBackId] = useState<
+    string | null
+  >(null);
 
   useCheckVersion(socket);
   useUpdateSocketId(socket, session, roomId);
@@ -251,15 +254,41 @@ export default function MurderMysteryGameScreen({
   };
 
   const handleSetInvestigationReservation = (backId: string) => {
-    emitWithAck(
+    if (!socket) {
+      enqueueSnackbar('소켓 연결 대기 중입니다.', { variant: 'warning' });
+      return;
+    }
+    setPendingReservationBackId(backId);
+    const looseSocket = socket as unknown as {
+      emit: (
+        event: string,
+        data: unknown,
+        callback: (response: AckResponse) => void
+      ) => void;
+    };
+    looseSocket.emit(
       'mm_set_investigation_reservation',
       { roomId, sessionId, backId },
-      '카드를 예약했습니다.'
+      (response) => {
+        setPendingReservationBackId((current) =>
+          current === backId ? null : current
+        );
+        if (!response.success) {
+          enqueueSnackbar(response.message ?? '요청 처리에 실패했습니다.', {
+            variant: 'error',
+          });
+          return;
+        }
+        enqueueSnackbar(response.message ?? '카드를 예약했습니다.', {
+          variant: 'success',
+        });
+      }
     );
   };
 
   const handleClearInvestigationReservation = () => {
     reservationChangeSourceRef.current = 'self';
+    setPendingReservationBackId(null);
     emitWithAck(
       'mm_clear_investigation_reservation',
       { roomId, sessionId },
@@ -417,6 +446,7 @@ export default function MurderMysteryGameScreen({
       onSubmitInvestigationByBack={handleSubmitInvestigationByBack}
       onSetReservation={handleSetInvestigationReservation}
       onClearReservation={handleClearInvestigationReservation}
+      pendingReservationBackId={pendingReservationBackId}
       onRevealMyClue={handleRevealMyClue}
       onSubmitVote={handleSubmitVote}
       onSubmitSecretGuesses={handleSubmitSecretGuesses}

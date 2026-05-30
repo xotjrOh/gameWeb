@@ -475,6 +475,8 @@ export interface MurderMysteryInvestigationTargetView
   remainingClues: number;
   isExhausted: boolean;
   isOwnedByViewer: boolean;
+  canInvestigateByViewer: boolean;
+  isOwnedFallbackForViewer: boolean;
   availableBacks: MurderMysteryInvestigationBackCardView[];
 }
 
@@ -498,6 +500,7 @@ export interface MurderMysteryInvestigationTurnPlayerView {
 export interface MurderMysteryInvestigationTurnView {
   enabled: boolean;
   currentPlayerId: string | null;
+  currentPlayerIndex: number;
   orderedPlayerIds: string[];
   completedPlayerIds: string[];
   turnStartedAt: number | null;

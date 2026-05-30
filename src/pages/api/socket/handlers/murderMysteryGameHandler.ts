@@ -1,7 +1,8 @@
 import { Server } from 'socket.io';
-import { rooms } from '../state/gameState';
+import { rooms, timers } from '../state/gameState';
 import { validatePlayer, validateRoom } from '../utils/validation';
 import {
+  advanceExpiredMurderMysteryDiscussionIfNeeded,
   appendMurderMysteryAnnouncement,
   buildMurderMysteryRoleShareText,
   buildMurderMysterySnapshot,
@@ -44,10 +45,74 @@ import {
   ServerToClientEvents,
 } from '@/types/socket';
 
+const clearMurderMysteryPhaseTimer = (roomId: string) => {
+  if (!timers[roomId]) {
+    return;
+  }
+  clearTimeout(timers[roomId]);
+  delete timers[roomId];
+};
+
 const murderMysteryGameHandler = (
   io: Server<ClientToServerEvents, ServerToClientEvents>,
   socket: ServerSocketType
 ) => {
+  const scheduleMurderMysteryPhaseTimer = (roomId: string) => {
+    clearMurderMysteryPhaseTimer(roomId);
+
+    let room: ReturnType<typeof toMurderMysteryRoom>;
+    try {
+      room = toMurderMysteryRoom(validateRoom(roomId));
+    } catch {
+      return;
+    }
+
+    const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
+    const advanced = advanceExpiredMurderMysteryDiscussionIfNeeded(
+      room,
+      scenario
+    );
+    if (advanced) {
+      emitMurderMysterySnapshots(room, io);
+      io.emit('room-updated', rooms);
+    }
+
+    const currentStep = getFlowStepByPhase(scenario, room.gameData.phase);
+    if (currentStep?.kind !== 'discuss') {
+      return;
+    }
+
+    const durationSec = room.gameData.phaseDurationSec;
+    const startedAt = room.gameData.phaseStartedAt;
+    if (!durationSec || !startedAt) {
+      return;
+    }
+
+    const remainingMs = Math.max(
+      durationSec * 1000 - (Date.now() - startedAt),
+      0
+    );
+    timers[roomId] = setTimeout(() => {
+      scheduleMurderMysteryPhaseTimer(roomId);
+    }, remainingMs + 50);
+  };
+
+  const emitMurderMysterySnapshotsWithTimerSync = (
+    room: ReturnType<typeof toMurderMysteryRoom>,
+    scenario = getMurderMysteryScenario(room.gameData.scenarioId)
+  ) => {
+    const advanced = advanceExpiredMurderMysteryDiscussionIfNeeded(
+      room,
+      scenario
+    );
+    emitMurderMysterySnapshots(room, io);
+    scheduleMurderMysteryPhaseTimer(room.roomId);
+    if (advanced) {
+      io.emit('room-updated', rooms);
+    }
+    return advanced;
+  };
+
   socket.on('mm_get_state', ({ roomId, sessionId }, callback) => {
     try {
       const room = toMurderMysteryRoom(validateRoom(roomId));
@@ -58,6 +123,14 @@ const murderMysteryGameHandler = (
       }
 
       socket.join(roomId);
+      const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
+      const advanced = advanceExpiredMurderMysteryDiscussionIfNeeded(
+        room,
+        scenario
+      );
+      if (advanced) {
+        emitMurderMysterySnapshotsWithTimerSync(room, scenario);
+      }
       const snapshot = buildMurderMysterySnapshot(
         room,
         sessionId,
@@ -81,7 +154,7 @@ const murderMysteryGameHandler = (
       room.host.socketId = socket.id;
 
       startMurderMysteryGame(room, scenario);
-      emitMurderMysterySnapshots(room, io);
+      emitMurderMysterySnapshotsWithTimerSync(room, scenario);
       io.emit('room-updated', rooms);
       return callback({ success: true });
     } catch (error) {
@@ -120,7 +193,7 @@ const murderMysteryGameHandler = (
         validatePlayer(room, sessionId);
 
         updateMurderMysterySeatPosition(room, sessionId, playerId, position);
-        emitMurderMysterySnapshots(room, io);
+        emitMurderMysterySnapshotsWithTimerSync(room);
         return callback({ success: true });
       } catch (error) {
         return callback({ success: false, message: (error as Error).message });
@@ -134,7 +207,7 @@ const murderMysteryGameHandler = (
       ensureMurderMysteryHost(room, sessionId);
 
       resetMurderMysterySeatLayout(room);
-      emitMurderMysterySnapshots(room, io);
+      emitMurderMysterySnapshotsWithTimerSync(room);
       return callback({ success: true });
     } catch (error) {
       return callback({ success: false, message: (error as Error).message });
@@ -156,7 +229,7 @@ const murderMysteryGameHandler = (
           roleIds
         );
 
-        emitMurderMysterySnapshots(room, io);
+        emitMurderMysterySnapshotsWithTimerSync(room, scenario);
         io.emit('room-updated', rooms);
         return callback({
           success: true,
@@ -176,7 +249,7 @@ const murderMysteryGameHandler = (
       validatePlayer(room, sessionId);
 
       clearMurderMysteryRolePreferences(room, sessionId);
-      emitMurderMysterySnapshots(room, io);
+      emitMurderMysterySnapshotsWithTimerSync(room);
       io.emit('room-updated', rooms);
       return callback({
         success: true,
@@ -208,7 +281,7 @@ const murderMysteryGameHandler = (
         });
       });
 
-      emitMurderMysterySnapshots(room, io);
+      emitMurderMysterySnapshotsWithTimerSync(room, scenario);
       io.emit('room-updated', rooms);
       return callback({ success: true });
     } catch (error) {
@@ -224,7 +297,7 @@ const murderMysteryGameHandler = (
 
       const result = markMurderMysteryPhaseRead(room, scenario, sessionId);
 
-      emitMurderMysterySnapshots(room, io);
+      emitMurderMysterySnapshotsWithTimerSync(room, scenario);
       if (result.advanced) {
         io.emit('room-updated', rooms);
       }
@@ -247,7 +320,7 @@ const murderMysteryGameHandler = (
 
       const result = markMurderMysteryPhaseRead(room, scenario, sessionId);
 
-      emitMurderMysterySnapshots(room, io);
+      emitMurderMysterySnapshotsWithTimerSync(room, scenario);
       if (result.advanced) {
         io.emit('room-updated', rooms);
       }
@@ -281,19 +354,24 @@ const murderMysteryGameHandler = (
         );
 
         if (result.mode === 'auto') {
-          result.revealResult.revealedParts.forEach((part) => {
-            emitMurderMysteryPartRevealed(room, io, {
-              partId: part.id,
-              partName: part.name,
-              byPlayerId: sessionId,
-              cardId: result.cardId,
-              revealedCount: room.gameData.revealedPartIds.length,
-              totalCount: scenario.parts.length,
+          [result, ...result.automaticResults].forEach((entry) => {
+            entry.revealResult.revealedParts.forEach((part) => {
+              emitMurderMysteryPartRevealed(room, io, {
+                partId: part.id,
+                partName: part.name,
+                byPlayerId: entry.playerId,
+                cardId: entry.cardId,
+                revealedCount: room.gameData.revealedPartIds.length,
+                totalCount: scenario.parts.length,
+              });
             });
           });
         }
 
-        emitMurderMysterySnapshots(room, io);
+        emitMurderMysterySnapshotsWithTimerSync(room, scenario);
+        if (result.phaseAdvanced) {
+          io.emit('room-updated', rooms);
+        }
         return callback({
           success: true,
           extraInvestigation:
@@ -323,7 +401,7 @@ const murderMysteryGameHandler = (
           sessionId,
           backId
         );
-        emitMurderMysterySnapshots(room, io);
+        emitMurderMysterySnapshotsWithTimerSync(room, scenario);
         return callback({ success: true });
       } catch (error) {
         return callback({ success: false, message: (error as Error).message });
@@ -340,7 +418,7 @@ const murderMysteryGameHandler = (
         const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
 
         clearMurderMysteryInvestigationReservation(room, scenario, sessionId);
-        emitMurderMysterySnapshots(room, io);
+        emitMurderMysterySnapshotsWithTimerSync(room, scenario);
         return callback({ success: true });
       } catch (error) {
         return callback({ success: false, message: (error as Error).message });
@@ -372,7 +450,7 @@ const murderMysteryGameHandler = (
         });
       });
 
-      emitMurderMysterySnapshots(room, io);
+      emitMurderMysterySnapshotsWithTimerSync(room, scenario);
       return callback({
         success: true,
         message: result.alreadyPublic
@@ -411,7 +489,7 @@ const murderMysteryGameHandler = (
           });
         });
 
-        emitMurderMysterySnapshots(room, io);
+        emitMurderMysterySnapshotsWithTimerSync(room, scenario);
         return callback({ success: true });
       } catch (error) {
         return callback({ success: false, message: (error as Error).message });
@@ -445,7 +523,7 @@ const murderMysteryGameHandler = (
           });
         });
 
-        emitMurderMysterySnapshots(room, io);
+        emitMurderMysterySnapshotsWithTimerSync(room, scenario);
         return callback({ success: true });
       } catch (error) {
         return callback({ success: false, message: (error as Error).message });
@@ -483,7 +561,7 @@ const murderMysteryGameHandler = (
           io.emit('room-updated', rooms);
         }
 
-        emitMurderMysterySnapshots(room, io);
+        emitMurderMysterySnapshotsWithTimerSync(room, scenario);
         return callback({ success: true });
       } catch (error) {
         return callback({ success: false, message: (error as Error).message });
@@ -501,7 +579,7 @@ const murderMysteryGameHandler = (
 
         submitMurderMysterySecretGuesses(room, scenario, sessionId, guesses);
 
-        emitMurderMysterySnapshots(room, io);
+        emitMurderMysterySnapshotsWithTimerSync(room, scenario);
         return callback({ success: true });
       } catch (error) {
         return callback({ success: false, message: (error as Error).message });
@@ -525,7 +603,7 @@ const murderMysteryGameHandler = (
           judgement
         );
 
-        emitMurderMysterySnapshots(room, io);
+        emitMurderMysterySnapshotsWithTimerSync(room, scenario);
         return callback({ success: true });
       } catch (error) {
         return callback({ success: false, message: (error as Error).message });
@@ -549,7 +627,7 @@ const murderMysteryGameHandler = (
           : '최종 투표가 집계되었습니다. 사건 지목은 오답입니다.'
       );
 
-      emitMurderMysterySnapshots(room, io);
+      emitMurderMysterySnapshotsWithTimerSync(room, scenario);
       io.emit('room-updated', rooms);
       return callback({ success: true });
     } catch (error) {
@@ -573,7 +651,7 @@ const murderMysteryGameHandler = (
         currentStep.readAloud ?? scenario.intro.readAloud
       );
       emitMurderMysteryAnnouncement(room, io, announcement);
-      emitMurderMysterySnapshots(room, io);
+      emitMurderMysterySnapshotsWithTimerSync(room, scenario);
       return callback({ success: true });
     } catch (error) {
       return callback({ success: false, message: (error as Error).message });
@@ -600,7 +678,7 @@ const murderMysteryGameHandler = (
         `${scenario.endbook.common}\n${variant}\n${scenario.endbook.closingLine}`
       );
       emitMurderMysteryAnnouncement(room, io, announcement);
-      emitMurderMysterySnapshots(room, io);
+      emitMurderMysterySnapshotsWithTimerSync(room, scenario);
       return callback({ success: true });
     } catch (error) {
       return callback({ success: false, message: (error as Error).message });
@@ -612,9 +690,11 @@ const murderMysteryGameHandler = (
       const room = toMurderMysteryRoom(validateRoom(roomId));
       ensureMurderMysteryHost(room, sessionId);
       room.host.socketId = socket.id;
+      const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
       resetMurderMysteryGame(room, room.gameData.scenarioId);
 
-      emitMurderMysterySnapshots(room, io);
+      clearMurderMysteryPhaseTimer(roomId);
+      emitMurderMysterySnapshotsWithTimerSync(room, scenario);
       io.emit('room-updated', rooms);
       return callback({ success: true });
     } catch (error) {
