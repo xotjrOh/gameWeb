@@ -1,0 +1,72 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --preserve-symlinks-main \"$(git rev-parse --show-toplevel)/.codex/hooks/codex-harness.cjs\" session-start",
+            "commandWindows": "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"node --preserve-symlinks-main ([System.IO.Path]::Combine((git rev-parse --show-toplevel), '.codex', 'hooks', 'codex-harness.cjs')) session-start\"",
+            "timeout": 10,
+            "statusMessage": "Codex harness: loading repo checklist"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --preserve-symlinks-main \"$(git rev-parse --show-toplevel)/.codex/hooks/codex-harness.cjs\" user-prompt",
+            "commandWindows": "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"node --preserve-symlinks-main ([System.IO.Path]::Combine((git rev-parse --show-toplevel), '.codex', 'hooks', 'codex-harness.cjs')) user-prompt\"",
+            "timeout": 10,
+            "statusMessage": "Codex harness: classifying prompt"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "^Bash$|^apply_patch$|^Edit$|^Write$|^functions\\.shell_command$|^functions\\.apply_patch$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --preserve-symlinks-main \"$(git rev-parse --show-toplevel)/.codex/hooks/codex-harness.cjs\" pre-tool",
+            "commandWindows": "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"node --preserve-symlinks-main ([System.IO.Path]::Combine((git rev-parse --show-toplevel), '.codex', 'hooks', 'codex-harness.cjs')) pre-tool\"",
+            "timeout": 10,
+            "statusMessage": "Codex harness: checking tool intent"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "^Bash$|^apply_patch$|^Edit$|^Write$|^functions\\.shell_command$|^functions\\.apply_patch$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --preserve-symlinks-main \"$(git rev-parse --show-toplevel)/.codex/hooks/codex-harness.cjs\" post-tool",
+            "commandWindows": "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"node --preserve-symlinks-main ([System.IO.Path]::Combine((git rev-parse --show-toplevel), '.codex', 'hooks', 'codex-harness.cjs')) post-tool\"",
+            "timeout": 10,
+            "statusMessage": "Codex harness: updating validation reminder"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --preserve-symlinks-main \"$(git rev-parse --show-toplevel)/.codex/hooks/codex-harness.cjs\" stop",
+            "commandWindows": "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"node --preserve-symlinks-main ([System.IO.Path]::Combine((git rev-parse --show-toplevel), '.codex', 'hooks', 'codex-harness.cjs')) stop\"",
+            "timeout": 10,
+            "statusMessage": "Codex harness: final validation gate"
+          }
+        ]
+      }
+    ]
+  }
+}
