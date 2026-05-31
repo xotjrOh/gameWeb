@@ -939,7 +939,7 @@ cards:
     text: |
       목을 조른 흔적이나 둔기 외상도 없다. 
       등껍질 한쪽에 얕은 긁힌 흔적만 있다.
-      의사들 소견으로는 적신 수건으로 질식사의 가능성도 없을거라한다.
+      의사들 소견으로는 찰과상이 없으니 적신 수건으로 입을 막은건 아닐거라한다.
     imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/clue/turtle-body.png'
     imageAlt: '재활수조실에 쓰러진 거북의 사체 사진'
     backId: back_turtle_body
@@ -950,7 +950,7 @@ cards:
     title: '아내토끼 소지품 1'
     text: |
       작고 하얀 고무링이 나왔다.
-      이거 다른 물건에 들어가는 고무패킹 아닌가?
+      다른 물건에 들어가는 고무패킹으로 보인다.
     imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/clue/rubber-ring.png'
     imageAlt: '작고 하얀 고무링'
     backId: back_rubber_ring
@@ -970,9 +970,9 @@ cards:
     title: '윤유성 소지품 2'
     text: |
       오완주의 자필 고백문이다.
-      과거 대표 선발전 직전 윤유성의 물병에 수면유도제를 넣었다고 적혀 있다.
+      20XX년 육상 국가대표 선발전 결승을 앞두고, 대기실에서 윤유성의 물병에 수면유도제를 넣었다고 적혀 있다.
     imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/clue/turtle-envelope.png'
-    imageAlt: '거북의 자필 고백이 든 서류봉투'
+    imageAlt: '자필 진술서와 처방전 사본이 든 거북 서류봉투'
     backId: back_turtle_envelope
     effects:
       - type: addPart
