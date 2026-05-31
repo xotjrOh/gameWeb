@@ -49,6 +49,12 @@ const panelPaperSx = {
   borderRadius: 3,
 } as const;
 
+const formatInvestigationCountText = ({
+  remainingClues,
+}: {
+  remainingClues: number;
+}) => (remainingClues > 0 ? '조사 가능' : '조사 완료');
+
 const ClueCardImage = ({
   card,
 }: {
@@ -471,7 +477,7 @@ const InvestigationBackDeckSheet = ({
           <Stack direction="row" spacing={0.8} flexWrap="wrap">
             <Chip
               size="small"
-              label={`남은 카드 ${selectedTarget.remainingClues}/${selectedTarget.totalClues}`}
+              label={formatInvestigationCountText(selectedTarget)}
               color={selectedTarget.isExhausted ? 'default' : 'primary'}
             />
             {turn?.myReservation ? (
@@ -667,7 +673,7 @@ const InvestigationMapBoard = ({
                 </Typography>
                 <Chip
                   size="small"
-                  label={`${hotspot.remainingClues}/${hotspot.totalClues}`}
+                  label={formatInvestigationCountText(hotspot)}
                   color={hotspot.isExhausted ? 'default' : 'primary'}
                   sx={{ alignSelf: 'flex-end' }}
                 />
@@ -854,7 +860,7 @@ const LegacyInvestigatePanel = ({
               <Stack direction="row" spacing={0.8} flexWrap="wrap">
                 <Chip
                   size="small"
-                  label={`남은 단서 ${target.remainingClues}/${target.totalClues}`}
+                  label={formatInvestigationCountText(target)}
                   color={target.isExhausted ? 'default' : 'primary'}
                 />
                 <Chip

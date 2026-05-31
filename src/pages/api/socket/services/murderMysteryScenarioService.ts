@@ -280,6 +280,7 @@ const normalizeInvestigationTargets = ({
     const sectionId = asNonEmptyString(targetRecord.sectionId);
     const order = asInteger(targetRecord.order);
     const icon = asNonEmptyString(targetRecord.icon);
+    const repeatable = targetRecord.repeatable === true;
     const cardBack = normalizeCardBackStyle(targetRecord.cardBack);
 
     const cardPool = [
@@ -309,6 +310,7 @@ const normalizeInvestigationTargets = ({
       sectionId,
       order,
       icon,
+      ...(repeatable ? { repeatable } : {}),
       cardBack,
       cardPool,
     };
@@ -1086,6 +1088,11 @@ const normalizeCards = ({
         typeof cardRecord.extraInvestigationOnReveal === 'boolean',
       `${fileName}: card(${id}) extraInvestigationOnReveal must be boolean`
     );
+    assertCondition(
+      cardRecord.publicRevealDisabled === undefined ||
+        typeof cardRecord.publicRevealDisabled === 'boolean',
+      `${fileName}: card(${id}) publicRevealDisabled must be boolean`
+    );
 
     const text = requireString(
       cardRecord.text,
@@ -1113,6 +1120,8 @@ const normalizeCards = ({
       back: normalizeCardBackStyle(cardRecord.back),
       extraInvestigationOnReveal:
         cardRecord.extraInvestigationOnReveal === true ? true : undefined,
+      publicRevealDisabled:
+        cardRecord.publicRevealDisabled === true ? true : undefined,
       effects,
     };
   });

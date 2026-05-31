@@ -161,22 +161,18 @@ parts:
     name: '토끼 가족 사진'
     source: '한다정의 소지품'
     note: '윤슬의 죽음을 감정적으로 암시한다.'
-  - id: part_wife_damp_handkerchief
-    name: '한다정의 젖은 손수건'
-    source: '한다정의 소지품'
-    note: '한다정도 물기 있는 물건을 숨기고 있었다는 의심을 만든다.'
   - id: part_medical_wing_rumor
     name: '의료동에서 도는 소문'
     source: '의료동 소문'
     note: '선발전 우승이 윤슬의 수술 기회와 연결됐다는 소문이다.'
   - id: part_medical_shoe_cabinet
     name: '의료동 신발장'
-    source: '의료동 입구'
+    source: '의료동 신발장'
     note: '의료동에 드나든 사람이 조희수뿐이었다는 직원 증언이다.'
-  - id: part_corridor_shoe_sound
-    name: '복도에서 들린 구두소리'
-    source: '기자 대기 구역'
-    note: '누군가 딱딱한 구두굽 소리로 의료동 쪽을 지나갔다는 증언이다.'
+  - id: part_medical_shoe_cabinet_recheck
+    name: '의료동 신발장'
+    source: '의료동 신발장'
+    note: '신발장 깊숙한 칸 안쪽에서 젖은 구두가 발견된다.'
   - id: part_liver_compatibility
     name: '간 적합성 문서'
     source: '서기준의 소지품'
@@ -392,14 +388,12 @@ investigations:
           - r1_turtle_envelope
           - r1_rubber_ring
           - r1_rabbit_family
-          - r1_wife_damp_handkerchief
           - r1_syringe_trace
           - r1_empty_vial
           - r1_liver_compatibility
           - r1_past_killing_photo
           - r1_medical_wing_rumor
           - r1_medical_shoe_cabinet
-          - r1_corridor_shoe_sound
           - r1_dragon_king_rumor_1
           - r1_dragon_king_rumor_2
           - r1_siphon_guide
@@ -452,13 +446,6 @@ investigations:
           yPct: 61
           widthPct: 19
           heightPct: 29
-        - id: map_r1_wife_damp_handkerchief
-          targetId: r1_wife_damp_handkerchief
-          label: '아내토끼의 소지품 3'
-          xPct: 43
-          yPct: 74
-          widthPct: 17
-          heightPct: 14
         - id: map_r1_syringe_trace
           targetId: r1_syringe_trace
           label: '조희수의 소지품 1'
@@ -500,13 +487,6 @@ investigations:
           xPct: 17
           yPct: 4
           widthPct: 12
-          heightPct: 12
-        - id: map_r1_corridor_shoe_sound
-          targetId: r1_corridor_shoe_sound
-          label: '복도 구두소리'
-          xPct: 43
-          yPct: 4
-          widthPct: 10
           heightPct: 12
         - id: map_r1_dragon_king_rumor_1
           targetId: r1_dragon_king_rumor_1
@@ -639,20 +619,6 @@ investigations:
             shortLabel: '아내토끼 소지품 2'
           cardPool:
             - card_rabbit_family
-        - id: r1_wife_damp_handkerchief
-          label: '아내토끼의 소지품 3'
-          targetType: item
-          entityKey: wife_damp_handkerchief
-          containerId: belongings_rabbit_wife
-          containerLabel: '아내토끼의 소지품'
-          sectionId: pre_scene
-          order: 45
-          icon: '🧻'
-          cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/rabbit-wife.png'
-            shortLabel: '아내토끼 소지품 3'
-          cardPool:
-            - card_wife_damp_handkerchief
         - id: r1_syringe_trace
           label: '조희수의 소지품 1'
           targetType: item
@@ -720,6 +686,7 @@ investigations:
           sectionId: pre_scene
           order: 85
           icon: '🏥'
+          repeatable: true
           cardBack:
             imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
             shortLabel: '의료동에서 도는 소문'
@@ -732,23 +699,13 @@ investigations:
           sectionId: pre_scene
           order: 86
           icon: '👞'
+          repeatable: true
           cardBack:
             imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
             shortLabel: '의료동 신발장'
           cardPool:
-            - card_medical_shoe_cabinet
-        - id: r1_corridor_shoe_sound
-          label: '복도에서 들은 구두소리'
-          targetType: location
-          entityKey: corridor_shoe_sound
-          sectionId: pre_scene
-          order: 87
-          icon: '👞'
-          cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-corridor.svg'
-            shortLabel: '복도에서 들은 구두소리'
-          cardPool:
-            - card_corridor_shoe_sound
+            - card_medical_shoe_cabinet_first
+            - card_medical_shoe_cabinet_recheck
         - id: r1_dragon_king_rumor_1
           label: '용왕에 대한 소문1'
           targetType: item
@@ -756,6 +713,7 @@ investigations:
           sectionId: pre_scene
           order: 90
           icon: '👑'
+          repeatable: true
           cardBack:
             imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/dragon-king.png'
             shortLabel: '용왕에 대한 소문1'
@@ -768,6 +726,7 @@ investigations:
           sectionId: pre_scene
           order: 92
           icon: '👑'
+          repeatable: true
           cardBack:
             imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/dragon-king.png'
             shortLabel: '용왕에 대한 소문2'
@@ -845,20 +804,6 @@ investigations:
             shortLabel: '아내토끼 소지품 2'
           cardPool:
             - card_rabbit_family
-        - id: r1_wife_damp_handkerchief
-          label: '아내토끼의 소지품 3'
-          targetType: item
-          entityKey: wife_damp_handkerchief
-          containerId: belongings_rabbit_wife
-          containerLabel: '아내토끼의 소지품'
-          sectionId: pre_scene
-          order: 45
-          icon: '🧻'
-          cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/rabbit-wife.png'
-            shortLabel: '아내토끼 소지품 3'
-          cardPool:
-            - card_wife_damp_handkerchief
         - id: r1_syringe_trace
           label: '조희수의 소지품 1'
           targetType: item
@@ -926,6 +871,7 @@ investigations:
           sectionId: pre_scene
           order: 85
           icon: '🏥'
+          repeatable: true
           cardBack:
             imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
             shortLabel: '의료동에서 도는 소문'
@@ -938,23 +884,13 @@ investigations:
           sectionId: pre_scene
           order: 86
           icon: '👞'
+          repeatable: true
           cardBack:
             imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
             shortLabel: '의료동 신발장'
           cardPool:
-            - card_medical_shoe_cabinet
-        - id: r1_corridor_shoe_sound
-          label: '복도에서 들은 구두소리'
-          targetType: location
-          entityKey: corridor_shoe_sound
-          sectionId: pre_scene
-          order: 87
-          icon: '👞'
-          cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-corridor.svg'
-            shortLabel: '복도에서 들은 구두소리'
-          cardPool:
-            - card_corridor_shoe_sound
+            - card_medical_shoe_cabinet_first
+            - card_medical_shoe_cabinet_recheck
         - id: r1_dragon_king_rumor_1
           label: '용왕에 대한 소문1'
           targetType: item
@@ -962,6 +898,7 @@ investigations:
           sectionId: pre_scene
           order: 90
           icon: '👑'
+          repeatable: true
           cardBack:
             imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/dragon-king.png'
             shortLabel: '용왕에 대한 소문1'
@@ -974,6 +911,7 @@ investigations:
           sectionId: pre_scene
           order: 92
           icon: '👑'
+          repeatable: true
           cardBack:
             imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/dragon-king.png'
             shortLabel: '용왕에 대한 소문2'
@@ -1135,47 +1073,38 @@ cards:
     effects:
       - type: addPart
         partId: part_rabbit_family
-  - id: card_wife_damp_handkerchief
-    title: '아내토끼 소지품 3'
-    text: |
-      한다정의 손수건 한쪽이 축축하다.
-      세탁실 세제 냄새가 희미하게 나고, 손수건 끝에는 물기를 닦은 듯한 자국이 남아 있다.
-      한다정은 딸 사진을 닦다가 젖었다고 말한다.
-    backId: back_wife_damp_handkerchief
-    effects:
-      - type: addPart
-        partId: part_wife_damp_handkerchief
   - id: card_medical_wing_rumor
     title: '의료동에서 도는 소문'
     text: |
       의료동에서는 윤유성이 선발전에서 이겼다면 윤슬이 수술을 받을 수 있었을 거라는 말이 돈다.
       경기 우승으로 수술을 받았으면 살 확률이 높았을텐데..
+    publicRevealDisabled: true
     backId: back_medical_wing_rumor
     effects:
       - type: addPart
         partId: part_medical_wing_rumor
-  - id: card_medical_shoe_cabinet
+  - id: card_medical_shoe_cabinet_first
     title: '의료동 신발장'
     text: |
-      의료동 입구 신발장이다.
-      지금 보이는 신발과 슬리퍼에는 특별히 젖은 흔적이 없다.
-      의료동 직원은 본행사 시작 때부터 오완주의 사망이 확인되기 전까지 의료동에 출입한 사람은 조희수뿐이었다고 말했다.
+      의료동 입구 신발장을 겉에서 확인했다.
+      눈에 보이는 신발과 슬리퍼에는 특별히 젖은 흔적이 없다.
+      의료동 직원은 본행사 시작부터 여우의 비명이 있기까지 의료동 출입자는 조희수뿐이었다고 말했다.
     textHighlights:
-      - '본행사 시작 때부터 오완주의 사망이 확인되기 전까지 의료동에 출입한 사람은 조희수뿐이었다'
-    backId: back_medical_shoe_cabinet
+      - '본행사 시작부터 여우의 비명이 있기까지 의료동 출입자는 조희수뿐이었다'
+    publicRevealDisabled: true
+    backId: back_medical_shoe_cabinet_first
     effects:
       - type: addPart
         partId: part_medical_shoe_cabinet
-  - id: card_corridor_shoe_sound
-    title: '복도에서 들은 구두소리'
+  - id: card_medical_shoe_cabinet_recheck
+    title: '의료동 신발장'
     text: |
-      기자 대기 구역 쪽에서 나온 짧은 목격담이다.
-      오완주가 발견되기 전, 재활수조실 바깥 복도에서 딱딱한 구두굽 소리가 의료동 쪽으로 멀어지는 것을 들었다고 한다.
-      누가 지나갔는지는 보지 못했다.
-    backId: back_corridor_shoe_sound
+      신발장 깊숙한 칸 안쪽에 젖은 구두 한 켤레가 놓여 있다.
+    publicRevealDisabled: true
+    backId: back_medical_shoe_cabinet_recheck
     effects:
       - type: addPart
-        partId: part_corridor_shoe_sound
+        partId: part_medical_shoe_cabinet_recheck
   - id: card_liver_compatibility
     title: '서기준 소지품 1'
     text: |
@@ -1199,6 +1128,7 @@ cards:
     title: '조희수 소지품 2'
     text: |
       조희수의 품 속에서 빈 약병이 발견되었다.
+      약병 라벨에는 피가 묻어 약명이 가려져 있다.
     backId: back_empty_vial
     effects:
       - type: addPart
@@ -1279,6 +1209,7 @@ cards:
     text: |
       용왕이 이름을 알린 뒤 가난한 자들도 병원 진단을 받을 수 있게 되었다.
       굶는 아이들이 줄어들어, 용왕은 세간에서 구세주이다.
+    publicRevealDisabled: true
     backId: back_dragon_king_rumor_1
     effects:
       - type: addPart
@@ -1288,6 +1219,7 @@ cards:
     text: |
       10년쯤 전부터 용왕이 아프다는 소문이 돌었다.
       그 시기부터 길거리에는 다시 굶는 아이들이 늘어나기 시작했다.
+    publicRevealDisabled: true
     backId: back_dragon_king_rumor_2
     effects:
       - type: addPart
@@ -1296,8 +1228,8 @@ cards:
     title: '재활수조실 바닥의 젖은 구두 자국'
     text: |
       어린이용 수조와 고무호스, 파란통 사이에 젖은 구두 자국이 여러 번 겹쳐 있다.
-      발자국은 재활수조실 밖 복도 쪽으로 이어지다가 의료동 입구 근처에서 희미해진다.
-      주변을 둘러봤지만 지금 딱딱한 구두굽을 신고 있는 사람은 없다. 윤유성은 운동화, 조희수는 낮은 단화, 서기준은 의료동 슬리퍼, 한다정은 고무 밑창의 낮은 외출화를 신고 있다.
+      발자국은 재활수조실 문턱을 지나 ㄱ자로 꺾이는 복도까지 이어지지만, 그 뒤는 몰려든 기자들과 직원들이 오간 흔적에 뭉개져 어디로 향했는지 알 수 없다.
+      주변을 둘러봤지만 지금 딱딱한 구두굽을 신고 있는 사람은 없다. 윤유성은 운동화, 조희수는 낮은 단화, 서기준은 슬리퍼, 한다정은 고무 밑창의 낮은 외출화를 신고 있다.
     backId: back_wet_shoeprints
     effects:
       - type: addPart

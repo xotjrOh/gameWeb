@@ -404,6 +404,12 @@ const buildInvestigationTargetGroups = (
   );
 };
 
+const formatInvestigationCountText = ({
+  remainingClues,
+}: {
+  remainingClues: number;
+}) => (remainingClues > 0 ? '조사 가능' : '조사 완료');
+
 const getRoleRankColor = (rankIndex: number) =>
   ROLE_RANK_COLORS[rankIndex] ?? ROLE_RANK_COLORS[ROLE_RANK_COLORS.length - 1];
 
@@ -3834,8 +3840,7 @@ export default function MurderMysteryTableExperience({
                     <Box>
                       <Typography fontWeight={950}>{group.label}</Typography>
                       <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
-                        남은 카드 {group.remainingClues} / 전체{' '}
-                        {group.totalClues}
+                        {formatInvestigationCountText(group)}
                       </Typography>
                     </Box>
                     <Stack direction="row" spacing={0.6} flexWrap="wrap">
@@ -3912,8 +3917,7 @@ export default function MurderMysteryTableExperience({
                               variant="caption"
                               sx={{ color: '#cfc5ad' }}
                             >
-                              남은 카드 {target.remainingClues} / 전체{' '}
-                              {target.totalClues}
+                              {formatInvestigationCountText(target)}
                             </Typography>
                           </Box>
                           {target.availableBacks.length > 0 ? (

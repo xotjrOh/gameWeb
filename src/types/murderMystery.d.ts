@@ -100,6 +100,7 @@ export interface MurderMysteryCardScenario {
   backId?: string;
   back?: MurderMysteryCardBackStyle;
   extraInvestigationOnReveal?: boolean;
+  publicRevealDisabled?: boolean;
   effects?: MurderMysteryCardEffect[];
 }
 
@@ -131,6 +132,7 @@ export interface MurderMysteryInvestigationTargetScenario {
   sectionId?: string;
   order?: number;
   icon?: string;
+  repeatable?: boolean;
   cardBack?: MurderMysteryCardBackStyle;
   cardPool: string[];
 }

@@ -268,6 +268,19 @@ const getSpecialEventById = (
   eventId: string
 ) => scenario.specialEvents.find((event) => event.id === eventId);
 
+const getInvestigationTargetById = (
+  scenario: MurderMysteryScenario,
+  targetId: string
+) =>
+  scenario.investigations.rounds
+    .flatMap((round) => round.targets)
+    .find((target) => target.id === targetId);
+
+const isRepeatableInvestigationTarget = (
+  scenario: MurderMysteryScenario,
+  targetId: string
+) => Boolean(getInvestigationTargetById(scenario, targetId)?.repeatable);
+
 const getSecretReviewStep = (scenario: MurderMysteryScenario) =>
   scenario.flow.steps.find((step) => step.kind === 'secret_review') ?? null;
 
@@ -851,7 +864,10 @@ const takeMapInvestigationBackForCurrentTurn = (
     throw new Error('이 라운드에서 선택할 수 없는 조사 카드입니다.');
   }
   assertCanInvestigateTarget(room, scenario, roundConfig, target, playerId);
-  if (isCardRevealedForTarget(room, scenario, target.id, cardId)) {
+  if (
+    !target.repeatable &&
+    isCardRevealedForTarget(room, scenario, target.id, cardId)
+  ) {
     throw new Error('이미 다른 플레이어가 먼저 가져간 카드입니다.');
   }
 
@@ -1039,10 +1055,19 @@ const getRemainingCardIdsByTarget = (
   scenario: MurderMysteryScenario,
   targetId: string,
   targetCardPool: string[]
-) =>
-  targetCardPool.filter(
+) => {
+  if (isRepeatableInvestigationTarget(scenario, targetId)) {
+    const revealCount =
+      room.gameData.revealedCardIdsByTargetId[targetId]?.length ?? 0;
+    const nextCardId =
+      targetCardPool[Math.min(revealCount, targetCardPool.length - 1)];
+    return nextCardId ? [nextCardId] : [];
+  }
+
+  return targetCardPool.filter(
     (cardId) => !isCardRevealedForTarget(room, scenario, targetId, cardId)
   );
+};
 
 const pickCardFromTarget = (
   room: MurderMysteryRoom,
@@ -1062,7 +1087,10 @@ const pickCardFromTarget = (
     if (!targetCardPool.includes(forcedCardId)) {
       throw new Error('이 조사 대상에서 선택할 수 없는 카드입니다.');
     }
-    if (isCardRevealedForTarget(room, scenario, targetId, forcedCardId)) {
+    if (
+      !isRepeatableInvestigationTarget(scenario, targetId) &&
+      isCardRevealedForTarget(room, scenario, targetId, forcedCardId)
+    ) {
       throw new Error('이미 공개된 단서 카드는 다시 배포할 수 없습니다.');
     }
     return forcedCardId;
@@ -1169,7 +1197,10 @@ const revealCardToPlayer = (
   }
 
   room.gameData.revealedCardIdsByTargetId[targetId] ??= [];
-  if (!room.gameData.revealedCardIdsByTargetId[targetId].includes(cardId)) {
+  if (
+    isRepeatableInvestigationTarget(scenario, targetId) ||
+    !room.gameData.revealedCardIdsByTargetId[targetId].includes(cardId)
+  ) {
     room.gameData.revealedCardIdsByTargetId[targetId].push(cardId);
   }
 
@@ -1321,8 +1352,12 @@ const buildInvestigationTargetView = (
     target.cardPool
   );
   const totalClues = target.cardPool.length;
+  const targetRevealCount =
+    room.gameData.revealedCardIdsByTargetId[target.id]?.length ?? 0;
   const remainingClues = remainingCardIds.length;
-  const revealedClues = Math.max(totalClues - remainingClues, 0);
+  const revealedClues = target.repeatable
+    ? Math.min(targetRevealCount, totalClues)
+    : Math.max(totalClues - remainingClues, 0);
   const availableBacks = remainingCardIds
     .map((cardId) =>
       buildBackCardView(room, scenario, viewerId, target, cardId)
@@ -1353,7 +1388,7 @@ const buildInvestigationTargetView = (
     totalClues,
     revealedClues,
     remainingClues,
-    isExhausted: remainingClues === 0,
+    isExhausted: !target.repeatable && remainingClues === 0,
     isOwnedByViewer,
     canInvestigateByViewer,
     investigationRestrictionReason: investigationRestrictionReason ?? undefined,
@@ -2486,7 +2521,10 @@ export const setMurderMysteryInvestigationReservation = (
     throw new Error('이 라운드에서 예약할 수 없는 카드입니다.');
   }
   assertCanInvestigateTarget(room, scenario, roundConfig, target, playerId);
-  if (isCardRevealedForTarget(room, scenario, targetId, cardId)) {
+  if (
+    !target.repeatable &&
+    isCardRevealedForTarget(room, scenario, targetId, cardId)
+  ) {
     throw new Error('이미 다른 플레이어가 먼저 가져간 카드입니다.');
   }
 
@@ -2549,6 +2587,9 @@ export const revealMurderMysteryOwnedClue = (
   }
   if (!card.backId) {
     throw new Error('조사로 획득한 단서만 전체 공개할 수 있습니다.');
+  }
+  if (card.publicRevealDisabled) {
+    throw new Error('이 단서는 전체 공개할 수 없습니다.');
   }
 
   const ownedCardIds = room.gameData.revealedCardsByPlayerId[playerId] ?? [];
@@ -2919,9 +2960,10 @@ export const buildMurderMysterySnapshot = (
   const cardSourceMap = buildCardSourceMap(room, scenario);
   const publicCardIdSet = new Set(room.gameData.revealedCardIds);
   const publiclyRevealableMyCardIds = new Set(
-    revealedPersonalCardIds.filter((cardId) =>
-      Boolean(getCardById(scenario, cardId)?.backId)
-    )
+    revealedPersonalCardIds.filter((cardId) => {
+      const card = getCardById(scenario, cardId);
+      return Boolean(card?.backId && !card.publicRevealDisabled);
+    })
   );
   const privateCardSourceLabelMap = buildPrivateCardSourceLabelMap(
     scenario,
