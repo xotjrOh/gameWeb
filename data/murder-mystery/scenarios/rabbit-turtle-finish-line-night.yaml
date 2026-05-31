@@ -158,7 +158,11 @@ parts:
   - id: part_rabbit_family
     name: '토끼 가족 사진'
     source: '한다정의 소지품'
-    note: '한다정이 가족을 지키려는 이유를 보여준다.'
+    note: '윤슬의 죽음을 감정적으로 암시한다.'
+  - id: part_medical_wing_rumor
+    name: '의료동에서 도는 소문'
+    source: '의료동 소문'
+    note: '선발전 우승이 윤슬의 수술 기회와 연결됐다는 소문이다.'
   - id: part_liver_compatibility
     name: '간 적합성 문서'
     source: '서기준의 소지품'
@@ -207,14 +211,10 @@ parts:
     name: '용왕에 대한 소문2'
     source: '행사장 소문'
     note: '용왕이 아프다는 소문 이후 다시 굶는 아이들이 늘었다는 소문이다.'
-  - id: part_placeholder_2
-    name: '추가 예정 단서 2'
-    source: '작성 예정'
-    note: '플레이 전 실제 단서로 교체할 자리다.'
-  - id: part_placeholder_3
-    name: '추가 예정 단서 3'
-    source: '작성 예정'
-    note: '플레이 전 실제 단서로 교체할 자리다.'
+  - id: part_jara_wet_sole
+    name: '서기준의 젖은 구두굽'
+    source: '서기준의 구두와 재활수조실 바닥'
+    note: '서기준이 어린이용 수조와 호스 주변을 오갔음을 보여준다.'
 
 roles:
   - id: rabbit_husband
@@ -377,7 +377,9 @@ investigations:
           - r1_empty_vial
           - r1_liver_compatibility
           - r1_past_killing_photo
+          - r1_medical_wing_rumor
           - r1_dragon_king_rumor_1
+          - r1_dragon_king_rumor_2
           - r1_siphon_guide
         order: 10
         icon: '📄'
@@ -390,9 +392,7 @@ investigations:
           - r2_adult_tank_specs
           - r2_towel_bin
           - r2_rubber_hose
-          - r2_dragon_king_rumor_2
-          - r2_placeholder_2
-          - r2_placeholder_3
+          - r2_jara_wet_sole
         order: 20
         icon: '🔎'
     map:
@@ -458,6 +458,13 @@ investigations:
           yPct: 3
           widthPct: 30
           heightPct: 21
+        - id: map_r1_medical_wing_rumor
+          targetId: r1_medical_wing_rumor
+          label: '의료동에서 도는 소문'
+          xPct: 4
+          yPct: 4
+          widthPct: 12
+          heightPct: 12
         - id: map_r1_dragon_king_rumor_1
           targetId: r1_dragon_king_rumor_1
           label: '용왕에 대한 소문1'
@@ -465,6 +472,13 @@ investigations:
           yPct: 4
           widthPct: 25
           heightPct: 18
+        - id: map_r1_dragon_king_rumor_2
+          targetId: r1_dragon_king_rumor_2
+          label: '용왕에 대한 소문2'
+          xPct: 30
+          yPct: 4
+          widthPct: 12
+          heightPct: 12
         - id: map_r1_siphon_guide
           targetId: r1_siphon_guide
           label: '세탁실에 붙어있는 안내문'
@@ -514,24 +528,10 @@ investigations:
           yPct: 47
           widthPct: 16
           heightPct: 17
-        - id: map_r2_dragon_king_rumor_2
-          targetId: r2_dragon_king_rumor_2
-          label: '용왕에 대한 소문2'
-          xPct: 4
-          yPct: 4
-          widthPct: 12
-          heightPct: 12
-        - id: map_r2_placeholder_2
-          targetId: r2_placeholder_2
-          label: '추가 예정 단서 2'
+        - id: map_r2_jara_wet_sole
+          targetId: r2_jara_wet_sole
+          label: '서기준의 젖은 구두굽'
           xPct: 18
-          yPct: 4
-          widthPct: 12
-          heightPct: 12
-        - id: map_r2_placeholder_3
-          targetId: r2_placeholder_3
-          label: '추가 예정 단서 3'
-          xPct: 32
           yPct: 4
           widthPct: 12
           heightPct: 12
@@ -656,6 +656,18 @@ investigations:
             shortLabel: '서기준 소지품 2'
           cardPool:
             - card_past_killing_photo
+        - id: r1_medical_wing_rumor
+          label: '의료동에서 도는 소문'
+          targetType: item
+          entityKey: medical_wing_rumor
+          sectionId: pre_scene
+          order: 85
+          icon: '🏥'
+          cardBack:
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            shortLabel: '의료동에서 도는 소문'
+          cardPool:
+            - card_medical_wing_rumor
         - id: r1_dragon_king_rumor_1
           label: '용왕에 대한 소문1'
           targetType: item
@@ -668,6 +680,18 @@ investigations:
             shortLabel: '용왕에 대한 소문1'
           cardPool:
             - card_dragon_king_rumor_1
+        - id: r1_dragon_king_rumor_2
+          label: '용왕에 대한 소문2'
+          targetType: item
+          entityKey: dragon_king_rumor_2
+          sectionId: pre_scene
+          order: 92
+          icon: '👑'
+          cardBack:
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/dragon-king.png'
+            shortLabel: '용왕에 대한 소문2'
+          cardPool:
+            - card_dragon_king_rumor_2
         - id: r1_siphon_guide
           label: '세탁실에 붙어있는 안내문'
           targetType: location
@@ -800,6 +824,18 @@ investigations:
             shortLabel: '서기준 소지품 2'
           cardPool:
             - card_past_killing_photo
+        - id: r1_medical_wing_rumor
+          label: '의료동에서 도는 소문'
+          targetType: item
+          entityKey: medical_wing_rumor
+          sectionId: pre_scene
+          order: 85
+          icon: '🏥'
+          cardBack:
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            shortLabel: '의료동에서 도는 소문'
+          cardPool:
+            - card_medical_wing_rumor
         - id: r1_dragon_king_rumor_1
           label: '용왕에 대한 소문1'
           targetType: item
@@ -812,6 +848,18 @@ investigations:
             shortLabel: '용왕에 대한 소문1'
           cardPool:
             - card_dragon_king_rumor_1
+        - id: r1_dragon_king_rumor_2
+          label: '용왕에 대한 소문2'
+          targetType: item
+          entityKey: dragon_king_rumor_2
+          sectionId: pre_scene
+          order: 92
+          icon: '👑'
+          cardBack:
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/dragon-king.png'
+            shortLabel: '용왕에 대한 소문2'
+          cardPool:
+            - card_dragon_king_rumor_2
         - id: r1_siphon_guide
           label: '세탁실에 붙어있는 안내문'
           targetType: location
@@ -896,42 +944,21 @@ investigations:
             shortLabel: '통유리 외벽'
           cardPool:
             - card_glass_scratches
-        - id: r2_dragon_king_rumor_2
-          label: '용왕에 대한 소문2'
+        - id: r2_jara_wet_sole
+          label: '서기준의 젖은 구두굽'
           targetType: item
-          entityKey: dragon_king_rumor_2
-          sectionId: scene_recheck
-          order: 170
-          icon: '👑'
-          cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/dragon-king.png'
-            shortLabel: '용왕에 대한 소문2'
-          cardPool:
-            - card_dragon_king_rumor_2
-        - id: r2_placeholder_2
-          label: '추가 예정 단서 2'
-          targetType: item
-          entityKey: placeholder_2
+          entityKey: jara_wet_sole
+          containerId: belongings_jara
+          containerLabel: '서기준의 소지품'
+          ownerRoleId: jara
           sectionId: scene_recheck
           order: 180
-          icon: '📝'
+          icon: '👞'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
-            shortLabel: '추가 예정 2'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/jara.png'
+            shortLabel: '서기준의 젖은 구두굽'
           cardPool:
-            - card_placeholder_2
-        - id: r2_placeholder_3
-          label: '추가 예정 단서 3'
-          targetType: item
-          entityKey: placeholder_3
-          sectionId: scene_recheck
-          order: 190
-          icon: '📝'
-          cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
-            shortLabel: '추가 예정 3'
-          cardPool:
-            - card_placeholder_3
+            - card_jara_wet_sole
 
 cards:
   - id: card_turtle_body
@@ -940,6 +967,7 @@ cards:
       목을 조른 흔적이나 둔기 외상도 없다. 
       등껍질 한쪽에 얕은 긁힌 흔적만 있다.
       의사들 소견으로는 찰과상이 없으니 적신 수건으로 입을 막은건 아닐거라한다.
+      입가 가까이에서는 희미하게 씁쓸한 약 냄새가 난다.
     imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/clue/turtle-body.png'
     imageAlt: '재활수조실에 쓰러진 거북의 사체 사진'
     backId: back_turtle_body
@@ -962,6 +990,7 @@ cards:
     text: |
       보온병에 고무패킹이 빠져 있다.
       보온병 안쪽에는 씁쓸한 냄새가 희미하게 남아 있다.
+      바닥에는 녹다 만 흰 가루 흔적이 조금 붙어 있다.
     backId: back_black_thermos
     effects:
       - type: addPart
@@ -971,6 +1000,7 @@ cards:
     text: |
       오완주의 자필 고백문이다.
       20XX년 육상 국가대표 선발전 결승을 앞두고, 대기실에서 윤유성의 물병에 수면유도제를 넣었다고 적혀 있다.
+      봉투 안에는 오완주 명의 수면유도제 처방전 사본도 들어 있다.
     imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/clue/turtle-envelope.png'
     imageAlt: '자필 진술서와 처방전 사본이 든 거북 서류봉투'
     backId: back_turtle_envelope
@@ -981,13 +1011,23 @@ cards:
     title: '아내토끼 소지품 2'
     text: |
       가족사진이다.
-      사진 뒷면에는 '내 딸 윤슬'이라고 적혀 있다.
+      사진 뒷면에는 "내 딸 윤슬. 수술 끝나면 학교 가자."라고 적혀 있다.
+      사진 모서리에는 오래된 흰 리본이 붙어 있다.
     imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/clue/rabbit-family.png'
     imageAlt: '토끼 가족사진'
     backId: back_rabbit_family
     effects:
       - type: addPart
         partId: part_rabbit_family
+  - id: card_medical_wing_rumor
+    title: '의료동에서 도는 소문'
+    text: |
+      의료동에서는 윤유성이 선발전에서 이겼다면 윤슬이 수술을 받을 수 있었을 거라는 말이 돈다.
+      경기 우승으로 수술을 받았으면 살 확률이 높았을텐데..
+    backId: back_medical_wing_rumor
+    effects:
+      - type: addPart
+        partId: part_medical_wing_rumor
   - id: card_liver_compatibility
     title: '서기준 소지품 1'
     text: |
@@ -1072,7 +1112,7 @@ cards:
     title: '성인용 수조'
     text: |
       옆면 표기는 2m × 5m, 높이 120cm다.
-      사건 직후 물은 거의 없고 벽면에 젖은 자국을 확인해보니 물은 원래 비어있던게 맞는거같다.
+      사건 직후 물은 거의 없고 벽면에 젖은 자국이 없는 걸 보니 물은 원래 비어있던게 맞는거같다.
     backId: back_adult_tank_specs
     extraInvestigationOnReveal: true
     effects:
@@ -1104,22 +1144,16 @@ cards:
     effects:
       - type: addPart
         partId: part_dragon_king_rumor_2
-  - id: card_placeholder_2
-    title: '추가 예정 2'
+  - id: card_jara_wet_sole
+    title: '서기준의 젖은 구두굽'
     text: |
-      작성 예정 단서입니다.
-    backId: back_placeholder_2
+      재활수조실 입구에는 들어올 때 생긴 젖은 구두 자국이 거의 보이지 않는다.
+      어린이용 수조와 호스 주변에는 딱딱한 구두굽 모양의 젖은 발자국이 여러 번 겹쳐 있다.
+      같은 모양의 젖은 자국이 재활수조실 밖으로 나가는 방향에도 이어지고, 서기준의 구두 밑창은 아직 축축하다.
+    backId: back_jara_wet_sole
     effects:
       - type: addPart
-        partId: part_placeholder_2
-  - id: card_placeholder_3
-    title: '추가 예정 3'
-    text: |
-      작성 예정 단서입니다.
-    backId: back_placeholder_3
-    effects:
-      - type: addPart
-        partId: part_placeholder_3
+        partId: part_jara_wet_sole
   - id: card_start_wife_pact
     title: '아내토끼가 여우에게 건넨 카드'
     text: |
@@ -1161,7 +1195,7 @@ endbook:
 
     어린이용 수조는 2m × 1m, 높이 50cm였다. 재활수조실은 단수였으니 그 물이 갑자기 줄거나 늘어난 것 같지는 않았다. 반대로 성인용 수조는 2m × 5m, 높이 120cm였고, 사건 직후에는 바닥 잔수만 남아 있었다.
 
-    수건 회수용 파란통은 내부 바닥 65cm × 45cm, 높이 약 75cm였다. 젖은 수건의 습기처럼 보였던 물기는, 좁은 통 안에 물이 머물렀던 흔적일 수도 있었다. 길이 약 10m의 고무호스는 성인용 수조와 파란통을 현실적으로 이어 줄 수 있었다.
+    수건 회수용 파란통은 입구의 지름 45cm, 높이 약 50cm였다. 젖은 수건의 습기처럼 보였던 물기는, 좁은 통 안에 물이 머물렀던 흔적일 수도 있었다. 길이 약 5m의 고무호스는 어린이용 수조와 파란통을 현실적으로 이어 줄 수 있었다.
 
     호스 안을 물로 채운 뒤 낮은 쪽 끝을 내리면, 높은 곳에 있던 물은 단수 상태에서도 다른 용기로 흘러간다. 서기준은 그 방식을 이용해 수조의 물을 파란통으로 옮겼고, 아직 살아 있던 오완주의 호흡을 그곳에서 막았다. 이후 젖은 수건과 현장 정리로 윤유성의 약물 범행처럼 보이게 만들었다.
 
