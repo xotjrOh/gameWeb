@@ -21,6 +21,7 @@ import {
   MurderMysteryInvestigationView,
   MurderMysteryPublicPlayerView,
 } from '@/types/murderMystery';
+import RulebookRichText from '@/components/murderMystery/RulebookRichText';
 
 interface MurderMysteryInvestigationPanelProps {
   round?: number;
@@ -402,9 +403,20 @@ const InvestigationBackDeckSheet = ({
 }) => {
   const turn = investigation.turn;
   const open = Boolean(selectedTarget);
+  const selectedTargetRestrictionReason =
+    selectedTarget?.investigationRestrictionReason;
+  const canUseSelectedTarget = Boolean(
+    selectedTarget && !selectedTargetRestrictionReason
+  );
   const canTakeCard =
     investigation.mode === 'map' &&
-    Boolean(turn?.canActNow && canActAsPlayer && isActivePhase && !isReadOnly);
+    Boolean(
+      turn?.canActNow &&
+        canActAsPlayer &&
+        isActivePhase &&
+        !isReadOnly &&
+        canUseSelectedTarget
+    );
   const canReserve =
     investigation.mode === 'map' &&
     Boolean(
@@ -412,7 +424,8 @@ const InvestigationBackDeckSheet = ({
         !turn?.allPlayersDone &&
         canActAsPlayer &&
         isActivePhase &&
-        !isReadOnly
+        !isReadOnly &&
+        canUseSelectedTarget
     );
 
   return (
@@ -472,41 +485,45 @@ const InvestigationBackDeckSheet = ({
         ) : null}
 
         {selectedTarget?.availableBacks.length ? (
-          <Box
-            sx={{
-              display: 'grid',
-              gap: 1,
-              gridTemplateColumns: {
-                xs: '1fr',
-                sm: 'repeat(2, minmax(0, 1fr))',
-              },
-            }}
-          >
-            {selectedTarget.availableBacks.map((back) => (
-              <CardBackFace
-                key={back.backId}
-                back={back}
-                onPrimaryAction={() => {
-                  if (canTakeCard) {
-                    onSubmitByBack(back.backId);
-                    onClose();
-                    return;
+          selectedTargetRestrictionReason ? (
+            <Alert severity="warning">{selectedTargetRestrictionReason}</Alert>
+          ) : (
+            <Box
+              sx={{
+                display: 'grid',
+                gap: 1,
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  sm: 'repeat(2, minmax(0, 1fr))',
+                },
+              }}
+            >
+              {selectedTarget.availableBacks.map((back) => (
+                <CardBackFace
+                  key={back.backId}
+                  back={back}
+                  onPrimaryAction={() => {
+                    if (canTakeCard) {
+                      onSubmitByBack(back.backId);
+                      onClose();
+                      return;
+                    }
+                    if (canReserve) {
+                      onSetReservation(back.backId);
+                    }
+                  }}
+                  primaryActionLabel={
+                    canTakeCard
+                      ? '이 카드 가져가기'
+                      : back.isReservedByMe
+                        ? '예약됨'
+                        : '이 카드 예약'
                   }
-                  if (canReserve) {
-                    onSetReservation(back.backId);
-                  }
-                }}
-                primaryActionLabel={
-                  canTakeCard
-                    ? '이 카드 가져가기'
-                    : back.isReservedByMe
-                      ? '예약됨'
-                      : '이 카드 예약'
-                }
-                showPrimaryAction={canTakeCard || canReserve}
-              />
-            ))}
-          </Box>
+                  showPrimaryAction={canTakeCard || canReserve}
+                />
+              ))}
+            </Box>
+          )
         ) : (
           <Alert severity="info">
             이 위치의 남은 카드가 없습니다. 이미 누군가가 모두 가져갔습니다.
@@ -978,7 +995,12 @@ const LegacyInvestigatePanel = ({
                           />
                         ))}
                       </Stack>
-                      <Typography sx={{ mt: 0.5 }}>{card.text}</Typography>
+                      <Typography sx={{ mt: 0.5, whiteSpace: 'pre-wrap' }}>
+                        <RulebookRichText
+                          text={card.text}
+                          highlights={card.textHighlights}
+                        />
+                      </Typography>
                     </Stack>
                   </CardContent>
                 </Card>
@@ -1165,7 +1187,12 @@ export default function MurderMysteryInvestigationPanel({
                           />
                         ))}
                       </Stack>
-                      <Typography sx={{ mt: 0.5 }}>{card.text}</Typography>
+                      <Typography sx={{ mt: 0.5, whiteSpace: 'pre-wrap' }}>
+                        <RulebookRichText
+                          text={card.text}
+                          highlights={card.textHighlights}
+                        />
+                      </Typography>
                     </Stack>
                   </CardContent>
                 </Card>

@@ -408,6 +408,42 @@ const normalizeInvestigationTurnOrder = ({
   };
 };
 
+const normalizeRequiredFirstInvestigations = ({
+  rawRequiredFirstInvestigations,
+  fileName,
+}: {
+  rawRequiredFirstInvestigations: unknown;
+  fileName: string;
+}): MurderMysteryScenario['investigations']['requiredFirstInvestigations'] => {
+  if (!Array.isArray(rawRequiredFirstInvestigations)) {
+    return undefined;
+  }
+
+  const entries = rawRequiredFirstInvestigations.map((rawEntry, index) => {
+    const entryRecord = requireRecord(
+      rawEntry,
+      `${fileName}: investigations.requiredFirstInvestigations[${index}] must be object`
+    );
+    return {
+      roleId: requireString(
+        entryRecord.roleId,
+        `${fileName}: investigations.requiredFirstInvestigations[${index}].roleId is required`
+      ),
+      round: requireRound(
+        entryRecord.round,
+        `${fileName}: investigations.requiredFirstInvestigations[${index}].round must be >= 1`
+      ),
+      targetId: requireString(
+        entryRecord.targetId,
+        `${fileName}: investigations.requiredFirstInvestigations[${index}].targetId is required`
+      ),
+      reason: asNonEmptyString(entryRecord.reason),
+    };
+  });
+
+  return entries.length > 0 ? entries : undefined;
+};
+
 const normalizeInvestigationLayoutMap = ({
   rawMap,
   fileName,
@@ -567,12 +603,18 @@ const normalizeInvestigations = (
   const turnOrder = normalizeInvestigationTurnOrder({
     rawTurnOrder: investigationsRecord.turnOrder,
   });
+  const requiredFirstInvestigations = normalizeRequiredFirstInvestigations({
+    rawRequiredFirstInvestigations:
+      investigationsRecord.requiredFirstInvestigations,
+    fileName,
+  });
 
   return {
     investigations: {
       deliveryMode,
       depletionMode,
       turnOrder,
+      requiredFirstInvestigations,
       layout: {
         sections: normalizeInvestigationLayoutSections({
           rawSections: layoutRecord?.sections,
@@ -1045,16 +1087,26 @@ const normalizeCards = ({
       `${fileName}: card(${id}) extraInvestigationOnReveal must be boolean`
     );
 
+    const text = requireString(
+      cardRecord.text,
+      `${fileName}: card(${id}) text is required`
+    );
+    const textHighlights = toStringArray(cardRecord.textHighlights);
+    textHighlights.forEach((highlight, highlightIndex) => {
+      assertCondition(
+        text.includes(highlight),
+        `${fileName}: card(${id}) textHighlights[${highlightIndex}] is not found in text`
+      );
+    });
+
     return {
       id,
       title: requireString(
         cardRecord.title,
         `${fileName}: card(${id}) title is required`
       ),
-      text: requireString(
-        cardRecord.text,
-        `${fileName}: card(${id}) text is required`
-      ),
+      text,
+      ...(textHighlights.length > 0 ? { textHighlights } : {}),
       imageSrc: asNonEmptyString(cardRecord.imageSrc),
       imageAlt: asNonEmptyString(cardRecord.imageAlt),
       backId: asNonEmptyString(cardRecord.backId),
@@ -1682,6 +1734,30 @@ const validateScenarioSchema = (
       `${fileName}: turnOrder.roleIds must include every scenario role exactly once`
     );
   }
+
+  scenario.investigations.requiredFirstInvestigations?.forEach(
+    (requiredInvestigation, index) => {
+      assertCondition(
+        roleIds.has(requiredInvestigation.roleId),
+        `${fileName}: requiredFirstInvestigations[${index}] references unknown roleId (${requiredInvestigation.roleId})`
+      );
+      const roundConfig = rounds.find(
+        (round) => round.round === requiredInvestigation.round
+      );
+      assertCondition(
+        Boolean(roundConfig),
+        `${fileName}: requiredFirstInvestigations[${index}] references unknown round (${requiredInvestigation.round})`
+      );
+      assertCondition(
+        Boolean(
+          roundConfig?.targets.some(
+            (target) => target.id === requiredInvestigation.targetId
+          )
+        ),
+        `${fileName}: requiredFirstInvestigations[${index}] references unknown targetId (${requiredInvestigation.targetId}) in round ${requiredInvestigation.round}`
+      );
+    }
+  );
 
   const layoutMap = scenario.investigations.layout.map;
   if (layoutMap) {

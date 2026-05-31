@@ -62,6 +62,7 @@ import {
 } from '@/types/murderMystery';
 import CharacterPortraitFrame from '@/components/murderMystery/CharacterPortraitFrame';
 import MurderMysteryRulebookReader from '@/components/murderMystery/MurderMysteryRulebookReader';
+import RulebookRichText from '@/components/murderMystery/RulebookRichText';
 
 interface MurderMysteryTableExperienceProps {
   roomId: string;
@@ -113,6 +114,7 @@ type InvestigationTargetGroup = {
   remainingClues: number;
   isOwnedByViewer: boolean;
   canInvestigateByViewer: boolean;
+  investigationRestrictionReason?: string;
   isOwnedFallbackForViewer: boolean;
   targets: MurderMysteryInvestigationTargetView[];
 };
@@ -376,6 +378,8 @@ const buildInvestigationTargetGroups = (
         current.isOwnedByViewer || target.isOwnedByViewer;
       current.canInvestigateByViewer =
         current.canInvestigateByViewer || target.canInvestigateByViewer;
+      current.investigationRestrictionReason ??=
+        target.investigationRestrictionReason;
       current.isOwnedFallbackForViewer =
         current.isOwnedFallbackForViewer || target.isOwnedFallbackForViewer;
       return;
@@ -389,6 +393,7 @@ const buildInvestigationTargetGroups = (
       remainingClues: target.remainingClues,
       isOwnedByViewer: target.isOwnedByViewer,
       canInvestigateByViewer: target.canInvestigateByViewer,
+      investigationRestrictionReason: target.investigationRestrictionReason,
       isOwnedFallbackForViewer: target.isOwnedFallbackForViewer,
       targets: [target],
     });
@@ -842,7 +847,10 @@ const EvidenceCardFace = ({
                   overflow: 'hidden',
                 }}
               >
-                {card.text}
+                <RulebookRichText
+                  text={card.text}
+                  highlights={card.textHighlights}
+                />
               </Typography>
             ) : null}
           </Stack>
@@ -2482,7 +2490,12 @@ const CardDetailDialog = ({
               color: '#2d2419',
             }}
           >
-            {card?.text}
+            {card ? (
+              <RulebookRichText
+                text={card.text}
+                highlights={card.textHighlights}
+              />
+            ) : null}
           </Typography>
         </Stack>
       </Box>
@@ -3863,7 +3876,8 @@ export default function MurderMysteryTableExperience({
                       isTurnClosed ||
                       snapshot.investigation.used;
                     const disabledReason = !target.canInvestigateByViewer
-                      ? '본인의 소지품은 조사할 수 없습니다.'
+                      ? (target.investigationRestrictionReason ??
+                        '본인의 소지품은 조사할 수 없습니다.')
                       : isTurnClosed
                         ? '현재 조사 가능한 차례가 없습니다.'
                         : snapshot.investigation.used

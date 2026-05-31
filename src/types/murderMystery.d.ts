@@ -94,6 +94,7 @@ export interface MurderMysteryCardScenario {
   id: string;
   title: string;
   text: string;
+  textHighlights?: string[];
   imageSrc?: string;
   imageAlt?: string;
   backId?: string;
@@ -144,6 +145,13 @@ export interface MurderMysteryInvestigationTurnOrderScenario {
   rotateFirstPlayerEachRound: boolean;
 }
 
+export interface MurderMysteryRequiredFirstInvestigationScenario {
+  roleId: string;
+  round: MurderMysteryInvestigationRound;
+  targetId: string;
+  reason?: string;
+}
+
 export interface MurderMysteryInvestigationLayoutSection {
   id: string;
   title: string;
@@ -184,6 +192,7 @@ export interface MurderMysteryInvestigationsScenario {
   deliveryMode: MurderMysteryDeliveryMode;
   depletionMode: MurderMysteryClueDepletionMode;
   turnOrder?: MurderMysteryInvestigationTurnOrderScenario;
+  requiredFirstInvestigations?: MurderMysteryRequiredFirstInvestigationScenario[];
   layout: MurderMysteryInvestigationLayoutScenario;
   rounds: MurderMysteryInvestigationRoundScenario[];
 }
@@ -487,6 +496,7 @@ export interface MurderMysteryInvestigationTargetView
   isExhausted: boolean;
   isOwnedByViewer: boolean;
   canInvestigateByViewer: boolean;
+  investigationRestrictionReason?: string;
   isOwnedFallbackForViewer: boolean;
   availableBacks: MurderMysteryInvestigationBackCardView[];
 }

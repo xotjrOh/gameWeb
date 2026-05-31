@@ -297,6 +297,30 @@ const isInvestigationTargetOwnedByPlayer = (
       room.gameData.roleByPlayerId[playerId] === target.ownerRoleId
   );
 
+const getRequiredFirstInvestigationForPlayer = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  round: MurderMysteryInvestigationRound,
+  playerId: string
+) => {
+  const roleId = room.gameData.roleByPlayerId[playerId];
+  if (!roleId) {
+    return null;
+  }
+
+  const usage = (room.gameData.investigationUsedByPlayerId[playerId] ??
+    {}) as Record<number, number | boolean | undefined>;
+  if (getInvestigationUseCount(usage, round, scenario) > 0) {
+    return null;
+  }
+
+  return (
+    scenario.investigations.requiredFirstInvestigations?.find(
+      (entry) => entry.roleId === roleId && entry.round === round
+    ) ?? null
+  );
+};
+
 const hasRemainingNonOwnedInvestigationTarget = (
   room: MurderMysteryRoom,
   scenario: MurderMysteryScenario,
@@ -313,6 +337,44 @@ const hasRemainingNonOwnedInvestigationTarget = (
     );
   });
 
+const getInvestigationRestrictionReason = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  roundConfig: MurderMysteryScenario['investigations']['rounds'][number],
+  target: MurderMysteryInvestigationTarget,
+  playerId: string
+) => {
+  const requiredFirstInvestigation = getRequiredFirstInvestigationForPlayer(
+    room,
+    scenario,
+    roundConfig.round,
+    playerId
+  );
+  if (
+    requiredFirstInvestigation &&
+    requiredFirstInvestigation.targetId !== target.id
+  ) {
+    return (
+      requiredFirstInvestigation.reason ??
+      '첫 조사는 지정된 조사 대상부터 확인해야 합니다.'
+    );
+  }
+
+  if (
+    isInvestigationTargetOwnedByPlayer(room, target, playerId) &&
+    hasRemainingNonOwnedInvestigationTarget(
+      room,
+      scenario,
+      roundConfig,
+      playerId
+    )
+  ) {
+    return '본인의 소지품은 조사할 수 없습니다.';
+  }
+
+  return null;
+};
+
 const canPlayerInvestigateTarget = (
   room: MurderMysteryRoom,
   scenario: MurderMysteryScenario,
@@ -320,11 +382,11 @@ const canPlayerInvestigateTarget = (
   target: MurderMysteryInvestigationTarget,
   playerId: string
 ) =>
-  !isInvestigationTargetOwnedByPlayer(room, target, playerId) ||
-  !hasRemainingNonOwnedInvestigationTarget(
+  !getInvestigationRestrictionReason(
     room,
     scenario,
     roundConfig,
+    target,
     playerId
   );
 
@@ -335,10 +397,15 @@ const assertCanInvestigateTarget = (
   target: MurderMysteryInvestigationTarget,
   playerId: string
 ) => {
-  if (
-    !canPlayerInvestigateTarget(room, scenario, roundConfig, target, playerId)
-  ) {
-    throw new Error('본인의 소지품은 조사할 수 없습니다.');
+  const restrictionReason = getInvestigationRestrictionReason(
+    room,
+    scenario,
+    roundConfig,
+    target,
+    playerId
+  );
+  if (restrictionReason) {
+    throw new Error(restrictionReason);
   }
 };
 
@@ -1266,6 +1333,13 @@ const buildInvestigationTargetView = (
     target,
     viewerId
   );
+  const investigationRestrictionReason = getInvestigationRestrictionReason(
+    room,
+    scenario,
+    roundConfig,
+    target,
+    viewerId
+  );
   const canInvestigateByViewer = canPlayerInvestigateTarget(
     room,
     scenario,
@@ -1282,6 +1356,7 @@ const buildInvestigationTargetView = (
     isExhausted: remainingClues === 0,
     isOwnedByViewer,
     canInvestigateByViewer,
+    investigationRestrictionReason: investigationRestrictionReason ?? undefined,
     isOwnedFallbackForViewer:
       isOwnedByViewer && canInvestigateByViewer && remainingClues > 0,
     availableBacks,
