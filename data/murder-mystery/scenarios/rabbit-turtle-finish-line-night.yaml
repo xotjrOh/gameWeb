@@ -7,7 +7,7 @@ players:
   max: 3
 
 rules:
-  investigationsPerRound: 2
+  investigationsPerRound: 3
   noEliminationDuringGame: true
   partsAutoReveal: true
   partsPublicDetail: false
