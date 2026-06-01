@@ -173,9 +173,13 @@ parts:
     name: '의료동 신발장'
     source: '의료동 신발장'
     note: '신발장 깊숙한 칸 안쪽에서 젖은 구두가 발견된다.'
-  - id: part_liver_compatibility
-    name: '간 적합성 문서'
+  - id: part_jara_belongings
+    name: '서기준의 소지품'
     source: '서기준의 소지품'
+    note: '손수건, 행사 진행표, 평범한 필기구뿐이다.'
+  - id: part_liver_compatibility
+    name: '건강기록 비교 발췌'
+    source: '의료동 간이책상 2'
     note: '재단과 서기준이 윤유성을 섬에 붙잡아야 했던 이유다.'
   - id: part_syringe_trace
     name: '투명한 액체가 든 주사기'
@@ -215,7 +219,7 @@ parts:
     note: '통유리 외벽에 살짝 금이 가 있다.'
   - id: part_past_killing_photo
     name: '구겨진 폴라로이드'
-    source: '서기준의 소지품'
+    source: '의료동 간이책상 1'
     note: '구겨진 사진 속에는 과거 누군가를 살해하던 자라의 모습이 남아 있다.'
   - id: part_dragon_king_rumor_2
     name: '용왕에 대한 소문2'
@@ -311,10 +315,8 @@ roles:
       단서가 공개될수록 의료동, 수조, 비품, 가족 문제를 하나의 선으로 연결하려는 시도를 끊어 내야 합니다.
       의료동 신발장에는 당신이 벗어 둔 구두가 숨겨져 있습니다. 다음 조사에서 젖은 구두가 발견될 수 있으니, 다른 플레이어들이 그곳을 다시 조사하지 못하도록 자연스럽게 유도하는 편이 좋습니다.
     belongingHints:
-      - label: '소지품 1'
-        hint: '당신이 관리하던 의료 판단 자료입니다. 단순 기록처럼 보이지만, 특정 인물을 섬에 붙잡아 둘 명분과 연결될 수 있습니다.'
-      - label: '소지품 2'
-        hint: '과거의 일과 이어질 수 있는 낡은 사진 한 장입니다. 이 사진이 공개되면 당신의 차분한 이미지가 흔들릴 수 있습니다.'
+      - label: '소지품'
+        hint: '겉으로는 정리된 행사 실무자의 물건뿐입니다. 진짜 위험한 기록은 의료동 간이책상 쪽에 있습니다.'
     secretTextPath: rulesheets/rabbit-turtle-finish-line-night/jara.txt
     secretTextHighlights:
       - '사이펀.'
@@ -391,8 +393,9 @@ investigations:
           - r1_rabbit_family
           - r1_syringe_trace
           - r1_empty_vial
-          - r1_liver_compatibility
-          - r1_past_killing_photo
+          - r1_jara_belongings
+          - r1_medical_desk_photo
+          - r1_medical_desk_records
           - r1_medical_wing_rumor
           - r1_medical_shoe_cabinet
           - r1_dragon_king_rumor_1
@@ -461,18 +464,25 @@ investigations:
           yPct: 25
           widthPct: 14
           heightPct: 8
-        - id: map_r1_past_killing_photo
-          targetId: r1_past_killing_photo
-          label: '서기준의 소지품 2'
+        - id: map_r1_jara_belongings
+          targetId: r1_jara_belongings
+          label: '서기준의 소지품'
           xPct: 58
           yPct: 25
           widthPct: 30
-          heightPct: 21
-        - id: map_r1_liver_compatibility
-          targetId: r1_liver_compatibility
-          label: '서기준의 소지품 1'
+          heightPct: 14
+        - id: map_r1_medical_desk_photo
+          targetId: r1_medical_desk_photo
+          label: '의료동 간이책상 1'
           xPct: 58
           yPct: 3
+          widthPct: 30
+          heightPct: 14
+        - id: map_r1_medical_desk_records
+          targetId: r1_medical_desk_records
+          label: '의료동 간이책상 2'
+          xPct: 58
+          yPct: 17
           widthPct: 30
           heightPct: 21
         - id: map_r1_medical_wing_rumor
@@ -650,36 +660,45 @@ investigations:
             shortLabel: '조희수 소지품 2'
           cardPool:
             - card_empty_vial
-        - id: r1_liver_compatibility
-          label: '서기준의 소지품 1'
+        - id: r1_jara_belongings
+          label: '서기준의 소지품'
           targetType: item
-          entityKey: liver_compatibility
+          entityKey: jara_belongings
           containerId: belongings_jara
           containerLabel: '서기준의 소지품'
           ownerRoleId: jara
           sectionId: pre_scene
           order: 70
-          icon: '🩺'
+          icon: '🧳'
           cardBack:
             imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/jara.png'
-            shortLabel: '서기준 소지품 1'
+            shortLabel: '서기준의 소지품'
           cardPool:
-            - card_liver_compatibility
-        - id: r1_past_killing_photo
-          label: '서기준의 소지품 2'
-          targetType: item
-          entityKey: past_killing_photo
-          containerId: belongings_jara
-          containerLabel: '서기준의 소지품'
-          ownerRoleId: jara
+            - card_jara_belongings
+        - id: r1_medical_desk_photo
+          label: '의료동 간이책상 1'
+          targetType: location
+          entityKey: medical_desk_photo
           sectionId: pre_scene
-          order: 80
+          order: 75
           icon: '📷'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/jara.png'
-            shortLabel: '서기준 소지품 2'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            shortLabel: '의료동 간이책상 1'
           cardPool:
-            - card_past_killing_photo
+            - card_medical_desk_photo
+        - id: r1_medical_desk_records
+          label: '의료동 간이책상 2'
+          targetType: location
+          entityKey: medical_desk_records
+          sectionId: pre_scene
+          order: 80
+          icon: '🩺'
+          cardBack:
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            shortLabel: '의료동 간이책상 2'
+          cardPool:
+            - card_medical_desk_records
         - id: r1_medical_wing_rumor
           label: '의료동에서 도는 소문'
           targetType: item
@@ -835,36 +854,45 @@ investigations:
             shortLabel: '조희수 소지품 2'
           cardPool:
             - card_empty_vial
-        - id: r1_liver_compatibility
-          label: '서기준의 소지품 1'
+        - id: r1_jara_belongings
+          label: '서기준의 소지품'
           targetType: item
-          entityKey: liver_compatibility
+          entityKey: jara_belongings
           containerId: belongings_jara
           containerLabel: '서기준의 소지품'
           ownerRoleId: jara
           sectionId: pre_scene
           order: 70
-          icon: '🩺'
+          icon: '🧳'
           cardBack:
             imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/jara.png'
-            shortLabel: '서기준 소지품 1'
+            shortLabel: '서기준의 소지품'
           cardPool:
-            - card_liver_compatibility
-        - id: r1_past_killing_photo
-          label: '서기준의 소지품 2'
-          targetType: item
-          entityKey: past_killing_photo
-          containerId: belongings_jara
-          containerLabel: '서기준의 소지품'
-          ownerRoleId: jara
+            - card_jara_belongings
+        - id: r1_medical_desk_photo
+          label: '의료동 간이책상 1'
+          targetType: location
+          entityKey: medical_desk_photo
           sectionId: pre_scene
-          order: 80
+          order: 75
           icon: '📷'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/jara.png'
-            shortLabel: '서기준 소지품 2'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            shortLabel: '의료동 간이책상 1'
           cardPool:
-            - card_past_killing_photo
+            - card_medical_desk_photo
+        - id: r1_medical_desk_records
+          label: '의료동 간이책상 2'
+          targetType: location
+          entityKey: medical_desk_records
+          sectionId: pre_scene
+          order: 80
+          icon: '🩺'
+          cardBack:
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            shortLabel: '의료동 간이책상 2'
+          cardPool:
+            - card_medical_desk_records
         - id: r1_medical_wing_rumor
           label: '의료동에서 도는 소문'
           targetType: item
@@ -1106,17 +1134,14 @@ cards:
     effects:
       - type: addPart
         partId: part_medical_shoe_cabinet_recheck
-  - id: card_liver_compatibility
-    title: '서기준 소지품 1'
+  - id: card_jara_belongings
+    title: '서기준의 소지품'
     text: |
-      윤유성과 윤슬을 비교한 자료이다.
-      무엇을 위한 자료인지는 알 수 없다.
-    imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/clue/liver-compatibility.png'
-    imageAlt: '윤유성과 윤슬의 의료 비교 문서'
-    backId: back_liver_compatibility
+      서기준의 소지품은 손수건, 행사 진행표, 평범한 필기구뿐이다.
+    backId: back_jara_belongings
     effects:
       - type: addPart
-        partId: part_liver_compatibility
+        partId: part_jara_belongings
   - id: card_syringe_trace
     title: '조희수 소지품 1'
     text: |
@@ -1156,17 +1181,26 @@ cards:
     effects:
       - type: addPart
         partId: part_towel_bin
-  - id: card_past_killing_photo
-    title: '서기준 소지품 2'
+  - id: card_medical_desk_photo
+    title: '의료동 간이책상 1'
     text: |
-      구겨진 폴라로이드에는 목을 맨 현장에 누군가 서서 사진을 찍었다.
-      뒷면에는 덜 마른 핏자국과 함께 "완료"라고 적혀 있다.
+      덜 닫혀있는 간이책상의 맨아래 서랍을 열자 이상한 철판 하나와 빈봉투 몇 개, 그리고 다음과 같은 폴라로이드 사진이 발견되었다.
     imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/clue/past-killing-photo.png'
     imageAlt: '구겨진 폴라로이드 사진'
-    backId: back_past_killing_photo
+    backId: back_medical_desk_photo
     effects:
       - type: addPart
         partId: part_past_killing_photo
+  - id: card_medical_desk_records
+    title: '의료동 간이책상 2'
+    text: |
+      맨아래 서랍의 더 안쪽을 살피니 이러한 "건강기록 비교 발췌" 자료가 있었다.
+    imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/clue/liver-compatibility.png'
+    imageAlt: '윤유성과 윤슬의 건강기록 비교 발췌 자료'
+    backId: back_medical_desk_records
+    effects:
+      - type: addPart
+        partId: part_liver_compatibility
   - id: card_siphon_guide
     title: '세탁실에 붙어있는 안내문'
     text: |
@@ -1280,7 +1314,7 @@ endbook:
 
     호스 안을 물로 채운 뒤 낮은 쪽 끝을 내리면, 높은 곳에 있던 물은 단수 상태에서도 다른 용기로 흘러간다. 젖은 구두 자국은 어린이용 수조와 호스, 파란통 사이를 여러 번 오간 흔적이었다. 서기준은 그 방식을 이용해 수조의 물을 파란통으로 옮겼고, 아직 살아 있던 오완주의 호흡을 그곳에서 막았다. 이후 젖은 수건과 현장 정리로 윤유성의 약물 범행처럼 보이게 만들었다.
 
-    조희수는 주사기를 숨겼고 한다정은 고무링을 숨겼다. 윤유성은 쓰러뜨릴 만큼의 동기와 행동이 있었지만 마지막 사망 순간까지 책임지지는 않았다. 간 적합성 문서와 구겨진 폴라로이드는, 현장과 사람을 목적에 맞게 다뤄 온 손을 서기준 쪽으로 좁힌다.
+    조희수는 주사기를 숨겼고 한다정은 고무링을 숨겼다. 윤유성은 쓰러뜨릴 만큼의 동기와 행동이 있었지만 마지막 사망 순간까지 책임지지는 않았다. 건강기록 비교 발췌와 구겨진 폴라로이드는, 현장과 사람을 목적에 맞게 다뤄 온 손을 서기준 쪽으로 좁힌다.
   variantMatched: |
     최종 투표는 서기준에게 닿았다. 재단의 기록 뒤에 숨어 있던 마지막 손이 드러났다.
   variantNotMatched: |
