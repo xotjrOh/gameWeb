@@ -279,7 +279,7 @@ roles:
         hint: '라벨이 온전하지 않은 작은 약품 용기입니다. 비어 있다는 사실만으로도 질문을 받을 수 있습니다.'
     secretTextPath: rulesheets/rabbit-turtle-finish-line-night/fox.txt
     secretTextHighlights:
-      - '폐기 대상.'
+      - '시장 뒤 지하통로.비 오는 날.대상 처리 완료.'
       - '비공개 처리 기록.'
       - '외부 반출 금지.'
       - '오른뺨을 가르는 흉터. 정바른의 모습이 담긴 기사였다.'
