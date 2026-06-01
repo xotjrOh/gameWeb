@@ -166,12 +166,12 @@ parts:
     source: '의료동 소문'
     note: '선발전 우승이 윤슬의 수술 기회와 연결됐다는 소문이다.'
   - id: part_medical_shoe_cabinet
-    name: '의료동 신발장'
-    source: '의료동 신발장'
+    name: '의료동 입구 신발장'
+    source: '의료동 입구 신발장'
     note: '의료동에 드나든 사람이 조희수뿐이었다는 직원 증언이다.'
   - id: part_medical_shoe_cabinet_recheck
-    name: '의료동 신발장'
-    source: '의료동 신발장'
+    name: '의료동 입구 신발장'
+    source: '의료동 입구 신발장'
     note: '신발장 깊숙한 칸 안쪽에서 젖은 구두가 발견된다.'
   - id: part_jara_belongings
     name: '서기준의 소지품'
@@ -313,7 +313,7 @@ roles:
     ruleText: |
       당신은 침착하게 규칙과 기록을 정리하는 사람처럼 행동할 수 있습니다.
       단서가 공개될수록 의료동, 수조, 비품, 가족 문제를 하나의 선으로 연결하려는 시도를 끊어 내야 합니다.
-      의료동 신발장에는 당신이 벗어 둔 구두가 숨겨져 있습니다. 다음 조사에서 젖은 구두가 발견될 수 있으니, 다른 플레이어들이 그곳을 다시 조사하지 못하도록 자연스럽게 유도하는 편이 좋습니다.
+      의료동 입구 신발장에는 당신이 벗어 둔 구두가 숨겨져 있습니다. 다음 조사에서 젖은 구두가 발견될 수 있으니, 다른 플레이어들이 그곳을 다시 조사하지 못하도록 자연스럽게 유도하는 편이 좋습니다.
     belongingHints:
       - label: '소지품'
         hint: '겉으로는 정리된 행사 실무자의 물건뿐입니다. 진짜 위험한 기록은 의료동 간이책상 쪽에 있습니다.'
@@ -381,7 +381,7 @@ investigations:
     - roleId: jara
       round: 1
       targetId: r1_medical_shoe_cabinet
-      reason: '서기준은 재활수조실 밖 동선을 먼저 확인하자고 제안했습니다. 첫 조사는 의료동 신발장을 확인해야 합니다.'
+      reason: '서기준은 재활수조실 밖 동선을 먼저 확인하자고 제안했습니다. 첫 조사는 의료동 입구 신발장을 확인해야 합니다.'
   layout:
     sections:
       - id: pre_scene
@@ -494,7 +494,7 @@ investigations:
           heightPct: 12
         - id: map_r1_medical_shoe_cabinet
           targetId: r1_medical_shoe_cabinet
-          label: '의료동 신발장'
+          label: '의료동 입구 신발장'
           xPct: 17
           yPct: 4
           widthPct: 12
@@ -713,7 +713,7 @@ investigations:
           cardPool:
             - card_medical_wing_rumor
         - id: r1_medical_shoe_cabinet
-          label: '의료동 신발장'
+          label: '의료동 입구 신발장'
           targetType: location
           entityKey: medical_shoe_cabinet
           sectionId: pre_scene
@@ -722,7 +722,7 @@ investigations:
           repeatable: true
           cardBack:
             imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
-            shortLabel: '의료동 신발장'
+            shortLabel: '의료동 입구 신발장'
           cardPool:
             - card_medical_shoe_cabinet_first
             - card_medical_shoe_cabinet_recheck
@@ -907,7 +907,7 @@ investigations:
           cardPool:
             - card_medical_wing_rumor
         - id: r1_medical_shoe_cabinet
-          label: '의료동 신발장'
+          label: '의료동 입구 신발장'
           targetType: location
           entityKey: medical_shoe_cabinet
           sectionId: pre_scene
@@ -916,7 +916,7 @@ investigations:
           repeatable: true
           cardBack:
             imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
-            shortLabel: '의료동 신발장'
+            shortLabel: '의료동 입구 신발장'
           cardPool:
             - card_medical_shoe_cabinet_first
             - card_medical_shoe_cabinet_recheck
@@ -1113,7 +1113,7 @@ cards:
       - type: addPart
         partId: part_medical_wing_rumor
   - id: card_medical_shoe_cabinet_first
-    title: '의료동 신발장'
+    title: '의료동 입구 신발장'
     text: |
       의료동 입구 신발장을 겉에서 확인했다.
       눈에 보이는 신발과 슬리퍼에는 특별히 젖은 흔적이 없다.
@@ -1126,7 +1126,7 @@ cards:
       - type: addPart
         partId: part_medical_shoe_cabinet
   - id: card_medical_shoe_cabinet_recheck
-    title: '의료동 신발장'
+    title: '의료동 입구 신발장'
     text: |
       신발장 깊숙한 칸 안쪽에 젖은 구두 한 켤레가 놓여 있다.
     publicRevealDisabled: true
