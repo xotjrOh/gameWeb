@@ -73,7 +73,7 @@ flow:
 
         자라는 의료동 쪽 복도를 한 번 확인하고는 낮은 목소리로 말합니다.
 
-        “현장 안은 의사들이 보고 있습니다. 안쪽은 건드리지 말고, 밖부터 확인하죠. 본행사 중 자리를 비운 건 저희 넷뿐입니다. 의료동 입구, 복도, 그리고 각자의 소지품을 먼저 보겠습니다.”
+        “현장 안은 의사들이 보고 있습니다. 안쪽은 건드리지 말고, 밖부터 확인하죠. 오완주가 자리를 비웠을 때부터 여우가 비명을 지르기까지 자리를 비운 건 저희 넷뿐입니다. 의료동 입구, 복도, 그리고 각자의 소지품을 먼저 보겠습니다.”
 
         소지품을 보자는 말에 모두의 표정이 굳었습니다.
 
@@ -217,11 +217,11 @@ parts:
   - id: part_child_tank_waterline
     name: '어린이용 수조'
     source: '재활수조실'
-    note: '2m × 1m, 높이 50cm로 표기된 수조다.'
+    note: '6m × 3m, 높이 50cm로 표기된 수조다.'
   - id: part_adult_tank_specs
     name: '성인용 수조'
     source: '성인용 수조'
-    note: '2m × 5m, 높이 120cm로 표기된 수조다.'
+    note: '6m × 10m, 높이 120cm로 표기된 수조다.'
   - id: part_glass_scratches
     name: '통유리 외벽'
     source: '성인용 수조 외벽'
@@ -1150,7 +1150,7 @@ cards:
     title: '의료동에서 도는 소문1'
     text: |
       의료동에서는 윤유성이 선발전에서 이겼다면 윤슬이 수술을 받을 수 있었을 거라는 말이 돈다.
-      경기 우승으로 수술을 받았으면 살 확률이 높았을텐데..
+      경기 우승으로 수술을 받았으면 살 확률이 높았을 텐데..
     publicRevealDisabled: true
     backId: back_medical_wing_rumor
     effects:
@@ -1168,8 +1168,8 @@ cards:
   - id: card_medical_shoe_cabinet_first
     title: '의료동 입구 신발장'
     text: |
-      나는 이름표가 있는것도 아니니 젖은 구두를 벗어 신발장에 넣어뒀다.
-      간이책상에 숨겨둔 물건을 챙겨갈까 했지만 기자가 깔린 마당에 이 이상 수상한 행동은 안 하는게 좋을거라 생각해 재활수조실 입구로 돌아갔다.
+      나는 이름표가 있는 것도 아니니 젖은 구두를 벗어 신발장에 넣어뒀다.
+      간이책상에 숨겨둔 물건을 챙겨갈까 했지만 기자가 깔린 마당에 이 이상 수상한 행동은 안 하는 게 좋을 거라 생각해 재활수조실 입구로 돌아갔다.
     publicRevealDisabled: true
     backId: back_medical_shoe_cabinet_first
     effects:
@@ -1234,7 +1234,7 @@ cards:
   - id: card_medical_desk_photo
     title: '의료동 간이책상 1'
     text: |
-      덜 닫혀있는 간이책상의 맨아래 서랍을 열자 이상한 철판 하나와 빈봉투 몇 개, 그리고 다음과 같은 폴라로이드 사진이 발견되었다.
+      덜 닫혀 있는 간이책상의 맨 아래 서랍을 열자 이상한 철판 하나와 빈 봉투 몇 개, 그리고 다음과 같은 폴라로이드 사진이 발견되었다.
     imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/clue/past-killing-photo.png'
     imageAlt: '구겨진 폴라로이드 사진'
     backId: back_medical_desk_photo
@@ -1244,7 +1244,7 @@ cards:
   - id: card_medical_desk_records
     title: '의료동 간이책상 2'
     text: |
-      맨아래 서랍의 더 안쪽을 살피니 이러한 "건강기록 비교 발췌" 자료가 있었다.
+      맨 아래 서랍의 더 안쪽을 살피니 이러한 "건강기록 비교 발췌" 자료가 있었다.
     imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/clue/liver-compatibility.png'
     imageAlt: '윤유성과 윤슬의 건강기록 비교 발췌 자료'
     backId: back_medical_desk_records
@@ -1264,7 +1264,7 @@ cards:
   - id: card_child_tank_waterline
     title: '어린이용 수조'
     text: |
-      수조 벽면에 크기가 적혀있다. 2m × 1m, 높이 50cm다.
+      수조 벽면에 크기가 적혀있다. 6m × 3m, 높이 50cm다.
       약 3cm의 물이 차있고, 벽면에 젖은 자국을 보니 물이 줄거나 늘어나지는 않은 것 같다.
     backId: back_child_tank_waterline
     extraInvestigationOnReveal: true
@@ -1274,8 +1274,8 @@ cards:
   - id: card_adult_tank_specs
     title: '성인용 수조'
     text: |
-      옆면 표기는 2m × 5m, 높이 120cm다.
-      사건 직후 물은 거의 없고 벽면에 젖은 자국이 없는 걸 보니 물은 원래 비어있던게 맞는거같다.
+      옆면 표기는 6m × 10m, 높이 120cm다.
+      사건 직후 물은 거의 없고 벽면에 젖은 자국이 없는 걸 보니 물은 원래 비어 있던 게 맞는 것 같다.
     backId: back_adult_tank_specs
     extraInvestigationOnReveal: true
     effects:
@@ -1293,7 +1293,7 @@ cards:
     title: '용왕에 대한 소문1'
     text: |
       용왕이 이름을 알린 뒤 가난한 자들도 병원 진단을 받을 수 있게 되었다.
-      굶는 아이들이 줄어들어, 용왕은 세간에서 구세주이다.
+      굶는 아이들이 줄어들어, 용왕은 세간에서 구세주로 불린다.
     publicRevealDisabled: true
     backId: back_dragon_king_rumor_1
     effects:
@@ -1359,7 +1359,7 @@ endbook:
 
     하지만 사실이라고 해서, 진실은 아니다. 거북의 사체에는 물기가 없었고, 목을 조른 흔적이나 둔기로 맞은 외상도 없었다. 남은 것은 등껍질의 얕은 긁힘뿐이었다.
 
-    어린이용 수조는 2m × 1m, 높이 50cm였다. 재활수조실은 단수였으니 그 물이 갑자기 줄거나 늘어난 것 같지는 않았다. 반대로 성인용 수조는 2m × 5m, 높이 120cm였고, 사건 직후에는 바닥 잔수만 남아 있었다.
+    어린이용 수조는 6m × 3m, 높이 50cm였다. 재활수조실은 단수였으니 그 물이 갑자기 줄거나 늘어난 것 같지는 않았다. 반대로 성인용 수조는 6m × 10m, 높이 120cm였고, 사건 직후에는 바닥 잔수만 남아 있었다.
 
     수건 회수용 파란통은 입구의 지름 45cm, 높이 약 50cm였다. 젖은 수건의 습기처럼 보였던 물기는, 좁은 통 안에 물이 머물렀던 흔적일 수도 있었다. 길이 약 5m의 고무호스는 어린이용 수조와 파란통을 현실적으로 이어 줄 수 있었다.
 
