@@ -149,39 +149,39 @@ parts:
   - id: part_turtle_body
     name: '거북의 사체 상태'
     source: '재활수조실'
-    note: '물기와 치명적인 외상은 없고 등껍질에만 얕은 긁힌 흔적이 있다.'
+    note: '목 조름이나 둔기 외상, 얼굴 주변 압박흔은 없고 등껍질 한쪽에 얕은 긁힌 흔적과 입가의 희미한 씁쓸한 약 냄새가 있다.'
   - id: part_rubber_ring
-    name: '검은 고무링'
+    name: '하얀 고무링'
     source: '한다정의 손수건'
-    note: '한다정이 숨긴 작은 검은 고무링이다.'
+    note: '작고 하얀 고무링이다. 다른 물건에 들어가는 고무패킹으로 보인다.'
   - id: part_black_thermos
     name: '윤유성의 검은 보온병'
     source: '윤유성의 소지품'
-    note: '마개 안쪽 홈에 있어야 할 고무링이 빠져 있다.'
+    note: '고무패킹이 빠져 있고, 씁쓸한 냄새와 녹다 만 흰 가루 흔적이 남아 있다.'
   - id: part_turtle_envelope
     name: '거북의 자필 고백'
     source: '서류봉투'
-    note: '거북이 선발전에서 수면유도제를 사용했다는 고백이다.'
+    note: '오완주의 자필 고백문과 오완주 명의 수면유도제 처방전 사본이 들어 있다.'
   - id: part_rabbit_family
     name: '토끼 가족 사진'
     source: '한다정의 소지품'
-    note: '윤슬의 죽음을 감정적으로 암시한다.'
+    note: '윤슬과 수술 약속이 적힌 가족사진이다.'
   - id: part_medical_wing_rumor
     name: '의료동에서 도는 소문1'
     source: '의료동 소문'
-    note: '선발전 우승이 윤슬의 수술 기회와 연결됐다는 소문이다.'
+    note: '윤유성이 선발전에서 이겼다면 윤슬이 수술을 받을 수 있었을 거라는 의료동 소문이다.'
   - id: part_medical_wing_rumor_2
     name: '의료동에서 도는 소문2'
     source: '의료동 소문'
-    note: '본행사 직전 의료동 출입자에 대한 소문이다.'
+    note: '본행사 전 조희수가 서기준의 간이책상에 머물렀고, 그 뒤 조희수의 비명까지 네 명 중 의료동 출입자는 없었다는 소문이다.'
   - id: part_medical_shoe_cabinet
     name: '의료동 입구 신발장'
     source: '의료동 입구 신발장'
-    note: '의료동에 드나든 사람이 조희수뿐이었다는 직원 증언이다.'
+    note: '젖은 구두를 벗어 의료동 입구 신발장에 넣고, 간이책상 물건은 챙기지 못했다는 기록이다.'
   - id: part_medical_shoe_cabinet_recheck
     name: '의료동 입구 신발장'
     source: '의료동 입구 신발장'
-    note: '신발장 깊숙한 칸 안쪽에서 젖은 구두가 발견된다.'
+    note: '의료동 입구 신발장 깊숙한 칸 안쪽에서 젖은 구두 한 켤레가 발견된다.'
   - id: part_jara_belongings
     name: '서기준의 소지품'
     source: '서기준의 소지품'
@@ -189,39 +189,39 @@ parts:
   - id: part_liver_compatibility
     name: '건강기록 비교 발췌'
     source: '의료동 간이책상 2'
-    note: '재단과 서기준이 윤유성을 섬에 붙잡아야 했던 이유다.'
+    note: '윤유성과 윤슬의 건강기록을 비교한 발췌 자료다.'
   - id: part_syringe_trace
     name: '투명한 액체가 든 주사기'
     source: '조희수의 소지품'
-    note: '조희수가 자라를 해치려 했다는 의심을 만든다.'
+    note: '투명한 액체가 든 일회용 주사기다.'
   - id: part_empty_vial
     name: '피 묻은 빈 약병'
     source: '조희수의 소지품'
-    note: '라벨을 확인하기 어려운 빈 약병이다.'
+    note: '피가 묻어 약명이 가려진 빈 약병이다.'
   - id: part_dragon_king_rumor_1
     name: '용왕에 대한 소문1'
     source: '행사장 소문'
-    note: '용왕이 이름을 알린 뒤 가난한 자도 병원 진단을 받을 수 있게 되었다는 소문이다.'
+    note: '용왕이 이름을 알린 뒤 가난한 자들도 병원 진단을 받을 수 있게 되었고, 세간에서 구세주로 불렸다는 소문이다.'
   - id: part_rubber_hose
     name: '고무호스의 물기'
     source: '재활수조실'
-    note: '길이가 매우 긴 청소용 고무호스다.'
+    note: '약 5m 길이, 직경 2.3cm의 물기가 묻은 고무호스다.'
   - id: part_siphon_guide
     name: '세탁실에 붙어있는 안내문'
     source: '세탁실 벽'
     note: '튜브 안을 먼저 액체로 채운 뒤 낮은 쪽 용기로 내려 보내는 방법을 설명한다.'
   - id: part_towel_bin
     name: '수건 회수용 파란통'
-    source: '비품 정리실'
-    note: '축축한 수건 때문에 내부에 물기가 맺혀 있다.'
+    source: '수건 회수용 파란통'
+    note: '축축한 수건들이 담겨 있어서 그런지 내부에 물기가 맺혀 있고, 입구 지름은 45cm, 높이는 약 50cm다.'
   - id: part_child_tank_waterline
     name: '어린이용 수조'
     source: '재활수조실'
-    note: '6m × 3m, 높이 50cm로 표기된 수조다.'
+    note: '6m × 3m, 높이 50cm로 표기된 수조이며, 약 3cm의 물이 차 있고 물이 줄거나 늘어난 것 같지는 않다.'
   - id: part_adult_tank_specs
     name: '성인용 수조'
-    source: '성인용 수조'
-    note: '6m × 10m, 높이 120cm로 표기된 수조다.'
+    source: '재활수조실'
+    note: '6m × 10m, 높이 120cm로 표기된 수조이며, 사건 직후 물은 거의 없고 벽면에 젖은 자국도 없다.'
   - id: part_glass_scratches
     name: '통유리 외벽'
     source: '성인용 수조 외벽'
@@ -229,7 +229,7 @@ parts:
   - id: part_past_killing_photo
     name: '구겨진 폴라로이드'
     source: '의료동 간이책상 1'
-    note: '구겨진 사진 속에는 과거 누군가를 살해하던 자라의 모습이 남아 있다.'
+    note: '의료동 간이책상에서 발견된 구겨진 폴라로이드 사진이다.'
   - id: part_dragon_king_rumor_2
     name: '용왕에 대한 소문2'
     source: '행사장 소문'
@@ -237,7 +237,7 @@ parts:
   - id: part_wet_shoeprints
     name: '젖은 구두 자국'
     source: '재활수조실 바닥'
-    note: '어린이용 수조, 호스, 파란통 사이를 반복해서 오간 젖은 구두 자국이다.'
+    note: '재활수조실 바닥 곳곳에 흐리게 남은 젖은 구두 자국이다. 수조실 내부에서는 방향을 알아보기 힘들고, 복도 쪽 흔적은 기자들과 직원들의 발자국에 뭉개져 있다.'
 
 roles:
   - id: rabbit_husband
@@ -304,8 +304,8 @@ roles:
       - '방금 서기준이 사라진 방향이었다.'
       - '나는 선반 뒤에서 약물이 든 주사기를 쥔 채 기다렸다.'
       - '하지만 발소리는 비품 정리실 앞에서 멈추지 않았다.'
-      - '그리고 분명 이 방향으로 사라진건 서기준이었다.'
-      - '그 순간 나는 목격자가 아니라 약물을 들고 기다리던 사람이 된다.'
+      - '그대로 안쪽 통로 위편으로 멀어졌다.'
+      - '그 순간 나는 목격자가 아니라 약물을 들고 기다리던 용의자가 된다.'
       - '서기준을 죽이러 온 기자.'
 
   - id: jara
