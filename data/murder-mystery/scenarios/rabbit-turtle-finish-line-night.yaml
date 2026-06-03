@@ -197,7 +197,7 @@ parts:
   - id: part_empty_vial
     name: '피 묻은 빈 약병'
     source: '조희수의 소지품'
-    note: '피가 묻어 약명이 가려진 빈 약병이다.'
+    note: '피가 조금 묻은, 진정제 라벨의 빈 약병이다.'
   - id: part_dragon_king_rumor_1
     name: '용왕에 대한 소문1'
     source: '행사장 소문'
@@ -1204,7 +1204,7 @@ cards:
     title: '조희수 소지품 2'
     text: |
       조희수의 품 속에서 빈 약병이 발견되었다.
-      약병 라벨에는 피가 묻어 약명이 가려져 있다.
+      약병 라벨에는 "진정제"라고 적혀 있고, 병에는 피가 조금 묻어 있다.
     backId: back_empty_vial
     effects:
       - type: addPart
