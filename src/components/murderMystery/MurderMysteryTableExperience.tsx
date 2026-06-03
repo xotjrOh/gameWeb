@@ -1938,7 +1938,7 @@ const RulebookModal = ({
           onReportSpecialEvent={onReportSpecialEvent}
           pageSx={{
             height: {
-              xs: fullScreen ? 'calc(100vh - 206px)' : 660,
+              xs: fullScreen ? 'calc(100svh - 206px)' : 660,
               sm: 760,
             },
           }}

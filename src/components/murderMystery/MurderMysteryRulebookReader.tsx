@@ -61,6 +61,13 @@ const isRulebookSection = (value: unknown): value is RulebookSection =>
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
 
+const pageFrameHeight = { xs: '76svh', sm: 'clamp(780px, 84dvh, 960px)' };
+const pageFramePadding = { xs: 1.7, sm: 3 };
+const pageContentMinHeight = {
+  xs: 'calc(76svh - 27.2px)',
+  sm: 'calc(clamp(780px, 84dvh, 960px) - 48px)',
+};
+
 export default function MurderMysteryRulebookReader({
   storageKey,
   roleDisplayName,
@@ -276,7 +283,7 @@ export default function MurderMysteryRulebookReader({
         }
       }}
       tabIndex={0}
-      sx={{ outline: 'none' }}
+      sx={{ position: 'relative', outline: 'none' }}
     >
       <Stack
         direction="row"
@@ -416,9 +423,10 @@ export default function MurderMysteryRulebookReader({
         sx={[
           {
             position: 'relative',
-            height: { xs: '76dvh', sm: 'clamp(780px, 84dvh, 960px)' },
+            // 모바일 브라우저 UI가 접히고 펼쳐져도 룰지 페이지가 재분할되지 않게 한다.
+            height: pageFrameHeight,
             overflow: 'hidden',
-            p: { xs: 1.7, sm: 3 },
+            p: pageFramePadding,
             borderRadius: 2,
             backgroundColor: '#f5ecd5',
             color: '#241b12',
@@ -426,16 +434,32 @@ export default function MurderMysteryRulebookReader({
             boxShadow: '0 24px 70px rgba(0,0,0,0.35)',
           },
           ...(Array.isArray(pageSx) ? pageSx : pageSx ? [pageSx] : []),
+          ...(isRolebookCover
+            ? [
+                {
+                  height: 'auto',
+                  minHeight: pageFrameHeight,
+                  overflow: 'visible',
+                },
+              ]
+            : []),
         ]}
       >
-        <Box sx={{ position: 'relative', height: '100%', overflow: 'hidden' }}>
+        <Box
+          sx={{
+            position: 'relative',
+            height: isRolebookCover ? 'auto' : '100%',
+            minHeight: isRolebookCover ? pageContentMinHeight : undefined,
+            overflow: isRolebookCover ? 'visible' : 'hidden',
+          }}
+        >
           {isRolebookCover ? (
             <CharacterBookCover
               displayName={roleDisplayName}
               publicText={rolePublicText}
               portraitSrc={portraitSrc}
               portraitAlt={portraitAlt}
-              sx={{ height: '100%', minHeight: 0 }}
+              sx={{ minHeight: 'inherit' }}
             />
           ) : section === 'prologue' ? (
             <Typography
@@ -630,24 +654,38 @@ export default function MurderMysteryRulebookReader({
               ) : null}
             </Typography>
           )}
-          <Typography
-            ref={secretMeasureRef}
-            component="div"
-            aria-hidden
-            sx={{
-              position: 'absolute',
-              inset: 0,
-              opacity: 0,
-              pointerEvents: 'none',
-              whiteSpace: 'pre-wrap',
-              fontSize: { xs: 15, sm: 17 },
-              lineHeight: { xs: 1.55, sm: 1.78 },
-              wordBreak: 'keep-all',
-              height: '100%',
-              overflow: 'hidden',
-            }}
-          />
         </Box>
+      </Box>
+
+      <Box
+        aria-hidden
+        sx={[
+          {
+            position: 'absolute',
+            top: 0,
+            left: -10000,
+            width: '100%',
+            height: pageFrameHeight,
+            overflow: 'hidden',
+            p: pageFramePadding,
+            opacity: 0,
+            pointerEvents: 'none',
+          },
+          ...(Array.isArray(pageSx) ? pageSx : pageSx ? [pageSx] : []),
+        ]}
+      >
+        <Typography
+          ref={secretMeasureRef}
+          component="div"
+          sx={{
+            whiteSpace: 'pre-wrap',
+            fontSize: { xs: 15, sm: 17 },
+            lineHeight: { xs: 1.55, sm: 1.78 },
+            wordBreak: 'keep-all',
+            height: '100%',
+            overflow: 'hidden',
+          }}
+        />
       </Box>
 
       <Stack direction="row" spacing={1} alignItems="center">

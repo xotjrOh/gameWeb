@@ -5,6 +5,7 @@
   "scripts": {
     "prepare": "husky || true",
     "dev": "next dev",
+    "dev:mobile": "node scripts/dev-mobile.mjs",
     "build": "next build --no-lint",
     "start": "next start",
     "typecheck": "yarn exec tsc --noEmit",

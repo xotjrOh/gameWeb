@@ -173,9 +173,9 @@ export function CharacterBookCover({
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'stretch',
-          gap: { xs: 1.05, sm: 1.8 },
-          px: { xs: 1.7, sm: 3.2 },
-          py: { xs: 1.25, sm: 2.5 },
+          gap: { xs: 0.8, sm: 1.8 },
+          px: { xs: 1.5, sm: 3.2 },
+          py: { xs: 1.1, sm: 2.5 },
           borderRadius: 1.2,
           color: '#1f1710',
           background:
@@ -238,7 +238,7 @@ export function CharacterBookCover({
         label={displayName}
         sx={{
           alignSelf: 'center',
-          width: { xs: 'min(82vw, 300px)', sm: 330 },
+          width: { xs: 'min(76vw, 280px)', sm: 330 },
           mt: { xs: -0.2, sm: -0.5 },
           boxShadow: '0 16px 38px rgba(49, 33, 18, 0.16)',
         }}
@@ -253,7 +253,7 @@ export function CharacterBookCover({
         <Typography
           component="h2"
           sx={{
-            fontSize: { xs: 31, sm: 45 },
+            fontSize: { xs: 29, sm: 45 },
             fontWeight: 950,
             lineHeight: 1.05,
             wordBreak: 'keep-all',
@@ -262,7 +262,7 @@ export function CharacterBookCover({
           {displayName}
         </Typography>
         <Divider
-          sx={{ my: { xs: 1.2, sm: 1.7 }, borderColor: 'rgba(75,54,33,0.26)' }}
+          sx={{ my: { xs: 1, sm: 1.7 }, borderColor: 'rgba(75,54,33,0.26)' }}
         />
         <Typography
           variant="overline"
@@ -279,7 +279,7 @@ export function CharacterBookCover({
             mt: 0.65,
             whiteSpace: 'pre-wrap',
             color: '#51402b',
-            lineHeight: { xs: 1.55, sm: 1.68 },
+            lineHeight: { xs: 1.48, sm: 1.68 },
             fontWeight: 760,
             wordBreak: 'keep-all',
           }}
