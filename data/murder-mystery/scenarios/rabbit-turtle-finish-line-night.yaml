@@ -178,7 +178,7 @@ parts:
   - id: part_jara_belongings
     name: '서기준의 소지품'
     source: '서기준의 소지품'
-    note: '손수건, 행사 진행표, 평범한 필기구뿐이다.'
+    note: '손수건, 행사 진행표, 평범한 필기구와 행사 종료 후 의료동 문진 및 회복 음료 확인 메모가 있다.'
   - id: part_liver_compatibility
     name: '건강기록 비교 발췌'
     source: '의료동 간이책상 2'
@@ -226,7 +226,7 @@ parts:
   - id: part_dragon_king_rumor_2
     name: '용왕에 대한 소문2'
     source: '행사장 소문'
-    note: '용왕이 아프다는 소문 이후 다시 굶는 아이들이 늘었다는 소문이다.'
+    note: '용왕이 병환으로 업무를 돌보지 못하게 되자 길거리에는 다시 굶는 아이들이 늘어났다는 소문이다.'
   - id: part_wet_shoeprints
     name: '젖은 구두 자국'
     source: '재활수조실 바닥'
@@ -295,7 +295,7 @@ roles:
         hint: '진정제입니다.'
     secretTextPath: rulesheets/rabbit-turtle-finish-line-night/fox.txt
     secretTextHighlights:
-      - '시장 뒤 지하통로.비 오는 날.대상 처리 완료.'
+      - '시장 뒤 지하통로. 비 오는 날. 대상 처리 완료.'
       - '비공개 처리 기록.'
       - '외부 반출 금지.'
       - '오른뺨을 가르는 흉터. 정바른의 모습이 담긴 기사였다.'
@@ -1196,6 +1196,9 @@ cards:
     title: '서기준의 소지품'
     text: |
       서기준의 소지품은 손수건, 행사 진행표, 평범한 필기구뿐이다.
+      행사 진행표 아래쪽에는 개인 메모처럼 보이는 작은 일정이 적혀 있다.
+
+      "행사 종료 후 21:40 의료동 문진 / 회복 음료 확인"
     backId: back_jara_belongings
     effects:
       - type: addPart
@@ -1311,7 +1314,7 @@ cards:
     title: '용왕에 대한 소문2'
     text: |
       10년쯤 전부터 용왕이 아프다는 소문이 돌었다.
-      그 시기부터 길거리에는 다시 굶는 아이들이 늘어나기 시작했다.
+      용왕이 업무를 돌보지 못하게 되니, 길거리에는 다시 굶는 아이들이 늘어나기 시작했다.
     publicRevealDisabled: true
     backId: back_dragon_king_rumor_2
     effects:
