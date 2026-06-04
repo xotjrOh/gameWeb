@@ -17,8 +17,6 @@ import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 import { getKakaoShareErrorMessage, shareKakaoText } from '@/lib/kakaoShare';
 import {
   MurderMysterySeatPosition,
-  MurderMysterySecretGuessInput,
-  MurderMysterySecretGuessJudgement,
   MurderMysterySpecialEventOutcome,
 } from '@/types/murderMystery';
 
@@ -308,24 +306,11 @@ export default function MurderMysteryGameScreen({
     );
   };
 
-  const handleSubmitSecretGuesses = (
-    guesses: MurderMysterySecretGuessInput[]
-  ) => {
+  const handleSubmitEndingChoice = (choiceId: string, optionId: string) => {
     emitWithAck(
-      'mm_submit_secret_guesses',
-      { roomId, sessionId, guesses },
-      '비밀 추측을 제출했습니다.'
-    );
-  };
-
-  const handleJudgeSecretGuess = (
-    submissionId: string,
-    judgement: MurderMysterySecretGuessJudgement
-  ) => {
-    emitWithAck(
-      'mm_judge_secret_guess',
-      { roomId, sessionId, submissionId, judgement },
-      '채점을 저장했습니다.'
+      'mm_submit_ending_choice',
+      { roomId, sessionId, choiceId, optionId },
+      '엔딩 선택을 제출했습니다.'
     );
   };
 
@@ -449,8 +434,7 @@ export default function MurderMysteryGameScreen({
       pendingReservationBackId={pendingReservationBackId}
       onRevealMyClue={handleRevealMyClue}
       onSubmitVote={handleSubmitVote}
-      onSubmitSecretGuesses={handleSubmitSecretGuesses}
-      onJudgeSecretGuess={handleJudgeSecretGuess}
+      onSubmitEndingChoice={handleSubmitEndingChoice}
       onReportSpecialEvent={handleReportSpecialEvent}
     />
   );

@@ -91,7 +91,7 @@
   - `pendingInvestigations`
   - `voteByPlayerId`
   - `finalVoteResult`
-  - `endbookVariant`
+  - `endingChoiceById`
 
 즉 클라이언트가 로직을 계산하는 구조가 아니라, 서버가 상태를 확정하고 클라이언트는 결과를 소비하는 구조다.
 
@@ -240,7 +240,7 @@ phase는 `LOBBY + scenario.flow.steps[].id` 조합으로 움직인다.
 - 파츠 5개를 단서 카드 효과로 공개
 - 한 역할은 `isKiller: true`
 - 최종 투표는 단일 정답 role을 맞히는 구조
-- 엔딩은 `matched / notMatched` 2갈래
+- 최종 투표 뒤 조건부 `ending_choice` 단계와 `endbook.variants` 다중 분기를 지원
 - 가이드 역할은 카드 공개 시 표시 이름이 바뀌는 연출 포함
 
 즉 "서사형 머더미스터리 + 제한된 수의 조사 라운드 + 단일 범인 지목 + 분기 엔딩"에 최적화된 현재형이다.
@@ -254,15 +254,14 @@ phase는 `LOBBY + scenario.flow.steps[].id` 조합으로 움직인다.
 - `investigationsPerRound` 필드는 스키마에 있지만 런타임은 사실상 플레이어당 라운드별 1회 조사에 맞춰져 있다.
 - `partsAutoReveal`, `noEliminationDuringGame`도 스키마에는 있지만 현재 엔진 전반이 그 분기를 깊게 활용하는 구조는 아니다.
 - 최종 투표는 "정답 role 하나"를 맞히는 모델이다.
-- 엔딩도 기본적으로 `matched / notMatched` 2분기다.
+- 엔딩은 `endbook.variants`로 여러 갈래를 낼 수 있지만, 조건은 최종 투표 결과와 `endingChoices` 제출값 기준이다.
 
 즉 아래 같은 요구는 "시나리오 데이터 추가"가 아니라 "엔진 확장"으로 프롬프트를 써야 한다.
 
 - 한 라운드에 2회 이상 조사
 - 플레이어 탈락/격리의 실제 진행 로직
 - 여러 정답 role 또는 복수 범인
-- 엔딩 3개 이상 분기
-- 투표 후 추가 phase 재진입
+- 조사/토론 단계로 되돌아가는 투표 후 재진입
 
 ## 13. GPT가 Codex에게 머더미스터리 작업을 시킬 때 좋은 표현
 

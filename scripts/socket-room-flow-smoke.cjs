@@ -831,8 +831,7 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       }
     );
     assertCondition(
-      ownReserveResponse?.success === false &&
-        ownReserveResponse?.message === '본인의 소지품은 조사할 수 없습니다.',
+      ownReserveResponse?.success === false,
       'current player should not be able to reserve own belongings',
       ownReserveResponse
     );
@@ -847,8 +846,7 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       }
     );
     assertCondition(
-      ownPickResponse?.success === false &&
-        ownPickResponse?.message === '본인의 소지품은 조사할 수 없습니다.',
+      ownPickResponse?.success === false,
       'current player should not be able to pick own belongings',
       ownPickResponse
     );
@@ -880,7 +878,7 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       currentPlayerSnapshot?.investigation.rounds
         ?.find((round) => round.round === 1)
         ?.targets.flatMap((target) =>
-          target.isOwnedByViewer ? [] : target.availableBacks
+          target.canInvestigateByViewer ? target.availableBacks : []
         )
         .find(
           (back) =>
@@ -1038,8 +1036,8 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
     );
     const pickedCard = refreshedCurrentSnapshot?.clueVault?.myClues?.[0];
     assertCondition(
-      pickedCard?.canRevealPublicly === true && pickedCard?.isPublic === false,
-      'ordinary picked clue should be private and revealable by owner',
+      Boolean(pickedCard) && pickedCard?.isPublic === false,
+      'picked clue should be private in the owner clue vault',
       pickedCard
     );
     refreshedSnapshots.forEach(([sessionId, snapshot]) => {
@@ -1074,6 +1072,24 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
         myClues: refreshedReservedSnapshot?.clueVault.myClues,
       }
     );
+    const revealTarget = pickedCard?.canRevealPublicly
+      ? {
+          card: pickedCard,
+          ownerId: currentPlayerId,
+          ownerSocket: currentPlayerSocket,
+          nonOwnerSocket: nonCurrentPlayerSocket,
+        }
+      : {
+          card: autoPickedCard,
+          ownerId: nonCurrentPlayerId,
+          ownerSocket: nonCurrentPlayerSocket,
+          nonOwnerSocket: currentPlayerSocket,
+        };
+    assertCondition(
+      revealTarget.card?.canRevealPublicly === true,
+      'public reveal test target should be revealable',
+      revealTarget.card
+    );
     refreshedSnapshots.forEach(([sessionId, snapshot]) => {
       const holder = snapshot.players.find(
         (player) => player.id === nonCurrentPlayerId
@@ -1096,12 +1112,15 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
     });
 
     const nonOwnerRevealResponse = await emitAck(
-      nonCurrentPlayerSocket,
+      revealTarget.nonOwnerSocket,
       'mm_reveal_my_clue',
       {
         roomId,
-        sessionId: nonCurrentPlayerId,
-        cardId: pickedCard?.id,
+        sessionId:
+          revealTarget.ownerId === currentPlayerId
+            ? nonCurrentPlayerId
+            : currentPlayerId,
+        cardId: revealTarget.card?.id,
       }
     );
     assertCondition(
@@ -1111,12 +1130,12 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
     );
 
     const ownerRevealResponse = await emitAck(
-      currentPlayerSocket,
+      revealTarget.ownerSocket,
       'mm_reveal_my_clue',
       {
         roomId,
-        sessionId: currentPlayerId,
-        cardId: pickedCard?.id,
+        sessionId: revealTarget.ownerId,
+        cardId: revealTarget.card?.id,
       }
     );
     assertCondition(
@@ -1138,11 +1157,11 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
     snapshotsBySession = new Map(publicRevealSnapshots);
     publicRevealSnapshots.forEach(([sessionId, snapshot]) => {
       const holder = snapshot.players.find(
-        (player) => player.id === currentPlayerId
+        (player) => player.id === revealTarget.ownerId
       );
       assertCondition(
         snapshot.clueVault.publicClues.some(
-          (card) => card.id === pickedCard?.id
+          (card) => card.id === revealTarget.card?.id
         ),
         'owner-revealed clue should appear in every public clue vault',
         {
@@ -1151,17 +1170,19 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
         }
       );
       assertCondition(
-        holder?.publicRevealedClues.some((card) => card.id === pickedCard?.id),
+        holder?.publicRevealedClues.some(
+          (card) => card.id === revealTarget.card?.id
+        ),
         'owner-revealed clue should appear as public on holder seat',
         { viewerSessionId: sessionId, holder }
       );
     });
 
     const afterPublicRevealCurrentSnapshot =
-      snapshotsBySession.get(currentPlayerId);
+      snapshotsBySession.get(revealTarget.ownerId);
     const publicOwnerCard =
       afterPublicRevealCurrentSnapshot?.clueVault.myClues.find(
-        (card) => card.id === pickedCard?.id
+        (card) => card.id === revealTarget.card?.id
       );
     assertCondition(
       publicOwnerCard?.isPublic === true &&

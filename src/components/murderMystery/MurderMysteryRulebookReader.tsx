@@ -491,7 +491,7 @@ export default function MurderMysteryRulebookReader({
                 </Typography>
                 <Typography sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.72 }}>
                   {personalGoal ||
-                    '역할 룰지의 비밀 정보와 당일의 기억을 바탕으로, 최종 지목과 비밀 제출에서 자신에게 유리한 결론을 만드세요.'}
+                    '역할 룰지의 비공개 정보와 당일의 기억을 바탕으로, 최종 지목과 마지막 선택에서 자신에게 유리한 결론을 만드세요.'}
                 </Typography>
               </Box>
               {ruleText ? (

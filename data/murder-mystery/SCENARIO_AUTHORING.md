@@ -11,6 +11,7 @@
 
 - `flow.steps`가 실제 진행 탭/스텝퍼를 결정합니다.
 - 필수 kind: `intro`, `final_vote`, `endbook`.
+- 최종 지목 후 역할별 추가 선택이 필요하면 `kind: ending_choice` 단계를 `final_vote`와 `endbook` 사이에 둡니다.
 - 조사/토론 단계는 `kind: investigate|discuss` + `round`를 반드시 넣습니다.
 - `durationSec`은 타이머 기본값입니다. 0초가 되어도 자동 진행되지 않습니다.
 - `enterAnnouncement`를 주면 해당 단계 진입 시 전체 시스템 로그/배너로 표시됩니다.
@@ -46,3 +47,11 @@
 - 플레이어 화면은 기본적으로 파츠 카운터만 노출합니다.
 - `rules.partsPublicDetail: false`를 기본값으로 유지하세요.
 - 진행자 상세 확인은 진행자 화면에서만 허용됩니다.
+
+## Ending Choices / Endbook
+
+- `endingChoices[]`는 최종 지목 뒤 특정 역할에게 열리는 선택지입니다.
+- `endingChoices[].opensWhen.finalVoteOptionId`로 특정 최종 지목 결과에서만 선택지를 열 수 있습니다.
+- `endbook.variants[]`는 위에서 아래 순서로 조건을 검사합니다.
+- `endbook.variants[].when.choices`에는 `endingChoiceId: optionId` 형태로 엔딩 조건을 적습니다.
+- 개인 비밀 제출/채점 단계는 더 이상 사용하지 않습니다.

@@ -12,7 +12,6 @@ import {
   Divider,
   IconButton,
   Stack,
-  TextField,
   Tooltip,
   Typography,
   useMediaQuery,
@@ -54,8 +53,6 @@ import {
   MurderMysteryReportableSpecialEventView,
   MurderMysteryRoleSheetView,
   MurderMysterySeatPosition,
-  MurderMysterySecretGuessInput,
-  MurderMysterySecretGuessJudgement,
   MurderMysterySpecialEventOutcome,
   MurderMysteryStateSnapshot,
   MurderMysteryStepKind,
@@ -88,11 +85,7 @@ interface MurderMysteryTableExperienceProps {
   pendingReservationBackId: string | null;
   onRevealMyClue: (cardId: string) => void;
   onSubmitVote: (voteOptionId: string) => void;
-  onSubmitSecretGuesses: (guesses: MurderMysterySecretGuessInput[]) => void;
-  onJudgeSecretGuess: (
-    submissionId: string,
-    judgement: MurderMysterySecretGuessJudgement
-  ) => void;
+  onSubmitEndingChoice: (choiceId: string, optionId: string) => void;
   onReportSpecialEvent: (
     eventId: string,
     outcome: MurderMysterySpecialEventOutcome
@@ -2864,8 +2857,7 @@ export default function MurderMysteryTableExperience({
   pendingReservationBackId,
   onRevealMyClue,
   onSubmitVote,
-  onSubmitSecretGuesses,
-  onJudgeSecretGuess,
+  onSubmitEndingChoice,
   onReportSpecialEvent,
 }: MurderMysteryTableExperienceProps) {
   const theme = useTheme();
@@ -2910,15 +2902,9 @@ export default function MurderMysteryTableExperience({
   const [draftRolePreferenceIds, setDraftRolePreferenceIds] = useState<
     string[]
   >([]);
-  const [secretGuessDrafts, setSecretGuessDrafts] = useState<
-    Record<string, string>
-  >({});
   const selectedCard = cardViewer?.cards[cardViewer.index] ?? null;
 
   const playerIdsKey = snapshot.players.map((player) => player.id).join('|');
-  const secretTargetIdsKey = snapshot.secretReview.targetPlayers
-    .map((player) => player.playerId)
-    .join('|');
   const roleIdsKey = snapshot.roleSelection.roles
     .map((role) => role.id)
     .join('|');
@@ -3052,12 +3038,12 @@ export default function MurderMysteryTableExperience({
     phaseKind !== 'endbook';
   const canAdvancePhase =
     (phaseKind !== 'role_reading' || snapshot.roleReading.allReady) &&
-    (phaseKind !== 'secret_review' || snapshot.secretReview.allJudged);
+    (phaseKind !== 'ending_choice' || snapshot.endingChoices.allSubmitted);
   const nextPhaseTooltip =
     phaseKind === 'role_reading' && !snapshot.roleReading.allReady
       ? '모든 플레이어가 다 읽었어요를 눌러야 진행할 수 있습니다.'
-      : phaseKind === 'secret_review' && !snapshot.secretReview.allJudged
-        ? '모든 비밀 채점이 끝나야 엔딩으로 진행할 수 있습니다.'
+      : phaseKind === 'ending_choice' && !snapshot.endingChoices.allSubmitted
+        ? '모든 엔딩 선택이 제출되어야 진행할 수 있습니다.'
         : '다음 단계';
   const canFinalizeVote =
     canUseHostTools &&
@@ -3073,15 +3059,6 @@ export default function MurderMysteryTableExperience({
     draftRolePreferenceIds.length === snapshot.roleSelection.roles.length &&
     new Set(draftRolePreferenceIds).size ===
       snapshot.roleSelection.roles.length;
-  const canSubmitSecretGuesses =
-    !snapshot.secretReview.yourSubmitted &&
-    snapshot.secretReview.targetPlayers.length > 0 &&
-    snapshot.secretReview.targetPlayers.every(
-      (player) => secretGuessDrafts[player.playerId]?.trim().length > 0
-    );
-  const hasPendingSecretJudgement =
-    snapshot.secretReview.allSubmitted &&
-    snapshot.secretReview.receivedGuesses.some((guess) => !guess.judgement);
   const openModalCount =
     Number(isRulebookOpen) +
     Number(isPrivateCardsOpen) +
@@ -3367,17 +3344,6 @@ export default function MurderMysteryTableExperience({
       ownPreferenceIds.length === roleIds.length ? ownPreferenceIds : roleIds
     );
   }, [roleIdsKey, ownPreferenceIdsKey]);
-
-  useEffect(() => {
-    setSecretGuessDrafts((current) =>
-      Object.fromEntries(
-        snapshot.secretReview.targetPlayers.map((player) => [
-          player.playerId,
-          current[player.playerId] ?? '',
-        ])
-      )
-    );
-  }, [secretTargetIdsKey, snapshot.secretReview.targetPlayers]);
 
   const setRolePreferenceRank = (roleId: string, rankIndex: number) => {
     const scenarioRoleIds = snapshot.roleSelection.roles.map((role) => role.id);
@@ -4289,131 +4255,88 @@ export default function MurderMysteryTableExperience({
     </Stack>
   );
 
-  const renderSecretReviewArea = () => {
-    const review = snapshot.secretReview;
-
-    if (isHostView && review.targetPlayers.length === 0) {
-      return (
-        <Stack spacing={1.6}>
-          <Box>
-            <Typography variant="h5" fontWeight={950}>
-              비밀 제출/채점
-            </Typography>
-            <Typography sx={{ color: '#d8d0bd' }}>
-              진행자는 제출과 채점 진행률만 확인합니다.
-            </Typography>
-          </Box>
-          <Chip
-            label={`제출 ${review.submittedPlayers} / ${review.totalPlayers}`}
-          />
-          <Chip
-            label={`채점 ${review.judgedSubmissions} / ${review.totalSubmissions}`}
-          />
-        </Stack>
-      );
-    }
+  const renderEndingChoiceArea = () => {
+    const endingChoices = snapshot.endingChoices;
 
     return (
       <Stack spacing={1.6}>
         <Box>
           <Typography variant="h5" fontWeight={950}>
-            비밀 제출/채점
+            최종 선택
           </Typography>
           <Typography sx={{ color: '#d8d0bd' }}>
-            다른 두 사람이 숨긴 비밀을 익명으로 적고, 모두 제출되면 자신에게
-            도착한 추측을 채점하세요.
+            최종 지목 결과에 따라 열린 선택입니다. 이 선택은 엔딩에 크게 영향을
+            줍니다.
           </Typography>
         </Box>
         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
           <Chip
-            label={`제출 ${review.submittedPlayers} / ${review.totalPlayers}`}
+            label={`제출 ${endingChoices.submittedCount} / ${endingChoices.totalCount}`}
+            color={endingChoices.allSubmitted ? 'success' : 'warning'}
           />
-          <Chip
-            label={`채점 ${review.judgedSubmissions} / ${review.totalSubmissions}`}
-          />
+          {endingChoices.progress.map((progress) => (
+            <Chip
+              key={progress.choiceId}
+              label={`${progress.roleDisplayName}: ${
+                progress.submitted ? '제출 완료' : '대기'
+              }`}
+              color={progress.submitted ? 'success' : 'warning'}
+            />
+          ))}
         </Stack>
-        {!review.allSubmitted ? (
-          review.yourSubmitted ? (
-            <Typography sx={{ color: '#d8d0bd' }}>
-              제출 완료. 다른 플레이어의 제출을 기다리는 중입니다.
-            </Typography>
-          ) : (
-            <Stack spacing={1.2}>
-              {review.targetPlayers.map((player) => (
-                <TextField
-                  key={player.playerId}
-                  label={`${player.displayName}의 비밀`}
-                  value={secretGuessDrafts[player.playerId] ?? ''}
-                  multiline
-                  minRows={2}
-                  inputProps={{ maxLength: 500 }}
-                  onChange={(event) =>
-                    setSecretGuessDrafts((current) => ({
-                      ...current,
-                      [player.playerId]: event.target.value,
-                    }))
-                  }
-                  sx={{
-                    '& .MuiInputBase-root': {
-                      color: '#f8f1de',
-                      backgroundColor: 'rgba(10, 13, 18, 0.54)',
-                    },
-                    '& .MuiInputLabel-root': { color: '#d8d0bd' },
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(255,255,255,0.2)',
-                    },
-                  }}
-                />
-              ))}
-            </Stack>
-          )
-        ) : (
-          <Stack spacing={1.2}>
-            {review.receivedGuesses.map((guess, index) => (
-              <Box
-                key={guess.submissionId}
-                sx={{
-                  p: 1.4,
-                  borderRadius: 2,
-                  backgroundColor: 'rgba(15, 19, 24, 0.78)',
-                  border: '1px solid rgba(255,255,255,0.16)',
-                }}
-              >
-                <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
-                  익명 제출 {index + 1}
-                </Typography>
-                <Typography sx={{ whiteSpace: 'pre-wrap', my: 1 }}>
-                  {guess.text}
-                </Typography>
-                <Stack direction="row" spacing={0.8}>
-                  <Button
-                    size="small"
-                    variant={
-                      guess.judgement === 'correct' ? 'contained' : 'outlined'
-                    }
-                    color="success"
-                    onClick={() =>
-                      onJudgeSecretGuess(guess.submissionId, 'correct')
-                    }
-                  >
-                    맞음
-                  </Button>
-                  <Button
-                    size="small"
-                    variant={
-                      guess.judgement === 'incorrect' ? 'contained' : 'outlined'
-                    }
-                    color="inherit"
-                    onClick={() =>
-                      onJudgeSecretGuess(guess.submissionId, 'incorrect')
-                    }
-                  >
-                    아님
-                  </Button>
+        {endingChoices.choices.length > 0 ? (
+          endingChoices.choices.map((choice) => (
+            <Box
+              key={choice.id}
+              sx={{
+                p: 1.4,
+                borderRadius: 2,
+                backgroundColor: 'rgba(15, 19, 24, 0.78)',
+                border: '1px solid rgba(255,255,255,0.16)',
+              }}
+            >
+              <Stack spacing={1.1}>
+                <Box>
+                  <Typography fontWeight={900}>{choice.label}</Typography>
+                  <Typography sx={{ color: '#d8d0bd', whiteSpace: 'pre-wrap' }}>
+                    {choice.description}
+                  </Typography>
+                </Box>
+                <Stack direction="row" spacing={0.8} flexWrap="wrap" useFlexGap>
+                  {choice.options.map((option) => (
+                    <Button
+                      key={option.id}
+                      size="small"
+                      variant={
+                        choice.yourSelection === option.id
+                          ? 'contained'
+                          : 'outlined'
+                      }
+                      color={
+                        choice.yourSelection === option.id
+                          ? 'success'
+                          : 'warning'
+                      }
+                      disabled={choice.submitted}
+                      onClick={() => onSubmitEndingChoice(choice.id, option.id)}
+                    >
+                      {option.label}
+                    </Button>
+                  ))}
                 </Stack>
-              </Box>
-            ))}
-          </Stack>
+                {choice.yourSelection ? (
+                  <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
+                    선택을 제출했습니다. 다른 선택을 기다리는 중입니다.
+                  </Typography>
+                ) : null}
+              </Stack>
+            </Box>
+          ))
+        ) : (
+          <Typography sx={{ color: '#d8d0bd' }}>
+            이 단계에서 당신에게 열린 선택지는 없습니다. 필요한 선택이 제출될
+            때까지 기다리세요.
+          </Typography>
         )}
       </Stack>
     );
@@ -4608,71 +4531,38 @@ export default function MurderMysteryTableExperience({
           ) : null}
         </>
       );
-    } else if (phaseKind === 'secret_review') {
-      const review = snapshot.secretReview;
-      title = !review.allSubmitted
-        ? review.yourSubmitted
-          ? '비밀 추측 제출 완료'
-          : '다른 사람의 비밀을 제출하세요'
-        : hasPendingSecretJudgement
-          ? '도착한 비밀 추측을 채점하세요'
-          : '비밀 제출/채점 완료';
-      description = !review.allSubmitted
-        ? review.yourSubmitted
-          ? '다른 플레이어의 제출을 기다리는 중입니다.'
-          : '다른 두 플레이어의 비밀을 모두 적어 제출하세요.'
-        : hasPendingSecretJudgement
-          ? '자신에게 도착한 익명 제출을 맞음/아님으로 채점하세요.'
-          : '방장이 엔딩으로 진행할 수 있습니다.';
+    } else if (phaseKind === 'ending_choice') {
+      const endingChoices = snapshot.endingChoices;
+      const hasPendingChoice = endingChoices.choices.some(
+        (choice) => !choice.submitted
+      );
+      title = endingChoices.allSubmitted
+        ? '최종 선택 완료'
+        : hasPendingChoice
+          ? '엔딩 선택을 제출하세요'
+          : '엔딩 선택 대기 중';
+      description = endingChoices.allSubmitted
+        ? '방장이 엔딩으로 진행할 수 있습니다.'
+        : hasPendingChoice
+          ? '당신에게 열린 선택지를 확인하고 제출하세요.'
+          : '다른 인물의 선택이 제출되기를 기다리는 중입니다.';
       chips = (
         <Stack direction="row" spacing={0.5}>
           <Chip
             size="small"
-            label={`제출 ${review.submittedPlayers}/${review.totalPlayers}`}
-            color={review.allSubmitted ? 'success' : 'warning'}
-          />
-          <Chip
-            size="small"
-            label={`채점 ${review.judgedSubmissions}/${review.totalSubmissions}`}
-            color={review.allJudged ? 'success' : 'default'}
+            label={`제출 ${endingChoices.submittedCount}/${endingChoices.totalCount}`}
+            color={endingChoices.allSubmitted ? 'success' : 'warning'}
           />
         </Stack>
       );
-      actions = !review.allSubmitted ? (
-        !review.yourSubmitted && canSubmitSecretGuesses ? (
-          <Button
-            size="small"
-            variant="contained"
-            color="warning"
-            onClick={() =>
-              onSubmitSecretGuesses(
-                review.targetPlayers.map((player) => ({
-                  targetPlayerId: player.playerId,
-                  text: secretGuessDrafts[player.playerId] ?? '',
-                }))
-              )
-            }
-          >
-            비밀 추측 제출
-          </Button>
-        ) : !review.yourSubmitted ? (
-          <Button
-            size="small"
-            variant="outlined"
-            color="inherit"
-            onClick={bringPhaseActionsIntoView}
-          >
-            입력란 보기
-          </Button>
-        ) : null
-      ) : hasPendingSecretJudgement ? (
+      actions = hasPendingChoice ? (
         <Button
           size="small"
           variant="contained"
           color="warning"
           onClick={bringPhaseActionsIntoView}
         >
-          추측 채점하기
+          선택지 보기
         </Button>
       ) : null;
     }
@@ -4757,8 +4647,8 @@ export default function MurderMysteryTableExperience({
       return renderVoteArea();
     }
 
-    if (phaseKind === 'secret_review') {
-      return renderSecretReviewArea();
+    if (phaseKind === 'ending_choice') {
+      return renderEndingChoiceArea();
     }
 
     return (
@@ -4768,7 +4658,7 @@ export default function MurderMysteryTableExperience({
         </Typography>
         <Typography sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.72 }}>
           {snapshot.endbook
-            ? `${snapshot.endbook.common}\n\n${snapshot.endbook.variant}\n\n${snapshot.endbook.closingLine}`
+            ? `${snapshot.endbook.title}\n\n${snapshot.endbook.body}\n\n${snapshot.endbook.closingLine}`
             : '투표 집계 후 엔딩이 표시됩니다.'}
         </Typography>
       </Stack>

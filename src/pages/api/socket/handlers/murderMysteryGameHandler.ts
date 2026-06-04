@@ -4,11 +4,11 @@ import { validatePlayer, validateRoom } from '../utils/validation';
 import {
   advanceExpiredMurderMysteryDiscussionIfNeeded,
   appendMurderMysteryAnnouncement,
+  buildMurderMysteryEndbookText,
   buildMurderMysteryRoleShareText,
   buildMurderMysterySnapshot,
   clearMurderMysteryRolePreferences,
   finalizeMurderMysteryVote,
-  judgeMurderMysterySecretGuess,
   markMurderMysteryPhaseRead,
   moveMurderMysteryToNextPhase,
   reportMurderMysterySpecialEvent,
@@ -19,9 +19,9 @@ import {
   clearMurderMysteryInvestigationReservation,
   setMurderMysteryInvestigationReservation,
   startMurderMysteryGame,
+  submitMurderMysteryEndingChoice,
   submitMurderMysteryInvestigation,
   submitMurderMysteryRolePreferences,
-  submitMurderMysterySecretGuesses,
   submitMurderMysteryVote,
   updateMurderMysterySeatPosition,
 } from '../services/murderMysteryStateMachine';
@@ -605,37 +605,19 @@ const murderMysteryGameHandler = (
   );
 
   socket.on(
-    'mm_submit_secret_guesses',
-    ({ roomId, sessionId, guesses }, callback) => {
+    'mm_submit_ending_choice',
+    ({ roomId, sessionId, choiceId, optionId }, callback) => {
       try {
         const room = toMurderMysteryRoom(validateRoom(roomId));
         const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
         validatePlayer(room, sessionId);
 
-        submitMurderMysterySecretGuesses(room, scenario, sessionId, guesses);
-
-        emitMurderMysterySnapshotsWithTimerSync(room, scenario);
-        return callback({ success: true });
-      } catch (error) {
-        return callback({ success: false, message: (error as Error).message });
-      }
-    }
-  );
-
-  socket.on(
-    'mm_judge_secret_guess',
-    ({ roomId, sessionId, submissionId, judgement }, callback) => {
-      try {
-        const room = toMurderMysteryRoom(validateRoom(roomId));
-        const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
-        validatePlayer(room, sessionId);
-
-        judgeMurderMysterySecretGuess(
+        submitMurderMysteryEndingChoice(
           room,
           scenario,
           sessionId,
-          submissionId,
-          judgement
+          choiceId,
+          optionId
         );
 
         emitMurderMysterySnapshotsWithTimerSync(room, scenario);
@@ -706,14 +688,10 @@ const murderMysteryGameHandler = (
         throw new Error('엔딩 단계에서만 실행할 수 있습니다.');
       }
 
-      const variant =
-        room.gameData.endbookVariant === 'matched'
-          ? scenario.endbook.variantMatched
-          : scenario.endbook.variantNotMatched;
       const announcement = appendMurderMysteryAnnouncement(
         room,
         'ENDBOOK',
-        `${scenario.endbook.common}\n${variant}\n${scenario.endbook.closingLine}`
+        buildMurderMysteryEndbookText(room, scenario)
       );
       emitMurderMysteryAnnouncement(room, io, announcement);
       emitMurderMysterySnapshotsWithTimerSync(room, scenario);

@@ -27,7 +27,7 @@ const toStepKind = (value) =>
   value === 'investigate' ||
   value === 'discuss' ||
   value === 'final_vote' ||
-  value === 'secret_review' ||
+  value === 'ending_choice' ||
   value === 'endbook'
     ? value
     : null;
@@ -393,8 +393,11 @@ for (const entry of registry.scenarios) {
   if (!scenario.finalVote?.question || !correctRoleId) {
     fail(`${entry.file}: finalVote.question/correctRoleId are required`);
   }
-  if (!scenario.endbook?.common || !scenario.endbook?.closingLine) {
-    fail(`${entry.file}: endbook.common/closingLine are required`);
+  if (
+    !Array.isArray(scenario.endbook?.variants) ||
+    scenario.endbook.variants.length === 0
+  ) {
+    fail(`${entry.file}: endbook.variants must be non-empty`);
   }
 
   const roleIds = new Set(scenario.roles.map((role) => role.id));
@@ -433,16 +436,16 @@ for (const entry of registry.scenarios) {
       `${entry.file}: finalVote.correctRoleId is unknown (${correctRoleId})`
     );
   }
+  const finalVoteOptionIds = new Set();
   if (Array.isArray(scenario.finalVote.options)) {
-    const optionIds = new Set();
     for (const [index, option] of scenario.finalVote.options.entries()) {
       if (!option.id || !option.label || !option.optionType) {
         fail(`${entry.file}: finalVote.options[${index}] fields are required`);
       }
-      if (optionIds.has(option.id)) {
+      if (finalVoteOptionIds.has(option.id)) {
         fail(`${entry.file}: duplicated finalVote option id (${option.id})`);
       }
-      optionIds.add(option.id);
+      finalVoteOptionIds.add(option.id);
       if (!['role', 'npc', 'none'].includes(option.optionType)) {
         fail(`${entry.file}: finalVote option(${option.id}) type is invalid`);
       }
@@ -458,10 +461,92 @@ for (const entry of registry.scenarios) {
         (option) =>
           option.optionType === 'role' && option.roleId === correctRoleId
       )?.id;
-    if (!correctOptionId || !optionIds.has(correctOptionId)) {
+    if (!correctOptionId || !finalVoteOptionIds.has(correctOptionId)) {
       fail(
         `${entry.file}: finalVote.correctOptionId is unknown (${correctOptionId})`
       );
+    }
+  }
+
+  const endingChoiceOptionIds = new Map();
+  if (Array.isArray(scenario.endingChoices)) {
+    if (scenario.endingChoices.length > 0 && !flowKinds.has('ending_choice')) {
+      fail(`${entry.file}: flow requires ending_choice when endingChoices exist`);
+    }
+    const endingChoiceIds = new Set();
+    for (const choice of scenario.endingChoices) {
+      if (!choice.id || !choice.roleId || !choice.label || !choice.description) {
+        fail(`${entry.file}: endingChoice fields are required`);
+      }
+      if (endingChoiceIds.has(choice.id)) {
+        fail(`${entry.file}: duplicated endingChoice id (${choice.id})`);
+      }
+      endingChoiceIds.add(choice.id);
+      if (!roleIds.has(choice.roleId)) {
+        fail(
+          `${entry.file}: endingChoice(${choice.id}) references unknown role (${choice.roleId})`
+        );
+      }
+      const opensWhenVoteOptionId = choice.opensWhen?.finalVoteOptionId;
+      if (
+        typeof opensWhenVoteOptionId === 'string' &&
+        !finalVoteOptionIds.has(opensWhenVoteOptionId)
+      ) {
+        fail(
+          `${entry.file}: endingChoice(${choice.id}) opensWhen references unknown finalVoteOptionId (${opensWhenVoteOptionId})`
+        );
+      }
+      if (!Array.isArray(choice.options) || choice.options.length === 0) {
+        fail(`${entry.file}: endingChoice(${choice.id}) options are required`);
+      }
+      const optionIds = new Set();
+      for (const option of choice.options) {
+        if (!option.id || !option.label) {
+          fail(`${entry.file}: endingChoice(${choice.id}) option fields are required`);
+        }
+        if (optionIds.has(option.id)) {
+          fail(
+            `${entry.file}: duplicated endingChoice option id (${choice.id}.${option.id})`
+          );
+        }
+        optionIds.add(option.id);
+      }
+      endingChoiceOptionIds.set(choice.id, optionIds);
+    }
+  }
+
+  const endbookVariantIds = new Set();
+  for (const variant of scenario.endbook.variants) {
+    if (!variant.id || !variant.title || !variant.body || !variant.closingLine) {
+      fail(`${entry.file}: endbook variant fields are required`);
+    }
+    if (endbookVariantIds.has(variant.id)) {
+      fail(`${entry.file}: duplicated endbook variant id (${variant.id})`);
+    }
+    endbookVariantIds.add(variant.id);
+    const finalVoteOptionId = variant.when?.finalVoteOptionId;
+    if (
+      typeof finalVoteOptionId === 'string' &&
+      !finalVoteOptionIds.has(finalVoteOptionId)
+    ) {
+      fail(
+        `${entry.file}: endbook variant(${variant.id}) references unknown finalVoteOptionId (${finalVoteOptionId})`
+      );
+    }
+    if (variant.when?.choices) {
+      for (const [choiceId, optionId] of Object.entries(variant.when.choices)) {
+        const optionIds = endingChoiceOptionIds.get(choiceId);
+        if (!optionIds) {
+          fail(
+            `${entry.file}: endbook variant(${variant.id}) references unknown endingChoice (${choiceId})`
+          );
+        }
+        if (!optionIds.has(optionId)) {
+          fail(
+            `${entry.file}: endbook variant(${variant.id}) references unknown endingChoice option (${choiceId}.${optionId})`
+          );
+        }
+      }
     }
   }
 

@@ -89,10 +89,18 @@ finalVote:
   correctRoleId: role_a
 
 endbook:
-  common: |
-    공통 엔딩
-  variantMatched: |
-    정답 분기
-  variantNotMatched: |
-    오답 분기
-  closingLine: "《엔딩 타이틀》"
+  variants:
+    - id: matched
+      title: "정답 엔딩"
+      when:
+        finalVoteMatched: true
+      body: |
+        정답 분기
+      closingLine: "《엔딩 타이틀》"
+    - id: not_matched
+      title: "오답 엔딩"
+      when:
+        finalVoteMatched: false
+      body: |
+        오답 분기
+      closingLine: "《엔딩 타이틀》"
