@@ -242,7 +242,7 @@ export interface MurderMysteryEndingChoiceScenario {
   options: MurderMysteryEndingChoiceOptionScenario[];
 }
 
-export interface MurderMysteryEndbookVariantConditionScenario {
+export interface MurderMysteryEndbookConditionScenario {
   finalVoteMatched?: boolean;
   finalVoteOptionId?: string | null;
   choices?: Record<string, string>;
@@ -253,7 +253,15 @@ export interface MurderMysteryEndbookVariantScenario {
   title: string;
   body: string;
   closingLine: string;
-  when: MurderMysteryEndbookVariantConditionScenario;
+  when: MurderMysteryEndbookConditionScenario;
+}
+
+export interface MurderMysteryEndbookSectionScenario {
+  id: string;
+  title?: string;
+  body: string;
+  closingLine?: string;
+  when?: MurderMysteryEndbookConditionScenario;
 }
 
 export interface MurderMysteryScenario {
@@ -286,7 +294,10 @@ export interface MurderMysteryScenario {
   };
   endingChoices: MurderMysteryEndingChoiceScenario[];
   endbook: {
+    title?: string;
+    closingLine?: string;
     variants: MurderMysteryEndbookVariantScenario[];
+    sections: MurderMysteryEndbookSectionScenario[];
   };
 }
 

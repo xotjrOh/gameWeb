@@ -52,6 +52,8 @@
 
 - `endingChoices[]`는 최종 지목 뒤 특정 역할에게 열리는 선택지입니다.
 - `endingChoices[].opensWhen.finalVoteOptionId`로 특정 최종 지목 결과에서만 선택지를 열 수 있습니다.
-- `endbook.variants[]`는 위에서 아래 순서로 조건을 검사합니다.
-- `endbook.variants[].when.choices`에는 `endingChoiceId: optionId` 형태로 엔딩 조건을 적습니다.
+- `endbook.variants[]`는 위에서 아래 순서로 조건을 검사해 하나의 완성 엔딩을 고릅니다.
+- `endbook.sections[]`는 위에서 아래 순서로 조건에 맞는 섹션을 모두 붙여 하나의 엔딩을 조립합니다. 공통 진상 + 역할별 선택 결과처럼 독립 조각을 합쳐야 할 때 사용합니다.
+- `endbook.variants[].when.choices`와 `endbook.sections[].when.choices`에는 `endingChoiceId: optionId` 형태로 엔딩 조건을 적습니다.
+- `endbook.sections[].when`이 없으면 항상 포함됩니다. 매칭된 섹션 중 뒤쪽의 `title`/`closingLine`이 최종 표시값이 되며, 없으면 `endbook.title`/`endbook.closingLine`을 사용합니다.
 - 개인 비밀 제출/채점 단계는 더 이상 사용하지 않습니다.

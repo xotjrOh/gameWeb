@@ -1596,15 +1596,15 @@ const buildEndingChoicesView = (
   };
 };
 
-const doesEndbookVariantMatch = (
+const doesEndbookConditionMatch = (
   room: MurderMysteryRoom,
-  variant: MurderMysteryScenario['endbook']['variants'][number]
+  condition?: MurderMysteryScenario['endbook']['variants'][number]['when']
 ) => {
   const result = room.gameData.finalVoteResult;
-  if (!doesFinalVoteConditionMatch(result, variant.when)) {
+  if (!doesFinalVoteConditionMatch(result, condition)) {
     return false;
   }
-  return Object.entries(variant.when.choices ?? {}).every(
+  return Object.entries(condition?.choices ?? {}).every(
     ([choiceId, optionId]) =>
       room.gameData.endingChoiceById[choiceId] === optionId
   );
@@ -1615,15 +1615,59 @@ const resolveEndbookVariant = (
   scenario: MurderMysteryScenario
 ) =>
   scenario.endbook.variants.find((variant) =>
-    doesEndbookVariantMatch(room, variant)
+    doesEndbookConditionMatch(room, variant.when)
   ) ?? scenario.endbook.variants[0];
+
+const resolveEndbookView = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario
+): MurderMysteryEndbookView => {
+  if (scenario.endbook.sections.length > 0) {
+    const matchedSections = scenario.endbook.sections.filter((section) =>
+      doesEndbookConditionMatch(room, section.when)
+    );
+    const body = matchedSections
+      .map((section) => section.body)
+      .filter(Boolean)
+      .join('\n\n');
+    const title =
+      [...matchedSections].reverse().find((section) => section.title)?.title ??
+      scenario.endbook.title ??
+      '엔딩';
+    const closingLine =
+      [...matchedSections].reverse().find((section) => section.closingLine)
+        ?.closingLine ??
+      scenario.endbook.closingLine ??
+      '';
+
+    return {
+      id:
+        matchedSections.length > 0
+          ? matchedSections.map((section) => section.id).join('+')
+          : 'composed_endbook',
+      title,
+      body,
+      closingLine,
+    };
+  }
+
+  const variant = resolveEndbookVariant(room, scenario);
+  return {
+    id: variant.id,
+    title: variant.title,
+    body: variant.body,
+    closingLine: variant.closingLine,
+  };
+};
 
 export const buildMurderMysteryEndbookText = (
   room: MurderMysteryRoom,
   scenario: MurderMysteryScenario
 ) => {
-  const variant = resolveEndbookVariant(room, scenario);
-  return `${variant.title}\n\n${variant.body}\n\n${variant.closingLine}`;
+  const endbook = resolveEndbookView(room, scenario);
+  return [endbook.title, endbook.body, endbook.closingLine]
+    .filter(Boolean)
+    .join('\n\n');
 };
 
 const buildEndbookView = (
@@ -1634,13 +1678,7 @@ const buildEndbookView = (
   if (currentStep?.kind !== 'endbook') {
     return null;
   }
-  const variant = resolveEndbookVariant(room, scenario);
-  return {
-    id: variant.id,
-    title: variant.title,
-    body: variant.body,
-    closingLine: variant.closingLine,
-  };
+  return resolveEndbookView(room, scenario);
 };
 
 const buildHostControls = (

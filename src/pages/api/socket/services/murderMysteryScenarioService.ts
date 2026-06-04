@@ -1378,6 +1378,26 @@ const normalizeEndbookVariantChoices = (
   return Object.fromEntries(entries);
 };
 
+const normalizeEndbookCondition = (
+  rawCondition: unknown,
+  context: string,
+  options: { required: boolean }
+) => {
+  if (rawCondition === undefined) {
+    assertCondition(!options.required, `${context} is required`);
+    return undefined;
+  }
+
+  const conditionRecord = requireRecord(
+    rawCondition,
+    `${context} must be object`
+  );
+  return {
+    ...normalizeFinalVoteOptionCondition(conditionRecord, context),
+    choices: normalizeEndbookVariantChoices(conditionRecord.choices, context),
+  };
+};
+
 const normalizeEndbookVariants = ({
   rawVariants,
   fileName,
@@ -1385,9 +1405,12 @@ const normalizeEndbookVariants = ({
   rawVariants: unknown;
   fileName: string;
 }): MurderMysteryScenario['endbook']['variants'] => {
+  if (rawVariants === undefined) {
+    return [];
+  }
   assertCondition(
-    Array.isArray(rawVariants) && rawVariants.length > 0,
-    `${fileName}: endbook.variants must be a non-empty array`
+    Array.isArray(rawVariants),
+    `${fileName}: endbook.variants must be array`
   );
 
   return (rawVariants as unknown[]).map((rawVariant, index) => {
@@ -1399,10 +1422,16 @@ const normalizeEndbookVariants = ({
       variantRecord.id,
       `${fileName}: endbook.variants[${index}].id is required`
     );
-    const whenRecord = requireRecord(
+    const when = normalizeEndbookCondition(
       variantRecord.when,
-      `${fileName}: endbook.variant(${id}).when is required`
+      `${fileName}: endbook.variant(${id}).when`,
+      { required: true }
     );
+    if (!when) {
+      throw new Error(
+        `[murder_mystery][scenario] ${fileName}: endbook.variant(${id}).when is required`
+      );
+    }
 
     return {
       id,
@@ -1418,16 +1447,49 @@ const normalizeEndbookVariants = ({
         variantRecord.closingLine,
         `${fileName}: endbook.variant(${id}).closingLine is required`
       ),
-      when: {
-        ...normalizeFinalVoteOptionCondition(
-          whenRecord,
-          `${fileName}: endbook.variant(${id}).when`
-        ),
-        choices: normalizeEndbookVariantChoices(
-          whenRecord.choices,
-          `${fileName}: endbook.variant(${id}).when`
-        ),
-      },
+      when,
+    };
+  });
+};
+
+const normalizeEndbookSections = ({
+  rawSections,
+  fileName,
+}: {
+  rawSections: unknown;
+  fileName: string;
+}): MurderMysteryScenario['endbook']['sections'] => {
+  if (rawSections === undefined) {
+    return [];
+  }
+  assertCondition(
+    Array.isArray(rawSections),
+    `${fileName}: endbook.sections must be array`
+  );
+
+  return (rawSections as unknown[]).map((rawSection, index) => {
+    const sectionRecord = requireRecord(
+      rawSection,
+      `${fileName}: endbook.sections[${index}] must be object`
+    );
+    const id = requireString(
+      sectionRecord.id,
+      `${fileName}: endbook.sections[${index}].id is required`
+    );
+
+    return {
+      id,
+      title: asNonEmptyString(sectionRecord.title),
+      body: requireString(
+        sectionRecord.body,
+        `${fileName}: endbook.section(${id}).body is required`
+      ),
+      closingLine: asNonEmptyString(sectionRecord.closingLine),
+      when: normalizeEndbookCondition(
+        sectionRecord.when,
+        `${fileName}: endbook.section(${id}).when`,
+        { required: false }
+      ),
     };
   });
 };
@@ -1567,8 +1629,14 @@ const normalizeScenarioSchema = (
     },
     endingChoices,
     endbook: {
+      title: asNonEmptyString(endbookRecord.title),
+      closingLine: asNonEmptyString(endbookRecord.closingLine),
       variants: normalizeEndbookVariants({
         rawVariants: endbookRecord.variants,
+        fileName,
+      }),
+      sections: normalizeEndbookSections({
+        rawSections: endbookRecord.sections,
         fileName,
       }),
     },
@@ -1633,9 +1701,11 @@ const validateScenarioSchema = (
     `${fileName}: finalVote.correctRoleId is required`
   );
   assertCondition(
-    Array.isArray(scenario.endbook?.variants) &&
-      scenario.endbook.variants.length > 0,
-    `${fileName}: endbook.variants is required`
+    (Array.isArray(scenario.endbook?.variants) &&
+      scenario.endbook.variants.length > 0) ||
+      (Array.isArray(scenario.endbook?.sections) &&
+        scenario.endbook.sections.length > 0),
+    `${fileName}: endbook.variants or endbook.sections is required`
   );
 
   const roleIds = new Set<string>();
@@ -2059,6 +2129,29 @@ const validateScenarioSchema = (
     endingChoiceOptionIdsByChoiceId.set(choice.id, choiceOptionIds);
   });
 
+  const validateEndbookCondition = (
+    context: string,
+    condition?: MurderMysteryScenario['endbook']['variants'][number]['when']
+  ) => {
+    if (condition?.finalVoteOptionId) {
+      assertCondition(
+        finalVoteOptionIds.has(condition.finalVoteOptionId),
+        `${fileName}: ${context}.when.finalVoteOptionId is unknown (${condition.finalVoteOptionId})`
+      );
+    }
+    Object.entries(condition?.choices ?? {}).forEach(([choiceId, optionId]) => {
+      const optionIds = endingChoiceOptionIdsByChoiceId.get(choiceId);
+      assertCondition(
+        optionIds,
+        `${fileName}: ${context}.when.choices references unknown endingChoice (${choiceId})`
+      );
+      assertCondition(
+        optionIds?.has(optionId),
+        `${fileName}: ${context}.when.choices.${choiceId} references unknown option (${optionId})`
+      );
+    });
+  };
+
   const endbookVariantIds = new Set<string>();
   scenario.endbook.variants.forEach((variant) => {
     assertCondition(
@@ -2066,25 +2159,17 @@ const validateScenarioSchema = (
       `${fileName}: duplicated endbook variant id (${variant.id})`
     );
     endbookVariantIds.add(variant.id);
-    if (variant.when.finalVoteOptionId) {
-      assertCondition(
-        finalVoteOptionIds.has(variant.when.finalVoteOptionId),
-        `${fileName}: endbook variant(${variant.id}).when.finalVoteOptionId is unknown (${variant.when.finalVoteOptionId})`
-      );
-    }
-    Object.entries(variant.when.choices ?? {}).forEach(
-      ([choiceId, optionId]) => {
-        const optionIds = endingChoiceOptionIdsByChoiceId.get(choiceId);
-        assertCondition(
-          optionIds,
-          `${fileName}: endbook variant(${variant.id}).when.choices references unknown endingChoice (${choiceId})`
-        );
-        assertCondition(
-          optionIds?.has(optionId),
-          `${fileName}: endbook variant(${variant.id}).when.choices.${choiceId} references unknown option (${optionId})`
-        );
-      }
+    validateEndbookCondition(`endbook variant(${variant.id})`, variant.when);
+  });
+
+  const endbookSectionIds = new Set<string>();
+  scenario.endbook.sections.forEach((section) => {
+    assertCondition(
+      !endbookSectionIds.has(section.id),
+      `${fileName}: duplicated endbook section id (${section.id})`
     );
+    endbookSectionIds.add(section.id);
+    validateEndbookCondition(`endbook section(${section.id})`, section.when);
   });
 
   scenario.roles.forEach((role) => {
