@@ -4264,9 +4264,9 @@ export default function MurderMysteryTableExperience({
           <Typography variant="h5" fontWeight={950}>
             최종 선택
           </Typography>
-          <Typography sx={{ color: '#d8d0bd' }}>
-            최종 지목 결과에 따라 열린 선택입니다. 이 선택은 엔딩에 크게 영향을
-            줍니다.
+          <Typography sx={{ color: '#d8d0bd', whiteSpace: 'pre-wrap' }}>
+            {currentStep?.description ??
+              '최종 지목 결과에 따라 열린 선택입니다. 이 선택은 엔딩에 크게 영향을 줍니다.'}
           </Typography>
         </Box>
         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
