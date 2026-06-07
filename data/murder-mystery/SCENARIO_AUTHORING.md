@@ -57,3 +57,9 @@
 - `endbook.variants[].when.choices`와 `endbook.sections[].when.choices`에는 `endingChoiceId: optionId` 형태로 엔딩 조건을 적습니다.
 - `endbook.sections[].when`이 없으면 항상 포함됩니다. 매칭된 섹션 중 뒤쪽의 `title`/`closingLine`이 최종 표시값이 되며, 없으면 `endbook.title`/`endbook.closingLine`을 사용합니다.
 - 개인 비밀 제출/채점 단계는 더 이상 사용하지 않습니다.
+
+## Writing References
+
+- `rabbit-turtle-finish-line-night` 엔딩 본문, 단서 모달, 후반 Q&A, 캐릭터별 해설을 쓰거나 고칠 때는 [WRITING_REFERENCE_ENDING_RABBIT_TURTLE.md](./WRITING_REFERENCE_ENDING_RABBIT_TURTLE.md)를 우선 적용합니다.
+- 가담항설식 가치관 충돌, 대사 리듬, 구원/복수 분기 설계는 [WRITING_REFERENCE_GADAMHANGSEOL.md](./WRITING_REFERENCE_GADAMHANGSEOL.md)를 참고합니다.
+- 시나리오 문장, 선택지, 엔딩 본문을 첨삭할 때는 [WRITING_REFERENCE_REVISION.md](./WRITING_REFERENCE_REVISION.md)를 참고합니다.
