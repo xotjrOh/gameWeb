@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Box,
   Button,
   Chip,
@@ -23,6 +26,7 @@ import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
   Close as CloseIcon,
+  ExpandMore as ExpandMoreIcon,
   HowToVote as HowToVoteIcon,
   Inventory2 as Inventory2Icon,
   IosShare as IosShareIcon,
@@ -4582,6 +4586,112 @@ export default function MurderMysteryTableExperience({
     );
   };
 
+  const renderEndbookArea = () => {
+    const endbook = snapshot.endbook;
+
+    if (!endbook) {
+      return (
+        <Stack spacing={1.6}>
+          <Typography variant="h5" fontWeight={950}>
+            엔딩
+          </Typography>
+          <Typography sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.72 }}>
+            투표 집계 후 엔딩이 표시됩니다.
+          </Typography>
+        </Stack>
+      );
+    }
+
+    const endbookText = [endbook.title, endbook.body, endbook.closingLine]
+      .filter(Boolean)
+      .join('\n\n');
+
+    return (
+      <Stack spacing={1.8}>
+        <Box>
+          <Typography variant="h5" fontWeight={950}>
+            엔딩
+          </Typography>
+          <Typography sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.72 }}>
+            {endbookText}
+          </Typography>
+        </Box>
+
+        {endbook.alternateOutcomes.length > 0 ? (
+          <Stack spacing={1.1}>
+            <Box>
+              <Typography variant="h6" fontWeight={950}>
+                다른 선택 엔딩
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#d8d0bd' }}>
+                엔딩 선택지를 다시 확인하고, 다른 선택을 했을 때의 결과를 볼 수
+                있습니다.
+              </Typography>
+            </Box>
+
+            {endbook.choiceSummaries.length > 0 ? (
+              <Stack direction="row" spacing={0.8} flexWrap="wrap" useFlexGap>
+                {endbook.choiceSummaries.map((summary) => (
+                  <Chip
+                    key={summary.choiceId}
+                    label={`${summary.roleDisplayName}: ${summary.selectedOptionLabel}`}
+                    color="success"
+                    variant="outlined"
+                  />
+                ))}
+              </Stack>
+            ) : null}
+
+            {endbook.alternateOutcomes.map((outcome) => {
+              const alternateText = [
+                outcome.title,
+                outcome.body,
+                outcome.closingLine,
+              ]
+                .filter(Boolean)
+                .join('\n\n');
+
+              return (
+                <Accordion
+                  key={`${outcome.choiceId}:${outcome.alternateOptionId}`}
+                  disableGutters
+                  sx={{
+                    color: '#f8f1de',
+                    backgroundColor: 'rgba(15, 19, 24, 0.78)',
+                    border: '1px solid rgba(255,255,255,0.16)',
+                    borderRadius: '8px !important',
+                    boxShadow: 'none',
+                    '&:before': { display: 'none' },
+                  }}
+                >
+                  <AccordionSummary
+                    expandIcon={<ExpandMoreIcon sx={{ color: '#f8f1de' }} />}
+                  >
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography fontWeight={950}>
+                        {`${outcome.choiceLabel} - 다른 선택: ${outcome.alternateOptionLabel}`}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
+                        {`실제 선택: ${outcome.selectedOptionLabel}`}
+                      </Typography>
+                    </Box>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Typography
+                      sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.72 }}
+                    >
+                      {alternateText}
+                    </Typography>
+                  </AccordionDetails>
+                </Accordion>
+              );
+            })}
+          </Stack>
+        ) : null}
+      </Stack>
+    );
+  };
+
   const renderPhaseBody = () => {
     if (phaseKind === 'lobby') {
       return (
@@ -4651,18 +4761,7 @@ export default function MurderMysteryTableExperience({
       return renderEndingChoiceArea();
     }
 
-    return (
-      <Stack spacing={1.6}>
-        <Typography variant="h5" fontWeight={950}>
-          엔딩
-        </Typography>
-        <Typography sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.72 }}>
-          {snapshot.endbook
-            ? `${snapshot.endbook.title}\n\n${snapshot.endbook.body}\n\n${snapshot.endbook.closingLine}`
-            : '투표 집계 후 엔딩이 표시됩니다.'}
-        </Typography>
-      </Stack>
-    );
+    return renderEndbookArea();
   };
 
   return (

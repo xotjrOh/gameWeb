@@ -596,6 +596,29 @@ export interface MurderMysteryEndbookView {
   title: string;
   body: string;
   closingLine: string;
+  choiceSummaries: MurderMysteryEndbookChoiceSummaryView[];
+  alternateOutcomes: MurderMysteryEndbookAlternateOutcomeView[];
+}
+
+export interface MurderMysteryEndbookChoiceSummaryView {
+  choiceId: string;
+  choiceLabel: string;
+  roleDisplayName: string;
+  selectedOptionId: string;
+  selectedOptionLabel: string;
+}
+
+export interface MurderMysteryEndbookAlternateOutcomeView {
+  choiceId: string;
+  choiceLabel: string;
+  roleDisplayName: string;
+  selectedOptionId: string;
+  selectedOptionLabel: string;
+  alternateOptionId: string;
+  alternateOptionLabel: string;
+  title: string;
+  body: string;
+  closingLine?: string;
 }
 
 export interface MurderMysteryEndingChoiceProgressView {

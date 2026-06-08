@@ -1598,16 +1598,138 @@ const buildEndingChoicesView = (
 
 const doesEndbookConditionMatch = (
   room: MurderMysteryRoom,
-  condition?: MurderMysteryScenario['endbook']['variants'][number]['when']
+  condition?: MurderMysteryScenario['endbook']['variants'][number]['when'],
+  endingChoiceById: MurderMysteryGameData['endingChoiceById'] = room.gameData
+    .endingChoiceById
 ) => {
   const result = room.gameData.finalVoteResult;
   if (!doesFinalVoteConditionMatch(result, condition)) {
     return false;
   }
   return Object.entries(condition?.choices ?? {}).every(
-    ([choiceId, optionId]) =>
-      room.gameData.endingChoiceById[choiceId] === optionId
+    ([choiceId, optionId]) => endingChoiceById[choiceId] === optionId
   );
+};
+
+const getMatchedEndbookSections = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  endingChoiceById: MurderMysteryGameData['endingChoiceById'] = room.gameData
+    .endingChoiceById
+) =>
+  scenario.endbook.sections.filter((section) =>
+    doesEndbookConditionMatch(room, section.when, endingChoiceById)
+  );
+
+const getEndingChoiceRoleDisplayName = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  choice: MurderMysteryScenario['endingChoices'][number]
+) => {
+  const choicePlayer = getPlayerByRoleId(room, choice.roleId);
+  return (
+    (choicePlayer ? getPlayerDisplayName(room, choicePlayer.id) : null) ??
+    getRoleById(scenario, choice.roleId)?.displayName ??
+    choice.roleId
+  );
+};
+
+const buildEndbookChoiceSummaries = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario
+): MurderMysteryEndbookView['choiceSummaries'] =>
+  getActiveEndingChoices(room, scenario).flatMap((choice) => {
+    const selectedOptionId = room.gameData.endingChoiceById[choice.id];
+    const selectedOption = choice.options.find(
+      (option) => option.id === selectedOptionId
+    );
+    if (!selectedOptionId || !selectedOption) {
+      return [];
+    }
+    return [
+      {
+        choiceId: choice.id,
+        choiceLabel: choice.label,
+        roleDisplayName: getEndingChoiceRoleDisplayName(room, scenario, choice),
+        selectedOptionId,
+        selectedOptionLabel: selectedOption.label,
+      },
+    ];
+  });
+
+const buildEndbookAlternateOutcomes = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  currentSections: MurderMysteryScenario['endbook']['sections']
+): MurderMysteryEndbookView['alternateOutcomes'] => {
+  if (scenario.endbook.sections.length === 0) {
+    return [];
+  }
+
+  const currentSectionIds = new Set(
+    currentSections.map((section) => section.id)
+  );
+
+  return getActiveEndingChoices(room, scenario).flatMap((choice) => {
+    const selectedOptionId = room.gameData.endingChoiceById[choice.id];
+    const selectedOption = choice.options.find(
+      (option) => option.id === selectedOptionId
+    );
+    if (!selectedOptionId || !selectedOption) {
+      return [];
+    }
+
+    return choice.options
+      .filter((option) => option.id !== selectedOptionId)
+      .flatMap((alternateOption) => {
+        const alternateChoiceById = {
+          ...room.gameData.endingChoiceById,
+          [choice.id]: alternateOption.id,
+        };
+        const alternateSections = getMatchedEndbookSections(
+          room,
+          scenario,
+          alternateChoiceById
+        ).filter(
+          (section) =>
+            !currentSectionIds.has(section.id) &&
+            section.when?.choices?.[choice.id] === alternateOption.id
+        );
+
+        if (alternateSections.length === 0) {
+          return [];
+        }
+
+        const title =
+          [...alternateSections].reverse().find((section) => section.title)
+            ?.title ?? alternateOption.label;
+        const closingLine = [...alternateSections]
+          .reverse()
+          .find((section) => section.closingLine)?.closingLine;
+
+        return [
+          {
+            choiceId: choice.id,
+            choiceLabel: choice.label,
+            roleDisplayName: getEndingChoiceRoleDisplayName(
+              room,
+              scenario,
+              choice
+            ),
+            selectedOptionId,
+            selectedOptionLabel: selectedOption.label,
+            alternateOptionId: alternateOption.id,
+            alternateOptionLabel: alternateOption.label,
+            title,
+            body: alternateSections
+              .map((section) => section.body)
+              .filter(Boolean)
+              .join('\n\n'),
+            ...(closingLine ? { closingLine } : {}),
+          },
+        ];
+      });
+  });
 };
 
 const resolveEndbookVariant = (
@@ -1622,10 +1744,10 @@ const resolveEndbookView = (
   room: MurderMysteryRoom,
   scenario: MurderMysteryScenario
 ): MurderMysteryEndbookView => {
+  const choiceSummaries = buildEndbookChoiceSummaries(room, scenario);
+
   if (scenario.endbook.sections.length > 0) {
-    const matchedSections = scenario.endbook.sections.filter((section) =>
-      doesEndbookConditionMatch(room, section.when)
-    );
+    const matchedSections = getMatchedEndbookSections(room, scenario);
     const body = matchedSections
       .map((section) => section.body)
       .filter(Boolean)
@@ -1648,6 +1770,12 @@ const resolveEndbookView = (
       title,
       body,
       closingLine,
+      choiceSummaries,
+      alternateOutcomes: buildEndbookAlternateOutcomes(
+        room,
+        scenario,
+        matchedSections
+      ),
     };
   }
 
@@ -1657,6 +1785,8 @@ const resolveEndbookView = (
     title: variant.title,
     body: variant.body,
     closingLine: variant.closingLine,
+    choiceSummaries,
+    alternateOutcomes: [],
   };
 };
 
