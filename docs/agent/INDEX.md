@@ -14,6 +14,7 @@
 8. [REQUESTED_INPUTS.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/REQUESTED_INPUTS.md)
 9. Codex hook 하네스를 건드리면 [.codex/HARNESS.md](/c:/Users/xotjr/Desktop/react/next-game-web/.codex/HARNESS.md)
 10. 필요 시 `docs/gpt-project/*`와 현재 작업 소스
+11. 토끼와 거북이 시나리오/NPC 동기 검수라면 [context/RABBIT_TURTLE_WIFE_RABBIT_PRIVATE_RULE.txt](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/context/RABBIT_TURTLE_WIFE_RABBIT_PRIVATE_RULE.txt)
 
 ## What Each Doc Does
 
@@ -33,6 +34,8 @@
   - 사용자가 요청할 때 주면 좋은 정보와, 정보가 부족할 때 Codex가 어떻게 보정할지 정리한다.
 - `context/SOCKET_DEBUG_STATUS.md`
   - 현재 소켓 이슈 조사 상태 같은 일시적 컨텍스트를 보관한다.
+- `context/RABBIT_TURTLE_WIFE_RABBIT_PRIVATE_RULE.txt`
+  - 토끼와 거북이 NPC 아내토끼 한다정의 비공개룰지 원문 사본을 보관한다.
 - `.codex/HARNESS.md`
   - Codex lifecycle hook 설정과 수동 self-test 방법을 정리한다.
 
