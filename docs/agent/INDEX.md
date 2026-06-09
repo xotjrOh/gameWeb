@@ -15,6 +15,7 @@
 9. Codex hook 하네스를 건드리면 [.codex/HARNESS.md](/c:/Users/xotjr/Desktop/react/next-game-web/.codex/HARNESS.md)
 10. 필요 시 `docs/gpt-project/*`와 현재 작업 소스
 11. 토끼와 거북이 시나리오/NPC 동기 검수라면 [context/RABBIT_TURTLE_WIFE_RABBIT_PRIVATE_RULE.txt](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/context/RABBIT_TURTLE_WIFE_RABBIT_PRIVATE_RULE.txt)
+12. 제목 회수, 대사 속 작품명, 시나리오 title drop 설계가 필요하면 [context/WRITING_TIP_TITLE_DROP.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/context/WRITING_TIP_TITLE_DROP.md)
 
 ## What Each Doc Does
 
@@ -36,6 +37,8 @@
   - 현재 소켓 이슈 조사 상태 같은 일시적 컨텍스트를 보관한다.
 - `context/RABBIT_TURTLE_WIFE_RABBIT_PRIVATE_RULE.txt`
   - 토끼와 거북이 NPC 아내토끼 한다정의 비공개룰지 원문 사본을 보관한다.
+- `context/WRITING_TIP_TITLE_DROP.md`
+  - 작문 팁 "제목말하기 기법"의 정의, 유형, 장르별 전략, 체크리스트, 템플릿을 보관한다.
 - `.codex/HARNESS.md`
   - Codex lifecycle hook 설정과 수동 self-test 방법을 정리한다.
 
