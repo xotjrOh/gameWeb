@@ -407,6 +407,18 @@ const formatInvestigationCountText = ({
   remainingClues: number;
 }) => (remainingClues > 0 ? '조사 가능' : '조사 완료');
 
+const getInvestigationTargetTypeLabel = (
+  target: MurderMysteryInvestigationTargetView
+) => {
+  if (target.targetType === 'location') {
+    return '위치';
+  }
+  if (target.targetType === 'character') {
+    return '인물';
+  }
+  return target.label.includes('소문') ? '소문' : '소지품';
+};
+
 const getRoleRankColor = (rankIndex: number) =>
   ROLE_RANK_COLORS[rankIndex] ?? ROLE_RANK_COLORS[ROLE_RANK_COLORS.length - 1];
 
@@ -2970,6 +2982,9 @@ export default function MurderMysteryTableExperience({
       (round) => round.round === activeRound
     ) ?? null;
   const canActNow = Boolean(snapshot.investigation.turn?.canActNow);
+  const isMapInvestigationPhase =
+    phaseKind === 'investigate' &&
+    Boolean(snapshot.investigation.map?.scene && activeRoundView);
   const turnOrderMarkers = useMemo(() => {
     const turn = snapshot.investigation.turn;
     if (
@@ -3647,6 +3662,49 @@ export default function MurderMysteryTableExperience({
     const targetGroups = activeRoundView
       ? buildInvestigationTargetGroups(activeRoundView.targets)
       : [];
+    const targetById = new Map(
+      activeRoundView?.targets.map((target) => [target.id, target] as const) ??
+        []
+    );
+    const mapView = snapshot.investigation.map;
+    const mapHotspots =
+      mapView?.hotspots.filter((hotspot) => targetById.has(hotspot.targetId)) ??
+      [];
+    const hotspotByTargetId = new Map(
+      mapHotspots.map((hotspot) => [hotspot.targetId, hotspot] as const)
+    );
+    const mapMatTargets = (
+      activeRoundView?.targets
+        .filter((target) => target.targetType === 'location')
+        .map((target) => {
+          const hotspot = hotspotByTargetId.get(target.id);
+          return hotspot ? { target, hotspot } : null;
+        })
+        .filter(Boolean) as Array<{
+        target: MurderMysteryInvestigationTargetView;
+        hotspot: (typeof mapHotspots)[number];
+      }>
+    )
+      .sort(
+        (a, b) =>
+          (a.target.order ?? Number.MAX_SAFE_INTEGER) -
+            (b.target.order ?? Number.MAX_SAFE_INTEGER) ||
+          a.target.label.localeCompare(b.target.label)
+      )
+      .map((entry, index) => ({ ...entry, matNumber: index + 1 }));
+    const mappedTargetIds = new Set(
+      mapMatTargets.map((entry) => entry.target.id)
+    );
+    const unmappedTargets =
+      activeRoundView?.targets.filter(
+        (target) => !mappedTargetIds.has(target.id)
+      ) ?? [];
+    const nonMapTargets = unmappedTargets.sort(
+      (a, b) =>
+        (a.order ?? Number.MAX_SAFE_INTEGER) -
+          (b.order ?? Number.MAX_SAFE_INTEGER) || a.label.localeCompare(b.label)
+    );
+    const canUseMapBoard = Boolean(mapView?.scene && activeRoundView);
     const pendingReservation =
       pendingReservationBackId && activeRoundView
         ? (activeRoundView.targets
@@ -3658,6 +3716,170 @@ export default function MurderMysteryTableExperience({
     const isReservationPending =
       Boolean(pendingReservationBackId) &&
       !snapshot.investigation.turn?.myReservation;
+    const getTargetChoiceState = (
+      target: MurderMysteryInvestigationTargetView
+    ) => {
+      const isTurnClosed =
+        !snapshot.investigation.turn?.currentPlayerId ||
+        Boolean(snapshot.investigation.turn?.allPlayersDone);
+      const disabled =
+        !target.canInvestigateByViewer ||
+        isTurnClosed ||
+        snapshot.investigation.used;
+      const disabledReason = !target.canInvestigateByViewer
+        ? (target.investigationRestrictionReason ??
+          '본인의 소지품은 조사할 수 없습니다.')
+        : isTurnClosed
+          ? '현재 조사 가능한 차례가 없습니다.'
+          : snapshot.investigation.used
+            ? '이번 라운드 조사 기회를 이미 사용했습니다.'
+            : undefined;
+
+      return { disabled, disabledReason };
+    };
+    const renderInvestigationCardMatTarget = ({
+      isUnmapped = false,
+      matNumber,
+      target,
+    }: {
+      isUnmapped?: boolean;
+      matNumber?: number;
+      target: MurderMysteryInvestigationTargetView;
+    }) => {
+      const { disabled, disabledReason } = getTargetChoiceState(target);
+
+      return (
+        <Box
+          key={target.id}
+          sx={{
+            p: 1.05,
+            borderRadius: 2,
+            backgroundColor: target.isExhausted
+              ? 'rgba(15,23,42,0.48)'
+              : 'rgba(255,255,255,0.075)',
+            border: '1px solid',
+            borderColor: target.isExhausted
+              ? 'rgba(148,163,184,0.26)'
+              : target.isOwnedByViewer
+                ? 'rgba(245,197,66,0.34)'
+                : 'rgba(255,255,255,0.14)',
+            boxShadow: '0 14px 28px rgba(0,0,0,0.22)',
+            color: '#f8f1de',
+          }}
+        >
+          <Stack spacing={1}>
+            <Stack direction="row" spacing={0.9} alignItems="center">
+              <Box
+                sx={{
+                  width: 28,
+                  minWidth: isUnmapped ? 46 : 28,
+                  height: 28,
+                  px: isUnmapped ? 0.8 : 0,
+                  borderRadius: 999,
+                  display: 'grid',
+                  placeItems: 'center',
+                  flex: '0 0 auto',
+                  backgroundColor: isUnmapped ? '#334155' : '#f5c542',
+                  color: isUnmapped ? '#f8f1de' : '#2b2112',
+                  fontWeight: 950,
+                  fontSize: 13,
+                  boxShadow: '0 6px 14px rgba(0,0,0,0.28)',
+                }}
+              >
+                {isUnmapped
+                  ? getInvestigationTargetTypeLabel(target)
+                  : matNumber}
+              </Box>
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography
+                  fontWeight={950}
+                  sx={{ lineHeight: 1.25, wordBreak: 'keep-all' }}
+                >
+                  {target.label}
+                </Typography>
+                {target.containerLabel &&
+                target.containerLabel !== target.label ? (
+                  <Typography
+                    variant="caption"
+                    sx={{ color: '#cfc5ad', lineHeight: 1.35 }}
+                  >
+                    {target.containerLabel}
+                  </Typography>
+                ) : null}
+              </Box>
+              <Chip
+                size="small"
+                label={formatInvestigationCountText(target)}
+                color={target.isExhausted ? 'default' : 'primary'}
+                sx={{ flex: '0 0 auto', fontWeight: 900 }}
+              />
+            </Stack>
+
+            <Stack direction="row" spacing={0.6} flexWrap="wrap" useFlexGap>
+              {target.isOwnedByViewer ? (
+                <Chip
+                  size="small"
+                  color={
+                    target.isOwnedFallbackForViewer ? 'success' : 'warning'
+                  }
+                  label={
+                    target.isOwnedFallbackForViewer
+                      ? '내 소지품 · 마지막 선택 가능'
+                      : '내 소지품 · 조사 불가'
+                  }
+                />
+              ) : null}
+              {disabledReason ? (
+                <Chip
+                  size="small"
+                  label={disabledReason}
+                  sx={{
+                    maxWidth: '100%',
+                    backgroundColor: 'rgba(255,255,255,0.12)',
+                    color: '#f8f1de',
+                    '& .MuiChip-label': {
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    },
+                  }}
+                />
+              ) : null}
+            </Stack>
+
+            {target.availableBacks.length > 0 ? (
+              <Box
+                sx={{
+                  display: 'flex',
+                  gap: 0.9,
+                  flexWrap: 'wrap',
+                  alignItems: 'flex-start',
+                }}
+              >
+                {target.availableBacks.map((back) => (
+                  <InvestigationCardBack
+                    key={back.backId}
+                    back={back}
+                    canActNow={canActNow}
+                    disabled={disabled}
+                    disabledReason={disabledReason}
+                    isPendingReservation={
+                      pendingReservationBackId === back.backId
+                    }
+                    onTake={onSubmitInvestigationByBack}
+                    onReserve={onSetReservation}
+                    onClearReservation={onClearReservation}
+                  />
+                ))}
+              </Box>
+            ) : (
+              <Typography variant="body2" sx={{ color: '#d8d0bd' }}>
+                남은 뒷면 카드가 없습니다.
+              </Typography>
+            )}
+          </Stack>
+        </Box>
+      );
+    };
 
     return (
       <Stack spacing={1.6}>
@@ -3759,32 +3981,162 @@ export default function MurderMysteryTableExperience({
           </Box>
         ) : null}
 
-        {snapshot.investigation.map?.scene.imageSrc ? (
-          <Box
-            sx={{
-              borderRadius: 2,
-              overflow: 'hidden',
-              border: '1px solid rgba(255,255,255,0.16)',
-              backgroundColor: '#101720',
-              maxHeight: { xs: 240, md: 330 },
-            }}
-          >
+        {mapView?.scene && activeRoundView ? (
+          <Stack spacing={1.1}>
             <Box
-              component="img"
-              src={snapshot.investigation.map.scene.imageSrc}
-              alt={snapshot.investigation.map.scene.alt}
               sx={{
-                display: 'block',
-                width: '100%',
-                height: '100%',
-                maxHeight: { xs: 240, md: 330 },
-                objectFit: 'contain',
+                position: 'relative',
+                p: 0.7,
+                borderRadius: 2.2,
+                border: '1px solid rgba(255,255,255,0.18)',
+                background:
+                  'radial-gradient(circle at 50% 0%, rgba(245,197,66,0.12), transparent 38%), #0b1117',
+                boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.04)',
               }}
-            />
-          </Box>
+            >
+              <Box
+                sx={{
+                  position: 'relative',
+                  width: '100%',
+                  aspectRatio: `${mapView.scene.width} / ${mapView.scene.height}`,
+                  overflow: 'hidden',
+                  borderRadius: 1.5,
+                  backgroundColor: '#0b1117',
+                }}
+              >
+                <Box
+                  component="img"
+                  src={mapView.scene.imageSrc}
+                  alt={mapView.scene.alt}
+                  draggable={false}
+                  sx={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'block',
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                    userSelect: 'none',
+                  }}
+                />
+
+                <Tooltip title="맵 크게 보기">
+                  <IconButton
+                    aria-label="맵 크게 보기"
+                    size="small"
+                    onClick={() => setIsMapDialogOpen(true)}
+                    sx={{
+                      position: 'absolute',
+                      top: 8,
+                      right: 8,
+                      zIndex: 5,
+                      backgroundColor: 'rgba(8,13,18,0.7)',
+                      color: '#f8f1de',
+                      backdropFilter: 'blur(10px)',
+                      '&:hover': {
+                        backgroundColor: 'rgba(8,13,18,0.9)',
+                      },
+                    }}
+                  >
+                    <MapIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+
+                {mapMatTargets.map(({ hotspot, matNumber, target }) => (
+                  <Box
+                    key={hotspot.id}
+                    aria-hidden="true"
+                    sx={{
+                      position: 'absolute',
+                      left: `calc(${
+                        hotspot.xPct + hotspot.widthPct / 2
+                      }% - 12px)`,
+                      top: `calc(${
+                        hotspot.yPct + hotspot.heightPct / 2
+                      }% - 12px)`,
+                      width: 24,
+                      height: 24,
+                      borderRadius: 999,
+                      display: 'grid',
+                      placeItems: 'center',
+                      border: '2px solid rgba(255,248,230,0.9)',
+                      backgroundColor: target.isExhausted
+                        ? 'rgba(71,85,105,0.92)'
+                        : 'rgba(245,197,66,0.96)',
+                      color: target.isExhausted ? '#f8f1de' : '#2b2112',
+                      fontSize: 12,
+                      fontWeight: 950,
+                      boxShadow: '0 8px 16px rgba(0,0,0,0.36)',
+                    }}
+                  >
+                    {matNumber}
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+
+            <Box
+              sx={{
+                p: 1.1,
+                borderRadius: 2.2,
+                border: '1px solid rgba(245,197,66,0.28)',
+                background:
+                  'linear-gradient(180deg, rgba(24, 31, 29, 0.96), rgba(8, 13, 15, 0.98))',
+                boxShadow: '0 18px 42px rgba(0,0,0,0.3)',
+              }}
+            >
+              <Stack spacing={1}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <StyleIcon fontSize="small" />
+                  <Typography fontWeight={950} sx={{ flex: 1 }}>
+                    조사 카드 매트
+                  </Typography>
+                  <Chip
+                    size="small"
+                    label={`${activeRoundView.targets.length}곳`}
+                    sx={{
+                      backgroundColor: 'rgba(255,255,255,0.12)',
+                      color: '#f8f1de',
+                      fontWeight: 900,
+                    }}
+                  />
+                </Stack>
+
+                {mapMatTargets.length > 0 ? (
+                  <Stack spacing={1}>
+                    <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
+                      지도 위치 단서
+                    </Typography>
+                    {mapMatTargets.map(({ matNumber, target }) =>
+                      renderInvestigationCardMatTarget({ matNumber, target })
+                    )}
+                  </Stack>
+                ) : null}
+
+                {nonMapTargets.length > 0 ? (
+                  <>
+                    {mapMatTargets.length > 0 ? (
+                      <Divider sx={{ borderColor: 'rgba(255,255,255,0.12)' }} />
+                    ) : null}
+                    <Stack spacing={1}>
+                      <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
+                        그 외 단서
+                      </Typography>
+                      {nonMapTargets.map((target) =>
+                        renderInvestigationCardMatTarget({
+                          isUnmapped: true,
+                          target,
+                        })
+                      )}
+                    </Stack>
+                  </>
+                ) : null}
+              </Stack>
+            </Box>
+          </Stack>
         ) : null}
 
-        {activeRoundView ? (
+        {activeRoundView && !canUseMapBoard ? (
           <Stack spacing={1.2}>
             {targetGroups.map((group) => (
               <Box
@@ -3940,11 +4292,11 @@ export default function MurderMysteryTableExperience({
               </Box>
             ))}
           </Stack>
-        ) : (
+        ) : !activeRoundView ? (
           <Typography sx={{ color: '#d8d0bd' }}>
             현재 라운드에 배치된 조사 카드가 없습니다.
           </Typography>
-        )}
+        ) : null}
       </Stack>
     );
   };
@@ -4874,7 +5226,9 @@ export default function MurderMysteryTableExperience({
           display: 'grid',
           gridTemplateColumns: {
             xs: 'minmax(0, 1fr)',
-            lg: '280px minmax(0, 1fr) 260px',
+            lg: isMapInvestigationPhase
+              ? '230px minmax(0, 1fr) 210px'
+              : '280px minmax(0, 1fr) 260px',
           },
           gridTemplateRows: {
             xs: 'auto minmax(0, 1fr)',
@@ -4950,6 +5304,7 @@ export default function MurderMysteryTableExperience({
             }}
           >
             <MyDeskPanel
+              compact={isMapInvestigationPhase}
               cardCount={snapshot.clueVault.myClues.length}
               publicScriptCount={snapshot.publicScripts.length}
               canOpenRulebook={Boolean(snapshot.roleSheet)}

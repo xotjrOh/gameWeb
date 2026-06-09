@@ -459,110 +459,26 @@ investigations:
         width: 1181
         height: 646
       hotspots:
-        - id: map_r1_black_thermos
-          targetId: r1_black_thermos
-          label: '윤유성의 소지품 1'
-          xPct: 4
-          yPct: 25
-          widthPct: 31
-          heightPct: 43
-        - id: map_r1_turtle_envelope
-          targetId: r1_turtle_envelope
-          label: '윤유성의 소지품 2'
-          xPct: 39
-          yPct: 37
-          widthPct: 19
-          heightPct: 31
-        - id: map_r1_rubber_ring
-          targetId: r1_rubber_ring
-          label: '아내토끼의 소지품 1'
-          xPct: 44
-          yPct: 59
-          widthPct: 18
-          heightPct: 29
-        - id: map_r1_rabbit_family
-          targetId: r1_rabbit_family
-          label: '아내토끼의 소지품 2'
-          xPct: 49
-          yPct: 61
-          widthPct: 19
-          heightPct: 29
-        - id: map_r1_syringe_trace
-          targetId: r1_syringe_trace
-          label: '조희수의 소지품 1'
-          xPct: 61
-          yPct: 16
-          widthPct: 14
-          heightPct: 8
-        - id: map_r1_empty_vial
-          targetId: r1_empty_vial
-          label: '조희수의 소지품 2'
-          xPct: 61
-          yPct: 25
-          widthPct: 14
-          heightPct: 8
-        - id: map_r1_jara_belongings
-          targetId: r1_jara_belongings
-          label: '서기준의 소지품'
-          xPct: 58
-          yPct: 25
-          widthPct: 30
-          heightPct: 14
         - id: map_r1_medical_desk_photo
           targetId: r1_medical_desk_photo
           label: '의료동 간이책상 1'
-          xPct: 58
-          yPct: 3
-          widthPct: 30
-          heightPct: 14
+          xPct: 7
+          yPct: 5
+          widthPct: 8
+          heightPct: 9
         - id: map_r1_medical_desk_records
           targetId: r1_medical_desk_records
           label: '의료동 간이책상 2'
-          xPct: 58
-          yPct: 17
-          widthPct: 30
-          heightPct: 21
-        - id: map_r1_medical_wing_rumor
-          targetId: r1_medical_wing_rumor
-          label: '의료동에서 도는 소문1'
-          xPct: 4
-          yPct: 4
-          widthPct: 12
-          heightPct: 12
-        - id: map_r1_medical_wing_rumor_2
-          targetId: r1_medical_wing_rumor_2
-          label: '의료동에서 도는 소문2'
-          xPct: 4
-          yPct: 17
-          widthPct: 12
-          heightPct: 12
+          xPct: 15
+          yPct: 5
+          widthPct: 8
+          heightPct: 9
         - id: map_r1_medical_shoe_cabinet
           targetId: r1_medical_shoe_cabinet
           label: '의료동 입구 신발장'
-          xPct: 17
-          yPct: 4
-          widthPct: 12
-          heightPct: 12
-        - id: map_r1_dragon_king_rumor_1
-          targetId: r1_dragon_king_rumor_1
-          label: '용왕에 대한 소문1'
-          xPct: 13
-          yPct: 4
-          widthPct: 25
-          heightPct: 18
-        - id: map_r1_dragon_king_rumor_2
-          targetId: r1_dragon_king_rumor_2
-          label: '용왕에 대한 소문2'
-          xPct: 30
-          yPct: 4
-          widthPct: 12
-          heightPct: 12
-        - id: map_r1_dragon_king_rumor_3
-          targetId: r1_dragon_king_rumor_3
-          label: '용궁섬에 대한 소문3'
-          xPct: 39
-          yPct: 4
-          widthPct: 12
+          xPct: 41
+          yPct: 15
+          widthPct: 10
           heightPct: 12
         - id: map_r1_siphon_guide
           targetId: r1_siphon_guide
@@ -1466,17 +1382,43 @@ endingChoices:
     roleId: rabbit_husband
     label: '남편토끼 윤유성'
     description: |
-      당신의 손에는 오완주의 자필 고백문이 있습니다.
+      최종 지목은 자라 서기준에게 향했습니다.
+      오완주를 죽인 사람은 서기준입니다.
 
-      고백문에는 육상 국가대표 선발전 직전, 오완주가 당신의 물병에 수면유도제를 넣었다는 사실이 적혀 있습니다.
-      그날 당신은 결승선 앞에서 쓰러졌고, 딸에게 갈 수 있었던 수술 기회도 닫혔습니다.
+      그 사실은 오늘 밤의 기사로 남을 것입니다.
 
-      기자들은 지금 복도 밖에 모여 있습니다.
-      고백문을 펼치면, 세상은 당신의 패배를 다시 읽게 될 것입니다.
-      당신은 재능만 믿다 무너진 선수가 아니라, 누군가의 열등감 때문에 딸의 시간을 빼앗긴 아버지가 됩니다.
+      하지만 윤유성에게는 다른 기록도 남아 있습니다.
 
-      하지만 고백문이 세상에 나가는 순간, 그날의 상처도 다시 기사 속으로 들어갑니다.
-      오완주는 이미 죽었고, 당신이 재활수조실에서 한 일까지 완전히 사라지는 것은 아닙니다.
+      오완주의 자필 고백문.
+
+      그 안에는 오래전 선발전 직전,
+      오완주가 윤유성의 물병에 수면유도제를 넣었다는 사실이 적혀 있습니다.
+
+      고백문을 공개하면, 윤유성의 패배는 바로잡힙니다.
+      오완주의 승리도 부정한 승리로 다시 쓰입니다.
+
+      그것은 공정합니다.
+
+      하지만 고백문 마지막 장에는 법적 효력이 있는 기부 서약이 붙어 있습니다.
+
+      “이것이 사죄가 될 수 없다는 것을 알지만.”
+
+      오완주는 그 승리로 얻은 경기 수익과 광고 수익 전액을
+      아픈 어린아이들의 치료비로 기부하겠다고 적었습니다.
+
+      고백문이 공개되면, 그 돈은 환수와 위약금 정산에 묶입니다.
+      고백문이 봉인되면, 그 돈은 아이들의 수술방으로 갈 수 있습니다.
+
+      윤유성은 압니다.
+
+      보류.
+      재심사.
+      동결.
+
+      그 말들이 아이의 시간보다 얼마나 느린지.
+
+      부정한 승리를 바로잡을 것인가.
+      부정한 승리에서 나온 돈으로 아이들의 시간을 살릴 것인가.
 
       고백문을 어떻게 남기겠습니까?
     opensWhen:
@@ -1484,9 +1426,9 @@ endingChoices:
       finalVoteOptionId: jara
     options:
       - id: publish_confession
-        label: '오완주의 고백문을 공개한다'
+        label: '고백문을 공개해 부정한 승리를 바로잡는다'
       - id: keep_for_family
-        label: '고백문을 가족에게만 남긴다'
+        label: '고백문을 봉인하고 기부 서약을 살린다'
 
 endbook:
   title: '토끼와 거북이'
