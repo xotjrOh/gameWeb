@@ -416,7 +416,17 @@ const getInvestigationTargetTypeLabel = (
   if (target.targetType === 'character') {
     return '인물';
   }
-  return target.label.includes('소문') ? '소문' : '소지품';
+  if (target.label.includes('소문')) {
+    return '소문';
+  }
+  if (
+    target.containerId?.startsWith('belongings') ||
+    target.containerLabel?.includes('소지품') ||
+    target.label.includes('소지품')
+  ) {
+    return '소지품';
+  }
+  return '자료';
 };
 
 const getRoleRankColor = (rankIndex: number) =>
@@ -3747,136 +3757,250 @@ export default function MurderMysteryTableExperience({
       target: MurderMysteryInvestigationTargetView;
     }) => {
       const { disabled, disabledReason } = getTargetChoiceState(target);
+      const isOwnedBlocked = target.isOwnedByViewer;
+      const targetDisabled =
+        disabled ||
+        isOwnedBlocked ||
+        target.isExhausted ||
+        target.availableBacks.length === 0;
+      const targetDisabledReason = isOwnedBlocked
+        ? '내 소지품은 조사할 수 없습니다.'
+        : target.availableBacks.length === 0
+          ? '남은 뒷면 카드가 없습니다.'
+          : disabledReason;
+      const hasMultipleBacks = target.availableBacks.length > 1;
+      const firstBack = target.availableBacks[0] ?? null;
+      const isReserved = target.availableBacks.some(
+        (back) =>
+          back.isReservedByMe || pendingReservationBackId === back.backId
+      );
+      const tileLabel = hasMultipleBacks
+        ? target.label
+        : (firstBack?.shortLabel ??
+          target.cardBack?.shortLabel ??
+          target.label);
+      const markerLabel = isUnmapped
+        ? getInvestigationTargetTypeLabel(target)
+        : String(matNumber ?? '');
+      const handleBackChoice = (
+        back: MurderMysteryInvestigationBackCardView
+      ) => {
+        if (targetDisabled) {
+          return;
+        }
+        if (back.isReservedByMe || pendingReservationBackId === back.backId) {
+          onClearReservation();
+          return;
+        }
+        if (canActNow) {
+          onSubmitInvestigationByBack(back.backId);
+          return;
+        }
+        onSetReservation(back.backId);
+      };
+      const statusIcon = target.isExhausted ? (
+        <Typography
+          variant="caption"
+          fontWeight={950}
+          sx={{ color: '#cbd5e1', lineHeight: 1 }}
+        >
+          완료
+        </Typography>
+      ) : isOwnedBlocked || targetDisabled ? (
+        <LockIcon sx={{ width: 15, height: 15, color: '#cbd5e1' }} />
+      ) : isReserved ? (
+        <PushPinIcon sx={{ width: 15, height: 15, color: '#f5c542' }} />
+      ) : null;
+      const compactTileSx = {
+        width: '100%',
+        minHeight: hasMultipleBacks ? 66 : 48,
+        p: 0.65,
+        borderRadius: 1.4,
+        border: '1px solid',
+        borderColor: target.isExhausted
+          ? 'rgba(148,163,184,0.28)'
+          : isReserved
+            ? 'rgba(245,197,66,0.82)'
+            : isOwnedBlocked
+              ? 'rgba(245,158,11,0.45)'
+              : 'rgba(142,202,230,0.34)',
+        backgroundColor: target.isExhausted
+          ? 'rgba(15,23,42,0.5)'
+          : isOwnedBlocked
+            ? 'rgba(91, 55, 20, 0.58)'
+            : 'rgba(255,255,255,0.075)',
+        color: '#f8f1de',
+        boxShadow: isReserved
+          ? '0 0 0 1px rgba(245,197,66,0.26), 0 8px 18px rgba(0,0,0,0.26)'
+          : '0 8px 18px rgba(0,0,0,0.22)',
+        opacity: targetDisabled && !isOwnedBlocked ? 0.6 : 1,
+      };
+      const tileBody = (
+        <Stack spacing={0.45} sx={{ minWidth: 0 }}>
+          <Stack direction="row" spacing={0.55} alignItems="center">
+            <Box
+              sx={{
+                width: isUnmapped ? 38 : 22,
+                minWidth: isUnmapped ? 38 : 22,
+                height: 22,
+                px: isUnmapped ? 0.55 : 0,
+                borderRadius: 999,
+                display: 'grid',
+                placeItems: 'center',
+                backgroundColor: isUnmapped ? '#334155' : '#f5c542',
+                color: isUnmapped ? '#f8f1de' : '#2b2112',
+                fontWeight: 950,
+                fontSize: isUnmapped ? 11 : 12,
+                lineHeight: 1,
+              }}
+            >
+              {markerLabel}
+            </Box>
+            <Typography
+              fontWeight={950}
+              sx={{
+                minWidth: 0,
+                flex: 1,
+                fontSize: 12.5,
+                lineHeight: 1.16,
+                wordBreak: 'keep-all',
+                display: '-webkit-box',
+                WebkitBoxOrient: 'vertical',
+                WebkitLineClamp: 2,
+                overflow: 'hidden',
+              }}
+            >
+              {tileLabel}
+            </Typography>
+            <Stack
+              direction="row"
+              spacing={0.35}
+              alignItems="center"
+              sx={{ flex: '0 0 auto', minWidth: 0 }}
+            >
+              {target.repeatable ? (
+                <Typography
+                  aria-label="반복 조사 가능"
+                  fontWeight={950}
+                  sx={{ color: '#8ecae6', fontSize: 17, lineHeight: 1 }}
+                >
+                  ∞
+                </Typography>
+              ) : null}
+              {statusIcon}
+            </Stack>
+          </Stack>
+
+          {isOwnedBlocked ? (
+            <Typography
+              variant="caption"
+              fontWeight={900}
+              sx={{ color: '#fcd58a', fontSize: 10.5, lineHeight: 1 }}
+            >
+              내 소지품
+            </Typography>
+          ) : hasMultipleBacks ? (
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                gap: 0.35,
+              }}
+            >
+              {target.availableBacks.map((back) => {
+                const isBackReserved =
+                  back.isReservedByMe ||
+                  pendingReservationBackId === back.backId;
+                return (
+                  <Tooltip
+                    key={back.backId}
+                    title={
+                      targetDisabled
+                        ? (targetDisabledReason ?? '지금은 선택할 수 없습니다.')
+                        : isBackReserved
+                          ? '예약 해제'
+                          : canActNow
+                            ? '가져가기'
+                            : '예약하기'
+                    }
+                  >
+                    <Box
+                      component="button"
+                      type="button"
+                      disabled={targetDisabled}
+                      onClick={() => handleBackChoice(back)}
+                      sx={{
+                        minWidth: 0,
+                        height: 23,
+                        borderRadius: 1,
+                        border: '1px solid',
+                        borderColor: isBackReserved
+                          ? 'rgba(245,197,66,0.92)'
+                          : 'rgba(255,255,255,0.16)',
+                        backgroundColor: isBackReserved
+                          ? 'rgba(245,197,66,0.18)'
+                          : 'rgba(8,13,18,0.42)',
+                        color: '#f8f1de',
+                        cursor: targetDisabled ? 'not-allowed' : 'pointer',
+                        fontSize: 10.5,
+                        fontWeight: 900,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        px: 0.55,
+                      }}
+                    >
+                      {isBackReserved
+                        ? '내 예약'
+                        : (back.shortLabel ?? CARD_BACK_LABEL)}
+                    </Box>
+                  </Tooltip>
+                );
+              })}
+            </Box>
+          ) : null}
+        </Stack>
+      );
+
+      if (!hasMultipleBacks && firstBack) {
+        const isBackReserved =
+          firstBack.isReservedByMe ||
+          pendingReservationBackId === firstBack.backId;
+
+        return (
+          <Tooltip
+            key={target.id}
+            title={
+              targetDisabled
+                ? (targetDisabledReason ?? '지금은 선택할 수 없습니다.')
+                : isBackReserved
+                  ? '예약 해제'
+                  : canActNow
+                    ? '가져가기'
+                    : '예약하기'
+            }
+          >
+            <Box
+              component="button"
+              type="button"
+              disabled={targetDisabled}
+              onClick={() => handleBackChoice(firstBack)}
+              sx={{
+                ...compactTileSx,
+                borderWidth: isBackReserved ? 2 : 1,
+                textAlign: 'left',
+                cursor: targetDisabled ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {tileBody}
+            </Box>
+          </Tooltip>
+        );
+      }
 
       return (
-        <Box
-          key={target.id}
-          sx={{
-            p: 1.05,
-            borderRadius: 2,
-            backgroundColor: target.isExhausted
-              ? 'rgba(15,23,42,0.48)'
-              : 'rgba(255,255,255,0.075)',
-            border: '1px solid',
-            borderColor: target.isExhausted
-              ? 'rgba(148,163,184,0.26)'
-              : target.isOwnedByViewer
-                ? 'rgba(245,197,66,0.34)'
-                : 'rgba(255,255,255,0.14)',
-            boxShadow: '0 14px 28px rgba(0,0,0,0.22)',
-            color: '#f8f1de',
-          }}
-        >
-          <Stack spacing={1}>
-            <Stack direction="row" spacing={0.9} alignItems="center">
-              <Box
-                sx={{
-                  width: 28,
-                  minWidth: isUnmapped ? 46 : 28,
-                  height: 28,
-                  px: isUnmapped ? 0.8 : 0,
-                  borderRadius: 999,
-                  display: 'grid',
-                  placeItems: 'center',
-                  flex: '0 0 auto',
-                  backgroundColor: isUnmapped ? '#334155' : '#f5c542',
-                  color: isUnmapped ? '#f8f1de' : '#2b2112',
-                  fontWeight: 950,
-                  fontSize: 13,
-                  boxShadow: '0 6px 14px rgba(0,0,0,0.28)',
-                }}
-              >
-                {isUnmapped
-                  ? getInvestigationTargetTypeLabel(target)
-                  : matNumber}
-              </Box>
-              <Box sx={{ minWidth: 0, flex: 1 }}>
-                <Typography
-                  fontWeight={950}
-                  sx={{ lineHeight: 1.25, wordBreak: 'keep-all' }}
-                >
-                  {target.label}
-                </Typography>
-                {target.containerLabel &&
-                target.containerLabel !== target.label ? (
-                  <Typography
-                    variant="caption"
-                    sx={{ color: '#cfc5ad', lineHeight: 1.35 }}
-                  >
-                    {target.containerLabel}
-                  </Typography>
-                ) : null}
-              </Box>
-              <Chip
-                size="small"
-                label={formatInvestigationCountText(target)}
-                color={target.isExhausted ? 'default' : 'primary'}
-                sx={{ flex: '0 0 auto', fontWeight: 900 }}
-              />
-            </Stack>
-
-            <Stack direction="row" spacing={0.6} flexWrap="wrap" useFlexGap>
-              {target.isOwnedByViewer ? (
-                <Chip
-                  size="small"
-                  color={
-                    target.isOwnedFallbackForViewer ? 'success' : 'warning'
-                  }
-                  label={
-                    target.isOwnedFallbackForViewer
-                      ? '내 소지품 · 마지막 선택 가능'
-                      : '내 소지품 · 조사 불가'
-                  }
-                />
-              ) : null}
-              {disabledReason ? (
-                <Chip
-                  size="small"
-                  label={disabledReason}
-                  sx={{
-                    maxWidth: '100%',
-                    backgroundColor: 'rgba(255,255,255,0.12)',
-                    color: '#f8f1de',
-                    '& .MuiChip-label': {
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    },
-                  }}
-                />
-              ) : null}
-            </Stack>
-
-            {target.availableBacks.length > 0 ? (
-              <Box
-                sx={{
-                  display: 'flex',
-                  gap: 0.9,
-                  flexWrap: 'wrap',
-                  alignItems: 'flex-start',
-                }}
-              >
-                {target.availableBacks.map((back) => (
-                  <InvestigationCardBack
-                    key={back.backId}
-                    back={back}
-                    canActNow={canActNow}
-                    disabled={disabled}
-                    disabledReason={disabledReason}
-                    isPendingReservation={
-                      pendingReservationBackId === back.backId
-                    }
-                    onTake={onSubmitInvestigationByBack}
-                    onReserve={onSetReservation}
-                    onClearReservation={onClearReservation}
-                  />
-                ))}
-              </Box>
-            ) : (
-              <Typography variant="body2" sx={{ color: '#d8d0bd' }}>
-                남은 뒷면 카드가 없습니다.
-              </Typography>
-            )}
-          </Stack>
+        <Box key={target.id} sx={compactTileSx}>
+          {tileBody}
         </Box>
       );
     };
@@ -4077,7 +4201,7 @@ export default function MurderMysteryTableExperience({
 
             <Box
               sx={{
-                p: 1.1,
+                p: 0.85,
                 borderRadius: 2.2,
                 border: '1px solid rgba(245,197,66,0.28)',
                 background:
@@ -4085,7 +4209,7 @@ export default function MurderMysteryTableExperience({
                 boxShadow: '0 18px 42px rgba(0,0,0,0.3)',
               }}
             >
-              <Stack spacing={1}>
+              <Stack spacing={0.75}>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <StyleIcon fontSize="small" />
                   <Typography fontWeight={950} sx={{ flex: 1 }}>
@@ -4103,13 +4227,24 @@ export default function MurderMysteryTableExperience({
                 </Stack>
 
                 {mapMatTargets.length > 0 ? (
-                  <Stack spacing={1}>
-                    <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
+                  <Stack spacing={0.45}>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: '#cfc5ad', lineHeight: 1 }}
+                    >
                       지도 위치 단서
                     </Typography>
-                    {mapMatTargets.map(({ matNumber, target }) =>
-                      renderInvestigationCardMatTarget({ matNumber, target })
-                    )}
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                        gap: 0.55,
+                      }}
+                    >
+                      {mapMatTargets.map(({ matNumber, target }) =>
+                        renderInvestigationCardMatTarget({ matNumber, target })
+                      )}
+                    </Box>
                   </Stack>
                 ) : null}
 
@@ -4118,16 +4253,27 @@ export default function MurderMysteryTableExperience({
                     {mapMatTargets.length > 0 ? (
                       <Divider sx={{ borderColor: 'rgba(255,255,255,0.12)' }} />
                     ) : null}
-                    <Stack spacing={1}>
-                      <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
+                    <Stack spacing={0.45}>
+                      <Typography
+                        variant="caption"
+                        sx={{ color: '#cfc5ad', lineHeight: 1 }}
+                      >
                         그 외 단서
                       </Typography>
-                      {nonMapTargets.map((target) =>
-                        renderInvestigationCardMatTarget({
-                          isUnmapped: true,
-                          target,
-                        })
-                      )}
+                      <Box
+                        sx={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                          gap: 0.55,
+                        }}
+                      >
+                        {nonMapTargets.map((target) =>
+                          renderInvestigationCardMatTarget({
+                            isUnmapped: true,
+                            target,
+                          })
+                        )}
+                      </Box>
                     </Stack>
                   </>
                 ) : null}
