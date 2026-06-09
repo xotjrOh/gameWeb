@@ -166,7 +166,7 @@ parts:
   - id: part_turtle_envelope
     name: '거북의 자필 고백'
     source: '서류봉투'
-    note: '오완주의 자필 고백문과 오완주 명의 수면유도제 처방전 사본이 들어 있다.'
+    note: '오완주의 자필 고백문과 오완주 명의 수면유도제 처방전 사본이 들어 있다. 고백문 마지막 장에는 "이것이 사죄가 될 수 없다는 것을 알지만"이라는 문장과 함께, 자신의 경기 수익 전액과 광고 수익 전액을 아픈 어린아이들의 치료비로 기부하겠다는 법적 효력 있는 서약이 적혀 있다.'
   - id: part_rabbit_family
     name: '토끼 가족 사진'
     source: '한다정의 소지품'
@@ -262,6 +262,7 @@ roles:
     ruleText: |
       감정적인 남편으로 보이는 것은 자연스럽지만, 가족을 지키려던 행동까지 모두 살해 의도로 읽히지 않게 조심하세요.
       누군가 당신의 소지품을 조사하면 어떤 부분은 인정하고, 어떤 부분은 모른다고 둘지 미리 정해 두는 편이 좋습니다.
+      소지품 2는 오완주에게서 가져온 서류봉투입니다. 오완주는 그 안에 자기 자필 고백문과 수면유도제 처방전 사본이 있다고 말했습니다. 당신은 아직 봉투 안의 문장을 직접 읽지 못했습니다.
       인물 관계:
       한다정은 당신의 아내이며, 윤슬을 함께 잃은 사람입니다.
       조희수는 과거 당신의 패배를 자극적인 기사로 소비한 기자입니다.
@@ -271,7 +272,7 @@ roles:
       - label: '소지품 1'
         hint: '보온병입니다.'
       - label: '소지품 2'
-        hint: '거북에게 받은 자필 고백문입니다.'
+        hint: '거북에게서 가져온 서류봉투입니다.'
     secretTextPath: rulesheets/rabbit-turtle-finish-line-night/rabbit_husband.txt
     secretTextHighlights:
       - '이번 육상 국가대표 선발전에서 우승하면, 다음으로 비는 수술방 하나를 윤슬에게 돌리겠습니다.'
@@ -1187,6 +1188,7 @@ cards:
       오완주의 자필 고백문이다.
       20XX년 육상 국가대표 선발전 결승을 앞두고, 대기실에서 윤유성의 물병에 수면유도제를 넣었다고 적혀 있다.
       봉투 안에는 오완주 명의 수면유도제 처방전 사본도 들어 있다.
+      고백문 마지막 장에는 "이것이 사죄가 될 수 없다는 것을 알지만"이라는 문장과 함께, 자신의 경기 수익 전액과 광고 수익 전액을 아픈 어린아이들의 치료비로 기부하겠다는 법적 효력 있는 서약이 적혀 있다.
     imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/clue/turtle-envelope.png'
     imageAlt: '자필 진술서와 처방전 사본이 든 거북 서류봉투'
     backId: back_turtle_envelope
@@ -1435,13 +1437,13 @@ endingChoices:
     description: |
       최종 지목은 자라 서기준에게 향했습니다.
 
-      자라를 고발하면, 진짜 살인자를 정확히 고발하는 기사가 됩니다.
+      서기준의 이름을 제목에 올리면, 진짜 살인자를 정확히 겨냥하는 기사가 됩니다.
       오완주를 죽인 사람은 서기준이니까요.
 
       하지만 조희수는 압니다.
       서기준에게 가장 소중한 이름은 자기 이름이 아니라 용왕입니다.
 
-      용왕을 고발하면, 서기준에게 가장 큰 고통을 돌려줄 수 있습니다.
+      용왕의 이름까지 제목에 올리면, 서기준에게 가장 큰 고통을 돌려줄 수 있습니다.
       조희수가 소중한 사람을 잃었던 것처럼, 서기준도 자신이 가장 아끼는 이름을 잃게 될 테니까요.
 
       문제는 그 기사가 완전히 공정하지 않을 수 있다는 점입니다.
@@ -1451,15 +1453,15 @@ endingChoices:
       복수를 위해 용왕의 이름을 제목에 올릴 것인가.
       아니면 살인자인 자라의 이름에서 멈출 것인가.
 
-      누구를 고발하는 기사를 쓰겠습니까?
+      누구의 이름을 기사 제목에 올리겠습니까?
     opensWhen:
       finalVoteMatched: true
       finalVoteOptionId: jara
     options:
       - id: accuse_dragon_king
-        label: '용왕을 고발하는 기사를 쓴다'
+        label: '용왕의 이름까지 기사에 올린다'
       - id: accuse_jara_only
-        label: '자라를 고발하는 기사를 쓴다'
+        label: '서기준의 이름에서 멈춘다'
   - id: rabbit_delivery
     roleId: rabbit_husband
     label: '남편토끼 윤유성'
@@ -1553,7 +1555,7 @@ endbook:
         이제 남은 것은,
         이 진실을 어디까지 세상에 내놓을 것인가다.
     - id: fox_accuse_jara_only
-      title: '정직한 제목'
+      title: '서기준의 이름에서 멈춘 기사'
       when:
         finalVoteMatched: true
         finalVoteOptionId: jara
@@ -1604,7 +1606,7 @@ endbook:
         그가 먼저 찾아가야 할 사람은 서기준이 아니었다.
         윤유성이었다.
     - id: fox_accuse_dragon_king
-      title: '용왕曰 토끼 선수, ‘간’담회니까 배 한번만 가를게요?'
+      title: '용왕의 이름을 무너뜨린 기사'
       when:
         finalVoteMatched: true
         finalVoteOptionId: jara
