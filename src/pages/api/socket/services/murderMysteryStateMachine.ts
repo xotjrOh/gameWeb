@@ -2943,12 +2943,31 @@ export const finalizeMurderMysteryVote = (
   });
 
   const tallyEntries = Object.entries(tally);
+  if (tallyEntries.length === 0) {
+    throw new Error('최종 투표가 하나도 제출되지 않았습니다.');
+  }
+
   const maxVoteCount = tallyEntries.reduce(
     (max, [, count]) => Math.max(max, count),
     0
   );
   const topEntries = tallyEntries.filter(([, count]) => count === maxVoteCount);
   const voteOptionId = topEntries.length === 1 ? topEntries[0][0] : null;
+
+  if (voteOptionId === null) {
+    const result: MurderMysteryFinalVoteResult = {
+      voteOptionId: null,
+      suspectPlayerId: null,
+      matched: false,
+      tally,
+    };
+
+    room.gameData.voteByPlayerId = {};
+    room.gameData.finalVoteResult = null;
+    room.gameData.endingChoiceById = {};
+    return result;
+  }
+
   const suspectPlayerId = getVoteOptionPlayerId(room, scenario, voteOptionId);
   const matched = Boolean(
     voteOptionId && voteOptionId === scenario.finalVote.correctOptionId

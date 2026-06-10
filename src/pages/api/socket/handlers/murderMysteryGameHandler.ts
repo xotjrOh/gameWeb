@@ -45,6 +45,22 @@ import {
   ServerToClientEvents,
 } from '@/types/socket';
 
+const getFinalVoteAnnouncementText = (
+  result: ReturnType<typeof finalizeMurderMysteryVote>,
+  automatic = false
+) => {
+  if (result.voteOptionId === null) {
+    return '최종 투표가 동률입니다. 재투표를 진행합니다.';
+  }
+
+  const prefix = automatic
+    ? '최종 투표가 자동 집계되었습니다.'
+    : '최종 투표가 집계되었습니다.';
+  return result.matched
+    ? `${prefix} 사건 지목은 정답입니다.`
+    : `${prefix} 사건 지목은 오답입니다.`;
+};
+
 const clearMurderMysteryPhaseTimer = (roomId: string) => {
   if (!timers[roomId]) {
     return;
@@ -589,9 +605,7 @@ const murderMysteryGameHandler = (
           appendMurderMysteryAnnouncement(
             room,
             'SYSTEM',
-            result.matched
-              ? '최종 투표가 자동 집계되었습니다. 사건 지목은 정답입니다.'
-              : '최종 투표가 자동 집계되었습니다. 사건 지목은 오답입니다.'
+            getFinalVoteAnnouncementText(result, true)
           );
           io.emit('room-updated', rooms);
         }
@@ -640,9 +654,7 @@ const murderMysteryGameHandler = (
       appendMurderMysteryAnnouncement(
         room,
         'SYSTEM',
-        result.matched
-          ? '최종 투표가 집계되었습니다. 사건 지목은 정답입니다.'
-          : '최종 투표가 집계되었습니다. 사건 지목은 오답입니다.'
+        getFinalVoteAnnouncementText(result)
       );
 
       emitMurderMysterySnapshotsWithTimerSync(room, scenario, {
