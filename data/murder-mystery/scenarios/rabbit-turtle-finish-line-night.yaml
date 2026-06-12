@@ -171,6 +171,10 @@ parts:
     name: '토끼 가족 사진'
     source: '한다정의 소지품'
     note: '윤슬과 수술 약속이 적힌 가족사진이다.'
+  - id: part_wife_note
+    name: '한다정의 메모'
+    source: '한다정의 소지품'
+    note: '오래 접힌 작은 메모다. 경기 중 졸음, 팔 안쪽 이빨 자국, 물병, 오완주 우승이 적혀 있고, 마지막 줄에는 "정말 컨디션 문제였을까."라고 적혀 있다.'
   - id: part_medical_wing_rumor
     name: '의료동에서 도는 소문1'
     source: '의료동 소문'
@@ -430,8 +434,10 @@ investigations:
           - r1_turtle_envelope
           - r1_rubber_ring
           - r1_rabbit_family
+          - r1_wife_note
           - r1_syringe_trace
           - r1_fox_press_kit
+          - r1_fox_rumor
           - r1_jara_belongings
           - r1_medical_desk_photo
           - r1_medical_desk_records
@@ -542,6 +548,7 @@ investigations:
           heightPct: 14
   rounds:
     - round: 1
+      investigationsPerPlayer: 4
       targets:
         - id: r1_black_thermos
           label: '윤유성의 소지품 1'
@@ -601,6 +608,20 @@ investigations:
             shortLabel: '아내토끼 소지품 2'
           cardPool:
             - card_rabbit_family
+        - id: r1_wife_note
+          label: '아내토끼의 소지품 3'
+          targetType: item
+          entityKey: wife_note
+          containerId: belongings_rabbit_wife
+          containerLabel: '아내토끼의 소지품'
+          sectionId: pre_scene
+          order: 45
+          icon: '📝'
+          cardBack:
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/rabbit-wife.png'
+            shortLabel: '아내토끼 소지품 3'
+          cardPool:
+            - card_wife_note
         - id: r1_syringe_trace
           label: '조희수의 소지품 1'
           targetType: item
@@ -834,6 +855,20 @@ investigations:
             shortLabel: '아내토끼 소지품 2'
           cardPool:
             - card_rabbit_family
+        - id: r1_wife_note
+          label: '아내토끼의 소지품 3'
+          targetType: item
+          entityKey: wife_note
+          containerId: belongings_rabbit_wife
+          containerLabel: '아내토끼의 소지품'
+          sectionId: pre_scene
+          order: 45
+          icon: '📝'
+          cardBack:
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/rabbit-wife.png'
+            shortLabel: '아내토끼 소지품 3'
+          cardPool:
+            - card_wife_note
         - id: r1_syringe_trace
           label: '조희수의 소지품 1'
           targetType: item
@@ -1154,6 +1189,25 @@ cards:
     effects:
       - type: addPart
         partId: part_rabbit_family
+  - id: card_wife_note
+    title: '아내토끼 소지품 3'
+    text: |
+      한다정의 메모
+
+      오래 접힌 작은 메모다.
+
+      경기 중 졸음.
+      팔 안쪽 이빨 자국.
+      물병.
+      오완주 우승.
+
+      마지막 줄에는 이렇게 적혀 있다.
+
+      정말 컨디션 문제였을까.
+    backId: back_wife_note
+    effects:
+      - type: addPart
+        partId: part_wife_note
   - id: card_medical_wing_rumor
     title: '의료동에서 도는 소문1'
     text: |

@@ -547,6 +547,9 @@ const normalizeInvestigations = (
       );
       normalizedRounds.push({
         round,
+        investigationsPerPlayer: asPositiveInteger(
+          roundRecord.investigationsPerPlayer
+        ),
         targets: normalizeInvestigationTargets({
           rawTargets: Array.isArray(roundRecord.targets)
             ? roundRecord.targets
@@ -570,6 +573,7 @@ const normalizeInvestigations = (
     legacyRoundEntries.forEach((entry) => {
       normalizedRounds.push({
         round: entry.round,
+        investigationsPerPlayer: undefined,
         targets: normalizeInvestigationTargets({
           rawTargets: entry.targets,
           round: entry.round,

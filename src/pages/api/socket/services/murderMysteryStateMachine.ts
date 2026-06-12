@@ -194,8 +194,15 @@ const getInvestigationRounds = (
     (a, b) => a - b
   );
 
-const getInvestigationsPerRound = (scenario: MurderMysteryScenario) =>
-  Math.max(1, scenario.rules.investigationsPerRound || 1);
+const getInvestigationsPerRound = (
+  scenario: MurderMysteryScenario,
+  round?: MurderMysteryInvestigationRound | null
+) => {
+  const roundLimit = round
+    ? getRoundConfig(scenario, round)?.investigationsPerPlayer
+    : undefined;
+  return Math.max(1, roundLimit || scenario.rules.investigationsPerRound || 1);
+};
 
 const buildInvestigationUsageTemplate = (
   scenario: MurderMysteryScenario
@@ -218,7 +225,7 @@ const getInvestigationUseCount = (
     return Math.max(0, used);
   }
   if (used === true) {
-    return getInvestigationsPerRound(scenario);
+    return getInvestigationsPerRound(scenario, round);
   }
   return 0;
 };
@@ -229,7 +236,7 @@ const hasUsedAllInvestigations = (
   scenario: MurderMysteryScenario
 ) =>
   getInvestigationUseCount(usage, round, scenario) >=
-  getInvestigationsPerRound(scenario);
+  getInvestigationsPerRound(scenario, round);
 
 const buildTargetCardKey = (targetId: string, cardId: string) =>
   `${targetId}::${cardId}`;
@@ -739,9 +746,9 @@ const getOrderedPlayerIdsForRound = (
   }
 
   if (!scenario.investigations.turnOrder?.rotateFirstPlayerEachRound) {
-    return Array.from({ length: getInvestigationsPerRound(scenario) }).flatMap(
-      () => orderedPlayerIds
-    );
+    return Array.from({
+      length: getInvestigationsPerRound(scenario, round),
+    }).flatMap(() => orderedPlayerIds);
   }
 
   const rounds = getInvestigationRounds(scenario);
@@ -754,9 +761,9 @@ const getOrderedPlayerIdsForRound = (
     ...orderedPlayerIds.slice(offset),
     ...orderedPlayerIds.slice(0, offset),
   ];
-  return Array.from({ length: getInvestigationsPerRound(scenario) }).flatMap(
-    () => rotatedPlayerIds
-  );
+  return Array.from({
+    length: getInvestigationsPerRound(scenario, round),
+  }).flatMap(() => rotatedPlayerIds);
 };
 
 const initializeInvestigationTurnState = (
@@ -3132,7 +3139,7 @@ export const buildMurderMysterySnapshot = (
         scenario
       )
     : 0;
-  const limitPerRound = getInvestigationsPerRound(scenario);
+  const limitPerRound = getInvestigationsPerRound(scenario, round);
   const roleSelectionStatus = room.gameData.roleSelectionStatus ?? 'open';
   const rolePreferencesByPlayerId =
     room.gameData.rolePreferencesByPlayerId ?? {};

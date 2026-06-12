@@ -19,6 +19,7 @@
 ## Investigations (엔티티/소진 규칙)
 
 - 조사 대상은 `targets[]`로 통일됩니다. 장소/인물/소지품 모두 같은 구조입니다.
+- 기본 조사 횟수는 `rules.investigationsPerRound`이며, 특정 라운드만 다르게 하려면 `investigations.rounds[].investigationsPerPlayer`를 둡니다.
 - `entityKey`는 동일 인물을 여러 라운드에서 일관되게 식별할 때 사용합니다.
 - 맵 조사 UX를 쓰려면 `investigations.turnOrder.roleIds`를 역할 ID 전체 순서로 넣어야 합니다.
 - `rotateFirstPlayerEachRound: true`면 조사 라운드마다 선플레이어가 한 칸씩 회전합니다.

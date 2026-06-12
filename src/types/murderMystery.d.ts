@@ -138,6 +138,7 @@ export interface MurderMysteryInvestigationTargetScenario {
 
 export interface MurderMysteryInvestigationRoundScenario {
   round: MurderMysteryInvestigationRound;
+  investigationsPerPlayer?: number;
   targets: MurderMysteryInvestigationTargetScenario[];
 }
 
