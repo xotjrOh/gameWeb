@@ -2,6 +2,8 @@
 'use strict';
 
 const fs = require('fs');
+const crypto = require('crypto');
+const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
@@ -18,6 +20,7 @@ const GENERATED_OR_LOCAL = [
   /^node_modules\//,
   /^temp\//,
   /^coverage\//,
+  /^\.codex-remote-attachments\//,
   /^next-dev\.(stdout|stderr)\.log$/,
   /^tsconfig\.tsbuildinfo$/,
 ];
@@ -105,6 +108,93 @@ function gitLines(root, args) {
 
 function isGeneratedOrLocal(filePath) {
   return GENERATED_OR_LOCAL.some((pattern) => pattern.test(filePath));
+}
+
+function stateFilePath(root) {
+  const key = crypto.createHash('sha256').update(root).digest('hex').slice(0, 20);
+  return path.join(os.tmpdir(), 'codex-harness-state', `${key}.json`);
+}
+
+function fileFingerprint(root, filePath) {
+  const absolutePath = path.join(root, filePath);
+  try {
+    const stat = fs.statSync(absolutePath);
+    if (!stat.isFile()) {
+      return {
+        exists: true,
+        kind: stat.isDirectory() ? 'directory' : 'other',
+        mtimeMs: stat.mtimeMs,
+        size: stat.size,
+      };
+    }
+
+    return {
+      exists: true,
+      kind: 'file',
+      hash: crypto
+        .createHash('sha256')
+        .update(fs.readFileSync(absolutePath))
+        .digest('hex'),
+      size: stat.size,
+    };
+  } catch (error) {
+    if (error && error.code === 'ENOENT') {
+      return { exists: false };
+    }
+    return { exists: false, error: error && error.code ? error.code : 'read_failed' };
+  }
+}
+
+function createTurnSnapshot(root, files = getChangedFiles(root)) {
+  const fingerprints = {};
+  for (const filePath of files) {
+    fingerprints[filePath] = fileFingerprint(root, filePath);
+  }
+
+  return {
+    root,
+    files,
+    fingerprints,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function sameFingerprint(left, right) {
+  return JSON.stringify(left || null) === JSON.stringify(right || null);
+}
+
+function filesChangedSinceSnapshot(root, snapshot, files = getChangedFiles(root)) {
+  if (!snapshot || snapshot.root !== root || !snapshot.fingerprints) {
+    return files;
+  }
+
+  return files.filter((filePath) => {
+    const previous = snapshot.fingerprints[filePath];
+    if (!previous) {
+      return true;
+    }
+    return !sameFingerprint(previous, fileFingerprint(root, filePath));
+  });
+}
+
+function readTurnSnapshot(root) {
+  try {
+    const filePath = stateFilePath(root);
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function writeTurnSnapshot(root) {
+  try {
+    const filePath = stateFilePath(root);
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify(createTurnSnapshot(root)), 'utf8');
+  } catch {
+    // Hook state is advisory. If it cannot be written, the stop hook falls back
+    // to the conservative full-worktree check.
+  }
 }
 
 function getChangedFiles(root) {
@@ -333,7 +423,10 @@ function extractPatchFiles(text) {
 }
 
 function validationEvidence(text) {
-  return VALIDATION_COMMANDS.some((command) => text.includes(command));
+  const normalized = String(text)
+    .replace(/\byarn\.(cmd|ps1)\b/g, 'yarn')
+    .replace(/\s+/g, ' ');
+  return VALIDATION_COMMANDS.some((command) => normalized.includes(command));
 }
 
 function looksDestructive(command) {
@@ -357,6 +450,8 @@ function handleSessionStart(input) {
 
 function handleUserPrompt(input) {
   const prompt = String(input.prompt || '');
+  const root = getGitRoot(input.cwd || process.cwd());
+  writeTurnSnapshot(root);
   const classification = classifyPrompt(prompt);
   return hookContext(
     'UserPromptSubmit',
@@ -421,19 +516,25 @@ function handleStop(input) {
     return { continue: true };
   }
 
+  const snapshot = readTurnSnapshot(root);
+  const filesToValidate = filesChangedSinceSnapshot(root, snapshot, files);
+  if (filesToValidate.length === 0) {
+    return { continue: true };
+  }
+
   const lastMessage = String(input.last_assistant_message || '');
   if (validationEvidence(lastMessage)) {
     return { continue: true };
   }
 
-  const classification = classifyFiles(files);
+  const classification = classifyFiles(filesToValidate);
   const validations =
     classification.validations.join(' && ') || 'yarn check:fast';
 
   return {
     decision: 'block',
     reason: [
-      `Files changed without validation evidence in the final response: ${files.slice(0, 12).join(', ')}`,
+      `Files changed this turn without validation evidence in the final response: ${filesToValidate.slice(0, 12).join(', ')}`,
       `Run and report: ${validations}.`,
       'If a command cannot run, state the exact command and blocker before finishing.',
     ].join('\n'),
@@ -496,6 +597,26 @@ function selfTest() {
     blocked.hookSpecificOutput &&
       blocked.hookSpecificOutput.permissionDecision === 'deny',
     'destructive command should be denied'
+  );
+
+  const turnRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-harness-test-'));
+  fs.writeFileSync(path.join(turnRoot, 'dirty.txt'), 'before', 'utf8');
+  const snapshot = createTurnSnapshot(turnRoot, ['dirty.txt']);
+  assert(
+    filesChangedSinceSnapshot(turnRoot, snapshot, ['dirty.txt']).length === 0,
+    'unchanged dirty baseline should not require validation'
+  );
+  fs.writeFileSync(path.join(turnRoot, 'dirty.txt'), 'after', 'utf8');
+  assert(
+    filesChangedSinceSnapshot(turnRoot, snapshot, ['dirty.txt']).includes(
+      'dirty.txt'
+    ),
+    'dirty file modified after prompt should require validation'
+  );
+
+  assert(
+    validationEvidence('Command: yarn.cmd check:murder'),
+    'Windows yarn.cmd validation evidence should be accepted'
   );
 
   process.stdout.write('codex-harness self-test passed\n');
