@@ -61,7 +61,7 @@ flow:
       readAloud: |
         재활수조실 쪽에서 비명이 터지자, 기자들이 한꺼번에 몰려들려 했습니다.
 
-        서기준은 곧바로 직원들을 시켜 재활수조실 앞 복도를 막게 했습니다. 동시에 직원을 시켜 의료동에서 의사를 불렀고, 다른 직원에게는 윤유성을 찾아 데려오라고 지시했습니다.
+        서기준은 곧바로 직원들에게 재활수조실 앞 복도를 막고 윤유성을 찾아오라고 지시한 뒤, 의료동으로 뛰어가 의사들에게 상황을 전했습니다.
 
         잠시 후 의사들이 재활수조실 안으로 들어갔습니다.
 
@@ -71,15 +71,15 @@ flow:
 
         재활수조실 앞에는 윤유성, 한다정, 조희수, 서기준 네 사람이 모였습니다. 본행사 중 강당을 비운 사람들이었습니다.
 
-        자라는 의료동 쪽 복도를 한 번 확인하고는 낮은 목소리로 말합니다.
+        서기준은 닫힌 재활수조실 문과 복도 밖 기자들을 확인하고는 낮은 목소리로 말합니다.
 
-        “현장 안은 의사들이 보고 있습니다. 안쪽은 건드리지 말고, 밖부터 확인하죠. 오완주가 자리를 비웠을 때부터 여우가 비명을 지르기까지 자리를 비운 건 저희 넷뿐입니다. 의료동 입구, 복도, 그리고 각자의 소지품을 먼저 보겠습니다.”
+        “현장 안은 의사들이 보고 있습니다. 안쪽은 건드리지 말고, 밖부터 확인하죠. 오완주가 자리를 비웠을 때부터 여우가 비명을 지르기까지 자리를 비운 건 저희 넷뿐입니다. 우선은 재활수조실 바깥을 조사하고, 각자의 소지품을 먼저 보겠습니다.”
 
         소지품을 보자는 말에 모두의 표정이 굳었습니다.
 
         하지만 이 상황에서 혼자 거절하기도 어려웠습니다. 기자들은 복도 밖에 몰려 있었고, 직원들은 재활수조실 문 앞을 막고 있었습니다. 의사들이 안에서 오완주의 상태를 확인하는 동안, 네 사람은 서로를 바라볼 수밖에 없었습니다.
 
-        결국 네 사람은 각자의 소지품과 방금 전 동선을 확인하고, 다른 장소를 먼저 조사하기로 합니다.
+        결국 네 사람은 각자의 소지품과 다른 장소를 먼저 조사하기로 합니다.
 
         1라운드 조사를 시작합니다.
       enterAnnouncement: '1라운드 조사 전 지문입니다. 방장이 낭독한 뒤 1라운드 조사로 진행합니다.'
@@ -183,14 +183,14 @@ parts:
     name: '의료동에서 도는 소문2'
     source: '의료동 소문'
     note: '본행사 전 조희수가 서기준의 간이책상에 머물렀고, 그 뒤 조희수의 비명까지 네 명 중 의료동 출입자는 없었다는 소문이다.'
-  - id: part_medical_shoe_cabinet
-    name: '의료동 입구 신발장'
-    source: '의료동 입구 신발장'
-    note: '젖은 구두를 벗어 의료동 입구 신발장에 넣고, 간이책상 물건은 챙기지 못했다는 기록이다.'
-  - id: part_medical_shoe_cabinet_recheck
-    name: '의료동 입구 신발장'
-    source: '의료동 입구 신발장'
-    note: '의료동 입구 신발장 깊숙한 칸 안쪽에서 젖은 구두 한 켤레가 발견된다.'
+  - id: part_medical_shoe_cabinet_1
+    name: '의료동 입구 신발장 1'
+    source: '의료동 입구 신발장 1'
+    note: '환자들이 신고 온 신발을 벗고 병원 슬리퍼로 갈아 신는 의료동 입구 신발장 깊숙한 칸에서 젖은 구두 한 켤레가 발견된다.'
+  - id: part_medical_shoe_cabinet_2
+    name: '의료동 입구 신발장 2'
+    source: '의료동 입구 신발장 2'
+    note: '병원 슬리퍼를 신은 환자 한 명이 본인이 신고 왔던 운동화가 없어졌다며 찾고 있다.'
   - id: part_jara_belongings
     name: '서기준의 소지품'
     source: '서기준의 소지품'
@@ -351,7 +351,7 @@ roles:
       당신은 침착하게 규칙과 기록을 정리하는 사람처럼 행동할 수 있습니다.
       소지품의 의료동 일정/회복 음료 메모는 행사 후 선수 관리 일정이라고 설명하세요. 단독으로는 이상하지 않지만, 건강기록 비교 발췌와 연결되면 위험해집니다.
       단서가 공개될수록 의료동, 수조, 비품, 가족 문제를 하나의 선으로 연결하려는 시도를 끊어 내야 합니다.
-      의료동 입구 신발장에는 당신이 벗어 둔 구두가 숨겨져 있습니다. 다음 조사에서 젖은 구두가 발견될 수 있으니, 다른 플레이어들이 그곳을 다시 조사하지 못하도록 자연스럽게 유도하는 편이 좋습니다.
+      의료동 입구 신발장에는 당신이 벗어 둔 젖은 구두가 환자 신발과 병원 슬리퍼 사이에 숨겨져 있습니다. 그 단서가 공개되면 비명 직후 의료동에 다녀온 당신의 동선이 의심받을 수 있습니다.
       인물 관계:
       윤유성은 윤슬 사망 뒤 용왕에게 필요한 새 가능성이 된 사람입니다.
       한다정은 윤유성의 보호자이며, 당신의 계획에서 가장 예민한 변수입니다.
@@ -420,11 +420,6 @@ investigations:
       - fox
       - rabbit_husband
     rotateFirstPlayerEachRound: false
-  requiredFirstInvestigations:
-    - roleId: jara
-      round: 1
-      targetId: r1_medical_shoe_cabinet
-      reason: '서기준은 재활수조실 밖 동선을 먼저 확인하자고 제안했습니다. 첫 조사는 의료동 입구 신발장을 확인해야 합니다.'
   layout:
     sections:
       - id: pre_scene
@@ -443,7 +438,8 @@ investigations:
           - r1_medical_desk_records
           - r1_medical_wing_rumor
           - r1_medical_wing_rumor_2
-          - r1_medical_shoe_cabinet
+          - r1_medical_shoe_cabinet_1
+          - r1_medical_shoe_cabinet_2
           - r1_dragon_king_rumor_1
           - r1_dragon_king_rumor_2
           - r1_dragon_king_rumor_3
@@ -483,13 +479,20 @@ investigations:
           yPct: 5
           widthPct: 8
           heightPct: 9
-        - id: map_r1_medical_shoe_cabinet
-          targetId: r1_medical_shoe_cabinet
-          label: '의료동 입구 신발장'
+        - id: map_r1_medical_shoe_cabinet_1
+          targetId: r1_medical_shoe_cabinet_1
+          label: '의료동 입구 신발장 1'
           xPct: 41
           yPct: 15
           widthPct: 10
-          heightPct: 12
+          heightPct: 6
+        - id: map_r1_medical_shoe_cabinet_2
+          targetId: r1_medical_shoe_cabinet_2
+          label: '의료동 입구 신발장 2'
+          xPct: 41
+          yPct: 21
+          widthPct: 10
+          heightPct: 6
         - id: map_r1_siphon_guide
           targetId: r1_siphon_guide
           label: '세탁실에 붙어있는 안내문'
@@ -730,20 +733,30 @@ investigations:
             shortLabel: '의료동에서 도는 소문2'
           cardPool:
             - card_medical_wing_rumor_2
-        - id: r1_medical_shoe_cabinet
-          label: '의료동 입구 신발장'
+        - id: r1_medical_shoe_cabinet_1
+          label: '의료동 입구 신발장 1'
           targetType: location
-          entityKey: medical_shoe_cabinet
+          entityKey: medical_shoe_cabinet_1
           sectionId: pre_scene
           order: 87
           icon: '👞'
-          repeatable: true
           cardBack:
             imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
-            shortLabel: '의료동 입구 신발장'
+            shortLabel: '의료동 입구 신발장 1'
           cardPool:
-            - card_medical_shoe_cabinet_first
-            - card_medical_shoe_cabinet_recheck
+            - card_medical_shoe_cabinet_1
+        - id: r1_medical_shoe_cabinet_2
+          label: '의료동 입구 신발장 2'
+          targetType: location
+          entityKey: medical_shoe_cabinet_2
+          sectionId: pre_scene
+          order: 88
+          icon: '👞'
+          cardBack:
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            shortLabel: '의료동 입구 신발장 2'
+          cardPool:
+            - card_medical_shoe_cabinet_2
         - id: r1_dragon_king_rumor_1
           label: '용왕에 대한 소문1'
           targetType: item
@@ -977,20 +990,30 @@ investigations:
             shortLabel: '의료동에서 도는 소문2'
           cardPool:
             - card_medical_wing_rumor_2
-        - id: r1_medical_shoe_cabinet
-          label: '의료동 입구 신발장'
+        - id: r1_medical_shoe_cabinet_1
+          label: '의료동 입구 신발장 1'
           targetType: location
-          entityKey: medical_shoe_cabinet
+          entityKey: medical_shoe_cabinet_1
           sectionId: pre_scene
           order: 87
           icon: '👞'
-          repeatable: true
           cardBack:
             imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
-            shortLabel: '의료동 입구 신발장'
+            shortLabel: '의료동 입구 신발장 1'
           cardPool:
-            - card_medical_shoe_cabinet_first
-            - card_medical_shoe_cabinet_recheck
+            - card_medical_shoe_cabinet_1
+        - id: r1_medical_shoe_cabinet_2
+          label: '의료동 입구 신발장 2'
+          targetType: location
+          entityKey: medical_shoe_cabinet_2
+          sectionId: pre_scene
+          order: 88
+          icon: '👞'
+          cardBack:
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            shortLabel: '의료동 입구 신발장 2'
+          cardPool:
+            - card_medical_shoe_cabinet_2
         - id: r1_dragon_king_rumor_1
           label: '용왕에 대한 소문1'
           targetType: item
@@ -1227,25 +1250,26 @@ cards:
     effects:
       - type: addPart
         partId: part_medical_wing_rumor_2
-  - id: card_medical_shoe_cabinet_first
-    title: '의료동 입구 신발장'
+  - id: card_medical_shoe_cabinet_1
+    title: '의료동 입구 신발장 1'
     text: |
-      나는 이름표가 있는 것도 아니니 젖은 구두를 벗어 신발장에 넣어뒀다.
-      간이책상에 숨겨둔 물건을 챙겨갈까 했지만 기자가 깔린 마당에 이 이상 수상한 행동은 안 하는 게 좋을 거라 생각해 재활수조실 입구로 돌아갔다.
-    publicRevealDisabled: true
-    backId: back_medical_shoe_cabinet_first
+      의료동 입구에는 환자들이 신고 온 신발을 벗고 병원 슬리퍼로 갈아 신는 신발장이 있다.
+      신발장 안에는 환자들의 신발과 비치된 병원 슬리퍼가 함께 놓여 있다.
+
+      그중 깊숙한 칸 안쪽에 젖은 구두 한 켤레가 놓여 있다.
+    backId: back_medical_shoe_cabinet_1
     effects:
       - type: addPart
-        partId: part_medical_shoe_cabinet
-  - id: card_medical_shoe_cabinet_recheck
-    title: '의료동 입구 신발장'
+        partId: part_medical_shoe_cabinet_1
+  - id: card_medical_shoe_cabinet_2
+    title: '의료동 입구 신발장 2'
     text: |
-      신발장 깊숙한 칸 안쪽에 젖은 구두 한 켤레가 놓여 있다.
-    publicRevealDisabled: true
-    backId: back_medical_shoe_cabinet_recheck
+      병원 슬리퍼를 신은 환자 한 명이 의료동 입구에서 본인이 신고 왔던 운동화가 없어졌다며 찾고 있다.
+      환자는 진료를 보러 들어가기 전 신발장에 운동화를 넣어 두었고, 나오고 보니 사라졌다고 말한다.
+    backId: back_medical_shoe_cabinet_2
     effects:
       - type: addPart
-        partId: part_medical_shoe_cabinet_recheck
+        partId: part_medical_shoe_cabinet_2
   - id: card_jara_belongings
     title: '서기준의 소지품'
     text: |
@@ -1412,7 +1436,7 @@ cards:
       재활수조실 바닥 곳곳에 젖은 구두 자국이 흐리게 남아 있다.
       수조실 내부에서는 굽자국이 희미해 어디서 어디로 향했는지 알아보기 힘들다.
       발자국은 재활수조실 문턱을 지나 ㄱ자로 꺾이는 복도까지 이어지지만, 그 뒤는 몰려든 기자들과 직원들이 오간 흔적에 뭉개져 어디로 향했는지 알 수 없다.
-      주변을 둘러봤지만 지금 딱딱한 구두굽을 신고 있는 사람은 없다. 윤유성은 운동화, 조희수는 낮은 단화, 서기준은 슬리퍼, 한다정은 고무 밑창의 낮은 외출화를 신고 있다.
+      주변을 둘러봤지만 지금 딱딱한 구두굽을 신고 있는 사람은 없다. 윤유성은 운동화, 조희수는 낮은 단화, 서기준은 운동화, 한다정은 고무 밑창의 낮은 외출화를 신고 있다.
     backId: back_wet_shoeprints
     effects:
       - type: addPart
@@ -2127,7 +2151,11 @@ endbook:
 
         기자들이 몰려오기 시작했다.
 
-        서기준은 곧바로 직원들을 시켜 재활수조실 앞을 막고, 의사들을 안으로 들여보냈다.
+        서기준은 곧바로 직원들에게 재활수조실 앞을 막고 윤유성을 찾아오라고 지시한 뒤, 의료동으로 뛰어가 의사들에게 상황을 전했다.
+
+        의료동 입구 신발장에는 환자 신발과 병원 슬리퍼가 섞여 있었다. 서기준은 그 틈 깊숙한 칸에 젖은 구두를 넣고, 신발장에 있던 운동화로 갈아 신었다.
+
+        오래 머물 수는 없었다. 서기준은 의사들을 데리고 재활수조실 앞으로 돌아왔다.
 
         현장 안쪽 조사를 늦추기 위해서였다.
 
@@ -2140,14 +2168,6 @@ endbook:
         완전히 사라지지 않아도 됐다.
 
         어느 정도 마르기만 해도 정확한 이동 경로는 흐려질 수 있었다.
-
-        서기준에게 마지막으로 남은 것은 젖은 구두였다.
-
-        그는 조사가 진행되는 틈을 타 의료동 입구 신발장으로 향했다.
-
-        젖은 구두를 깊숙한 칸 안쪽에 넣고, 슬리퍼로 갈아 신었다.
-
-        그리고 재활수조실 앞으로 돌아왔다.
 
         그날 오완주를 죽인 것은 서기준이었다.
     - id: correct_closing
