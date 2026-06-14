@@ -112,11 +112,23 @@ export default function MurderMysteryGameScreen({
   useEffect(() => {
     const currentReservationBackId =
       snapshot?.investigation.turn?.myReservation?.backId ?? null;
+    const previousReservationBackId = previousReservationBackIdRef.current;
+    const myHeldBackIds = new Set(
+      snapshot?.players
+        .find((player) => player.id === sessionId)
+        ?.heldCardBacks.map((back) => back.backId) ?? []
+    );
+    const isInvestigationTurnActive = Boolean(
+      snapshot?.investigation.round && snapshot.investigation.turn?.enabled
+    );
 
-    if (previousReservationBackIdRef.current && !currentReservationBackId) {
+    if (previousReservationBackId && !currentReservationBackId) {
       if (reservationChangeSourceRef.current === 'self') {
         reservationChangeSourceRef.current = null;
-      } else {
+      } else if (
+        isInvestigationTurnActive &&
+        !myHeldBackIds.has(previousReservationBackId)
+      ) {
         enqueueSnackbar(
           '예약한 카드가 다른 플레이어에게 먼저 가져가졌습니다. 새 카드를 다시 골라주세요.',
           { variant: 'warning' }
@@ -128,7 +140,7 @@ export default function MurderMysteryGameScreen({
       reservationChangeSourceRef.current = null;
     }
     previousReservationBackIdRef.current = currentReservationBackId;
-  }, [snapshot?.investigation.turn?.myReservation?.backId, enqueueSnackbar]);
+  }, [snapshot, sessionId, enqueueSnackbar]);
 
   const emitWithAck = <T extends object>(
     eventName: string,
