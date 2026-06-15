@@ -60,6 +60,7 @@
 - 먼저 읽기
   - [data/murder-mystery/registry.json](/c:/Users/xotjr/Desktop/react/next-game-web/data/murder-mystery/registry.json)
   - [data/murder-mystery/SCENARIO_AUTHORING.md](/c:/Users/xotjr/Desktop/react/next-game-web/data/murder-mystery/SCENARIO_AUTHORING.md)
+  - 장르 흐름, 조사전 지문, 조사/밀담/회의/투표/엔딩, 기믹을 논하면 [docs/agent/context/MURDER_MYSTERY_GENRE_GUIDE.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/context/MURDER_MYSTERY_GENRE_GUIDE.md)
   - 토끼와 거북이 시나리오를 쓰거나 조언하면 [docs/agent/context/RABBIT_TURTLE_STORY_CONTEXT.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/context/RABBIT_TURTLE_STORY_CONTEXT.md)
   - 토끼와 거북이 엔딩 본문/단서 모달/Q&A/캐릭터별 해설을 쓰거나 고치면 [data/murder-mystery/WRITING_REFERENCE_ENDING_RABBIT_TURTLE.md](/c:/Users/xotjr/Desktop/react/next-game-web/data/murder-mystery/WRITING_REFERENCE_ENDING_RABBIT_TURTLE.md)
   - [src/pages/api/socket/services/murderMysteryScenarioService.ts](/c:/Users/xotjr/Desktop/react/next-game-web/src/pages/api/socket/services/murderMysteryScenarioService.ts)

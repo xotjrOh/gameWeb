@@ -14,10 +14,11 @@
 8. [REQUESTED_INPUTS.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/REQUESTED_INPUTS.md)
 9. Codex hook 하네스를 건드리면 [.codex/HARNESS.md](/c:/Users/xotjr/Desktop/react/next-game-web/.codex/HARNESS.md)
 10. 필요 시 `docs/gpt-project/*`와 현재 작업 소스
-11. 토끼와 거북이 시나리오를 쓰거나 조언하면 [context/RABBIT_TURTLE_STORY_CONTEXT.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/context/RABBIT_TURTLE_STORY_CONTEXT.md)
-12. 토끼와 거북이 시나리오/NPC 동기 검수라면 [context/RABBIT_TURTLE_WIFE_RABBIT_PRIVATE_RULE.txt](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/context/RABBIT_TURTLE_WIFE_RABBIT_PRIVATE_RULE.txt)
-13. 제목 회수, 대사 속 작품명, 시나리오 title drop 설계가 필요하면 [context/WRITING_TIP_TITLE_DROP.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/context/WRITING_TIP_TITLE_DROP.md)
-14. 사실/진실 구분, 부제 의미, 엔딩의 해석 방향을 다루면 [context/FACT_TRUTH_REPORT.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/context/FACT_TRUTH_REPORT.md)
+11. 머더미스터리 장르, 조사전 지문, 조사, 밀담, 회의, 투표, 엔딩, 기믹을 논하면 [context/MURDER_MYSTERY_GENRE_GUIDE.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/context/MURDER_MYSTERY_GENRE_GUIDE.md)
+12. 토끼와 거북이 시나리오를 쓰거나 조언하면 [context/RABBIT_TURTLE_STORY_CONTEXT.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/context/RABBIT_TURTLE_STORY_CONTEXT.md)
+13. 토끼와 거북이 시나리오/NPC 동기 검수라면 [context/RABBIT_TURTLE_WIFE_RABBIT_PRIVATE_RULE.txt](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/context/RABBIT_TURTLE_WIFE_RABBIT_PRIVATE_RULE.txt)
+14. 제목 회수, 대사 속 작품명, 시나리오 title drop 설계가 필요하면 [context/WRITING_TIP_TITLE_DROP.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/context/WRITING_TIP_TITLE_DROP.md)
+15. 사실/진실 구분, 부제 의미, 엔딩의 해석 방향을 다루면 [context/FACT_TRUTH_REPORT.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/context/FACT_TRUTH_REPORT.md)
 
 ## What Each Doc Does
 
@@ -37,6 +38,8 @@
   - 사용자가 요청할 때 주면 좋은 정보와, 정보가 부족할 때 Codex가 어떻게 보정할지 정리한다.
 - `context/SOCKET_DEBUG_STATUS.md`
   - 현재 소켓 이슈 조사 상태 같은 일시적 컨텍스트를 보관한다.
+- `context/MURDER_MYSTERY_GENRE_GUIDE.md`
+  - 머더미스터리 장르의 기본 페이즈, 조사전 지문, 조사/회의/밀담/투표/엔딩 구조, 흔한 기믹, 현재 엔진 매핑을 보관한다.
 - `context/RABBIT_TURTLE_STORY_CONTEXT.md`
   - 토끼와 거북이 시나리오의 고정 진상, 관계도, 단서 의미, 조희수 보강 가드레일을 보관한다.
 - `context/RABBIT_TURTLE_WIFE_RABBIT_PRIVATE_RULE.txt`
