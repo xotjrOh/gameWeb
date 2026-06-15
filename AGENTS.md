@@ -10,6 +10,7 @@
 - 실시간 입장/재입장/방 종료 흐름을 건드릴 때는 [docs/agent/contracts/ROOM_SOCKET_CONTRACT.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/contracts/ROOM_SOCKET_CONTRACT.md)를 먼저 확인한다.
 - 디버그 플래그나 버전/소켓 보존 동작을 건드릴 때는 [docs/agent/ENV_FLAGS.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/ENV_FLAGS.md)를 본다.
 - 머더미스터리 장르, 시나리오, 조사전 지문, 조사, 밀담, 회의, 투표, 엔딩, 기믹을 논할 때는 [docs/agent/context/MURDER_MYSTERY_GENRE_GUIDE.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/context/MURDER_MYSTERY_GENRE_GUIDE.md)를 먼저 읽는다.
+- 머더미스터리 서사 전개, 반전 배치, 복선 회수, 감정적 진상 공개를 설계할 때는 [docs/agent/context/STORY_REVEAL_PACING_REFERENCE.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/context/STORY_REVEAL_PACING_REFERENCE.md)를 참고한다.
 - 사용자가 무엇을 주면 좋은지 확인하거나 프롬프트 템플릿이 필요하면 [docs/agent/REQUESTED_INPUTS.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/REQUESTED_INPUTS.md)를 본다.
 - 작업 절차와 종료 기준은 [docs/agent/WORKFLOW.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/WORKFLOW.md), 검증 명령 선택은 [docs/agent/VALIDATION_MATRIX.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/VALIDATION_MATRIX.md)를 따른다.
 

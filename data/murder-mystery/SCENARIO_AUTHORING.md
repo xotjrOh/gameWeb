@@ -63,6 +63,7 @@
 ## Writing References
 
 - 장르 흐름, 조사전 지문, 조사/회의/밀담/투표/엔딩, 흔한 기믹을 판단할 때는 [MURDER_MYSTERY_GENRE_GUIDE.md](../../docs/agent/context/MURDER_MYSTERY_GENRE_GUIDE.md)를 먼저 읽습니다.
+- 서사 전개, 반전 배치, 복선 회수, 감정적 진상 공개를 설계할 때는 [STORY_REVEAL_PACING_REFERENCE.md](../../docs/agent/context/STORY_REVEAL_PACING_REFERENCE.md)를 참고합니다.
 - `rabbit-turtle-finish-line-night` 엔딩 본문, 단서 모달, 후반 Q&A, 캐릭터별 해설을 쓰거나 고칠 때는 [WRITING_REFERENCE_ENDING_RABBIT_TURTLE.md](./WRITING_REFERENCE_ENDING_RABBIT_TURTLE.md)를 우선 적용합니다.
 - 가담항설식 가치관 충돌, 대사 리듬, 구원/복수 분기 설계는 [WRITING_REFERENCE_GADAMHANGSEOL.md](./WRITING_REFERENCE_GADAMHANGSEOL.md)를 참고합니다.
 - 시나리오 문장, 선택지, 엔딩 본문을 첨삭할 때는 [WRITING_REFERENCE_REVISION.md](./WRITING_REFERENCE_REVISION.md)를 참고합니다.
