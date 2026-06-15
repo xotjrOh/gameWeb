@@ -6,6 +6,12 @@ players:
   min: 5
   max: 5
 
+# Authoring guardrail:
+# - 트릭/알리바이/정체 반전/범행 수단은 SCENARIO_AUTHORING.md의 Fair-Play Trick Gate와
+#   MURDER_MYSTERY_GENRE_GUIDE.md의 Knox Fair-Play Gate For Tricks를 통과해야 합니다.
+# - 핵심 단서가 전체 공개되어도 즉시 정답표가 되지 않고, 토론에서 다툴 여지가 있어야 합니다.
+# - 엔딩북에서 처음 등장하는 증거로 정답을 성립시키지 마세요.
+
 rules:
   investigationsPerRound: 1
   noEliminationDuringGame: true

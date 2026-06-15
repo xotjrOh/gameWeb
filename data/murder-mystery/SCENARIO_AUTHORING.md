@@ -2,10 +2,31 @@
 
 ## Quick Start
 
-1. `data/murder-mystery/scenarios/_template.yaml`을 복사해 새 파일을 만듭니다.
-2. `registry.json`에 `{ "id": "...", "file": "...yaml" }` 1줄을 추가합니다.
-3. `yarn test:murder`를 실행해 참조/flow 오류를 확인합니다.
-4. `yarn exec tsc --noEmit` + `yarn lint`를 통과하면 반영 완료입니다.
+1. 트릭/진상/범행 수단을 먼저 설계한다면 아래 `Fair-Play Trick Gate`를 통과시킨 뒤 YAML을 작성합니다.
+2. `data/murder-mystery/scenarios/_template.yaml`을 복사해 새 파일을 만듭니다.
+3. `registry.json`에 `{ "id": "...", "file": "...yaml" }` 1줄을 추가합니다.
+4. `yarn test:murder`를 실행해 참조/flow 오류를 확인합니다.
+5. `yarn exec tsc --noEmit` + `yarn lint`를 통과하면 반영 완료입니다.
+
+## Fair-Play Trick Gate
+
+새 머더미스터리의 트릭, 알리바이, 정체 반전, 범행 수단은 [MURDER_MYSTERY_GENRE_GUIDE.md](../../docs/agent/context/MURDER_MYSTERY_GENRE_GUIDE.md)의 `Knox Fair-Play Gate For Tricks`를 반드시 통과해야 합니다.
+
+작성 시 아래를 먼저 고정합니다.
+
+- `진범/정답 후보`: 초반 공개 지문, 역할 시트, 조사 대상 중 어디에 처음 등장하는가?
+- `수단/기회`: 플레이어가 조사 카드나 역할 발화로 어떻게 추론할 수 있는가?
+- `미끼`: 어떤 단서가 다른 인물을 합리적으로 의심하게 만드는가?
+- `반증`: 그 미끼를 어떤 추가 단서나 대화로 빠져나올 수 있는가?
+- `공개 내성`: 핵심 단서가 전체 공개되어도 바로 정답표가 되지 않고, 토론/밀담에서 다툴 여지가 있는가?
+
+금지합니다.
+
+- 후반에 처음 나온 인물/물건/전문지식/초자연 규칙으로 정답을 성립시키기.
+- 엔딩북에서 새 증거를 꺼내 정답을 처음 가능하게 만들기.
+- 비밀 통로, 대역, 변장, 기억 결손, 특수 약물 같은 트릭을 사전 단서 없이 쓰기.
+- 플레이어의 비공개 지문이나 GM 권한으로만 핵심 진실을 봉인하기.
+- 원문 녹스 10계의 차별적 표현을 반복하거나, 문화/정체성/직업 편견을 수상함의 근거로 쓰기.
 
 ## Flow (단계/시간/전환 지문)
 
