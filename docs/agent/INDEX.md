@@ -17,6 +17,7 @@
 11. 토끼와 거북이 시나리오를 쓰거나 조언하면 [context/RABBIT_TURTLE_STORY_CONTEXT.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/context/RABBIT_TURTLE_STORY_CONTEXT.md)
 12. 토끼와 거북이 시나리오/NPC 동기 검수라면 [context/RABBIT_TURTLE_WIFE_RABBIT_PRIVATE_RULE.txt](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/context/RABBIT_TURTLE_WIFE_RABBIT_PRIVATE_RULE.txt)
 13. 제목 회수, 대사 속 작품명, 시나리오 title drop 설계가 필요하면 [context/WRITING_TIP_TITLE_DROP.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/context/WRITING_TIP_TITLE_DROP.md)
+14. 사실/진실 구분, 부제 의미, 엔딩의 해석 방향을 다루면 [context/FACT_TRUTH_REPORT.md](/c:/Users/xotjr/Desktop/react/next-game-web/docs/agent/context/FACT_TRUTH_REPORT.md)
 
 ## What Each Doc Does
 
@@ -42,6 +43,8 @@
   - 토끼와 거북이 NPC 아내토끼 한다정의 비공개룰지 원문 사본을 보관한다.
 - `context/WRITING_TIP_TITLE_DROP.md`
   - 작문 팁 "제목말하기 기법"의 정의, 유형, 장르별 전략, 체크리스트, 템플릿을 보관한다.
+- `context/FACT_TRUTH_REPORT.md`
+  - 사용자가 제공한 사실/진실 구분 리포트를 토대로, 토끼와 거북이 부제와 엔딩 해석에 적용할 작업 노트를 보관한다.
 - `.codex/HARNESS.md`
   - Codex lifecycle hook 설정과 수동 self-test 방법을 정리한다.
 
