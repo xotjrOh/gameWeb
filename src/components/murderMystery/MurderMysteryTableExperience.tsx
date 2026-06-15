@@ -5172,7 +5172,7 @@ export default function MurderMysteryTableExperience({
       );
     }
 
-    const endbookText = [endbook.title, endbook.body, endbook.closingLine]
+    const endbookText = [endbook.title, endbook.body]
       .filter(Boolean)
       .join('\n\n');
 
@@ -5213,11 +5213,7 @@ export default function MurderMysteryTableExperience({
             ) : null}
 
             {endbook.alternateOutcomes.map((outcome) => {
-              const alternateText = [
-                outcome.title,
-                outcome.body,
-                outcome.closingLine,
-              ]
+              const alternateText = [outcome.title, outcome.body]
                 .filter(Boolean)
                 .join('\n\n');
 

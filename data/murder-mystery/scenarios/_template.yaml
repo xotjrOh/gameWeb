@@ -96,11 +96,13 @@ endbook:
         finalVoteMatched: true
       body: |
         정답 분기
-      closingLine: "《엔딩 타이틀》"
+
+        《엔딩 타이틀》
     - id: not_matched
       title: "오답 엔딩"
       when:
         finalVoteMatched: false
       body: |
         오답 분기
-      closingLine: "《엔딩 타이틀》"
+
+        《엔딩 타이틀》

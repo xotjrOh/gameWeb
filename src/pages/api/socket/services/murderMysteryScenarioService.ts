@@ -1447,10 +1447,6 @@ const normalizeEndbookVariants = ({
         variantRecord.body,
         `${fileName}: endbook.variant(${id}).body is required`
       ),
-      closingLine: requireString(
-        variantRecord.closingLine,
-        `${fileName}: endbook.variant(${id}).closingLine is required`
-      ),
       when,
     };
   });
@@ -1488,7 +1484,6 @@ const normalizeEndbookSections = ({
         sectionRecord.body,
         `${fileName}: endbook.section(${id}).body is required`
       ),
-      closingLine: asNonEmptyString(sectionRecord.closingLine),
       when: normalizeEndbookCondition(
         sectionRecord.when,
         `${fileName}: endbook.section(${id}).when`,
@@ -1634,7 +1629,6 @@ const normalizeScenarioSchema = (
     endingChoices,
     endbook: {
       title: asNonEmptyString(endbookRecord.title),
-      closingLine: asNonEmptyString(endbookRecord.closingLine),
       variants: normalizeEndbookVariants({
         rawVariants: endbookRecord.variants,
         fileName,

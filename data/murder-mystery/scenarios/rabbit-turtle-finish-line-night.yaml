@@ -1564,7 +1564,6 @@ endingChoices:
 
 endbook:
   title: '토끼와 거북이'
-  closingLine: '토끼와 거북이: 사실이라고 해서, 진실은 아니다'
   sections:
     - id: misvote_rabbit_husband
       when:
@@ -1701,6 +1700,8 @@ endbook:
 
         오완주의 죽음은 단일 범행으로 닫혔다.
         윤유성의 상처는 응급 처치의 흔적으로 남았다.
+
+        토끼와 거북이: 사실이라고 해서, 진실은 아니다
     - id: correct_reveal
       when:
         finalVoteMatched: true
@@ -2223,3 +2224,5 @@ endbook:
         그날의 진실은,
         그 모든 사실이 누구의 병상으로 향하고 있었는지까지 밝혀졌을 때
         비로소 완성되었다.
+
+        토끼와 거북이: 사실이라고 해서, 진실은 아니다

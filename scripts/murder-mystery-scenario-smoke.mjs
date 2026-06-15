@@ -547,7 +547,7 @@ for (const entry of registry.scenarios) {
 
   const endbookVariantIds = new Set();
   for (const variant of endbookVariants) {
-    if (!variant.id || !variant.title || !variant.body || !variant.closingLine) {
+    if (!variant.id || !variant.title || !variant.body) {
       fail(`${entry.file}: endbook variant fields are required`);
     }
     if (endbookVariantIds.has(variant.id)) {

@@ -1710,9 +1710,6 @@ const buildEndbookAlternateOutcomes = (
         const title =
           [...alternateSections].reverse().find((section) => section.title)
             ?.title ?? alternateOption.label;
-        const closingLine = [...alternateSections]
-          .reverse()
-          .find((section) => section.closingLine)?.closingLine;
 
         return [
           {
@@ -1732,7 +1729,6 @@ const buildEndbookAlternateOutcomes = (
               .map((section) => section.body)
               .filter(Boolean)
               .join('\n\n'),
-            ...(closingLine ? { closingLine } : {}),
           },
         ];
       });
@@ -1763,11 +1759,6 @@ const resolveEndbookView = (
       [...matchedSections].reverse().find((section) => section.title)?.title ??
       scenario.endbook.title ??
       '엔딩';
-    const closingLine =
-      [...matchedSections].reverse().find((section) => section.closingLine)
-        ?.closingLine ??
-      scenario.endbook.closingLine ??
-      '';
 
     return {
       id:
@@ -1776,7 +1767,6 @@ const resolveEndbookView = (
           : 'composed_endbook',
       title,
       body,
-      closingLine,
       choiceSummaries,
       alternateOutcomes: buildEndbookAlternateOutcomes(
         room,
@@ -1791,7 +1781,6 @@ const resolveEndbookView = (
     id: variant.id,
     title: variant.title,
     body: variant.body,
-    closingLine: variant.closingLine,
     choiceSummaries,
     alternateOutcomes: [],
   };
@@ -1802,9 +1791,7 @@ export const buildMurderMysteryEndbookText = (
   scenario: MurderMysteryScenario
 ) => {
   const endbook = resolveEndbookView(room, scenario);
-  return [endbook.title, endbook.body, endbook.closingLine]
-    .filter(Boolean)
-    .join('\n\n');
+  return [endbook.title, endbook.body].filter(Boolean).join('\n\n');
 };
 
 const buildEndbookView = (

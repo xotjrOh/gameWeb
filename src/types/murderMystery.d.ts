@@ -253,7 +253,6 @@ export interface MurderMysteryEndbookVariantScenario {
   id: string;
   title: string;
   body: string;
-  closingLine: string;
   when: MurderMysteryEndbookConditionScenario;
 }
 
@@ -261,7 +260,6 @@ export interface MurderMysteryEndbookSectionScenario {
   id: string;
   title?: string;
   body: string;
-  closingLine?: string;
   when?: MurderMysteryEndbookConditionScenario;
 }
 
@@ -296,7 +294,6 @@ export interface MurderMysteryScenario {
   endingChoices: MurderMysteryEndingChoiceScenario[];
   endbook: {
     title?: string;
-    closingLine?: string;
     variants: MurderMysteryEndbookVariantScenario[];
     sections: MurderMysteryEndbookSectionScenario[];
   };
@@ -596,7 +593,6 @@ export interface MurderMysteryEndbookView {
   id: string;
   title: string;
   body: string;
-  closingLine: string;
   choiceSummaries: MurderMysteryEndbookChoiceSummaryView[];
   alternateOutcomes: MurderMysteryEndbookAlternateOutcomeView[];
 }
@@ -619,7 +615,6 @@ export interface MurderMysteryEndbookAlternateOutcomeView {
   alternateOptionLabel: string;
   title: string;
   body: string;
-  closingLine?: string;
 }
 
 export interface MurderMysteryEndingChoiceProgressView {
