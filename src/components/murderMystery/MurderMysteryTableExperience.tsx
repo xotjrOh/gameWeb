@@ -165,6 +165,9 @@ type BgmPlaybackState = {
 };
 
 const CARD_BACK_LABEL = '조사 카드';
+const EXTRA_INVESTIGATION_LABEL = '전체공개 후 추가조사';
+const EXTRA_INVESTIGATION_DESCRIPTION =
+  '이 표식이 있는 카드는 획득 즉시 전체 공개되고, 조사자가 같은 라운드에서 한 번 더 조사합니다.';
 const MURDER_MYSTERY_BGM_BY_SCENARIO: Record<
   string,
   {
@@ -871,7 +874,7 @@ const EvidenceCardFace = ({
           {card.extraInvestigationOnReveal ? (
             <Chip
               size="small"
-              label="추가 조사"
+              label={EXTRA_INVESTIGATION_LABEL}
               color="info"
               sx={{
                 position: 'absolute',
@@ -879,8 +882,14 @@ const EvidenceCardFace = ({
                 right: 6,
                 zIndex: 1,
                 height: 20,
-                fontSize: 11,
+                maxWidth: dense ? 102 : 150,
+                fontSize: dense ? 9.5 : 10,
                 fontWeight: 900,
+                '& .MuiChip-label': {
+                  px: 0.65,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                },
               }}
             />
           ) : null}
@@ -1006,8 +1015,12 @@ const InvestigationCardBack = ({
           : isReserved
             ? '예약 해제'
             : canActNow
-              ? '내 조사 차례입니다. 이 카드를 가져옵니다.'
-              : '내 차례 전까지 이 카드를 예약합니다.'
+              ? back.extraInvestigationOnReveal
+                ? `내 조사 차례입니다. 이 카드를 가져오면 ${EXTRA_INVESTIGATION_DESCRIPTION}`
+                : '내 조사 차례입니다. 이 카드를 가져옵니다.'
+              : back.extraInvestigationOnReveal
+                ? `내 차례 전까지 이 카드를 예약합니다. ${EXTRA_INVESTIGATION_DESCRIPTION}`
+                : '내 차례 전까지 이 카드를 예약합니다.'
       }
     >
       <Box
@@ -1052,6 +1065,28 @@ const InvestigationCardBack = ({
                 },
           }}
         >
+          {back.extraInvestigationOnReveal ? (
+            <Box
+              aria-label={EXTRA_INVESTIGATION_LABEL}
+              sx={{
+                position: 'absolute',
+                top: 5,
+                right: 5,
+                zIndex: 2,
+                px: 0.45,
+                py: 0.1,
+                borderRadius: 999,
+                backgroundColor: '#0ea5e9',
+                color: '#f8fbff',
+                fontSize: 10,
+                fontWeight: 950,
+                lineHeight: 1.35,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.34)',
+              }}
+            >
+              공개+1
+            </Box>
+          ) : null}
           {back.imageSrc ? (
             <Box
               component="img"
@@ -3819,6 +3854,9 @@ export default function MurderMysteryTableExperience({
           : disabledReason;
       const hasMultipleBacks = target.availableBacks.length > 1;
       const firstBack = target.availableBacks[0] ?? null;
+      const hasExtraInvestigationBack = target.availableBacks.some(
+        (back) => back.extraInvestigationOnReveal
+      );
       const isReserved = target.availableBacks.some(
         (back) =>
           back.isReservedByMe || pendingReservationBackId === back.backId
@@ -3939,6 +3977,23 @@ export default function MurderMysteryTableExperience({
                   >
                     ∞
                   </Typography>
+                </Tooltip>
+              ) : null}
+              {hasExtraInvestigationBack ? (
+                <Tooltip title={EXTRA_INVESTIGATION_DESCRIPTION}>
+                  <Chip
+                    size="small"
+                    aria-label={EXTRA_INVESTIGATION_LABEL}
+                    label="공개+1"
+                    sx={{
+                      height: 18,
+                      backgroundColor: 'rgba(14,165,233,0.18)',
+                      color: '#7dd3fc',
+                      fontSize: 10,
+                      fontWeight: 950,
+                      '& .MuiChip-label': { px: 0.55 },
+                    }}
+                  />
                 </Tooltip>
               ) : null}
               {isOwnedInvestigationBlocked ? (
@@ -4303,6 +4358,18 @@ export default function MurderMysteryTableExperience({
                         sx={{
                           backgroundColor: 'rgba(142,202,230,0.16)',
                           color: '#8ecae6',
+                          fontWeight: 900,
+                        }}
+                      />
+                    </Tooltip>
+                    <Tooltip title={EXTRA_INVESTIGATION_DESCRIPTION}>
+                      <Chip
+                        size="small"
+                        aria-label={EXTRA_INVESTIGATION_LABEL}
+                        label={EXTRA_INVESTIGATION_LABEL}
+                        sx={{
+                          backgroundColor: 'rgba(14,165,233,0.18)',
+                          color: '#7dd3fc',
                           fontWeight: 900,
                         }}
                       />

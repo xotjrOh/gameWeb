@@ -426,7 +426,7 @@ const murderMysteryGameHandler = (
             result.mode === 'auto' ? result.extraInvestigation : false,
           message:
             result.mode === 'auto' && result.extraInvestigation
-              ? '전체 공개 단서입니다. 추가 조사가 가능합니다.'
+              ? '전체공개 후 추가조사 카드입니다. 카드가 전체 공개되었고 추가 조사가 가능합니다.'
               : undefined,
         });
       } catch (error) {

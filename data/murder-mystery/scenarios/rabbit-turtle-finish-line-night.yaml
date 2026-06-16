@@ -1321,6 +1321,8 @@ cards:
   - id: card_rubber_hose
     title: '호스'
     text: |
+      [전체공개 후 추가조사]
+
       고무호스가 길게 말려 있다.
       펼치면 길이가 약 5m, 직경은 2.3cm이고, 물기가 묻어 있다.
     imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/clue/rubber-hose.png'
@@ -1333,6 +1335,8 @@ cards:
   - id: card_towel_bin
     title: '파란통'
     text: |
+      [전체공개 후 추가조사]
+
       축축한 수건들이 담겨 있어서 그런지 내부에 물기가 맺혀 있다.
       입구의 지름은 45cm, 높이 약 50cm다.
     backId: back_towel_bin
@@ -1363,16 +1367,21 @@ cards:
   - id: card_siphon_guide
     title: '세탁실에 붙어있는 안내문'
     text: |
+      [전체공개 후 추가조사]
+
       큰 통의 액체를 작은 용기에 옮길 때는, 튜브 안을 먼저 액체로 채운 뒤 낮은 쪽 용기로 내리라고 적혀 있다.
     imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/clue/siphon-guide.png'
     imageAlt: '원액 리필 요령 안내문'
     backId: back_siphon_guide
+    extraInvestigationOnReveal: true
     effects:
       - type: addPart
         partId: part_siphon_guide
   - id: card_child_tank_waterline
     title: '어린이용 수조'
     text: |
+      [전체공개 후 추가조사]
+
       수조 벽면에 크기가 적혀있다. 6m × 3m, 높이 50cm다.
       약 3cm의 물이 차있고, 벽면에 젖은 자국을 보니 물이 줄거나 늘어나지는 않은 것 같다.
     backId: back_child_tank_waterline
@@ -1383,6 +1392,8 @@ cards:
   - id: card_adult_tank_specs
     title: '성인용 수조'
     text: |
+      [전체공개 후 추가조사]
+
       옆면 표기는 6m × 10m, 높이 120cm다.
       사건 직후 물은 거의 없고 벽면에 젖은 자국이 없는 걸 보니 물은 원래 비어 있던 게 맞는 것 같다.
     backId: back_adult_tank_specs
