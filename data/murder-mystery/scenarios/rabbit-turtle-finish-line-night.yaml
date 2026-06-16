@@ -249,8 +249,8 @@ parts:
     note: '용왕이 병환으로 업무를 돌보지 못하게 되자 길거리에는 다시 굶는 아이들이 늘어났다는 소문이다.'
   - id: part_dragon_king_rumor_3
     name: '용궁섬에 대한 소문3'
-    source: '행사장 안내도'
-    note: '왕국으로 나가려면 배를 타야 하며, 행사장에서 선착장 옆 펠리컨 배달거점까지는 약 800m라는 안내다.'
+    source: '용궁섬 소문'
+    note: '용궁섬 밖으로 나가려면 선착장 배편을 이용해야 하며, 섬 안에서 사망자가 나오거나 태풍·해일 같은 자연재해가 발생하면 선착장 배편이 한동안 멈춘다는 소문이다.'
   - id: part_wet_shoeprints
     name: '젖은 구두 자국'
     source: '재활수조실 바닥'
@@ -1421,13 +1421,10 @@ cards:
   - id: card_dragon_king_rumor_3
     title: '용궁섬에 대한 소문3'
     text: |
-      용궁섬은 용왕재단이 이끄는 폐쇄적인 섬이라, 왕국으로 나가려면 반드시 배를 타야 한다.
+      용궁섬은 밖으로 나가려면 선착장 배편을 이용해야 한다.
 
-      다만 짐이나 서류만 보낼 때는 선착장 옆 펠리컨 배달거점을 이용한다고 한다.
-
-      행사장 안내도에는 행사장에서 펠리컨 배달거점까지의 거리가 약 800m라고 적혀 있다.
+      다만 섬 안에서 사망자가 나오거나, 태풍·해일 같은 자연재해가 발생하면 선착장 배편이 한동안 멈춘다는 말이 있다.
     backId: back_dragon_king_rumor_3
-    extraInvestigationOnReveal: true
     effects:
       - type: addPart
         partId: part_dragon_king_rumor_3
