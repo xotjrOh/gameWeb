@@ -6368,7 +6368,9 @@ export default function MurderMysteryTableExperience({
         >
           <Stack spacing={1.8}>
             {renderPhaseBody()}
-            {phaseKind !== 'discuss' && phaseKind !== 'final_vote' ? (
+            {phaseKind !== 'lobby' &&
+            phaseKind !== 'discuss' &&
+            phaseKind !== 'final_vote' ? (
               <>
                 <Divider sx={{ borderColor: 'rgba(255,255,255,0.14)' }} />
                 {renderPublicClues()}
