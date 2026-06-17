@@ -148,6 +148,19 @@ type PinnedClueReference = {
   sourceId: string;
   cardId: string;
 };
+type PinnedClueDockSide = 'left' | 'right';
+type PinnedClueFabPosition = {
+  side: PinnedClueDockSide;
+  yRatio: number;
+};
+type PinnedClueFabViewport = {
+  width: number;
+  height: number;
+};
+type PinnedClueFabDragPosition = {
+  left: number;
+  top: number;
+};
 type TurnOrderMarker = {
   rank: number;
   isCurrent: boolean;
@@ -172,6 +185,15 @@ const CARD_BACK_LABEL = '조사 카드';
 const EXTRA_INVESTIGATION_LABEL = '전체공개 후 추가조사';
 const EXTRA_INVESTIGATION_DESCRIPTION =
   '이 표식이 있는 카드는 획득 즉시 전체 공개되고, 조사자가 같은 라운드에서 한 번 더 조사합니다.';
+const PINNED_CLUE_FAB_STORAGE_KEY = 'murderMystery:pinnedClueFabPosition:v1';
+const PINNED_CLUE_FAB_SIZE = 64;
+const PINNED_CLUE_FAB_EDGE_OFFSET = 12;
+const PINNED_CLUE_FAB_TOP_SAFE_OFFSET = 76;
+const PINNED_CLUE_FAB_DRAG_THRESHOLD = 5;
+const DEFAULT_PINNED_CLUE_FAB_POSITION: PinnedClueFabPosition = {
+  side: 'right',
+  yRatio: 1,
+};
 const MURDER_MYSTERY_BGM_BY_SCENARIO: Record<
   string,
   {
@@ -823,6 +845,76 @@ const ClueTakeOverlay = ({ notice }: { notice: ClueTakeNotice | null }) => {
   );
 };
 
+const getPinnedClueFabBounds = (
+  viewport: PinnedClueFabViewport,
+  bottomOffset: number
+) => {
+  const maxTop = Math.max(
+    PINNED_CLUE_FAB_EDGE_OFFSET,
+    viewport.height - bottomOffset - PINNED_CLUE_FAB_SIZE
+  );
+  const minTop = Math.min(PINNED_CLUE_FAB_TOP_SAFE_OFFSET, maxTop);
+  const maxLeft = Math.max(
+    PINNED_CLUE_FAB_EDGE_OFFSET,
+    viewport.width - PINNED_CLUE_FAB_SIZE - PINNED_CLUE_FAB_EDGE_OFFSET
+  );
+
+  return {
+    minTop,
+    maxTop,
+    minLeft: PINNED_CLUE_FAB_EDGE_OFFSET,
+    maxLeft,
+  };
+};
+
+const getPinnedClueFabTop = (
+  position: PinnedClueFabPosition,
+  viewport: PinnedClueFabViewport,
+  bottomOffset: number
+) => {
+  const bounds = getPinnedClueFabBounds(viewport, bottomOffset);
+  return (
+    bounds.minTop +
+    (bounds.maxTop - bounds.minTop) * clamp(position.yRatio, 0, 1)
+  );
+};
+
+const getPinnedClueFabLeft = (
+  position: PinnedClueFabPosition,
+  viewport: PinnedClueFabViewport
+) => {
+  const bounds = getPinnedClueFabBounds(viewport, 0);
+  return position.side === 'left' ? bounds.minLeft : bounds.maxLeft;
+};
+
+const readPinnedClueFabPosition = (): PinnedClueFabPosition => {
+  try {
+    const raw = window.localStorage.getItem(PINNED_CLUE_FAB_STORAGE_KEY);
+    const saved = raw ? JSON.parse(raw) : null;
+    const side: unknown = saved?.side;
+    const yRatio = Number(saved?.yRatio);
+
+    if ((side === 'left' || side === 'right') && Number.isFinite(yRatio)) {
+      return { side, yRatio: clamp(yRatio, 0, 1) };
+    }
+  } catch {
+    // 위치 저장은 편의 기능이므로 실패해도 기본 위치로 동작한다.
+  }
+
+  return DEFAULT_PINNED_CLUE_FAB_POSITION;
+};
+
+const savePinnedClueFabPosition = (position: PinnedClueFabPosition) => {
+  try {
+    window.localStorage.setItem(
+      PINNED_CLUE_FAB_STORAGE_KEY,
+      JSON.stringify(position)
+    );
+  } catch {
+    // 위치 저장 실패는 단서 열기 동작을 막지 않는다.
+  }
+};
+
 const PinnedClueFab = ({
   card,
   bottomOffset,
@@ -831,92 +923,262 @@ const PinnedClueFab = ({
   card: AnyClueCard;
   bottomOffset: number;
   onOpen: () => void;
-}) => (
-  <Tooltip title="고정한 단서 열기" placement="left">
-    <Box
-      component="button"
-      type="button"
-      aria-label={`고정한 단서 열기: ${card.title}`}
-      onClick={onOpen}
-      sx={{
-        position: 'fixed',
-        right: 16,
-        bottom: bottomOffset,
-        zIndex: 1700,
-        width: 64,
-        height: 64,
-        p: 0,
-        border: '2px solid rgba(245, 197, 66, 0.92)',
-        borderRadius: '50%',
-        overflow: 'hidden',
-        color: '#f8f1de',
-        backgroundColor: '#201b18',
-        boxShadow:
-          '0 14px 34px rgba(0,0,0,0.46), 0 0 0 5px rgba(245,197,66,0.15)',
-        cursor: 'pointer',
-        pointerEvents: 'auto',
-        touchAction: 'manipulation',
-        transition:
-          'transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease',
-        '&:hover': {
-          transform: 'translateY(-2px)',
-          borderColor: '#fbbf24',
-          boxShadow:
-            '0 18px 40px rgba(0,0,0,0.52), 0 0 0 6px rgba(245,197,66,0.2)',
-        },
-        '&:focus-visible': {
-          outline: '3px solid rgba(251, 191, 36, 0.72)',
-          outlineOffset: 3,
-        },
-      }}
-    >
-      {card.imageSrc ? (
-        <Box
-          component="img"
-          src={card.imageSrc}
-          alt=""
-          sx={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            display: 'block',
-          }}
-        />
-      ) : (
-        <Stack
-          alignItems="center"
-          justifyContent="center"
-          sx={{
-            width: '100%',
-            height: '100%',
-            background:
-              'linear-gradient(135deg, #e8dcc2 0%, #f8f1de 52%, #d4c29f 100%)',
-            color: '#5f4b2e',
-          }}
-        >
-          <ArticleIcon />
-        </Stack>
-      )}
+}) => {
+  const pointerRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    startLeft: number;
+    startTop: number;
+    moved: boolean;
+  } | null>(null);
+  const [position, setPosition] = useState<PinnedClueFabPosition>(
+    DEFAULT_PINNED_CLUE_FAB_POSITION
+  );
+  const [viewport, setViewport] = useState<PinnedClueFabViewport | null>(null);
+  const [dragPosition, setDragPosition] =
+    useState<PinnedClueFabDragPosition | null>(null);
+  const resolvedTop =
+    viewport && !dragPosition
+      ? getPinnedClueFabTop(position, viewport, bottomOffset)
+      : null;
+  const resolvedLeft =
+    viewport && !dragPosition ? getPinnedClueFabLeft(position, viewport) : null;
+  const tooltipPlacement = position.side === 'left' ? 'right' : 'left';
+
+  useEffect(() => {
+    setPosition(readPinnedClueFabPosition());
+  }, []);
+
+  useEffect(() => {
+    const updateViewport = () =>
+      setViewport({ width: window.innerWidth, height: window.innerHeight });
+
+    updateViewport();
+    window.addEventListener('resize', updateViewport);
+    return () => window.removeEventListener('resize', updateViewport);
+  }, []);
+
+  const getDragPosition = (event: React.PointerEvent<HTMLElement>) => {
+    if (!viewport || !pointerRef.current) {
+      return null;
+    }
+
+    const bounds = getPinnedClueFabBounds(viewport, bottomOffset);
+    const nextLeft = clamp(
+      pointerRef.current.startLeft + event.clientX - pointerRef.current.startX,
+      bounds.minLeft,
+      bounds.maxLeft
+    );
+    const nextTop = clamp(
+      pointerRef.current.startTop + event.clientY - pointerRef.current.startY,
+      bounds.minTop,
+      bounds.maxTop
+    );
+
+    return { left: nextLeft, top: nextTop };
+  };
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLElement>) => {
+    if (!viewport) {
+      return;
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    pointerRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startLeft: rect.left,
+      startTop: rect.top,
+      moved: false,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLElement>) => {
+    const pointer = pointerRef.current;
+    if (!pointer || pointer.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const distance = Math.hypot(
+      event.clientX - pointer.startX,
+      event.clientY - pointer.startY
+    );
+    if (distance < PINNED_CLUE_FAB_DRAG_THRESHOLD && !pointer.moved) {
+      return;
+    }
+
+    pointer.moved = true;
+    const nextDragPosition = getDragPosition(event);
+    if (nextDragPosition) {
+      setDragPosition(nextDragPosition);
+    }
+    event.preventDefault();
+  };
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLElement>) => {
+    const pointer = pointerRef.current;
+    if (!pointer || pointer.pointerId !== event.pointerId) {
+      return;
+    }
+
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      // 포인터 캡처가 이미 해제된 경우에는 후속 처리를 계속한다.
+    }
+    pointerRef.current = null;
+
+    if (!pointer.moved || !viewport) {
+      setDragPosition(null);
+      onOpen();
+      return;
+    }
+
+    const nextDragPosition = getDragPosition(event) ?? dragPosition;
+    if (!nextDragPosition) {
+      setDragPosition(null);
+      return;
+    }
+
+    const bounds = getPinnedClueFabBounds(viewport, bottomOffset);
+    const nextSide: PinnedClueDockSide =
+      nextDragPosition.left + PINNED_CLUE_FAB_SIZE / 2 < viewport.width / 2
+        ? 'left'
+        : 'right';
+    const nextYRatio =
+      bounds.maxTop > bounds.minTop
+        ? (nextDragPosition.top - bounds.minTop) /
+          (bounds.maxTop - bounds.minTop)
+        : DEFAULT_PINNED_CLUE_FAB_POSITION.yRatio;
+    const nextPosition: PinnedClueFabPosition = {
+      side: nextSide,
+      yRatio: clamp(nextYRatio, 0, 1),
+    };
+
+    setPosition(nextPosition);
+    savePinnedClueFabPosition(nextPosition);
+    setDragPosition(null);
+    event.preventDefault();
+  };
+
+  const handlePointerCancel = () => {
+    pointerRef.current = null;
+    setDragPosition(null);
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (event.key !== 'Enter' && event.key !== ' ') {
+      return;
+    }
+    event.preventDefault();
+    onOpen();
+  };
+
+  return (
+    <Tooltip title="고정한 단서 열기" placement={tooltipPlacement}>
       <Box
+        component="button"
+        type="button"
+        aria-label={`고정한 단서 열기: ${card.title}`}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+        onKeyDown={handleKeyDown}
         sx={{
-          position: 'absolute',
-          right: -1,
-          bottom: -1,
-          width: 25,
-          height: 25,
-          display: 'grid',
-          placeItems: 'center',
+          position: 'fixed',
+          left: dragPosition?.left ?? resolvedLeft ?? 'auto',
+          right:
+            dragPosition || resolvedLeft !== null
+              ? 'auto'
+              : PINNED_CLUE_FAB_EDGE_OFFSET,
+          top: dragPosition?.top ?? resolvedTop ?? 'auto',
+          bottom: dragPosition || resolvedTop !== null ? 'auto' : bottomOffset,
+          zIndex: 1700,
+          width: PINNED_CLUE_FAB_SIZE,
+          height: PINNED_CLUE_FAB_SIZE,
+          p: 0,
+          border: '2px solid rgba(245, 197, 66, 0.92)',
           borderRadius: '50%',
-          backgroundColor: '#f59e0b',
-          color: '#241706',
-          border: '2px solid #201b18',
+          overflow: 'hidden',
+          color: '#f8f1de',
+          backgroundColor: '#201b18',
+          boxShadow:
+            '0 14px 34px rgba(0,0,0,0.46), 0 0 0 5px rgba(245,197,66,0.15)',
+          cursor: dragPosition ? 'grabbing' : 'grab',
+          pointerEvents: 'auto',
+          touchAction: 'none',
+          transition: dragPosition
+            ? 'none'
+            : 'left 190ms ease, right 190ms ease, top 190ms ease, transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease',
+          '&:hover': {
+            transform: dragPosition ? 'none' : 'translateY(-2px)',
+            borderColor: '#fbbf24',
+            boxShadow:
+              '0 18px 40px rgba(0,0,0,0.52), 0 0 0 6px rgba(245,197,66,0.2)',
+          },
+          '&:focus-visible': {
+            outline: '3px solid rgba(251, 191, 36, 0.72)',
+            outlineOffset: 3,
+          },
         }}
       >
-        <PushPinIcon sx={{ width: 15, height: 15 }} />
+        {card.imageSrc ? (
+          <Box
+            component="img"
+            src={card.imageSrc}
+            alt=""
+            draggable={false}
+            sx={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              display: 'block',
+              userSelect: 'none',
+              pointerEvents: 'none',
+            }}
+          />
+        ) : (
+          <Stack
+            alignItems="center"
+            justifyContent="center"
+            sx={{
+              width: '100%',
+              height: '100%',
+              background:
+                'linear-gradient(135deg, #e8dcc2 0%, #f8f1de 52%, #d4c29f 100%)',
+              color: '#5f4b2e',
+              pointerEvents: 'none',
+            }}
+          >
+            <ArticleIcon />
+          </Stack>
+        )}
+        <Box
+          sx={{
+            position: 'absolute',
+            right: -1,
+            bottom: -1,
+            width: 25,
+            height: 25,
+            display: 'grid',
+            placeItems: 'center',
+            borderRadius: '50%',
+            backgroundColor: '#f59e0b',
+            color: '#241706',
+            border: '2px solid #201b18',
+            pointerEvents: 'none',
+          }}
+        >
+          <PushPinIcon sx={{ width: 15, height: 15 }} />
+        </Box>
       </Box>
-    </Box>
-  </Tooltip>
-);
+    </Tooltip>
+  );
+};
 
 const EvidenceCardFace = ({
   card,
