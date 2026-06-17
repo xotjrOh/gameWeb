@@ -144,6 +144,10 @@ type CardViewerState = {
   cards: AnyClueCard[];
   index: number;
 };
+type PinnedClueReference = {
+  sourceId: string;
+  cardId: string;
+};
 type TurnOrderMarker = {
   rank: number;
   isCurrent: boolean;
@@ -818,6 +822,101 @@ const ClueTakeOverlay = ({ notice }: { notice: ClueTakeNotice | null }) => {
     </Box>
   );
 };
+
+const PinnedClueFab = ({
+  card,
+  bottomOffset,
+  onOpen,
+}: {
+  card: AnyClueCard;
+  bottomOffset: number;
+  onOpen: () => void;
+}) => (
+  <Tooltip title="고정한 단서 열기" placement="left">
+    <Box
+      component="button"
+      type="button"
+      aria-label={`고정한 단서 열기: ${card.title}`}
+      onClick={onOpen}
+      sx={{
+        position: 'fixed',
+        right: 16,
+        bottom: bottomOffset,
+        zIndex: 1700,
+        width: 64,
+        height: 64,
+        p: 0,
+        border: '2px solid rgba(245, 197, 66, 0.92)',
+        borderRadius: '50%',
+        overflow: 'hidden',
+        color: '#f8f1de',
+        backgroundColor: '#201b18',
+        boxShadow:
+          '0 14px 34px rgba(0,0,0,0.46), 0 0 0 5px rgba(245,197,66,0.15)',
+        cursor: 'pointer',
+        pointerEvents: 'auto',
+        touchAction: 'manipulation',
+        transition:
+          'transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease',
+        '&:hover': {
+          transform: 'translateY(-2px)',
+          borderColor: '#fbbf24',
+          boxShadow:
+            '0 18px 40px rgba(0,0,0,0.52), 0 0 0 6px rgba(245,197,66,0.2)',
+        },
+        '&:focus-visible': {
+          outline: '3px solid rgba(251, 191, 36, 0.72)',
+          outlineOffset: 3,
+        },
+      }}
+    >
+      {card.imageSrc ? (
+        <Box
+          component="img"
+          src={card.imageSrc}
+          alt=""
+          sx={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            display: 'block',
+          }}
+        />
+      ) : (
+        <Stack
+          alignItems="center"
+          justifyContent="center"
+          sx={{
+            width: '100%',
+            height: '100%',
+            background:
+              'linear-gradient(135deg, #e8dcc2 0%, #f8f1de 52%, #d4c29f 100%)',
+            color: '#5f4b2e',
+          }}
+        >
+          <ArticleIcon />
+        </Stack>
+      )}
+      <Box
+        sx={{
+          position: 'absolute',
+          right: -1,
+          bottom: -1,
+          width: 25,
+          height: 25,
+          display: 'grid',
+          placeItems: 'center',
+          borderRadius: '50%',
+          backgroundColor: '#f59e0b',
+          color: '#241706',
+          border: '2px solid #201b18',
+        }}
+      >
+        <PushPinIcon sx={{ width: 15, height: 15 }} />
+      </Box>
+    </Box>
+  </Tooltip>
+);
 
 const EvidenceCardFace = ({
   card,
@@ -2360,14 +2459,18 @@ const PublicCoverDialog = ({
 
 const CardDetailDialog = ({
   card,
+  isPinned = false,
   onClose,
+  onTogglePin,
   currentIndex,
   totalCount,
   onPrevious,
   onNext,
 }: {
   card: AnyClueCard | null;
+  isPinned?: boolean;
   onClose: () => void;
+  onTogglePin?: () => void;
   currentIndex: number;
   totalCount: number;
   onPrevious: () => void;
@@ -2455,6 +2558,36 @@ const CardDetailDialog = ({
       }}
     >
       <Box sx={{ position: 'relative' }}>
+        <Tooltip title={isPinned ? '단서 핀 해제' : '단서 핀 고정'}>
+          <span>
+            <IconButton
+              disabled={!card}
+              aria-label={isPinned ? '단서 핀 해제' : '단서 핀 고정'}
+              onClick={onTogglePin}
+              sx={{
+                position: 'absolute',
+                top: 8,
+                right: 56,
+                zIndex: 4,
+                backgroundColor: isPinned
+                  ? 'rgba(245, 158, 11, 0.92)'
+                  : 'rgba(0,0,0,0.46)',
+                color: isPinned ? '#241706' : '#fff',
+                '&:hover': {
+                  backgroundColor: isPinned
+                    ? 'rgba(245, 158, 11, 1)'
+                    : 'rgba(0,0,0,0.62)',
+                },
+                '&.Mui-disabled': {
+                  backgroundColor: 'rgba(0,0,0,0.28)',
+                  color: 'rgba(255,255,255,0.42)',
+                },
+              }}
+            >
+              <PushPinIcon />
+            </IconButton>
+          </span>
+        </Tooltip>
         <IconButton
           onClick={onClose}
           sx={{
@@ -3001,6 +3134,9 @@ export default function MurderMysteryTableExperience({
   const [isPrivateCardsOpen, setIsPrivateCardsOpen] = useState(false);
   const [isMapDialogOpen, setIsMapDialogOpen] = useState(false);
   const [cardViewer, setCardViewer] = useState<CardViewerState | null>(null);
+  const [pinnedClue, setPinnedClue] = useState<PinnedClueReference | null>(
+    null
+  );
   const [pendingSpecialEventAction, setPendingSpecialEventAction] =
     useState<SpecialEventActionRequest | null>(null);
   const [clueTakeNotice, setClueTakeNotice] = useState<ClueTakeNotice | null>(
@@ -3044,6 +3180,18 @@ export default function MurderMysteryTableExperience({
     snapshot.clueVault.publicClues,
     snapshot.players,
   ]);
+  const pinnedClueCards = pinnedClue
+    ? (cardViewerSources[pinnedClue.sourceId] ?? [])
+    : [];
+  const pinnedCard =
+    pinnedClueCards.find((card) => card.id === pinnedClue?.cardId) ?? null;
+  const isSelectedCardPinned = Boolean(
+    selectedCard &&
+      pinnedClue &&
+      cardViewer &&
+      pinnedClue.sourceId === cardViewer.sourceId &&
+      pinnedClue.cardId === selectedCard.id
+  );
 
   const currentStep =
     snapshot.phase === 'LOBBY'
@@ -3245,6 +3393,27 @@ export default function MurderMysteryTableExperience({
       };
     });
   }, []);
+  const toggleSelectedCardPin = useCallback(() => {
+    if (!cardViewer || !selectedCard) {
+      return;
+    }
+
+    setPinnedClue((current) =>
+      current?.sourceId === cardViewer.sourceId &&
+      current.cardId === selectedCard.id
+        ? null
+        : {
+            sourceId: cardViewer.sourceId,
+            cardId: selectedCard.id,
+          }
+    );
+  }, [cardViewer, selectedCard]);
+  const openPinnedClue = useCallback(() => {
+    if (!pinnedClue || !pinnedCard || pinnedClueCards.length === 0) {
+      return;
+    }
+    openCardViewer(pinnedClue.sourceId, pinnedClueCards, pinnedCard);
+  }, [openCardViewer, pinnedCard, pinnedClue, pinnedClueCards]);
   const closeTopModalFromHistory = useCallback(() => {
     if (pendingSpecialEventAction) {
       setPendingSpecialEventAction(null);
@@ -3371,6 +3540,16 @@ export default function MurderMysteryTableExperience({
       });
     }
   }, [cardViewer, cardViewerSources]);
+
+  useEffect(() => {
+    if (!pinnedClue) {
+      return;
+    }
+    const nextCards = cardViewerSources[pinnedClue.sourceId] ?? [];
+    if (!nextCards.some((card) => card.id === pinnedClue.cardId)) {
+      setPinnedClue(null);
+    }
+  }, [cardViewerSources, pinnedClue]);
 
   useEffect(() => {
     const previous = previousHeldBackIdsByPlayerRef.current;
@@ -5624,6 +5803,13 @@ export default function MurderMysteryTableExperience({
 
       {renderFloatingActionDock()}
       <ClueTakeOverlay notice={clueTakeNotice} />
+      {isSmall && pinnedCard && !selectedCard ? (
+        <PinnedClueFab
+          card={pinnedCard}
+          bottomOffset={hasOpenModal ? 96 : 154}
+          onOpen={openPinnedClue}
+        />
+      ) : null}
 
       <PublicCoverDialog
         open={Boolean(selectedPlayer)}
@@ -5675,10 +5861,12 @@ export default function MurderMysteryTableExperience({
       />
       <CardDetailDialog
         card={selectedCard}
+        isPinned={isSelectedCardPinned}
         currentIndex={cardViewer?.index ?? 0}
         totalCount={cardViewer?.cards.length ?? 0}
         onPrevious={showPreviousCard}
         onNext={showNextCard}
+        onTogglePin={toggleSelectedCardPin}
         onClose={() => setCardViewer(null)}
       />
       <MapFullscreenDialog
