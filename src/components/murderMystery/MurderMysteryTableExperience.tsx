@@ -74,7 +74,6 @@ import MurderMysteryRulebookReader from '@/components/murderMystery/MurderMyster
 import RulebookRichText from '@/components/murderMystery/RulebookRichText';
 
 interface MurderMysteryTableExperienceProps {
-  roomId: string;
   sessionId: string;
   isHostView: boolean;
   snapshot: MurderMysteryStateSnapshot;
@@ -89,7 +88,6 @@ interface MurderMysteryTableExperienceProps {
     playerId: string,
     position: MurderMysterySeatPosition
   ) => Promise<boolean>;
-  onResetSeatLayout: () => void;
   onSubmitInvestigationByTarget: (targetId: string) => void;
   onSubmitInvestigationByBack: (backId: string) => void;
   onSetReservation: (backId: string) => void;
@@ -197,7 +195,7 @@ const EXTRA_INVESTIGATION_DESCRIPTION =
   '이 표식이 있는 카드는 획득 즉시 전체 공개되고, 조사자가 같은 라운드에서 한 번 더 조사합니다.';
 const FLOATING_FAB_SIZE = 64;
 const FLOATING_FAB_EDGE_OFFSET = 12;
-const FLOATING_FAB_TOP_SAFE_OFFSET = 76;
+const FLOATING_FAB_TOP_SAFE_OFFSET = 50;
 const FLOATING_FAB_DRAG_THRESHOLD = 5;
 const PINNED_CLUE_FAB_SIZE = FLOATING_FAB_SIZE;
 const PINNED_CLUE_FAB_EDGE_OFFSET = FLOATING_FAB_EDGE_OFFSET;
@@ -273,6 +271,25 @@ const formatSeconds = (seconds: number | null) => {
     .toString()
     .padStart(2, '0');
   return `${minute}:${second}`;
+};
+
+const splitScenarioTitle = (title: string) => {
+  const normalizedTitle = title.trim();
+  const colonIndex = normalizedTitle.indexOf(':');
+  const fullWidthColonIndex = normalizedTitle.indexOf('：');
+  const separatorIndex =
+    colonIndex >= 0 && fullWidthColonIndex >= 0
+      ? Math.min(colonIndex, fullWidthColonIndex)
+      : Math.max(colonIndex, fullWidthColonIndex);
+
+  if (separatorIndex <= 0 || separatorIndex >= normalizedTitle.length - 1) {
+    return { mainTitle: normalizedTitle, subtitle: null };
+  }
+
+  return {
+    mainTitle: normalizedTitle.slice(0, separatorIndex).trim(),
+    subtitle: normalizedTitle.slice(separatorIndex + 1).trim() || null,
+  };
 };
 
 const buildDefaultLayout = (playerIds: string[]) => {
@@ -708,41 +725,45 @@ const BgmControl = ({
     return <audio ref={audioRef} preload="auto" loop />;
   }
 
+  const shouldStart = isBlocked || !isPlaying;
+  const tooltip = shouldStart
+    ? `${track.label} 시작`
+    : muted
+      ? `${track.label} 소리 켜기`
+      : `${track.label} 음소거`;
+
   return (
-    <Stack direction="row" spacing={0.6} alignItems="center">
+    <Fragment>
       <audio ref={audioRef} preload="auto" loop />
-      {isBlocked || !isPlaying ? (
-        <Button
-          size="small"
-          variant="contained"
-          color="warning"
-          startIcon={<MusicNoteIcon />}
-          onClick={startBgm}
-          sx={{ fontWeight: 900 }}
-        >
-          BGM 시작
-        </Button>
-      ) : (
-        <Chip
-          icon={<MusicNoteIcon />}
-          label={track.label}
-          sx={{
-            backgroundColor: 'rgba(255,255,255,0.12)',
-            color: '#f8f1de',
-            fontWeight: 800,
-          }}
-        />
-      )}
-      <Tooltip title={muted ? 'BGM 소리 켜기' : 'BGM 음소거'}>
+      <Tooltip title={tooltip}>
         <IconButton
           size="small"
-          onClick={() => setMuted((current) => !current)}
-          sx={{ color: '#f8f1de' }}
+          aria-label={tooltip}
+          onClick={
+            shouldStart ? startBgm : () => setMuted((current) => !current)
+          }
+          sx={{
+            color: '#f8f1de',
+            backgroundColor: shouldStart
+              ? 'rgba(245, 197, 66, 0.18)'
+              : 'rgba(255,255,255,0.08)',
+            '&:hover': {
+              backgroundColor: shouldStart
+                ? 'rgba(245, 197, 66, 0.26)'
+                : 'rgba(255,255,255,0.14)',
+            },
+          }}
         >
-          {muted ? <VolumeOffIcon /> : <VolumeUpIcon />}
+          {shouldStart ? (
+            <MusicNoteIcon fontSize="small" />
+          ) : muted ? (
+            <VolumeOffIcon fontSize="small" />
+          ) : (
+            <VolumeUpIcon fontSize="small" />
+          )}
         </IconButton>
       </Tooltip>
-    </Stack>
+    </Fragment>
   );
 };
 
@@ -2232,7 +2253,6 @@ const SeatTable = ({
   positions,
   tableRef,
   canEdit,
-  canReset,
   isCompact,
   clueTakeHighlightPlayerId,
   turnOrderMarkers,
@@ -2240,14 +2260,12 @@ const SeatTable = ({
   onPointerDown,
   onPointerMove,
   onPointerUp,
-  onReset,
 }: {
   players: MurderMysteryPublicPlayerView[];
   sessionId: string;
   positions: Record<string, MurderMysterySeatPosition>;
   tableRef: React.RefObject<HTMLDivElement>;
   canEdit: boolean;
-  canReset: boolean;
   isCompact: boolean;
   clueTakeHighlightPlayerId: string | null;
   turnOrderMarkers: Record<string, TurnOrderMarker>;
@@ -2258,7 +2276,6 @@ const SeatTable = ({
   ) => void;
   onPointerMove: (event: React.PointerEvent<HTMLDivElement>) => void;
   onPointerUp: (event: React.PointerEvent<HTMLDivElement>) => void;
-  onReset: () => void;
 }) => {
   const defaultPositions = useMemo(
     () => buildDefaultLayout(players.map((player) => player.id)),
@@ -2289,17 +2306,6 @@ const SeatTable = ({
                   : '좌석을 누르면 공개정보와 카드 상태를 볼 수 있습니다.'}
             </Typography>
           </Box>
-          {canReset ? (
-            <Tooltip title="자리 초기화">
-              <IconButton
-                size="small"
-                onClick={onReset}
-                sx={{ color: '#f8f1de' }}
-              >
-                <RestartAltIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          ) : null}
         </Stack>
 
         <Box
@@ -3899,7 +3905,6 @@ const VoteOptionButton = ({
 );
 
 export default function MurderMysteryTableExperience({
-  roomId,
   sessionId,
   isHostView,
   snapshot,
@@ -3911,7 +3916,6 @@ export default function MurderMysteryTableExperience({
   onClearRolePreferences,
   onShareRoleSheet,
   onUpdateSeatPosition,
-  onResetSeatLayout,
   onSubmitInvestigationByTarget,
   onSubmitInvestigationByBack,
   onSetReservation,
@@ -4025,10 +4029,6 @@ export default function MurderMysteryTableExperience({
         ) ?? null);
   const phaseKind: PhaseKind =
     snapshot.phase === 'LOBBY' ? 'lobby' : (currentStep?.kind ?? 'lobby');
-  const phaseLabel =
-    snapshot.phase === 'LOBBY'
-      ? '대기'
-      : (currentStep?.label ?? snapshot.phase);
   const phaseRemainingSec =
     snapshot.phaseTimer.durationSec && snapshot.phaseTimer.startedAt
       ? Math.max(
@@ -4040,6 +4040,10 @@ export default function MurderMysteryTableExperience({
   const isPhaseTimerExpired =
     phaseRemainingSec === 0 && snapshot.phaseTimer.durationSec !== null;
   const bgmTrack = getMurderMysteryBgmTrack(snapshot);
+  const scenarioTitle = useMemo(
+    () => splitScenarioTitle(snapshot.scenario.title),
+    [snapshot.scenario.title]
+  );
   const activeRound = snapshot.investigation.round;
   const activeRoundView =
     snapshot.investigation.rounds.find(
@@ -4590,10 +4594,6 @@ export default function MurderMysteryTableExperience({
     }
     dragStateRef.current = null;
     setDraggingPlayerId(null);
-  };
-
-  const resetSeats = () => {
-    onResetSeatLayout();
   };
 
   const renderIntroArea = () => {
@@ -6432,55 +6432,94 @@ export default function MurderMysteryTableExperience({
         }}
       />
 
-      <Stack
-        direction={{ xs: 'column', md: 'row' }}
-        spacing={1}
-        alignItems={{ xs: 'stretch', md: 'center' }}
+      <Box
         sx={{
           position: 'relative',
           zIndex: 20,
           flexShrink: 0,
-          px: { xs: 1, md: 2 },
-          py: 1,
+          minHeight: { xs: 48, md: 56 },
+          px: { xs: 1.05, md: 2 },
+          py: { xs: 0.45, md: 0.65 },
           backgroundColor: 'rgba(9,13,18,0.58)',
           borderBottom: '1px solid rgba(255,255,255,0.12)',
         }}
       >
-        <Box sx={{ minWidth: 0, flex: 1 }}>
+        <Box
+          sx={{
+            minWidth: 0,
+            pr: { xs: 11.5, sm: 13, md: 0 },
+            maxWidth: { md: 'calc(50% - 64px)' },
+          }}
+        >
           <Typography
             fontWeight={950}
             sx={{
-              fontSize: { xs: 17, md: 20 },
-              lineHeight: 1.2,
+              fontSize: { xs: 16, md: 20 },
+              lineHeight: { xs: 1.08, md: 1.16 },
               wordBreak: 'keep-all',
+              overflowWrap: 'break-word',
             }}
           >
-            {snapshot.scenario.title}
+            {scenarioTitle.mainTitle}
           </Typography>
-          <Typography variant="caption" sx={{ color: '#d8d0bd' }}>
-            방 {roomId} · {phaseLabel}
-          </Typography>
+          {scenarioTitle.subtitle ? (
+            <Typography
+              variant="caption"
+              sx={{
+                display: 'block',
+                mt: { xs: 0, md: 0.12 },
+                color: '#d8d0bd',
+                fontSize: { xs: 11, md: 13 },
+                fontWeight: 800,
+                lineHeight: { xs: 1.1, md: 1.2 },
+                wordBreak: 'keep-all',
+                overflowWrap: 'break-word',
+              }}
+            >
+              {scenarioTitle.subtitle}
+            </Typography>
+          ) : null}
         </Box>
+        <Chip
+          icon={<TimerIcon />}
+          label={formatSeconds(phaseRemainingSec)}
+          color={isPhaseTimerExpired ? 'warning' : 'default'}
+          size="small"
+          sx={{
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+            minWidth: { xs: 72, md: 84 },
+            height: { xs: 28, md: 32 },
+            backgroundColor: isPhaseTimerExpired
+              ? undefined
+              : 'rgba(255,255,255,0.12)',
+            color: isPhaseTimerExpired ? undefined : '#f8f1de',
+            fontWeight: 900,
+            '& .MuiChip-icon': {
+              fontSize: { xs: 16, md: 18 },
+            },
+          }}
+        />
         <Stack
           direction="row"
-          spacing={0.8}
+          spacing={0.45}
           alignItems="center"
-          flexWrap="wrap"
-          useFlexGap
+          justifyContent="flex-end"
+          sx={{
+            position: 'absolute',
+            right: { xs: 8, md: 16 },
+            top: '50%',
+            transform: 'translateY(-50%)',
+            whiteSpace: 'nowrap',
+            '& .MuiIconButton-root': {
+              width: { xs: 32, md: 34 },
+              height: { xs: 32, md: 34 },
+            },
+          }}
         >
           <BgmControl track={bgmTrack} />
-          <Chip
-            icon={<TimerIcon />}
-            label={formatSeconds(phaseRemainingSec)}
-            sx={{ backgroundColor: 'rgba(255,255,255,0.12)', color: '#f8f1de' }}
-          />
-          {canUseHostTools && snapshot.phase === 'LOBBY' ? (
-            <Tooltip title="자리 초기화">
-              <IconButton onClick={resetSeats} sx={{ color: '#f8f1de' }}>
-                <RestartAltIcon />
-              </IconButton>
-            </Tooltip>
-          ) : null}
           {showNextPhaseTool ? (
             <Tooltip title={nextPhaseTooltip}>
               <span>
@@ -6507,7 +6546,7 @@ export default function MurderMysteryTableExperience({
             </IconButton>
           </Tooltip>
         </Stack>
-      </Stack>
+      </Box>
 
       <Box
         component="main"
@@ -6549,7 +6588,6 @@ export default function MurderMysteryTableExperience({
             positions={seatPositions}
             tableRef={tableRef}
             canEdit={canEditSeatLayout}
-            canReset={canUseHostTools && snapshot.phase === 'LOBBY'}
             isCompact={phaseKind !== 'lobby'}
             clueTakeHighlightPlayerId={clueTakeNotice?.playerId ?? null}
             turnOrderMarkers={turnOrderMarkers}
@@ -6557,7 +6595,6 @@ export default function MurderMysteryTableExperience({
             onPointerDown={handleSeatPointerDown}
             onPointerMove={handleSeatPointerMove}
             onPointerUp={handleSeatPointerUp}
-            onReset={resetSeats}
           />
         </Stack>
 

@@ -403,7 +403,6 @@ export default function MurderMysteryGameScreen({
 
   return (
     <MurderMysteryTableExperience
-      roomId={roomId}
       sessionId={sessionId}
       isHostView={isHostView}
       snapshot={snapshot}
@@ -432,13 +431,6 @@ export default function MurderMysteryGameScreen({
       onClearRolePreferences={handleClearRolePreferences}
       onShareRoleSheet={handleShareRoleSheet}
       onUpdateSeatPosition={handleUpdateSeatPosition}
-      onResetSeatLayout={() =>
-        emitWithAck(
-          'mm_reset_seat_layout',
-          { roomId, sessionId },
-          '자리 배치를 초기화했습니다.'
-        )
-      }
       onSubmitInvestigationByTarget={handleSubmitInvestigationByTarget}
       onSubmitInvestigationByBack={handleSubmitInvestigationByBack}
       onSetReservation={handleSetInvestigationReservation}
