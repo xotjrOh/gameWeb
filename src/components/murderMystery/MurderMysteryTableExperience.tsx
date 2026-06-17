@@ -104,6 +104,8 @@ type ParticipantLabelSource = {
   displayName?: string | null;
   roleDisplayName?: string | null;
 };
+type RoleSelectionPublicCover =
+  MurderMysteryStateSnapshot['roleSelection']['publicCovers'][number];
 type InvestigationTargetGroup = {
   id: string;
   label: string;
@@ -358,6 +360,22 @@ const formatParticipantLabel = (player?: ParticipantLabelSource | null) => {
     return `${roleLabel} (${nickname})`;
   }
   return roleLabel || nickname || '알 수 없음';
+};
+
+const getPlayerInitial = (name: string) =>
+  Array.from(name.trim()).find((char) => char.trim()) ?? '?';
+
+const getRolePreferenceShortName = (displayName: string) => {
+  const trimmed = displayName.trim();
+  const firstToken = trimmed.split(/\s+/)[0] ?? trimmed;
+  return firstToken.replace(/^(남편|아내)/, '') || firstToken || '역할';
+};
+
+const getRoleShareDisplayName = (displayName: string) => {
+  const trimmed = displayName.trim();
+  const [firstToken = '', ...restTokens] = trimmed.split(/\s+/);
+  const roleToken = firstToken.replace(/^(남편|아내)/, '') || firstToken;
+  return [roleToken, ...restTokens].filter(Boolean).join(' ') || '캐릭터';
 };
 
 const buildInvestigationTargetGroups = (
@@ -2189,6 +2207,128 @@ const PlayerMarkerButton = ({
   );
 };
 
+const RoleSelectionMarkerRail = ({
+  players,
+  sessionId,
+  connectedPlayerCount,
+  requiredPlayerCount,
+}: {
+  players: MurderMysteryStateSnapshot['roleSelection']['players'];
+  sessionId: string;
+  connectedPlayerCount: number;
+  requiredPlayerCount: number;
+}) => {
+  const submittedCount = players.filter((player) => player.submitted).length;
+
+  return (
+    <Box
+      aria-label="캐릭터 선호 제출 현황"
+      sx={{
+        position: 'relative',
+        zIndex: 2,
+        px: { xs: 0.8, md: 1.4 },
+        py: { xs: 0.55, md: 0.65 },
+        borderBottom: '1px solid rgba(255,255,255,0.13)',
+        backgroundColor: 'rgba(9, 18, 19, 0.94)',
+        boxShadow: '0 8px 20px rgba(0,0,0,0.18)',
+      }}
+    >
+      <Stack
+        direction="row"
+        spacing={0.75}
+        alignItems="center"
+        sx={{
+          minHeight: { xs: 50, md: 54 },
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          scrollbarWidth: 'thin',
+          '&::-webkit-scrollbar': { height: 4 },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: 'rgba(248,241,222,0.28)',
+            borderRadius: 999,
+          },
+        }}
+      >
+        <Chip
+          size="small"
+          label={`${requiredPlayerCount}인 게임 · 접속 ${connectedPlayerCount}/${requiredPlayerCount}`}
+          color={
+            connectedPlayerCount >= requiredPlayerCount ? 'success' : 'default'
+          }
+          sx={{
+            flex: '0 0 auto',
+            height: 28,
+            fontWeight: 900,
+            backgroundColor:
+              connectedPlayerCount >= requiredPlayerCount
+                ? undefined
+                : 'rgba(255,255,255,0.1)',
+            color:
+              connectedPlayerCount >= requiredPlayerCount
+                ? undefined
+                : '#f8f1de',
+          }}
+        />
+        <Box
+          sx={{
+            width: 1,
+            height: 28,
+            backgroundColor: 'rgba(255,255,255,0.16)',
+            flex: '0 0 auto',
+          }}
+        />
+        {players.map((player) => {
+          const isSelf = player.playerId === sessionId;
+          const submitted = player.submitted;
+
+          return (
+            <Tooltip
+              key={player.playerId}
+              title={`${player.playerName} · ${submitted ? '선호 제출 완료' : '선호 대기'}`}
+            >
+              <Box
+                aria-label={`${player.playerName} ${submitted ? '선호 제출 완료' : '선호 대기'}`}
+                sx={{
+                  position: 'relative',
+                  width: { xs: 42, md: 46 },
+                  minWidth: { xs: 42, md: 46 },
+                  height: { xs: 42, md: 46 },
+                  borderRadius: '50%',
+                  display: 'grid',
+                  placeItems: 'center',
+                  border: isSelf
+                    ? '2px solid rgba(245, 197, 66, 0.98)'
+                    : submitted
+                      ? '2px solid rgba(74, 222, 128, 0.9)'
+                      : '1px solid rgba(255,255,255,0.28)',
+                  background: submitted
+                    ? 'linear-gradient(180deg, #2e7d32, #14532d)'
+                    : 'linear-gradient(180deg, rgba(71, 85, 105, 0.92), rgba(30, 41, 59, 0.92))',
+                  color: submitted ? '#f5fff8' : '#e8dec4',
+                  boxShadow: submitted
+                    ? '0 0 0 3px rgba(46,125,50,0.18), 0 8px 18px rgba(0,0,0,0.26)'
+                    : '0 6px 14px rgba(0,0,0,0.24)',
+                  fontSize: { xs: 16, md: 17 },
+                  fontWeight: 950,
+                  flex: '0 0 auto',
+                }}
+              >
+                {getPlayerInitial(player.playerName)}
+              </Box>
+            </Tooltip>
+          );
+        })}
+        <Chip
+          size="small"
+          label={`선호 제출 ${submittedCount}/${requiredPlayerCount}`}
+          color={submittedCount >= requiredPlayerCount ? 'success' : 'warning'}
+          sx={{ flex: '0 0 auto', height: 28, fontWeight: 900 }}
+        />
+      </Stack>
+    </Box>
+  );
+};
+
 const PlayerMarkerRail = ({
   players,
   sessionId,
@@ -2250,14 +2390,20 @@ const RolePublicCoverCard = ({
   rankCount,
   assignedPlayerName,
   onSetRank,
+  onRequestShareRoleSheet,
 }: {
-  cover: MurderMysteryStateSnapshot['roleSelection']['publicCovers'][number];
+  cover: RoleSelectionPublicCover;
   currentRank: number;
   rankCount: number;
   assignedPlayerName?: string;
   onSetRank?: (rankIndex: number) => void;
+  onRequestShareRoleSheet?: () => void;
 }) => {
   const canRank = Boolean(cover.selectable && onSetRank);
+  const canShareRoleSheet = Boolean(
+    cover.selectable && onRequestShareRoleSheet
+  );
+  const shareDisplayName = getRoleShareDisplayName(cover.displayName);
 
   return (
     <Box
@@ -2286,27 +2432,57 @@ const RolePublicCoverCard = ({
               <Typography fontWeight={950} sx={{ flex: 1 }}>
                 {cover.displayName}
               </Typography>
-              {assignedPlayerName ? (
-                <Chip size="small" label={assignedPlayerName} />
-              ) : canRank ? (
-                <Chip
-                  size="small"
-                  label={currentRank >= 0 ? `${currentRank + 1}순위` : '미선택'}
-                  sx={
-                    currentRank >= 0
-                      ? {
-                          fontWeight: 850,
-                          color: getRoleRankColor(currentRank).text,
-                          backgroundColor:
-                            getRoleRankColor(currentRank).background,
-                          border: `1px solid ${getRoleRankColor(currentRank).border}`,
-                        }
-                      : undefined
-                  }
-                />
-              ) : (
-                <Chip size="small" label="NPC 용의자" />
-              )}
+              <Stack
+                direction="row"
+                spacing={0.4}
+                alignItems="center"
+                sx={{ flex: '0 0 auto' }}
+              >
+                {canShareRoleSheet ? (
+                  <Tooltip title={`${shareDisplayName} 룰지 공유`}>
+                    <IconButton
+                      size="small"
+                      aria-label={`${shareDisplayName} 룰지 공유`}
+                      onClick={onRequestShareRoleSheet}
+                      sx={{
+                        width: 28,
+                        height: 28,
+                        color: '#fff6db',
+                        backgroundColor: 'rgba(255, 167, 38, 0.18)',
+                        border: '1px solid rgba(255, 183, 77, 0.42)',
+                        '&:hover': {
+                          backgroundColor: 'rgba(255, 167, 38, 0.3)',
+                        },
+                      }}
+                    >
+                      <IosShareIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </Tooltip>
+                ) : null}
+                {assignedPlayerName ? (
+                  <Chip size="small" label={assignedPlayerName} />
+                ) : canRank ? (
+                  <Chip
+                    size="small"
+                    label={
+                      currentRank >= 0 ? `${currentRank + 1}순위` : '미선택'
+                    }
+                    sx={
+                      currentRank >= 0
+                        ? {
+                            fontWeight: 850,
+                            color: getRoleRankColor(currentRank).text,
+                            backgroundColor:
+                              getRoleRankColor(currentRank).background,
+                            border: `1px solid ${getRoleRankColor(currentRank).border}`,
+                          }
+                        : undefined
+                    }
+                  />
+                ) : (
+                  <Chip size="small" label="NPC 용의자" />
+                )}
+              </Stack>
             </Stack>
             <Typography
               variant="body2"
@@ -2378,216 +2554,309 @@ const RolePublicCoverCard = ({
 const RoleSelectionPanel = ({
   roleSelection,
   draftRolePreferenceIds,
+  hasSubmittedRolePreferences,
+  canSubmitRolePreferences,
   onSetRoleRank,
+  onSubmitRolePreferences,
+  onClearRolePreferences,
+  canShareRoleSheets = false,
+  onShareRoleSheet,
 }: {
   roleSelection: MurderMysteryStateSnapshot['roleSelection'];
   draftRolePreferenceIds: string[];
+  hasSubmittedRolePreferences: boolean;
+  canSubmitRolePreferences: boolean;
   onSetRoleRank: (roleId: string, rankIndex: number) => void;
+  onSubmitRolePreferences: (roleIds: string[]) => void;
+  onClearRolePreferences: () => void;
+  canShareRoleSheets?: boolean;
+  onShareRoleSheet: (roleId: string) => void;
 }) => {
+  const [shareConfirmCover, setShareConfirmCover] =
+    useState<RoleSelectionPublicCover | null>(null);
   const roleById = new Map(roleSelection.roles.map((role) => [role.id, role]));
   const orderedRoles = draftRolePreferenceIds
     .map((roleId) => roleById.get(roleId))
     .filter(Boolean) as MurderMysteryStateSnapshot['roleSelection']['roles'];
+  const rolePreferenceSummary =
+    orderedRoles.length > 0
+      ? orderedRoles
+          .map(
+            (role, index) =>
+              `${index + 1}순위 ${getRolePreferenceShortName(role.displayName)}`
+          )
+          .join(' ')
+      : '아직 선택 전';
   const assignedPlayerNameById = new Map(
     roleSelection.players.map((player) => [player.playerId, player.playerName])
   );
+  const shareConfirmDisplayName = shareConfirmCover
+    ? getRoleShareDisplayName(shareConfirmCover.displayName)
+    : '';
+
+  const closeShareConfirm = () => setShareConfirmCover(null);
+  const confirmShareRoleSheet = () => {
+    if (shareConfirmCover) {
+      onShareRoleSheet(shareConfirmCover.id);
+    }
+  };
 
   return (
-    <Box
-      sx={{
-        p: { xs: 1.2, sm: 1.5 },
-        borderRadius: 2,
-        backgroundColor: 'rgba(255,255,255,0.07)',
-        border: '1px solid rgba(255,255,255,0.14)',
-      }}
-    >
-      <Stack spacing={1.3}>
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={1}
-          alignItems={{ xs: 'stretch', sm: 'center' }}
-        >
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography fontWeight={950}>캐릭터 선택</Typography>
-            <Typography variant="caption" sx={{ color: '#d8d0bd' }}>
-              공개 표지만 보고 동시에 선호를 제출합니다. 순위는 본인에게만
-              보입니다.
-            </Typography>
-          </Box>
-          <Chip
-            color={roleSelection.status === 'locked' ? 'success' : 'default'}
-            label={
-              roleSelection.status === 'locked'
-                ? '배정 완료'
-                : `제출 ${roleSelection.submittedCount}/${roleSelection.requiredPlayerCount}`
-            }
-          />
-        </Stack>
-
-        <Stack direction="row" spacing={0.8} flexWrap="wrap" useFlexGap>
-          {roleSelection.players.map((player) => (
-            <Chip
-              key={player.playerId}
-              size="small"
-              color={player.submitted ? 'success' : 'default'}
-              label={`${player.playerName} ${player.submitted ? '제출' : '대기'}`}
-            />
-          ))}
-        </Stack>
-
-        {roleSelection.status === 'locked' ? (
-          <Stack spacing={1}>
-            {roleSelection.publicCovers.map((cover) => (
-              <RolePublicCoverCard
-                key={cover.id}
-                cover={cover}
-                currentRank={-1}
-                rankCount={roleSelection.roles.length}
-                assignedPlayerName={
-                  cover.assignedPlayerId
-                    ? (assignedPlayerNameById.get(cover.assignedPlayerId) ??
-                      '배정됨')
-                    : cover.selectable
-                      ? '미배정'
-                      : undefined
-                }
-              />
-            ))}
-          </Stack>
-        ) : (
-          <>
-            <Box
-              sx={{
-                p: 1,
-                borderRadius: 1.5,
-                backgroundColor: 'rgba(0,0,0,0.18)',
-              }}
-            >
-              <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
-                내 선호 순위
+    <>
+      <Box
+        sx={{
+          p: { xs: 1.2, sm: 1.5 },
+          borderRadius: 2,
+          backgroundColor: 'rgba(255,255,255,0.07)',
+          border: '1px solid rgba(255,255,255,0.14)',
+        }}
+      >
+        <Stack spacing={1.3}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography fontWeight={950}>캐릭터 선택</Typography>
+              <Typography variant="caption" sx={{ color: '#d8d0bd' }}>
+                공개 표지만 보고 동시에 선호를 제출합니다. 순위는 본인에게만
+                보입니다.
               </Typography>
-              <Stack direction="row" spacing={0.8} flexWrap="wrap" useFlexGap>
-                {orderedRoles.map((role, index) => {
-                  const rankColor = getRoleRankColor(index);
-
-                  return (
-                    <Chip
-                      key={role.id}
-                      size="small"
-                      label={`${index + 1}순위 ${role.displayName}`}
-                      sx={{
-                        fontWeight: 850,
-                        color: rankColor.text,
-                        backgroundColor: rankColor.background,
-                        border: `1px solid ${rankColor.border}`,
-                      }}
-                    />
-                  );
-                })}
-              </Stack>
             </Box>
+            {roleSelection.status === 'locked' ? (
+              <Chip
+                color="success"
+                label="배정 완료"
+                sx={{ flex: '0 0 auto', fontWeight: 900 }}
+              />
+            ) : (
+              <Stack direction="row" spacing={0.6} sx={{ flex: '0 0 auto' }}>
+                <Button
+                  size="small"
+                  variant="contained"
+                  color="warning"
+                  disabled={!canSubmitRolePreferences}
+                  onClick={() =>
+                    onSubmitRolePreferences(draftRolePreferenceIds)
+                  }
+                  sx={{ minWidth: 68, fontWeight: 900 }}
+                >
+                  {hasSubmittedRolePreferences ? '다시 제출' : '제출'}
+                </Button>
+                {hasSubmittedRolePreferences ? (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="inherit"
+                    onClick={onClearRolePreferences}
+                    sx={{ minWidth: 54, fontWeight: 900 }}
+                  >
+                    취소
+                  </Button>
+                ) : null}
+              </Stack>
+            )}
+          </Stack>
 
+          {roleSelection.status === 'locked' ? (
             <Stack spacing={1}>
               {roleSelection.publicCovers.map((cover) => (
                 <RolePublicCoverCard
                   key={cover.id}
                   cover={cover}
-                  currentRank={
-                    cover.selectable
-                      ? draftRolePreferenceIds.indexOf(cover.id)
-                      : -1
-                  }
+                  currentRank={-1}
                   rankCount={roleSelection.roles.length}
-                  onSetRank={
-                    cover.selectable
-                      ? (rankIndex) => onSetRoleRank(cover.id, rankIndex)
+                  assignedPlayerName={
+                    cover.assignedPlayerId
+                      ? (assignedPlayerNameById.get(cover.assignedPlayerId) ??
+                        '배정됨')
+                      : cover.selectable
+                        ? '미배정'
+                        : undefined
+                  }
+                  onRequestShareRoleSheet={
+                    canShareRoleSheets
+                      ? () => setShareConfirmCover(cover)
                       : undefined
                   }
                 />
               ))}
             </Stack>
-          </>
-        )}
-      </Stack>
-    </Box>
-  );
-};
-
-const RolePreSharePanel = ({
-  roles,
-  onShareRoleSheet,
-}: {
-  roles: MurderMysteryStateSnapshot['roleSelection']['roles'];
-  onShareRoleSheet: (roleId: string) => void;
-}) => (
-  <Box
-    sx={{
-      p: { xs: 1.2, sm: 1.5 },
-      borderRadius: 2,
-      backgroundColor: 'rgba(247,241,222,0.09)',
-      border: '1px solid rgba(247,241,222,0.16)',
-    }}
-  >
-    <Stack spacing={1.2}>
-      <Box>
-        <Typography fontWeight={950}>사전 룰지 공유</Typography>
-        <Typography variant="caption" sx={{ color: '#d8d0bd' }}>
-          카카오톡 링크로 프롤로그, 룰지, 규칙을 공유합니다.
-        </Typography>
-      </Box>
-      <Stack spacing={1}>
-        {roles.map((role) => (
-          <Box
-            key={role.id}
-            sx={{
-              p: 1.1,
-              borderRadius: 1.5,
-              backgroundColor: 'rgba(0,0,0,0.18)',
-              border: '1px solid rgba(255,255,255,0.11)',
-            }}
-          >
-            <Stack spacing={0.9}>
-              <Stack direction="row" spacing={1} alignItems="flex-start">
-                <CharacterPortraitFrame
-                  src={role.portraitSrc}
-                  alt={role.portraitAlt}
-                  label={role.displayName}
-                  variant="thumbnail"
-                  sx={{ width: 64 }}
-                />
-                <Box sx={{ minWidth: 0, flex: 1 }}>
-                  <Typography fontWeight={900}>{role.displayName}</Typography>
+          ) : (
+            <>
+              <Box
+                sx={{
+                  px: 1,
+                  py: 0.7,
+                  borderRadius: 1.5,
+                  backgroundColor: 'rgba(0,0,0,0.18)',
+                }}
+              >
+                <Stack
+                  direction="row"
+                  spacing={0.8}
+                  alignItems="center"
+                  sx={{ minWidth: 0 }}
+                >
                   <Typography
-                    variant="body2"
+                    variant="caption"
+                    sx={{ flex: '0 0 auto', color: '#cfc5ad' }}
+                  >
+                    내 선호 순위
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    noWrap
                     sx={{
-                      mt: 0.3,
-                      color: '#d8d0bd',
-                      whiteSpace: 'pre-wrap',
-                      lineHeight: 1.55,
+                      minWidth: 0,
+                      color: '#fff6db',
+                      fontWeight: 900,
                     }}
                   >
-                    {role.publicText}
+                    {rolePreferenceSummary}
                   </Typography>
-                </Box>
+                </Stack>
+              </Box>
+
+              <Stack spacing={1}>
+                {roleSelection.publicCovers.map((cover) => (
+                  <RolePublicCoverCard
+                    key={cover.id}
+                    cover={cover}
+                    currentRank={
+                      cover.selectable
+                        ? draftRolePreferenceIds.indexOf(cover.id)
+                        : -1
+                    }
+                    rankCount={roleSelection.roles.length}
+                    onSetRank={
+                      cover.selectable
+                        ? (rankIndex) => onSetRoleRank(cover.id, rankIndex)
+                        : undefined
+                    }
+                    onRequestShareRoleSheet={
+                      canShareRoleSheets
+                        ? () => setShareConfirmCover(cover)
+                        : undefined
+                    }
+                  />
+                ))}
               </Stack>
-              <Stack direction="row" spacing={0.8} flexWrap="wrap" useFlexGap>
-                <Button
-                  size="small"
-                  variant="contained"
-                  color="warning"
-                  startIcon={<IosShareIcon />}
-                  onClick={() => onShareRoleSheet(role.id)}
-                >
-                  카카오톡 공유
-                </Button>
-              </Stack>
+            </>
+          )}
+        </Stack>
+      </Box>
+
+      <Dialog
+        open={Boolean(shareConfirmCover)}
+        onClose={closeShareConfirm}
+        fullWidth
+        maxWidth="xs"
+        PaperProps={{
+          sx: {
+            overflow: 'hidden',
+            borderRadius: 2,
+            color: '#f8f1de',
+            background:
+              'linear-gradient(145deg, #13211f 0%, #24352f 52%, #14191d 100%)',
+            border: '1px solid rgba(248,241,222,0.18)',
+            boxShadow: '0 24px 70px rgba(0,0,0,0.52)',
+          },
+        }}
+      >
+        <DialogTitle sx={{ px: 2.2, pt: 2, pb: 1 }}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Box
+              sx={{
+                width: 34,
+                height: 34,
+                borderRadius: '50%',
+                display: 'grid',
+                placeItems: 'center',
+                color: '#2a1d0d',
+                backgroundColor: '#ffb547',
+              }}
+            >
+              <IosShareIcon fontSize="small" />
+            </Box>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography fontWeight={950} sx={{ lineHeight: 1.25 }}>
+                룰지 공유 확인
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#d8d0bd' }}>
+                미접속 참가자에게 보낼 캐릭터 룰지를 확인하세요.
+              </Typography>
+            </Box>
+          </Stack>
+        </DialogTitle>
+        <DialogContent sx={{ px: 2.2, pb: 1 }}>
+          {shareConfirmCover ? (
+            <Stack spacing={1.2}>
+              <Box
+                sx={{
+                  p: 1,
+                  borderRadius: 1.5,
+                  backgroundColor: 'rgba(248,241,222,0.1)',
+                  border: '1px solid rgba(248,241,222,0.16)',
+                }}
+              >
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <CharacterPortraitFrame
+                    src={shareConfirmCover.portraitSrc}
+                    alt={shareConfirmCover.portraitAlt}
+                    label={shareConfirmCover.displayName}
+                    variant="thumbnail"
+                    sx={{ width: 54 }}
+                  />
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography fontWeight={950}>
+                      {shareConfirmDisplayName}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        display: '-webkit-box',
+                        color: '#d8d0bd',
+                        overflow: 'hidden',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      {shareConfirmCover.publicText}
+                    </Typography>
+                  </Box>
+                </Stack>
+              </Box>
+              <Typography sx={{ lineHeight: 1.7, wordBreak: 'keep-all' }}>
+                {shareConfirmDisplayName}의 룰지를 미접속 인원에게 미리
+                공유하시겠습니까?
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{ color: '#cfc5ad', lineHeight: 1.6 }}
+              >
+                공유 링크에는 프롤로그, 캐릭터 룰지, 기본 규칙이 포함됩니다.
+              </Typography>
             </Stack>
-          </Box>
-        ))}
-      </Stack>
-    </Stack>
-  </Box>
-);
+          ) : null}
+        </DialogContent>
+        <DialogActions sx={{ px: 2.2, pb: 2, gap: 0.8 }}>
+          <Button onClick={closeShareConfirm} sx={{ color: '#e8dec4' }}>
+            취소
+          </Button>
+          <Button
+            variant="contained"
+            color="warning"
+            startIcon={<IosShareIcon />}
+            disabled={!shareConfirmCover}
+            onClick={confirmShareRoleSheet}
+            sx={{ fontWeight: 900 }}
+          >
+            공유하기
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+};
 
 const MyDeskPanel = ({
   cardCount,
@@ -3986,11 +4255,19 @@ export default function MurderMysteryTableExperience({
     snapshot.investigation.turn?.currentPlayerId
   );
   const canUseHostTools = isHostView;
-  const hasRequiredPlayerCount =
-    snapshot.hostParticipation.currentPlayerCount >=
+  const requiredPlayerCount =
+    snapshot.roleSelection.requiredPlayerCount ||
     snapshot.hostParticipation.requiredPlayerCount;
+  const connectedPlayerCount = Math.min(
+    snapshot.players.filter((player) => Boolean(player.socketId)).length,
+    requiredPlayerCount
+  );
   const isRoleSelectionLocked = snapshot.roleSelection.status === 'locked';
+  const shouldShowRoleSelectionMarkerRail =
+    phaseKind === 'lobby' && !isRoleSelectionLocked;
   const shouldShowPlayerMarkerRail = isRoleSelectionLocked;
+  const shouldShowMarkerRail =
+    shouldShowRoleSelectionMarkerRail || shouldShowPlayerMarkerRail;
   const showNextPhaseTool =
     canUseHostTools &&
     phaseKind !== 'lobby' &&
@@ -5766,6 +6043,10 @@ export default function MurderMysteryTableExperience({
   };
 
   const renderFloatingActionDock = () => {
+    if (phaseKind === 'lobby') {
+      return null;
+    }
+
     if (hasOpenModal && !(phaseKind === 'investigate' && canActNow)) {
       return null;
     }
@@ -5775,49 +6056,7 @@ export default function MurderMysteryTableExperience({
     let chips: React.ReactNode = null;
     let actions: React.ReactNode = null;
 
-    if (phaseKind === 'lobby') {
-      if (snapshot.roleSelection.status === 'locked') {
-        title = '캐릭터 배정 완료';
-        description = '잠시 후 방장이 프롤로그 낭독을 시작합니다.';
-      } else {
-        title = hasSubmittedRolePreferences
-          ? '선호 제출 완료'
-          : '캐릭터 선호를 제출하세요';
-        description = hasSubmittedRolePreferences
-          ? '배정 전까지 선호 순위를 다시 제출하거나 취소할 수 있습니다.'
-          : '순위를 확인한 뒤 제출해야 캐릭터 배정이 진행됩니다.';
-        chips = (
-          <Chip
-            size="small"
-            label={`제출 ${snapshot.roleSelection.submittedCount}/${snapshot.roleSelection.requiredPlayerCount}`}
-            color={hasSubmittedRolePreferences ? 'success' : 'warning'}
-          />
-        );
-        actions = (
-          <>
-            <Button
-              size="small"
-              variant="contained"
-              color="warning"
-              disabled={!canSubmitRolePreferences}
-              onClick={() => onSubmitRolePreferences(draftRolePreferenceIds)}
-            >
-              {hasSubmittedRolePreferences ? '선호 다시 제출' : '선호 제출'}
-            </Button>
-            {hasSubmittedRolePreferences ? (
-              <Button
-                size="small"
-                variant="outlined"
-                color="inherit"
-                onClick={onClearRolePreferences}
-              >
-                제출 취소
-              </Button>
-            ) : null}
-          </>
-        );
-      }
-    } else if (phaseKind === 'intro') {
+    if (phaseKind === 'intro') {
       title = canUseHostTools
         ? '방장이 낭독을 진행하세요'
         : '방장이 낭독 중입니다';
@@ -6111,35 +6350,39 @@ export default function MurderMysteryTableExperience({
     if (phaseKind === 'lobby') {
       return (
         <Stack spacing={1.5}>
-          <Typography variant="h5" fontWeight={950}>
-            플레이어 확인
-          </Typography>
-          <Typography sx={{ color: '#d8d0bd' }}>
-            참가자 연결 상태를 확인하고 원하는 캐릭터 선택 순위를 정하세요.
-          </Typography>
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            {snapshot.players.map((player) => (
-              <Chip
-                key={player.id}
-                label={`${player.name} ${player.socketId ? '연결' : '대기'}`}
-                color={player.socketId ? 'success' : 'default'}
-              />
-            ))}
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography variant="h5" fontWeight={950} sx={{ flex: 1 }}>
+              참가 현황
+            </Typography>
+            <Chip
+              size="small"
+              color={
+                connectedPlayerCount >= requiredPlayerCount
+                  ? 'success'
+                  : 'default'
+              }
+              label={`${requiredPlayerCount}인 게임 · 접속 ${connectedPlayerCount}/${requiredPlayerCount}`}
+              sx={{ fontWeight: 900 }}
+            />
           </Stack>
+          <Typography sx={{ color: '#d8d0bd' }}>
+            캐릭터 선택 순위를 정한 뒤 선호를 제출하세요. 제출 여부는 상단 마커
+            색상으로 확인할 수 있습니다.
+          </Typography>
           <RoleSelectionPanel
             roleSelection={snapshot.roleSelection}
             draftRolePreferenceIds={draftRolePreferenceIds}
+            hasSubmittedRolePreferences={hasSubmittedRolePreferences}
+            canSubmitRolePreferences={canSubmitRolePreferences}
             onSetRoleRank={setRolePreferenceRank}
+            onSubmitRolePreferences={onSubmitRolePreferences}
+            onClearRolePreferences={onClearRolePreferences}
+            canShareRoleSheets={canUseHostTools}
+            onShareRoleSheet={onShareRoleSheet}
           />
-          {canUseHostTools ? (
-            <RolePreSharePanel
-              roles={snapshot.roleSelection.roles}
-              onShareRoleSheet={onShareRoleSheet}
-            />
-          ) : null}
-          {!hasRequiredPlayerCount ? (
+          {connectedPlayerCount < requiredPlayerCount ? (
             <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
-              모든 참가자가 입장하면 캐릭터 선호 제출을 완료할 수 있습니다.
+              모든 참가자가 접속하면 캐릭터 선호 제출을 완료할 수 있습니다.
             </Typography>
           ) : !isRoleSelectionLocked ? (
             <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
@@ -6317,7 +6560,14 @@ export default function MurderMysteryTableExperience({
         </Stack>
       </Box>
 
-      {shouldShowPlayerMarkerRail ? (
+      {shouldShowRoleSelectionMarkerRail ? (
+        <RoleSelectionMarkerRail
+          players={snapshot.roleSelection.players}
+          sessionId={sessionId}
+          connectedPlayerCount={connectedPlayerCount}
+          requiredPlayerCount={requiredPlayerCount}
+        />
+      ) : shouldShowPlayerMarkerRail ? (
         <PlayerMarkerRail
           players={snapshot.players}
           sessionId={sessionId}
@@ -6430,8 +6680,8 @@ export default function MurderMysteryTableExperience({
       <ClueTakeOverlay
         notice={clueTakeNotice}
         topOffset={{
-          xs: shouldShowPlayerMarkerRail ? 118 : 60,
-          md: shouldShowPlayerMarkerRail ? 126 : 66,
+          xs: shouldShowMarkerRail ? 118 : 60,
+          md: shouldShowMarkerRail ? 126 : 66,
         }}
       />
       {isSmall &&
