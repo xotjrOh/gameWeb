@@ -57,6 +57,7 @@ import {
   MurderMysteryClueVaultCardView,
   MurderMysteryFinalVoteOptionScenario,
   MurderMysteryInvestigationBackCardView,
+  MurderMysteryInvestigationMapHotspotView,
   MurderMysteryInvestigationMapSceneScenario,
   MurderMysteryInvestigationTargetView,
   MurderMysteryPublicPlayerView,
@@ -148,18 +149,27 @@ type PinnedClueReference = {
   sourceId: string;
   cardId: string;
 };
-type PinnedClueDockSide = 'left' | 'right';
-type PinnedClueFabPosition = {
-  side: PinnedClueDockSide;
+type FloatingFabDockSide = 'left' | 'right';
+type FloatingFabPosition = {
+  side: FloatingFabDockSide;
   yRatio: number;
 };
-type PinnedClueFabViewport = {
+type FloatingFabViewport = {
   width: number;
   height: number;
 };
-type PinnedClueFabDragPosition = {
+type FloatingFabDragPosition = {
   left: number;
   top: number;
+};
+type PinnedClueDockSide = FloatingFabDockSide;
+type PinnedClueFabPosition = FloatingFabPosition;
+type PinnedClueFabViewport = FloatingFabViewport;
+type PinnedClueFabDragPosition = FloatingFabDragPosition;
+type InvestigationMapTargetPin = {
+  target: MurderMysteryInvestigationTargetView;
+  hotspot: MurderMysteryInvestigationMapHotspotView;
+  matNumber: number;
 };
 type TurnOrderMarker = {
   rank: number;
@@ -185,14 +195,23 @@ const CARD_BACK_LABEL = '조사 카드';
 const EXTRA_INVESTIGATION_LABEL = '전체공개 후 추가조사';
 const EXTRA_INVESTIGATION_DESCRIPTION =
   '이 표식이 있는 카드는 획득 즉시 전체 공개되고, 조사자가 같은 라운드에서 한 번 더 조사합니다.';
+const FLOATING_FAB_SIZE = 64;
+const FLOATING_FAB_EDGE_OFFSET = 12;
+const FLOATING_FAB_TOP_SAFE_OFFSET = 76;
+const FLOATING_FAB_DRAG_THRESHOLD = 5;
+const PINNED_CLUE_FAB_SIZE = FLOATING_FAB_SIZE;
+const PINNED_CLUE_FAB_EDGE_OFFSET = FLOATING_FAB_EDGE_OFFSET;
+const PINNED_CLUE_FAB_TOP_SAFE_OFFSET = FLOATING_FAB_TOP_SAFE_OFFSET;
+const PINNED_CLUE_FAB_DRAG_THRESHOLD = FLOATING_FAB_DRAG_THRESHOLD;
 const PINNED_CLUE_FAB_STORAGE_KEY = 'murderMystery:pinnedClueFabPosition:v1';
-const PINNED_CLUE_FAB_SIZE = 64;
-const PINNED_CLUE_FAB_EDGE_OFFSET = 12;
-const PINNED_CLUE_FAB_TOP_SAFE_OFFSET = 76;
-const PINNED_CLUE_FAB_DRAG_THRESHOLD = 5;
-const DEFAULT_PINNED_CLUE_FAB_POSITION: PinnedClueFabPosition = {
+const MAP_FAB_STORAGE_KEY = 'murderMystery:mapFabPosition:v1';
+const DEFAULT_PINNED_CLUE_FAB_POSITION: FloatingFabPosition = {
   side: 'right',
   yRatio: 1,
+};
+const DEFAULT_MAP_FAB_POSITION: FloatingFabPosition = {
+  side: 'right',
+  yRatio: 0.46,
 };
 const MURDER_MYSTERY_BGM_BY_SCENARIO: Record<
   string,
@@ -519,6 +538,39 @@ const buildInvestigationCardMatGroups = (
       ),
     }))
     .sort((a, b) => a.order - b.order || a.label.localeCompare(b.label));
+};
+
+const buildInvestigationMapTargetPins = (
+  targets: MurderMysteryInvestigationTargetView[] | undefined,
+  hotspots: MurderMysteryInvestigationMapHotspotView[] | undefined
+): InvestigationMapTargetPin[] => {
+  if (!targets?.length || !hotspots?.length) {
+    return [];
+  }
+
+  const hotspotByTargetId = new Map(
+    hotspots.map((hotspot) => [hotspot.targetId, hotspot] as const)
+  );
+
+  return (
+    targets
+      .filter((target) => target.targetType === 'location')
+      .map((target) => {
+        const hotspot = hotspotByTargetId.get(target.id);
+        return hotspot ? { target, hotspot } : null;
+      })
+      .filter(Boolean) as Array<{
+      target: MurderMysteryInvestigationTargetView;
+      hotspot: MurderMysteryInvestigationMapHotspotView;
+    }>
+  )
+    .sort(
+      (a, b) =>
+        (a.target.order ?? Number.MAX_SAFE_INTEGER) -
+          (b.target.order ?? Number.MAX_SAFE_INTEGER) ||
+        a.target.label.localeCompare(b.target.label)
+    )
+    .map((entry, index) => ({ ...entry, matNumber: index + 1 }));
 };
 
 const getRoleRankColor = (rankIndex: number) =>
@@ -915,6 +967,31 @@ const savePinnedClueFabPosition = (position: PinnedClueFabPosition) => {
   }
 };
 
+const readMapFabPosition = (): FloatingFabPosition => {
+  try {
+    const raw = window.localStorage.getItem(MAP_FAB_STORAGE_KEY);
+    const saved = raw ? JSON.parse(raw) : null;
+    const side: unknown = saved?.side;
+    const yRatio = Number(saved?.yRatio);
+
+    if ((side === 'left' || side === 'right') && Number.isFinite(yRatio)) {
+      return { side, yRatio: clamp(yRatio, 0, 1) };
+    }
+  } catch {
+    // 위치 저장은 편의 기능이므로 실패해도 기본 위치로 동작한다.
+  }
+
+  return DEFAULT_MAP_FAB_POSITION;
+};
+
+const saveMapFabPosition = (position: FloatingFabPosition) => {
+  try {
+    window.localStorage.setItem(MAP_FAB_STORAGE_KEY, JSON.stringify(position));
+  } catch {
+    // 위치 저장 실패는 지도 열기 동작을 막지 않는다.
+  }
+};
+
 const PinnedClueFab = ({
   card,
   bottomOffset,
@@ -1174,6 +1251,264 @@ const PinnedClueFab = ({
           }}
         >
           <PushPinIcon sx={{ width: 15, height: 15 }} />
+        </Box>
+      </Box>
+    </Tooltip>
+  );
+};
+
+const InvestigationMapFab = ({
+  scene,
+  bottomOffset,
+  onOpen,
+}: {
+  scene: MurderMysteryInvestigationMapSceneScenario;
+  bottomOffset: number;
+  onOpen: () => void;
+}) => {
+  const pointerRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    startLeft: number;
+    startTop: number;
+    moved: boolean;
+  } | null>(null);
+  const [position, setPosition] = useState<FloatingFabPosition>(
+    DEFAULT_MAP_FAB_POSITION
+  );
+  const [viewport, setViewport] = useState<FloatingFabViewport | null>(null);
+  const [dragPosition, setDragPosition] =
+    useState<FloatingFabDragPosition | null>(null);
+  const resolvedTop =
+    viewport && !dragPosition
+      ? getPinnedClueFabTop(position, viewport, bottomOffset)
+      : null;
+  const resolvedLeft =
+    viewport && !dragPosition ? getPinnedClueFabLeft(position, viewport) : null;
+  const tooltipPlacement = position.side === 'left' ? 'right' : 'left';
+
+  useEffect(() => {
+    setPosition(readMapFabPosition());
+  }, []);
+
+  useEffect(() => {
+    const updateViewport = () =>
+      setViewport({ width: window.innerWidth, height: window.innerHeight });
+
+    updateViewport();
+    window.addEventListener('resize', updateViewport);
+    return () => window.removeEventListener('resize', updateViewport);
+  }, []);
+
+  const getDragPosition = (event: React.PointerEvent<HTMLElement>) => {
+    if (!viewport || !pointerRef.current) {
+      return null;
+    }
+
+    const bounds = getPinnedClueFabBounds(viewport, bottomOffset);
+    const nextLeft = clamp(
+      pointerRef.current.startLeft + event.clientX - pointerRef.current.startX,
+      bounds.minLeft,
+      bounds.maxLeft
+    );
+    const nextTop = clamp(
+      pointerRef.current.startTop + event.clientY - pointerRef.current.startY,
+      bounds.minTop,
+      bounds.maxTop
+    );
+
+    return { left: nextLeft, top: nextTop };
+  };
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLElement>) => {
+    if (!viewport) {
+      return;
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    pointerRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startLeft: rect.left,
+      startTop: rect.top,
+      moved: false,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLElement>) => {
+    const pointer = pointerRef.current;
+    if (!pointer || pointer.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const distance = Math.hypot(
+      event.clientX - pointer.startX,
+      event.clientY - pointer.startY
+    );
+    if (distance < FLOATING_FAB_DRAG_THRESHOLD && !pointer.moved) {
+      return;
+    }
+
+    pointer.moved = true;
+    const nextDragPosition = getDragPosition(event);
+    if (nextDragPosition) {
+      setDragPosition(nextDragPosition);
+    }
+    event.preventDefault();
+  };
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLElement>) => {
+    const pointer = pointerRef.current;
+    if (!pointer || pointer.pointerId !== event.pointerId) {
+      return;
+    }
+
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      // 포인터 캡처가 이미 해제된 경우에는 후속 처리를 계속한다.
+    }
+    pointerRef.current = null;
+
+    if (!pointer.moved || !viewport) {
+      setDragPosition(null);
+      onOpen();
+      return;
+    }
+
+    const nextDragPosition = getDragPosition(event) ?? dragPosition;
+    if (!nextDragPosition) {
+      setDragPosition(null);
+      return;
+    }
+
+    const bounds = getPinnedClueFabBounds(viewport, bottomOffset);
+    const nextSide: FloatingFabDockSide =
+      nextDragPosition.left + FLOATING_FAB_SIZE / 2 < viewport.width / 2
+        ? 'left'
+        : 'right';
+    const nextYRatio =
+      bounds.maxTop > bounds.minTop
+        ? (nextDragPosition.top - bounds.minTop) /
+          (bounds.maxTop - bounds.minTop)
+        : DEFAULT_MAP_FAB_POSITION.yRatio;
+    const nextPosition: FloatingFabPosition = {
+      side: nextSide,
+      yRatio: clamp(nextYRatio, 0, 1),
+    };
+
+    setPosition(nextPosition);
+    saveMapFabPosition(nextPosition);
+    setDragPosition(null);
+    event.preventDefault();
+  };
+
+  const handlePointerCancel = () => {
+    pointerRef.current = null;
+    setDragPosition(null);
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (event.key !== 'Enter' && event.key !== ' ') {
+      return;
+    }
+    event.preventDefault();
+    onOpen();
+  };
+
+  return (
+    <Tooltip title="조사 지도 열기" placement={tooltipPlacement}>
+      <Box
+        component="button"
+        type="button"
+        aria-label="조사 지도 열기"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+        onKeyDown={handleKeyDown}
+        sx={{
+          position: 'fixed',
+          left: dragPosition?.left ?? resolvedLeft ?? 'auto',
+          right:
+            dragPosition || resolvedLeft !== null
+              ? 'auto'
+              : FLOATING_FAB_EDGE_OFFSET,
+          top: dragPosition?.top ?? resolvedTop ?? 'auto',
+          bottom: dragPosition || resolvedTop !== null ? 'auto' : bottomOffset,
+          zIndex: 1695,
+          width: FLOATING_FAB_SIZE,
+          height: FLOATING_FAB_SIZE,
+          p: 0,
+          border: '2px solid rgba(142, 202, 230, 0.95)',
+          borderRadius: '50%',
+          overflow: 'hidden',
+          color: '#f8f1de',
+          backgroundColor: '#101720',
+          boxShadow:
+            '0 14px 34px rgba(0,0,0,0.44), 0 0 0 5px rgba(142,202,230,0.14)',
+          cursor: dragPosition ? 'grabbing' : 'grab',
+          pointerEvents: 'auto',
+          touchAction: 'none',
+          transition: dragPosition
+            ? 'none'
+            : 'left 190ms ease, right 190ms ease, top 190ms ease, transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease',
+          '&:hover': {
+            transform: dragPosition ? 'none' : 'translateY(-2px)',
+            borderColor: '#7dd3fc',
+            boxShadow:
+              '0 18px 40px rgba(0,0,0,0.5), 0 0 0 6px rgba(142,202,230,0.2)',
+          },
+          '&:focus-visible': {
+            outline: '3px solid rgba(125, 211, 252, 0.72)',
+            outlineOffset: 3,
+          },
+        }}
+      >
+        <Box
+          component="img"
+          src={scene.imageSrc}
+          alt=""
+          draggable={false}
+          sx={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            display: 'block',
+            filter: 'saturate(0.95) contrast(1.06)',
+            userSelect: 'none',
+            pointerEvents: 'none',
+          }}
+        />
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            background:
+              'radial-gradient(circle at 48% 42%, transparent 38%, rgba(8,13,18,0.34) 76%)',
+            pointerEvents: 'none',
+          }}
+        />
+        <Box
+          sx={{
+            position: 'absolute',
+            right: -1,
+            bottom: -1,
+            width: 25,
+            height: 25,
+            display: 'grid',
+            placeItems: 'center',
+            borderRadius: '50%',
+            backgroundColor: '#0ea5e9',
+            color: '#f8fbff',
+            border: '2px solid #101720',
+            pointerEvents: 'none',
+          }}
+        >
+          <MapIcon sx={{ width: 15, height: 15 }} />
         </Box>
       </Box>
     </Tooltip>
@@ -1557,6 +1892,165 @@ const HeldCardBackFace = ({
   </Box>
 );
 
+const SeatHeldCardBackStack = ({
+  backs,
+  publicCount,
+  isHighlighted,
+}: {
+  backs: MurderMysteryInvestigationBackCardView[];
+  publicCount: number;
+  isHighlighted: boolean;
+}) => {
+  if (backs.length === 0 && publicCount === 0) {
+    return null;
+  }
+
+  const visibleBacks = backs.slice(0, 3);
+  const remainingCount = Math.max(backs.length - visibleBacks.length, 0);
+  const stackWidth = 38 + Math.max(visibleBacks.length - 1, 0) * 11;
+  const backSummary =
+    backs.length > 0
+      ? backs
+          .map((back) => back.shortLabel ?? back.targetLabel ?? CARD_BACK_LABEL)
+          .join(', ')
+      : '';
+
+  return (
+    <Stack
+      direction="row"
+      spacing={0.45}
+      alignItems="center"
+      justifyContent="center"
+      sx={{ mt: 0.35, minHeight: 34 }}
+    >
+      {visibleBacks.length > 0 ? (
+        <Tooltip
+          title={`비공개 뒷면 ${backs.length}장${backSummary ? `: ${backSummary}` : ''}`}
+        >
+          <Box
+            aria-label={`비공개 뒷면 카드 ${backs.length}장`}
+            sx={{
+              position: 'relative',
+              width: stackWidth,
+              height: 30,
+              flex: '0 0 auto',
+            }}
+          >
+            {visibleBacks.map((back, index) => (
+              <Box
+                key={back.backId}
+                sx={{
+                  position: 'absolute',
+                  left: index * 11,
+                  top: index % 2 === 0 ? 0 : 2,
+                  width: 30,
+                  height: 30,
+                  borderRadius: 0.8,
+                  overflow: 'hidden',
+                  border: isHighlighted
+                    ? '1px solid rgba(245, 197, 66, 0.96)'
+                    : '1px solid rgba(232, 220, 194, 0.76)',
+                  background:
+                    'repeating-linear-gradient(135deg, #29323f 0, #29323f 5px, #1d2430 5px, #1d2430 10px)',
+                  boxShadow: '0 5px 10px rgba(0,0,0,0.28)',
+                  transform: `rotate(${[-5, 2, 6][index]}deg)`,
+                }}
+              >
+                {back.imageSrc ? (
+                  <Box
+                    component="img"
+                    src={back.imageSrc}
+                    alt=""
+                    sx={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      opacity: 0.86,
+                    }}
+                  />
+                ) : null}
+                <Stack
+                  alignItems="center"
+                  justifyContent="center"
+                  sx={{
+                    position: 'absolute',
+                    inset: 0,
+                    px: 0.25,
+                    color: '#fff8e6',
+                    backgroundColor: back.imageSrc
+                      ? 'rgba(5, 9, 14, 0.42)'
+                      : 'transparent',
+                    textShadow: '0 1px 3px rgba(0,0,0,0.72)',
+                  }}
+                >
+                  <Typography
+                    component="span"
+                    fontWeight={950}
+                    sx={{
+                      maxWidth: '100%',
+                      fontSize: 8.5,
+                      lineHeight: 1,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {back.shortLabel ?? CARD_BACK_LABEL}
+                  </Typography>
+                </Stack>
+              </Box>
+            ))}
+            {remainingCount > 0 ? (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  right: -7,
+                  bottom: -3,
+                  minWidth: 19,
+                  height: 19,
+                  px: 0.35,
+                  borderRadius: 999,
+                  display: 'grid',
+                  placeItems: 'center',
+                  backgroundColor: isHighlighted ? '#f5c542' : '#111827',
+                  color: isHighlighted ? '#2a231a' : '#fff',
+                  border: '1px solid rgba(255,255,255,0.78)',
+                  fontSize: 10,
+                  fontWeight: 950,
+                  boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
+                }}
+              >
+                +{remainingCount}
+              </Box>
+            ) : null}
+          </Box>
+        </Tooltip>
+      ) : null}
+      {publicCount > 0 ? (
+        <Chip
+          size="small"
+          icon={<IosShareIcon />}
+          label={publicCount}
+          sx={{
+            height: 20,
+            minWidth: 34,
+            backgroundColor: 'rgba(236, 253, 245, 0.96)',
+            color: '#166534',
+            fontWeight: 950,
+            '& .MuiChip-icon': {
+              width: 13,
+              height: 13,
+              ml: 0.45,
+              color: '#166534',
+            },
+            '& .MuiChip-label': { px: 0.55 },
+          }}
+        />
+      ) : null}
+    </Stack>
+  );
+};
+
 const SeatMarker = ({
   player,
   isSelf,
@@ -1588,6 +2082,14 @@ const SeatMarker = ({
     y: clamp(position.y, 14, 86),
   };
   const relationLabel = getSeatRelationLabel(visualPosition, isSelf);
+  const publicBackIds = new Set(
+    player.publicRevealedClues
+      .map((card) => card.backId)
+      .filter(Boolean) as string[]
+  );
+  const privateCardBacks = player.heldCardBacks.filter(
+    (back) => !publicBackIds.has(back.backId)
+  );
 
   return (
     <Box
@@ -1699,32 +2201,13 @@ const SeatMarker = ({
               {player.roleDisplayName ?? relationLabel}
             </Typography>
           </Box>
-          <Stack direction="row" spacing={0.35}>
-            {player.heldCardBacks.length > 0 ? (
-              <Chip
-                size="small"
-                label={player.heldCardBacks.length}
-                sx={{
-                  height: 20,
-                  minWidth: 24,
-                  fontWeight: 900,
-                  backgroundColor: isClueTakeHighlighted
-                    ? '#f5c542'
-                    : '#2b3440',
-                  color: isClueTakeHighlighted ? '#2a231a' : '#fff',
-                }}
-              />
-            ) : null}
-            {player.publicRevealedClues.length > 0 ? (
-              <Chip
-                size="small"
-                label={player.publicRevealedClues.length}
-                sx={{ height: 20, minWidth: 24, fontWeight: 900 }}
-              />
-            ) : null}
-          </Stack>
         </Stack>
       </Box>
+      <SeatHeldCardBackStack
+        backs={privateCardBacks}
+        publicCount={player.publicRevealedClues.length}
+        isHighlighted={isClueTakeHighlighted}
+      />
       <Typography
         variant="caption"
         sx={{
@@ -3008,12 +3491,16 @@ const CardDetailDialog = ({
 const MapFullscreenDialog = ({
   open,
   scene,
+  pins = [],
   fullScreen,
+  onSelectPin,
   onClose,
 }: {
   open: boolean;
   scene: MurderMysteryInvestigationMapSceneScenario | null;
+  pins?: InvestigationMapTargetPin[];
   fullScreen: boolean;
+  onSelectPin?: (targetId: string) => void;
   onClose: () => void;
 }) => {
   const pointersRef = useRef(new Map<number, { x: number; y: number }>());
@@ -3024,6 +3511,7 @@ const MapFullscreenDialog = ({
   } | null>(null);
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const pinRadius = scene ? Math.max(scene.width, scene.height) * 0.018 : 0;
 
   const resetView = useCallback(() => {
     setScale(1);
@@ -3205,14 +3693,14 @@ const MapFullscreenDialog = ({
         >
           {scene ? (
             <Box
-              component="img"
-              src={scene.imageSrc}
-              alt={scene.alt}
-              draggable={false}
+              component="svg"
+              viewBox={`0 0 ${scene.width} ${scene.height}`}
+              role="img"
+              aria-label={scene.alt}
+              preserveAspectRatio="xMidYMid meet"
               sx={{
-                maxWidth: '100%',
-                maxHeight: '100%',
-                objectFit: 'contain',
+                width: '100%',
+                height: '100%',
                 transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
                 transformOrigin: 'center',
                 transition:
@@ -3221,7 +3709,78 @@ const MapFullscreenDialog = ({
                     : 'transform 120ms ease-out',
                 userSelect: 'none',
               }}
-            />
+            >
+              <image
+                href={scene.imageSrc}
+                width={scene.width}
+                height={scene.height}
+                preserveAspectRatio="xMidYMid meet"
+              />
+              {pins.map(({ hotspot, matNumber, target }) => {
+                const cx =
+                  ((hotspot.xPct + hotspot.widthPct / 2) / 100) * scene.width;
+                const cy =
+                  ((hotspot.yPct + hotspot.heightPct / 2) / 100) * scene.height;
+
+                return (
+                  <Box
+                    key={hotspot.id}
+                    component="g"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`${target.label} 단서로 이동`}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onPointerMove={(event) => event.stopPropagation()}
+                    onPointerUp={(event) => event.stopPropagation()}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onSelectPin?.(target.id);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key !== 'Enter' && event.key !== ' ') {
+                        return;
+                      }
+                      event.preventDefault();
+                      onSelectPin?.(target.id);
+                    }}
+                    sx={{
+                      cursor: 'pointer',
+                      outline: 'none',
+                      '&:focus-visible circle': {
+                        stroke: '#ffffff',
+                        strokeWidth: pinRadius * 0.24,
+                      },
+                    }}
+                  >
+                    <title>{`${target.label} 단서로 이동`}</title>
+                    <circle
+                      cx={cx}
+                      cy={cy}
+                      r={pinRadius}
+                      fill={
+                        target.isExhausted
+                          ? 'rgba(71,85,105,0.94)'
+                          : 'rgba(245,197,66,0.96)'
+                      }
+                      stroke="rgba(255,248,230,0.92)"
+                      strokeWidth={pinRadius * 0.16}
+                    />
+                    <text
+                      x={cx}
+                      y={cy}
+                      textAnchor="middle"
+                      dominantBaseline="central"
+                      fill={target.isExhausted ? '#f8f1de' : '#2b2112'}
+                      fontSize={pinRadius * 0.95}
+                      fontWeight={950}
+                      pointerEvents="none"
+                    >
+                      {matNumber}
+                    </text>
+                  </Box>
+                );
+              })}
+            </Box>
           ) : null}
           <Typography
             variant="caption"
@@ -3367,6 +3926,9 @@ export default function MurderMysteryTableExperience({
   const isSmall = useMediaQuery(theme.breakpoints.down('md'));
   const tableRef = useRef<HTMLDivElement | null>(null);
   const phaseScrollRef = useRef<HTMLDivElement | null>(null);
+  const investigationTargetTileRefs = useRef<
+    Record<string, HTMLElement | null>
+  >({});
   const seatPositionsRef = useRef<Record<string, MurderMysterySeatPosition>>(
     {}
   );
@@ -3483,6 +4045,14 @@ export default function MurderMysteryTableExperience({
     snapshot.investigation.rounds.find(
       (round) => round.round === activeRound
     ) ?? null;
+  const mapTargetPins = useMemo(
+    () =>
+      buildInvestigationMapTargetPins(
+        activeRoundView?.targets,
+        snapshot.investigation.map?.hotspots
+      ),
+    [activeRoundView?.targets, snapshot.investigation.map?.hotspots]
+  );
   const canActNow = Boolean(snapshot.investigation.turn?.canActNow);
   const isMapInvestigationPhase =
     phaseKind === 'investigate' &&
@@ -3676,6 +4246,25 @@ export default function MurderMysteryTableExperience({
     }
     openCardViewer(pinnedClue.sourceId, pinnedClueCards, pinnedCard);
   }, [openCardViewer, pinnedCard, pinnedClue, pinnedClueCards]);
+  const setInvestigationTargetTileRef = useCallback(
+    (targetId: string, element: HTMLElement | null) => {
+      if (element) {
+        investigationTargetTileRefs.current[targetId] = element;
+        return;
+      }
+      delete investigationTargetTileRefs.current[targetId];
+    },
+    []
+  );
+  const selectInvestigationMapTarget = useCallback((targetId: string) => {
+    setIsMapDialogOpen(false);
+    window.setTimeout(() => {
+      investigationTargetTileRefs.current[targetId]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }, 80);
+  }, []);
   const closeTopModalFromHistory = useCallback(() => {
     if (pendingSpecialEventAction) {
       setPendingSpecialEventAction(null);
@@ -4195,36 +4784,8 @@ export default function MurderMysteryTableExperience({
     const targetGroups = activeRoundView
       ? buildInvestigationTargetGroups(activeRoundView.targets)
       : [];
-    const targetById = new Map(
-      activeRoundView?.targets.map((target) => [target.id, target] as const) ??
-        []
-    );
     const mapView = snapshot.investigation.map;
-    const mapHotspots =
-      mapView?.hotspots.filter((hotspot) => targetById.has(hotspot.targetId)) ??
-      [];
-    const hotspotByTargetId = new Map(
-      mapHotspots.map((hotspot) => [hotspot.targetId, hotspot] as const)
-    );
-    const mapMatTargets = (
-      activeRoundView?.targets
-        .filter((target) => target.targetType === 'location')
-        .map((target) => {
-          const hotspot = hotspotByTargetId.get(target.id);
-          return hotspot ? { target, hotspot } : null;
-        })
-        .filter(Boolean) as Array<{
-        target: MurderMysteryInvestigationTargetView;
-        hotspot: (typeof mapHotspots)[number];
-      }>
-    )
-      .sort(
-        (a, b) =>
-          (a.target.order ?? Number.MAX_SAFE_INTEGER) -
-            (b.target.order ?? Number.MAX_SAFE_INTEGER) ||
-          a.target.label.localeCompare(b.target.label)
-      )
-      .map((entry, index) => ({ ...entry, matNumber: index + 1 }));
+    const mapMatTargets = mapTargetPins;
     const mappedTargetIds = new Set(
       mapMatTargets.map((entry) => entry.target.id)
     );
@@ -4547,6 +5108,9 @@ export default function MurderMysteryTableExperience({
             <Box
               component="button"
               type="button"
+              ref={(element: HTMLButtonElement | null) =>
+                setInvestigationTargetTileRef(target.id, element)
+              }
               disabled={targetDisabled}
               onClick={() => handleBackChoice(firstBack)}
               sx={{
@@ -4563,17 +5127,23 @@ export default function MurderMysteryTableExperience({
       }
 
       return (
-        <Box key={target.id} sx={compactTileSx}>
+        <Box
+          key={target.id}
+          ref={(element: HTMLDivElement | null) =>
+            setInvestigationTargetTileRef(target.id, element)
+          }
+          sx={compactTileSx}
+        >
           {tileBody}
         </Box>
       );
     };
 
     return (
-      <Stack spacing={1.6}>
+      <Stack spacing={{ xs: 0.95, md: 1.6 }}>
         <Stack
           direction={{ xs: 'column', md: 'row' }}
-          spacing={1.4}
+          spacing={{ xs: 0.75, md: 1.4 }}
           alignItems={{ xs: 'stretch', md: 'center' }}
         >
           <Box sx={{ flex: 1 }}>
@@ -4670,9 +5240,10 @@ export default function MurderMysteryTableExperience({
         ) : null}
 
         {mapView?.scene && activeRoundView ? (
-          <Stack spacing={1.1}>
+          <Stack spacing={{ xs: 0.75, md: 1.1 }}>
             <Box
               sx={{
+                display: { xs: 'none', md: 'block' },
                 position: 'relative',
                 p: 0.7,
                 borderRadius: 2.2,
@@ -4765,8 +5336,8 @@ export default function MurderMysteryTableExperience({
 
             <Box
               sx={{
-                p: 0.85,
-                borderRadius: 2.2,
+                p: { xs: 0.65, md: 0.85 },
+                borderRadius: { xs: 1.6, md: 2.2 },
                 border: '1px solid rgba(245,197,66,0.28)',
                 background:
                   'linear-gradient(180deg, rgba(24, 31, 29, 0.96), rgba(8, 13, 15, 0.98))',
@@ -4844,7 +5415,7 @@ export default function MurderMysteryTableExperience({
                         sx={{
                           display: 'grid',
                           gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                          gap: 0.55,
+                          gap: { xs: 0.45, md: 0.55 },
                         }}
                       >
                         {group.targets.map(({ matNumber, target }) =>
@@ -6065,6 +6636,15 @@ export default function MurderMysteryTableExperience({
 
       {renderFloatingActionDock()}
       <ClueTakeOverlay notice={clueTakeNotice} />
+      {isSmall &&
+      isMapInvestigationPhase &&
+      snapshot.investigation.map?.scene ? (
+        <InvestigationMapFab
+          scene={snapshot.investigation.map.scene}
+          bottomOffset={hasOpenModal ? 96 : 154}
+          onOpen={() => setIsMapDialogOpen(true)}
+        />
+      ) : null}
       {isSmall && pinnedCard && !selectedCard ? (
         <PinnedClueFab
           card={pinnedCard}
@@ -6134,7 +6714,9 @@ export default function MurderMysteryTableExperience({
       <MapFullscreenDialog
         open={isMapDialogOpen}
         scene={snapshot.investigation.map?.scene ?? null}
+        pins={isMapInvestigationPhase ? mapTargetPins : []}
         fullScreen={isSmall}
+        onSelectPin={selectInvestigationMapTarget}
         onClose={() => setIsMapDialogOpen(false)}
       />
       <SpecialEventConfirmDialog
