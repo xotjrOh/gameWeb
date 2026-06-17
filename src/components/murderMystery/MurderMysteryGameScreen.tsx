@@ -15,10 +15,7 @@ import useUpdateSocketId from '@/hooks/useUpdateSocketId';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useCustomSnackbar } from '@/hooks/useCustomSnackbar';
 import { getKakaoShareErrorMessage, shareKakaoText } from '@/lib/kakaoShare';
-import {
-  MurderMysterySeatPosition,
-  MurderMysterySpecialEventOutcome,
-} from '@/types/murderMystery';
+import { MurderMysterySpecialEventOutcome } from '@/types/murderMystery';
 
 interface MurderMysteryGameScreenProps {
   roomId: string;
@@ -382,17 +379,6 @@ export default function MurderMysteryGameScreen({
     );
   };
 
-  const handleUpdateSeatPosition = (
-    playerId: string,
-    position: MurderMysterySeatPosition
-  ) =>
-    emitWithAckResult('mm_update_seat_position', {
-      roomId,
-      sessionId,
-      playerId,
-      position,
-    });
-
   if (!snapshot) {
     return (
       <Box sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
@@ -430,7 +416,6 @@ export default function MurderMysteryGameScreen({
       onSubmitRolePreferences={handleSubmitRolePreferences}
       onClearRolePreferences={handleClearRolePreferences}
       onShareRoleSheet={handleShareRoleSheet}
-      onUpdateSeatPosition={handleUpdateSeatPosition}
       onSubmitInvestigationByTarget={handleSubmitInvestigationByTarget}
       onSubmitInvestigationByBack={handleSubmitInvestigationByBack}
       onSetReservation={handleSetInvestigationReservation}

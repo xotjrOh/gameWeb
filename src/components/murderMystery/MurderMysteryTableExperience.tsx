@@ -64,7 +64,6 @@ import {
   MurderMysteryPublicScriptView,
   MurderMysteryReportableSpecialEventView,
   MurderMysteryRoleSheetView,
-  MurderMysterySeatPosition,
   MurderMysterySpecialEventOutcome,
   MurderMysteryStateSnapshot,
   MurderMysteryStepKind,
@@ -84,10 +83,6 @@ interface MurderMysteryTableExperienceProps {
   onSubmitRolePreferences: (roleIds: string[]) => void;
   onClearRolePreferences: () => void;
   onShareRoleSheet: (roleId: string) => void;
-  onUpdateSeatPosition: (
-    playerId: string,
-    position: MurderMysterySeatPosition
-  ) => Promise<boolean>;
   onSubmitInvestigationByTarget: (targetId: string) => void;
   onSubmitInvestigationByBack: (backId: string) => void;
   onSetReservation: (backId: string) => void;
@@ -250,15 +245,6 @@ const ROLE_RANK_COLORS = [
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
 
-const RECTANGULAR_SEAT_POSITIONS: MurderMysterySeatPosition[] = [
-  { x: 50, y: 18 },
-  { x: 24, y: 82 },
-  { x: 76, y: 82 },
-  { x: 24, y: 18 },
-  { x: 76, y: 18 },
-  { x: 50, y: 88 },
-];
-
 const formatSeconds = (seconds: number | null) => {
   if (seconds === null) {
     return '--:--';
@@ -290,69 +276,6 @@ const splitScenarioTitle = (title: string) => {
     mainTitle: normalizedTitle.slice(0, separatorIndex).trim(),
     subtitle: normalizedTitle.slice(separatorIndex + 1).trim() || null,
   };
-};
-
-const buildDefaultLayout = (playerIds: string[]) => {
-  const count = Math.max(playerIds.length, 1);
-  return playerIds.reduce<Record<string, MurderMysterySeatPosition>>(
-    (acc, playerId, index) => {
-      if (count <= RECTANGULAR_SEAT_POSITIONS.length) {
-        acc[playerId] =
-          RECTANGULAR_SEAT_POSITIONS[index] ?? RECTANGULAR_SEAT_POSITIONS[0];
-        return acc;
-      }
-
-      const angle = -Math.PI / 2 + (2 * Math.PI * index) / count;
-      acc[playerId] = {
-        x: 50 + Math.cos(angle) * 39,
-        y: 50 + Math.sin(angle) * 32,
-      };
-      return acc;
-    },
-    {}
-  );
-};
-
-const mergeLayout = (
-  playerIds: string[],
-  savedLayout: Record<string, MurderMysterySeatPosition> | null
-) => {
-  const defaults = buildDefaultLayout(playerIds);
-  return playerIds.reduce<Record<string, MurderMysterySeatPosition>>(
-    (acc, playerId) => {
-      const saved = savedLayout?.[playerId];
-      acc[playerId] = saved
-        ? {
-            x: clamp(saved.x, 8, 92),
-            y: clamp(saved.y, 10, 90),
-          }
-        : defaults[playerId];
-      return acc;
-    },
-    {}
-  );
-};
-
-const getSeatRelationLabel = (
-  position: MurderMysterySeatPosition,
-  isSelf: boolean
-) => {
-  if (isSelf) {
-    return '내 자리';
-  }
-  if (position.y < 35) {
-    return '맞은편';
-  }
-  if (position.y > 66) {
-    return '내 근처';
-  }
-  if (position.x < 38) {
-    return '왼쪽';
-  }
-  if (position.x > 62) {
-    return '오른쪽';
-  }
-  return '대각선';
 };
 
 const getCardSourceText = (card: AnyClueCard) => {
@@ -865,7 +788,13 @@ const FloatingActionDock = ({
   </Box>
 );
 
-const ClueTakeOverlay = ({ notice }: { notice: ClueTakeNotice | null }) => {
+const ClueTakeOverlay = ({
+  notice,
+  topOffset,
+}: {
+  notice: ClueTakeNotice | null;
+  topOffset: { xs: number; md: number };
+}) => {
   if (!notice) {
     return null;
   }
@@ -876,7 +805,7 @@ const ClueTakeOverlay = ({ notice }: { notice: ClueTakeNotice | null }) => {
         position: 'fixed',
         left: { xs: 10, md: '50%' },
         right: { xs: 10, md: 'auto' },
-        top: { xs: 72, md: 78 },
+        top: { xs: topOffset.xs, md: topOffset.md },
         transform: { xs: 'none', md: 'translateX(-50%)' },
         zIndex: 1600,
         width: { xs: 'auto', md: 'min(720px, calc(100vw - 320px))' },
@@ -1913,7 +1842,7 @@ const HeldCardBackFace = ({
   </Box>
 );
 
-const SeatHeldCardBackStack = ({
+const PlayerHeldCardBackStack = ({
   backs,
   publicCount,
   isHighlighted,
@@ -1928,7 +1857,7 @@ const SeatHeldCardBackStack = ({
 
   const visibleBacks = backs.slice(0, 3);
   const remainingCount = Math.max(backs.length - visibleBacks.length, 0);
-  const stackWidth = 38 + Math.max(visibleBacks.length - 1, 0) * 11;
+  const stackWidth = 23 + Math.max(visibleBacks.length - 1, 0) * 8;
   const backSummary =
     backs.length > 0
       ? backs
@@ -1939,10 +1868,9 @@ const SeatHeldCardBackStack = ({
   return (
     <Stack
       direction="row"
-      spacing={0.45}
+      spacing={0.35}
       alignItems="center"
-      justifyContent="center"
-      sx={{ mt: 0.35, minHeight: 34 }}
+      sx={{ mt: 0.15, minHeight: 19 }}
     >
       {visibleBacks.length > 0 ? (
         <Tooltip
@@ -1953,7 +1881,7 @@ const SeatHeldCardBackStack = ({
             sx={{
               position: 'relative',
               width: stackWidth,
-              height: 30,
+              height: 20,
               flex: '0 0 auto',
             }}
           >
@@ -1962,10 +1890,10 @@ const SeatHeldCardBackStack = ({
                 key={back.backId}
                 sx={{
                   position: 'absolute',
-                  left: index * 11,
-                  top: index % 2 === 0 ? 0 : 2,
-                  width: 30,
-                  height: 30,
+                  left: index * 8,
+                  top: index % 2 === 0 ? 0 : 1,
+                  width: 20,
+                  height: 20,
                   borderRadius: 0.8,
                   overflow: 'hidden',
                   border: isHighlighted
@@ -2009,7 +1937,7 @@ const SeatHeldCardBackStack = ({
                     fontWeight={950}
                     sx={{
                       maxWidth: '100%',
-                      fontSize: 8.5,
+                      fontSize: 7,
                       lineHeight: 1,
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
@@ -2025,10 +1953,10 @@ const SeatHeldCardBackStack = ({
               <Box
                 sx={{
                   position: 'absolute',
-                  right: -7,
-                  bottom: -3,
-                  minWidth: 19,
-                  height: 19,
+                  right: -8,
+                  bottom: -4,
+                  minWidth: 17,
+                  height: 17,
                   px: 0.35,
                   borderRadius: 999,
                   display: 'grid',
@@ -2036,7 +1964,7 @@ const SeatHeldCardBackStack = ({
                   backgroundColor: isHighlighted ? '#f5c542' : '#111827',
                   color: isHighlighted ? '#2a231a' : '#fff',
                   border: '1px solid rgba(255,255,255,0.78)',
-                  fontSize: 10,
+                  fontSize: 9,
                   fontWeight: 950,
                   boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
                 }}
@@ -2053,18 +1981,18 @@ const SeatHeldCardBackStack = ({
           icon={<IosShareIcon />}
           label={publicCount}
           sx={{
-            height: 20,
-            minWidth: 34,
+            height: 18,
+            minWidth: 30,
             backgroundColor: 'rgba(236, 253, 245, 0.96)',
             color: '#166534',
             fontWeight: 950,
             '& .MuiChip-icon': {
-              width: 13,
-              height: 13,
+              width: 11,
+              height: 11,
               ml: 0.45,
               color: '#166534',
             },
-            '& .MuiChip-label': { px: 0.55 },
+            '& .MuiChip-label': { px: 0.5, fontSize: 10 },
           }}
         />
       ) : null}
@@ -2072,37 +2000,19 @@ const SeatHeldCardBackStack = ({
   );
 };
 
-const SeatMarker = ({
+const PlayerMarkerButton = ({
   player,
   isSelf,
-  canDrag,
   isClueTakeHighlighted,
   turnOrderMarker,
-  position,
-  isDragging,
-  onPointerDown,
-  onPointerMove,
-  onPointerUp,
+  onSelect,
 }: {
   player: MurderMysteryPublicPlayerView;
   isSelf: boolean;
-  canDrag: boolean;
   isClueTakeHighlighted: boolean;
   turnOrderMarker?: TurnOrderMarker;
-  position: MurderMysterySeatPosition;
-  isDragging: boolean;
-  onPointerDown: (
-    event: React.PointerEvent<HTMLDivElement>,
-    playerId: string
-  ) => void;
-  onPointerMove: (event: React.PointerEvent<HTMLDivElement>) => void;
-  onPointerUp: (event: React.PointerEvent<HTMLDivElement>) => void;
+  onSelect: (playerId: string) => void;
 }) => {
-  const visualPosition = {
-    x: clamp(position.x, 14, 86),
-    y: clamp(position.y, 14, 86),
-  };
-  const relationLabel = getSeatRelationLabel(visualPosition, isSelf);
   const publicBackIds = new Set(
     player.publicRevealedClues
       .map((card) => card.backId)
@@ -2111,279 +2021,228 @@ const SeatMarker = ({
   const privateCardBacks = player.heldCardBacks.filter(
     (back) => !publicBackIds.has(back.backId)
   );
+  const displayLabel = formatParticipantLabel(player);
+  const connectionLabel = player.socketId ? '연결됨' : '미접속';
 
   return (
-    <Box
-      onPointerDown={(event) => onPointerDown(event, player.id)}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      sx={{
-        position: 'absolute',
-        left: `${visualPosition.x}%`,
-        top: `${visualPosition.y}%`,
-        width: { xs: 106, md: 124 },
-        transform: 'translate(-50%, -50%)',
-        zIndex: isDragging ? 6 : isSelf ? 5 : 4,
-        touchAction: 'none',
-        cursor: canDrag ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
-        userSelect: 'none',
-      }}
+    <Tooltip
+      title={`${displayLabel} · ${connectionLabel} · 공개 ${player.publicRevealedClues.length}장 · 비공개 ${privateCardBacks.length}장`}
     >
-      {turnOrderMarker ? (
-        <Tooltip
-          title={
-            turnOrderMarker.isCurrent
-              ? '지금 조사 차례'
-              : `${turnOrderMarker.rank}번째로 남은 조사 차례`
-          }
-        >
-          <Box
-            sx={{
-              position: 'absolute',
-              top: -10,
-              right: -8,
-              zIndex: 2,
-              width: 28,
-              height: 28,
-              borderRadius: '50%',
-              display: 'grid',
-              placeItems: 'center',
-              border: '2px solid rgba(255,255,255,0.92)',
-              backgroundColor: turnOrderMarker.isCurrent
-                ? '#f5c542'
-                : '#2563eb',
-              color: turnOrderMarker.isCurrent ? '#241706' : '#fff',
-              boxShadow: '0 8px 18px rgba(0,0,0,0.36)',
-              fontWeight: 950,
-            }}
-          >
-            {turnOrderMarker.rank}
-          </Box>
-        </Tooltip>
-      ) : null}
       <Box
+        component="button"
+        type="button"
+        aria-label={`${displayLabel} 플레이어 단서 열기`}
+        onClick={() => onSelect(player.id)}
         sx={{
+          position: 'relative',
+          width: { xs: 132, md: 148 },
+          minWidth: { xs: 132, md: 148 },
+          height: { xs: 50, md: 54 },
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0.65,
+          px: 0.65,
+          py: 0.45,
           borderRadius: 999,
           border: isSelf
             ? '2px solid rgba(245, 197, 66, 0.98)'
             : isClueTakeHighlighted
               ? '2px solid rgba(142, 202, 230, 0.98)'
-              : '1px solid rgba(255,255,255,0.3)',
-          background:
-            'linear-gradient(180deg, rgba(247,243,231,0.98), rgba(224,214,190,0.96))',
+              : '1px solid rgba(255,255,255,0.28)',
+          background: isSelf
+            ? 'linear-gradient(180deg, rgba(255,249,229,0.98), rgba(225,210,169,0.98))'
+            : 'linear-gradient(180deg, rgba(247,243,231,0.98), rgba(224,214,190,0.96))',
           color: '#2a231a',
-          boxShadow: isDragging
-            ? '0 14px 34px rgba(0,0,0,0.42)'
-            : isClueTakeHighlighted
-              ? '0 0 0 4px rgba(142,202,230,0.18), 0 14px 34px rgba(0,0,0,0.42)'
-              : '0 8px 20px rgba(0,0,0,0.28)',
-          px: 1,
-          py: 0.7,
+          boxShadow: isClueTakeHighlighted
+            ? '0 0 0 4px rgba(142,202,230,0.18), 0 8px 20px rgba(0,0,0,0.3)'
+            : '0 6px 16px rgba(0,0,0,0.24)',
+          cursor: 'pointer',
+          userSelect: 'none',
+          font: 'inherit',
+          textAlign: 'left',
+          transition:
+            'transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease',
+          '&:hover': {
+            transform: 'translateY(-1px)',
+            boxShadow:
+              '0 0 0 3px rgba(245,197,66,0.13), 0 10px 24px rgba(0,0,0,0.32)',
+          },
+          '&:focus-visible': {
+            outline: '2px solid rgba(245,197,66,0.98)',
+            outlineOffset: 2,
+          },
         }}
       >
-        <Stack direction="row" spacing={0.7} alignItems="center">
-          <Box
+        <Box sx={{ position: 'relative', flex: '0 0 auto' }}>
+          <CharacterPortraitFrame
+            src={player.rolePortraitSrc ?? undefined}
+            alt={player.rolePortraitAlt ?? undefined}
+            label={player.roleDisplayName ?? player.name}
+            variant="thumbnail"
             sx={{
-              width: 8,
-              height: 8,
+              width: { xs: 35, md: 38 },
+              boxShadow: '0 4px 10px rgba(0,0,0,0.2)',
+            }}
+          />
+          <Box
+            aria-hidden
+            sx={{
+              position: 'absolute',
+              right: -2,
+              bottom: 1,
+              width: 9,
+              height: 9,
               borderRadius: '50%',
-              flex: '0 0 auto',
               backgroundColor: player.socketId ? '#2e7d32' : '#9e9e9e',
+              border: '1px solid rgba(255,255,255,0.92)',
               boxShadow: player.socketId
                 ? '0 0 0 3px rgba(46,125,50,0.18)'
                 : 'none',
             }}
           />
-          <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography
-              variant="caption"
-              fontWeight={950}
+          {turnOrderMarker ? (
+            <Box
+              aria-label={
+                turnOrderMarker.isCurrent
+                  ? '지금 조사 차례'
+                  : `${turnOrderMarker.rank}번째 조사 차례`
+              }
               sx={{
-                display: 'block',
-                lineHeight: 1.1,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
+                position: 'absolute',
+                top: -6,
+                right: -8,
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                display: 'grid',
+                placeItems: 'center',
+                border: '1px solid rgba(255,255,255,0.92)',
+                backgroundColor: turnOrderMarker.isCurrent
+                  ? '#f5c542'
+                  : '#2563eb',
+                color: turnOrderMarker.isCurrent ? '#241706' : '#fff',
+                boxShadow: '0 5px 12px rgba(0,0,0,0.28)',
+                fontSize: 10,
+                fontWeight: 950,
               }}
             >
-              {player.name}
-            </Typography>
+              {turnOrderMarker.rank}
+            </Box>
+          ) : null}
+        </Box>
+        <Box sx={{ minWidth: 0, flex: 1 }}>
+          <Typography
+            component="span"
+            fontWeight={950}
+            sx={{
+              display: 'block',
+              lineHeight: 1.08,
+              fontSize: { xs: 11.5, md: 12.5 },
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {player.roleDisplayName ?? player.name}
+          </Typography>
+          <Stack direction="row" spacing={0.45} alignItems="center">
             <Typography
-              variant="caption"
+              component="span"
               sx={{
-                display: 'block',
+                minWidth: 0,
                 color: '#6f5635',
-                lineHeight: 1.1,
+                fontSize: 10.5,
+                fontWeight: 850,
+                lineHeight: 1.12,
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
               }}
             >
-              {player.roleDisplayName ?? relationLabel}
+              {isSelf ? '나' : player.name}
             </Typography>
-          </Box>
-        </Stack>
+            {isClueTakeHighlighted ? (
+              <Box
+                component="span"
+                sx={{
+                  px: 0.4,
+                  borderRadius: 999,
+                  backgroundColor: '#dff6ff',
+                  color: '#075985',
+                  fontSize: 8.5,
+                  fontWeight: 950,
+                  lineHeight: 1.45,
+                }}
+              >
+                NEW
+              </Box>
+            ) : null}
+          </Stack>
+          <PlayerHeldCardBackStack
+            backs={privateCardBacks}
+            publicCount={player.publicRevealedClues.length}
+            isHighlighted={isClueTakeHighlighted}
+          />
+        </Box>
       </Box>
-      <SeatHeldCardBackStack
-        backs={privateCardBacks}
-        publicCount={player.publicRevealedClues.length}
-        isHighlighted={isClueTakeHighlighted}
-      />
-      <Typography
-        variant="caption"
-        sx={{
-          display: 'block',
-          mt: 0.25,
-          textAlign: 'center',
-          color: isSelf ? '#f5c542' : '#d8d0bd',
-          fontWeight: 900,
-          lineHeight: 1,
-          textShadow: '0 1px 4px rgba(0,0,0,0.55)',
-        }}
-      >
-        {relationLabel}
-      </Typography>
-    </Box>
+    </Tooltip>
   );
 };
 
-const SeatTable = ({
+const PlayerMarkerRail = ({
   players,
   sessionId,
-  positions,
-  tableRef,
-  canEdit,
-  isCompact,
   clueTakeHighlightPlayerId,
   turnOrderMarkers,
-  draggingPlayerId,
-  onPointerDown,
-  onPointerMove,
-  onPointerUp,
+  onSelectPlayer,
 }: {
   players: MurderMysteryPublicPlayerView[];
   sessionId: string;
-  positions: Record<string, MurderMysterySeatPosition>;
-  tableRef: React.RefObject<HTMLDivElement>;
-  canEdit: boolean;
-  isCompact: boolean;
   clueTakeHighlightPlayerId: string | null;
   turnOrderMarkers: Record<string, TurnOrderMarker>;
-  draggingPlayerId: string | null;
-  onPointerDown: (
-    event: React.PointerEvent<HTMLDivElement>,
-    playerId: string
-  ) => void;
-  onPointerMove: (event: React.PointerEvent<HTMLDivElement>) => void;
-  onPointerUp: (event: React.PointerEvent<HTMLDivElement>) => void;
-}) => {
-  const defaultPositions = useMemo(
-    () => buildDefaultLayout(players.map((player) => player.id)),
-    [players]
-  );
-
-  return (
-    <Box
+  onSelectPlayer: (playerId: string) => void;
+}) => (
+  <Box
+    aria-label="플레이어 단서 바로가기"
+    sx={{
+      position: 'relative',
+      zIndex: 2,
+      px: { xs: 0.8, md: 1.4 },
+      py: { xs: 0.55, md: 0.65 },
+      borderBottom: '1px solid rgba(255,255,255,0.13)',
+      backgroundColor: 'rgba(9, 18, 19, 0.94)',
+      boxShadow: '0 8px 20px rgba(0,0,0,0.18)',
+    }}
+  >
+    <Stack
+      direction="row"
+      spacing={0.7}
+      alignItems="center"
       sx={{
-        borderRadius: 3,
-        border: '1px solid rgba(255,255,255,0.14)',
-        backgroundColor: 'rgba(10, 18, 20, 0.82)',
-        boxShadow: '0 16px 40px rgba(0,0,0,0.26)',
-        p: { xs: 1.1, md: 1.35 },
+        minHeight: { xs: 50, md: 54 },
+        overflowX: 'auto',
+        overflowY: 'hidden',
+        scrollbarWidth: 'thin',
+        '&::-webkit-scrollbar': { height: 4 },
+        '&::-webkit-scrollbar-thumb': {
+          backgroundColor: 'rgba(248,241,222,0.28)',
+          borderRadius: 999,
+        },
       }}
     >
-      <Stack spacing={1}>
-        <Stack direction="row" alignItems="center" spacing={1}>
-          <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography fontWeight={950}>
-              {canEdit ? '자리 맞추기' : '테이블 자리'}
-            </Typography>
-            <Typography variant="caption" sx={{ color: '#d8d0bd' }}>
-              {canEdit
-                ? '자기 토큰을 직사각형 테이블 위 실제 자리감에 맞추세요.'
-                : Object.keys(turnOrderMarkers).length > 0
-                  ? '좌석 숫자 1~3은 지금부터 남은 조사 순서입니다.'
-                  : '좌석을 누르면 공개정보와 카드 상태를 볼 수 있습니다.'}
-            </Typography>
-          </Box>
-        </Stack>
-
-        <Box
-          ref={tableRef}
-          sx={{
-            position: 'relative',
-            height: isCompact ? { xs: 142, md: 166 } : { xs: 226, md: 270 },
-            borderRadius: 5,
-            overflow: 'visible',
-            background:
-              'linear-gradient(135deg, rgba(113, 82, 49, 0.9), rgba(58, 74, 60, 0.82) 46%, rgba(30, 42, 38, 0.92))',
-            border: '1px solid rgba(255,255,255,0.16)',
-            boxShadow:
-              'inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -18px 34px rgba(0,0,0,0.22)',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              inset: '18% 15%',
-              borderRadius: 4,
-              background:
-                'linear-gradient(180deg, rgba(248,241,222,0.12), rgba(248,241,222,0.05))',
-              border: '1px dashed rgba(247,241,222,0.38)',
-              pointerEvents: 'none',
-            },
-            '&::after': {
-              content: '""',
-              position: 'absolute',
-              inset: 10,
-              borderRadius: 4,
-              border: '1px solid rgba(0,0,0,0.2)',
-              pointerEvents: 'none',
-            },
-          }}
-        >
-          <Box
-            sx={{
-              position: 'absolute',
-              left: '50%',
-              top: '50%',
-              width: { xs: '48%', md: '52%' },
-              height: { xs: '30%', md: '34%' },
-              transform: 'translate(-50%, -50%)',
-              borderRadius: 4,
-              backgroundColor: 'rgba(247, 241, 222, 0.12)',
-              border: '1px dashed rgba(247,241,222,0.42)',
-              display: 'grid',
-              placeItems: 'center',
-              pointerEvents: 'none',
-            }}
-          >
-            <Typography
-              variant="caption"
-              fontWeight={950}
-              sx={{ color: 'rgba(248,241,222,0.76)' }}
-            >
-              MYSTERY TABLE
-            </Typography>
-          </Box>
-          {players.map((player) => (
-            <SeatMarker
-              key={player.id}
-              player={player}
-              isSelf={player.id === sessionId}
-              canDrag={canEdit && player.id === sessionId}
-              isClueTakeHighlighted={clueTakeHighlightPlayerId === player.id}
-              turnOrderMarker={turnOrderMarkers[player.id]}
-              position={positions[player.id] ?? defaultPositions[player.id]}
-              isDragging={draggingPlayerId === player.id}
-              onPointerDown={onPointerDown}
-              onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp}
-            />
-          ))}
-        </Box>
-      </Stack>
-    </Box>
-  );
-};
+      {players.map((player) => (
+        <PlayerMarkerButton
+          key={player.id}
+          player={player}
+          isSelf={player.id === sessionId}
+          isClueTakeHighlighted={clueTakeHighlightPlayerId === player.id}
+          turnOrderMarker={turnOrderMarkers[player.id]}
+          onSelect={onSelectPlayer}
+        />
+      ))}
+    </Stack>
+  </Box>
+);
 
 const RolePublicCoverCard = ({
   cover,
@@ -3033,20 +2892,24 @@ const PublicCoverDialog = ({
   isSelf,
   canOpenRulebook,
   fullScreen,
+  selfPrivateCards,
   onClose,
   onOpenRulebook,
   onOpenPrivateCards,
   onOpenCard,
+  onOpenSelfPrivateCard,
 }: {
   open: boolean;
   player: MurderMysteryPublicPlayerView | null;
   isSelf: boolean;
   canOpenRulebook: boolean;
   fullScreen: boolean;
+  selfPrivateCards: MurderMysteryClueVaultCardView[];
   onClose: () => void;
   onOpenRulebook: () => void;
   onOpenPrivateCards: () => void;
   onOpenCard: (card: AnyClueCard) => void;
+  onOpenSelfPrivateCard: (card: AnyClueCard) => void;
 }) => {
   const publicBackIds = new Set(
     (player?.publicRevealedClues ?? [])
@@ -3056,6 +2919,11 @@ const PublicCoverDialog = ({
   const privateCardBacks =
     player?.heldCardBacks.filter((back) => !publicBackIds.has(back.backId)) ??
     [];
+  const visibleSelfPrivateCards = isSelf ? selfPrivateCards : [];
+  const publicClueCount = player?.publicRevealedClues.length ?? 0;
+  const privateClueCount = isSelf
+    ? Math.max(visibleSelfPrivateCards.length, privateCardBacks.length)
+    : privateCardBacks.length;
 
   return (
     <Dialog
@@ -3069,7 +2937,7 @@ const PublicCoverDialog = ({
         <Stack direction="row" alignItems="center" spacing={1}>
           <AutoStoriesIcon />
           <Typography fontWeight={900} sx={{ flex: 1 }}>
-            좌석 카드
+            플레이어 단서
           </Typography>
           <IconButton onClick={onClose}>
             <CloseIcon />
@@ -3104,31 +2972,14 @@ const PublicCoverDialog = ({
                   label={player?.socketId ? '연결' : '대기'}
                   color={player?.socketId ? 'success' : 'default'}
                 />
-                <Chip size="small" label={`공개 ${publicBackIds.size}장`} />
-                <Chip
-                  size="small"
-                  label={`비공개 ${privateCardBacks.length}장`}
-                />
+                <Chip size="small" label={`공개 ${publicClueCount}장`} />
+                <Chip size="small" label={`비공개 ${privateClueCount}장`} />
               </Stack>
             </Box>
           </Stack>
           <Stack spacing={1}>
-            <Typography fontWeight={900}>캐릭터 공개정보</Typography>
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: 1,
-                backgroundColor: 'rgba(85, 64, 37, 0.08)',
-                whiteSpace: 'pre-wrap',
-                lineHeight: 1.7,
-              }}
-            >
-              {player?.rolePublicText ?? '게임 시작 후 공개 정보가 표시됩니다.'}
-            </Box>
-          </Stack>
-          <Stack spacing={1}>
             <Typography fontWeight={900}>
-              공개 카드 {player?.publicRevealedClues.length ?? 0}장
+              공개 카드 {publicClueCount}장
             </Typography>
             {player?.publicRevealedClues.length ? (
               <Box
@@ -3150,16 +3001,34 @@ const PublicCoverDialog = ({
               </Box>
             ) : (
               <Typography variant="body2" color="text.secondary">
-                아직 이 자리에 공개 카드가 없습니다.
+                아직 이 플레이어에게 공개 카드가 없습니다.
               </Typography>
             )}
           </Stack>
           <Box sx={{ height: 1, backgroundColor: 'rgba(0,0,0,0.08)' }} />
           <Stack spacing={1}>
             <Typography fontWeight={900}>
-              비공개 카드 {privateCardBacks.length}장
+              {isSelf ? '내 비공개 카드' : '비공개 카드'} {privateClueCount}장
             </Typography>
-            {privateCardBacks.length ? (
+            {visibleSelfPrivateCards.length ? (
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(112px, 112px))',
+                  gap: 1,
+                  alignItems: 'start',
+                }}
+              >
+                {visibleSelfPrivateCards.map((card) => (
+                  <EvidenceCardFace
+                    key={`self:private:${card.id}`}
+                    card={card}
+                    dense
+                    onOpen={onOpenSelfPrivateCard}
+                  />
+                ))}
+              </Box>
+            ) : privateCardBacks.length ? (
               <Box
                 sx={{
                   display: 'grid',
@@ -3177,9 +3046,23 @@ const PublicCoverDialog = ({
               </Box>
             ) : (
               <Typography variant="body2" color="text.secondary">
-                아직 이 자리에 비공개 카드가 없습니다.
+                아직 이 플레이어에게 비공개 카드가 없습니다.
               </Typography>
             )}
+          </Stack>
+          <Stack spacing={1}>
+            <Typography fontWeight={900}>캐릭터 공개정보</Typography>
+            <Box
+              sx={{
+                p: 2,
+                borderRadius: 1,
+                backgroundColor: 'rgba(85, 64, 37, 0.08)',
+                whiteSpace: 'pre-wrap',
+                lineHeight: 1.7,
+              }}
+            >
+              {player?.rolePublicText ?? '게임 시작 후 공개 정보가 표시됩니다.'}
+            </Box>
           </Stack>
           {isSelf ? (
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
@@ -3915,7 +3798,6 @@ export default function MurderMysteryTableExperience({
   onSubmitRolePreferences,
   onClearRolePreferences,
   onShareRoleSheet,
-  onUpdateSeatPosition,
   onSubmitInvestigationByTarget,
   onSubmitInvestigationByBack,
   onSetReservation,
@@ -3928,34 +3810,18 @@ export default function MurderMysteryTableExperience({
 }: MurderMysteryTableExperienceProps) {
   const theme = useTheme();
   const isSmall = useMediaQuery(theme.breakpoints.down('md'));
-  const tableRef = useRef<HTMLDivElement | null>(null);
   const phaseScrollRef = useRef<HTMLDivElement | null>(null);
   const investigationTargetTileRefs = useRef<
     Record<string, HTMLElement | null>
   >({});
-  const seatPositionsRef = useRef<Record<string, MurderMysterySeatPosition>>(
-    {}
-  );
   const previousHeldBackIdsByPlayerRef = useRef<Record<
     string,
     Set<string>
   > | null>(null);
-  const dragStateRef = useRef<{
-    playerId: string;
-    pointerId: number;
-    startX: number;
-    startY: number;
-    moved: boolean;
-    canDrag: boolean;
-  } | null>(null);
   const modalHistoryDepthRef = useRef(0);
   const openModalCountRef = useRef(0);
   const suppressModalPopCountRef = useRef(0);
   const previousPhaseRef = useRef(snapshot.phase);
-  const [seatPositions, setSeatPositions] = useState<
-    Record<string, MurderMysterySeatPosition>
-  >({});
-  const [draggingPlayerId, setDraggingPlayerId] = useState<string | null>(null);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [isRulebookOpen, setIsRulebookOpen] = useState(false);
   const [isPublicScriptsOpen, setIsPublicScriptsOpen] = useState(false);
@@ -3976,7 +3842,6 @@ export default function MurderMysteryTableExperience({
   >([]);
   const selectedCard = cardViewer?.cards[cardViewer.index] ?? null;
 
-  const playerIdsKey = snapshot.players.map((player) => player.id).join('|');
   const roleIdsKey = snapshot.roleSelection.roles
     .map((role) => role.id)
     .join('|');
@@ -4121,11 +3986,11 @@ export default function MurderMysteryTableExperience({
     snapshot.investigation.turn?.currentPlayerId
   );
   const canUseHostTools = isHostView;
-  const canEditSeatLayout = snapshot.phase === 'LOBBY';
   const hasRequiredPlayerCount =
     snapshot.hostParticipation.currentPlayerCount >=
     snapshot.hostParticipation.requiredPlayerCount;
   const isRoleSelectionLocked = snapshot.roleSelection.status === 'locked';
+  const shouldShowPlayerMarkerRail = isRoleSelectionLocked;
   const showNextPhaseTool =
     canUseHostTools &&
     phaseKind !== 'lobby' &&
@@ -4469,18 +4334,6 @@ export default function MurderMysteryTableExperience({
   }, [snapshot.phase]);
 
   useEffect(() => {
-    seatPositionsRef.current = seatPositions;
-  }, [seatPositions]);
-
-  useEffect(() => {
-    const playerIds = playerIdsKey ? playerIdsKey.split('|') : [];
-    if (dragStateRef.current?.canDrag) {
-      return;
-    }
-    setSeatPositions(mergeLayout(playerIds, snapshot.seatLayoutByPlayerId));
-  }, [playerIdsKey, snapshot.seatLayoutByPlayerId]);
-
-  useEffect(() => {
     const roleIds = roleIdsKey ? roleIdsKey.split('|') : [];
     const ownPreferenceIds = ownPreferenceIdsKey
       ? ownPreferenceIdsKey.split('|')
@@ -4511,89 +4364,6 @@ export default function MurderMysteryTableExperience({
       });
       return normalized.slice(0, scenarioRoleIds.length);
     });
-  };
-
-  const updateSeatPositionFromPointer = (
-    playerId: string,
-    event: React.PointerEvent<HTMLDivElement>
-  ) => {
-    const rect = tableRef.current?.getBoundingClientRect();
-    if (!rect) {
-      return;
-    }
-    const x = clamp(((event.clientX - rect.left) / rect.width) * 100, 14, 86);
-    const y = clamp(((event.clientY - rect.top) / rect.height) * 100, 14, 86);
-    setSeatPositions((current) => ({
-      ...current,
-      [playerId]: { x, y },
-    }));
-  };
-
-  const handleSeatPointerDown = (
-    event: React.PointerEvent<HTMLDivElement>,
-    playerId: string
-  ) => {
-    if ((event.target as HTMLElement).closest('[data-seat-action]')) {
-      return;
-    }
-    const canDrag = canEditSeatLayout && playerId === sessionId;
-    event.currentTarget.setPointerCapture(event.pointerId);
-    dragStateRef.current = {
-      playerId,
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      moved: false,
-      canDrag,
-    };
-    if (canDrag) {
-      setDraggingPlayerId(playerId);
-    }
-  };
-
-  const handleSeatPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    const state = dragStateRef.current;
-    if (!state || state.pointerId !== event.pointerId) {
-      return;
-    }
-    const distance = Math.hypot(
-      event.clientX - state.startX,
-      event.clientY - state.startY
-    );
-    if (distance > 3 && state.canDrag) {
-      state.moved = true;
-      updateSeatPositionFromPointer(state.playerId, event);
-    }
-  };
-
-  const handleSeatPointerUp = async (
-    event: React.PointerEvent<HTMLDivElement>
-  ) => {
-    const state = dragStateRef.current;
-    if (!state || state.pointerId !== event.pointerId) {
-      return;
-    }
-    event.currentTarget.releasePointerCapture(event.pointerId);
-    if (!state.moved) {
-      setSelectedPlayerId(state.playerId);
-    }
-    if (state.moved && state.canDrag) {
-      const nextPosition = seatPositionsRef.current[state.playerId];
-      if (nextPosition) {
-        const success = await onUpdateSeatPosition(
-          state.playerId,
-          nextPosition
-        );
-        if (!success) {
-          const playerIds = playerIdsKey ? playerIdsKey.split('|') : [];
-          setSeatPositions(
-            mergeLayout(playerIds, snapshot.seatLayoutByPlayerId)
-          );
-        }
-      }
-    }
-    dragStateRef.current = null;
-    setDraggingPlayerId(null);
   };
 
   const renderIntroArea = () => {
@@ -6342,11 +6112,10 @@ export default function MurderMysteryTableExperience({
       return (
         <Stack spacing={1.5}>
           <Typography variant="h5" fontWeight={950}>
-            자리와 닉네임 확인
+            플레이어 확인
           </Typography>
           <Typography sx={{ color: '#d8d0bd' }}>
-            위쪽 자리 맞추기 테이블에서 자기 토큰을 움직여 실제 자리감을
-            맞추세요.
+            참가자 연결 상태를 확인하고 원하는 캐릭터 선택 순위를 정하세요.
           </Typography>
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
             {snapshot.players.map((player) => (
@@ -6548,6 +6317,16 @@ export default function MurderMysteryTableExperience({
         </Stack>
       </Box>
 
+      {shouldShowPlayerMarkerRail ? (
+        <PlayerMarkerRail
+          players={snapshot.players}
+          sessionId={sessionId}
+          clueTakeHighlightPlayerId={clueTakeNotice?.playerId ?? null}
+          turnOrderMarkers={turnOrderMarkers}
+          onSelectPlayer={setSelectedPlayerId}
+        />
+      ) : null}
+
       <Box
         component="main"
         sx={{
@@ -6559,11 +6338,11 @@ export default function MurderMysteryTableExperience({
           gridTemplateColumns: {
             xs: 'minmax(0, 1fr)',
             lg: isMapInvestigationPhase
-              ? '230px minmax(0, 1fr) 210px'
-              : '280px minmax(0, 1fr) 260px',
+              ? 'minmax(0, 1fr) 210px'
+              : 'minmax(0, 1fr) 260px',
           },
           gridTemplateRows: {
-            xs: 'auto minmax(0, 1fr)',
+            xs: 'minmax(0, 1fr)',
             lg: 'minmax(0, 1fr)',
           },
           gap: { xs: 1, lg: 1.4 },
@@ -6572,37 +6351,11 @@ export default function MurderMysteryTableExperience({
           overflow: 'hidden',
         }}
       >
-        <Stack
-          spacing={1}
-          sx={{
-            gridColumn: { xs: '1', lg: '1' },
-            gridRow: { xs: '1', lg: '1' },
-            minHeight: 0,
-            overflow: { xs: 'visible', lg: 'auto' },
-            pr: { lg: 0.2 },
-          }}
-        >
-          <SeatTable
-            players={snapshot.players}
-            sessionId={sessionId}
-            positions={seatPositions}
-            tableRef={tableRef}
-            canEdit={canEditSeatLayout}
-            isCompact={phaseKind !== 'lobby'}
-            clueTakeHighlightPlayerId={clueTakeNotice?.playerId ?? null}
-            turnOrderMarkers={turnOrderMarkers}
-            draggingPlayerId={draggingPlayerId}
-            onPointerDown={handleSeatPointerDown}
-            onPointerMove={handleSeatPointerMove}
-            onPointerUp={handleSeatPointerUp}
-          />
-        </Stack>
-
         <Box
           ref={phaseScrollRef}
           sx={{
-            gridColumn: { xs: '1', lg: '2' },
-            gridRow: { xs: '2', lg: '1' },
+            gridColumn: { xs: '1', lg: '1' },
+            gridRow: { xs: '1', lg: '1' },
             minHeight: 0,
             borderRadius: 4,
             border: '1px solid rgba(255,255,255,0.18)',
@@ -6628,7 +6381,7 @@ export default function MurderMysteryTableExperience({
           <Stack
             spacing={1}
             sx={{
-              gridColumn: { lg: '3' },
+              gridColumn: { lg: '2' },
               gridRow: { lg: '1' },
               alignSelf: 'end',
             }}
@@ -6672,7 +6425,13 @@ export default function MurderMysteryTableExperience({
       ) : null}
 
       {renderFloatingActionDock()}
-      <ClueTakeOverlay notice={clueTakeNotice} />
+      <ClueTakeOverlay
+        notice={clueTakeNotice}
+        topOffset={{
+          xs: shouldShowPlayerMarkerRail ? 118 : 60,
+          md: shouldShowPlayerMarkerRail ? 126 : 66,
+        }}
+      />
       {isSmall &&
       isMapInvestigationPhase &&
       snapshot.investigation.map?.scene ? (
@@ -6696,6 +6455,7 @@ export default function MurderMysteryTableExperience({
         isSelf={selectedPlayer?.id === sessionId}
         canOpenRulebook={Boolean(snapshot.roleSheet)}
         fullScreen={isSmall}
+        selfPrivateCards={snapshot.clueVault.myClues}
         onClose={() => setSelectedPlayerId(null)}
         onOpenRulebook={() => {
           setSelectedPlayerId(null);
@@ -6711,6 +6471,9 @@ export default function MurderMysteryTableExperience({
             selectedPlayer?.publicRevealedClues ?? [],
             card
           )
+        }
+        onOpenSelfPrivateCard={(card) =>
+          openCardViewer('my-clues', snapshot.clueVault.myClues, card)
         }
       />
       <RulebookModal
