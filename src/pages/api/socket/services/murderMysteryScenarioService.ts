@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import YAML from 'yaml';
 import {
+  MurderMysteryEndbookEvidenceSourceType,
   MurderMysteryFlowStepScenario,
   MurderMysteryInvestigationLayoutSection,
   MurderMysteryInvestigationRound,
@@ -1493,6 +1494,111 @@ const normalizeEndbookSections = ({
   });
 };
 
+const toEndbookEvidenceSourceType = (
+  value: unknown
+): MurderMysteryEndbookEvidenceSourceType | undefined => {
+  if (
+    value === 'investigation_card' ||
+    value === 'role_sheet' ||
+    value === 'public_script'
+  ) {
+    return value;
+  }
+  return undefined;
+};
+
+const normalizeEndbookEvidenceQna = (
+  rawEvidenceQna: unknown,
+  fileName: string
+): MurderMysteryScenario['endbook']['evidenceQna'] => {
+  if (rawEvidenceQna === undefined) {
+    return undefined;
+  }
+
+  const evidenceRecord = requireRecord(
+    rawEvidenceQna,
+    `${fileName}: endbook.evidenceQna must be object`
+  );
+  assertCondition(
+    Array.isArray(evidenceRecord.items),
+    `${fileName}: endbook.evidenceQna.items must be array`
+  );
+
+  return {
+    title: asNonEmptyString(evidenceRecord.title),
+    description: asNonEmptyString(evidenceRecord.description),
+    items: (evidenceRecord.items as unknown[]).map((rawItem, itemIndex) => {
+      const itemRecord = requireRecord(
+        rawItem,
+        `${fileName}: endbook.evidenceQna.items[${itemIndex}] must be object`
+      );
+      const itemId = requireString(
+        itemRecord.id,
+        `${fileName}: endbook.evidenceQna.items[${itemIndex}].id is required`
+      );
+      assertCondition(
+        Array.isArray(itemRecord.evidenceRefs),
+        `${fileName}: endbook.evidenceQna.item(${itemId}).evidenceRefs must be array`
+      );
+
+      return {
+        id: itemId,
+        question: requireString(
+          itemRecord.question,
+          `${fileName}: endbook.evidenceQna.item(${itemId}).question is required`
+        ),
+        answer: requireString(
+          itemRecord.answer,
+          `${fileName}: endbook.evidenceQna.item(${itemId}).answer is required`
+        ),
+        evidenceRefs: (itemRecord.evidenceRefs as unknown[]).map(
+          (rawRef, refIndex) => {
+            const refRecord = requireRecord(
+              rawRef,
+              `${fileName}: endbook.evidenceQna.item(${itemId}).evidenceRefs[${refIndex}] must be object`
+            );
+            const refId = requireString(
+              refRecord.id,
+              `${fileName}: endbook.evidenceQna.item(${itemId}).evidenceRefs[${refIndex}].id is required`
+            );
+            const sourceType = toEndbookEvidenceSourceType(
+              refRecord.sourceType
+            );
+            assertCondition(
+              sourceType,
+              `${fileName}: endbook.evidenceQna.ref(${itemId}.${refId}).sourceType is invalid`
+            );
+
+            return {
+              id: refId,
+              sourceType: sourceType as NonNullable<typeof sourceType>,
+              label: requireString(
+                refRecord.label,
+                `${fileName}: endbook.evidenceQna.ref(${itemId}.${refId}).label is required`
+              ),
+              sourceName: requireString(
+                refRecord.sourceName,
+                `${fileName}: endbook.evidenceQna.ref(${itemId}.${refId}).sourceName is required`
+              ),
+              excerpt: requireString(
+                refRecord.excerpt,
+                `${fileName}: endbook.evidenceQna.ref(${itemId}.${refId}).excerpt is required`
+              ),
+              inference: requireString(
+                refRecord.inference,
+                `${fileName}: endbook.evidenceQna.ref(${itemId}.${refId}).inference is required`
+              ),
+              cardId: asNonEmptyString(refRecord.cardId),
+              roleId: asNonEmptyString(refRecord.roleId),
+              stepId: asNonEmptyString(refRecord.stepId),
+            };
+          }
+        ),
+      };
+    }),
+  };
+};
+
 const normalizeScenarioSchema = (
   rawScenario: unknown,
   fileName: string
@@ -1637,6 +1743,10 @@ const normalizeScenarioSchema = (
         rawSections: endbookRecord.sections,
         fileName,
       }),
+      evidenceQna: normalizeEndbookEvidenceQna(
+        endbookRecord.evidenceQna,
+        fileName
+      ),
     },
   };
 };
@@ -2168,6 +2278,48 @@ const validateScenarioSchema = (
     );
     endbookSectionIds.add(section.id);
     validateEndbookCondition(`endbook section(${section.id})`, section.when);
+  });
+
+  const evidenceQnaIds = new Set<string>();
+  scenario.endbook.evidenceQna?.items.forEach((item) => {
+    assertCondition(
+      !evidenceQnaIds.has(item.id),
+      `${fileName}: duplicated endbook evidenceQna item id (${item.id})`
+    );
+    evidenceQnaIds.add(item.id);
+    assertCondition(
+      item.evidenceRefs.length > 0,
+      `${fileName}: endbook evidenceQna item(${item.id}) requires evidenceRefs`
+    );
+
+    const evidenceRefIds = new Set<string>();
+    item.evidenceRefs.forEach((ref) => {
+      assertCondition(
+        !evidenceRefIds.has(ref.id),
+        `${fileName}: duplicated endbook evidenceQna ref id (${item.id}.${ref.id})`
+      );
+      evidenceRefIds.add(ref.id);
+
+      if (ref.sourceType === 'investigation_card') {
+        assertCondition(
+          ref.cardId && cardIds.has(ref.cardId),
+          `${fileName}: endbook evidenceQna ref(${item.id}.${ref.id}) references unknown card (${ref.cardId})`
+        );
+      }
+      if (ref.sourceType === 'role_sheet') {
+        assertCondition(
+          ref.roleId &&
+            (roleIds.has(ref.roleId) || publicCoverIds.has(ref.roleId)),
+          `${fileName}: endbook evidenceQna ref(${item.id}.${ref.id}) references unknown role/publicCover (${ref.roleId})`
+        );
+      }
+      if (ref.sourceType === 'public_script') {
+        assertCondition(
+          ref.stepId && stepIds.has(ref.stepId),
+          `${fileName}: endbook evidenceQna ref(${item.id}.${ref.id}) references unknown flow step (${ref.stepId})`
+        );
+      }
+    });
   });
 
   scenario.roles.forEach((role) => {

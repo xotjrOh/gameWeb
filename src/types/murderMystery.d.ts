@@ -263,6 +263,36 @@ export interface MurderMysteryEndbookSectionScenario {
   when?: MurderMysteryEndbookConditionScenario;
 }
 
+export type MurderMysteryEndbookEvidenceSourceType =
+  | 'investigation_card'
+  | 'role_sheet'
+  | 'public_script';
+
+export interface MurderMysteryEndbookEvidenceReferenceScenario {
+  id: string;
+  sourceType: MurderMysteryEndbookEvidenceSourceType;
+  label: string;
+  sourceName: string;
+  excerpt: string;
+  inference: string;
+  cardId?: string;
+  roleId?: string;
+  stepId?: string;
+}
+
+export interface MurderMysteryEndbookEvidenceQnaItemScenario {
+  id: string;
+  question: string;
+  answer: string;
+  evidenceRefs: MurderMysteryEndbookEvidenceReferenceScenario[];
+}
+
+export interface MurderMysteryEndbookEvidenceQnaScenario {
+  title?: string;
+  description?: string;
+  items: MurderMysteryEndbookEvidenceQnaItemScenario[];
+}
+
 export interface MurderMysteryScenario {
   id: string;
   title: string;
@@ -296,6 +326,7 @@ export interface MurderMysteryScenario {
     title?: string;
     variants: MurderMysteryEndbookVariantScenario[];
     sections: MurderMysteryEndbookSectionScenario[];
+    evidenceQna?: MurderMysteryEndbookEvidenceQnaScenario;
   };
 }
 
@@ -593,6 +624,7 @@ export interface MurderMysteryEndbookView {
   id: string;
   title: string;
   body: string;
+  evidenceQna?: MurderMysteryEndbookEvidenceQnaScenario;
   choiceSummaries: MurderMysteryEndbookChoiceSummaryView[];
   alternateOutcomes: MurderMysteryEndbookAlternateOutcomeView[];
 }

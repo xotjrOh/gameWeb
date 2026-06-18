@@ -338,6 +338,7 @@ for (const entry of registry.scenarios) {
 
   const flowSteps = normalizeFlowSteps(scenario, roundValues);
   const flowKinds = new Set();
+  const stepIds = new Set();
   const investigateRounds = new Set();
 
   for (const step of flowSteps) {
@@ -345,6 +346,10 @@ for (const entry of registry.scenarios) {
     if (!step.id || !kind) {
       fail(`${entry.file}: flow.steps id/kind is invalid`);
     }
+    if (stepIds.has(step.id)) {
+      fail(`${entry.file}: duplicated flow step id (${step.id})`);
+    }
+    stepIds.add(step.id);
     flowKinds.add(kind);
 
     if (kind === 'investigate' || kind === 'discuss') {
@@ -400,7 +405,9 @@ for (const entry of registry.scenarios) {
     ? scenario.endbook.sections
     : [];
   if (endbookVariants.length === 0 && endbookSections.length === 0) {
-    fail(`${entry.file}: endbook.variants or endbook.sections must be non-empty`);
+    fail(
+      `${entry.file}: endbook.variants or endbook.sections must be non-empty`
+    );
   }
 
   const roleIds = new Set(scenario.roles.map((role) => role.id));
@@ -413,8 +420,8 @@ for (const entry of registry.scenarios) {
       }
     }
   }
+  const publicCoverIds = new Set();
   if (Array.isArray(scenario.publicCovers)) {
-    const publicCoverIds = new Set();
     for (const [index, cover] of scenario.publicCovers.entries()) {
       if (!cover.id || !cover.displayName || !cover.publicText) {
         fail(
@@ -474,11 +481,18 @@ for (const entry of registry.scenarios) {
   const endingChoiceOptionIds = new Map();
   if (Array.isArray(scenario.endingChoices)) {
     if (scenario.endingChoices.length > 0 && !flowKinds.has('ending_choice')) {
-      fail(`${entry.file}: flow requires ending_choice when endingChoices exist`);
+      fail(
+        `${entry.file}: flow requires ending_choice when endingChoices exist`
+      );
     }
     const endingChoiceIds = new Set();
     for (const choice of scenario.endingChoices) {
-      if (!choice.id || !choice.roleId || !choice.label || !choice.description) {
+      if (
+        !choice.id ||
+        !choice.roleId ||
+        !choice.label ||
+        !choice.description
+      ) {
         fail(`${entry.file}: endingChoice fields are required`);
       }
       if (endingChoiceIds.has(choice.id)) {
@@ -505,7 +519,9 @@ for (const entry of registry.scenarios) {
       const optionIds = new Set();
       for (const option of choice.options) {
         if (!option.id || !option.label) {
-          fail(`${entry.file}: endingChoice(${choice.id}) option fields are required`);
+          fail(
+            `${entry.file}: endingChoice(${choice.id}) option fields are required`
+          );
         }
         if (optionIds.has(option.id)) {
           fail(
@@ -567,6 +583,76 @@ for (const entry of registry.scenarios) {
     }
     endbookSectionIds.add(section.id);
     validateEndbookCondition(`endbook section(${section.id})`, section.when);
+  }
+
+  const evidenceQnaItems = Array.isArray(scenario.endbook?.evidenceQna?.items)
+    ? scenario.endbook.evidenceQna.items
+    : [];
+  const evidenceQnaIds = new Set();
+  for (const item of evidenceQnaItems) {
+    if (!item.id || !item.question || !item.answer) {
+      fail(`${entry.file}: endbook evidenceQna item fields are required`);
+    }
+    if (evidenceQnaIds.has(item.id)) {
+      fail(
+        `${entry.file}: duplicated endbook evidenceQna item id (${item.id})`
+      );
+    }
+    evidenceQnaIds.add(item.id);
+    if (!Array.isArray(item.evidenceRefs) || item.evidenceRefs.length === 0) {
+      fail(
+        `${entry.file}: endbook evidenceQna item(${item.id}) evidenceRefs are required`
+      );
+    }
+
+    const evidenceRefIds = new Set();
+    for (const ref of item.evidenceRefs) {
+      if (
+        !ref.id ||
+        !ref.sourceType ||
+        !ref.label ||
+        !ref.sourceName ||
+        !ref.excerpt ||
+        !ref.inference
+      ) {
+        fail(
+          `${entry.file}: endbook evidenceQna ref(${item.id}) fields are required`
+        );
+      }
+      if (evidenceRefIds.has(ref.id)) {
+        fail(
+          `${entry.file}: duplicated endbook evidenceQna ref id (${item.id}.${ref.id})`
+        );
+      }
+      evidenceRefIds.add(ref.id);
+
+      if (ref.sourceType === 'investigation_card') {
+        if (!ref.cardId || !cardIds.has(ref.cardId)) {
+          fail(
+            `${entry.file}: endbook evidenceQna ref(${item.id}.${ref.id}) references unknown card (${ref.cardId})`
+          );
+        }
+      } else if (ref.sourceType === 'role_sheet') {
+        if (
+          !ref.roleId ||
+          (!roleIds.has(ref.roleId) && !publicCoverIds.has(ref.roleId))
+        ) {
+          fail(
+            `${entry.file}: endbook evidenceQna ref(${item.id}.${ref.id}) references unknown role/publicCover (${ref.roleId})`
+          );
+        }
+      } else if (ref.sourceType === 'public_script') {
+        if (!ref.stepId || !stepIds.has(ref.stepId)) {
+          fail(
+            `${entry.file}: endbook evidenceQna ref(${item.id}.${ref.id}) references unknown flow step (${ref.stepId})`
+          );
+        }
+      } else {
+        fail(
+          `${entry.file}: endbook evidenceQna ref(${item.id}.${ref.id}) sourceType is invalid`
+        );
+      }
+    }
   }
 
   if (Array.isArray(scenario.initialRoleCards)) {

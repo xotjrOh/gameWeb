@@ -1572,6 +1572,351 @@ endingChoices:
 
 endbook:
   title: '토끼와 거북이'
+  evidenceQna:
+    title: '판단근거 Q&A'
+    description: '단서 칩을 누르면 원문과 판단 연결을 다시 확인할 수 있습니다.'
+    items:
+      - id: qna_death_method
+        question: '오완주는 어떻게 죽었나?'
+        answer: |
+          프롤로그 지문을 보면 재활수조실은 단수 상태였고, 「어린이용 수조」와 「성인용 수조」를 보면 현장에 깊은 물은 없었다. 하지만 「세탁실에 붙어있는 안내문」대로 높낮이를 활용하면 어린이용 수조의 얕은 물도 아래로 옮길 수 있고, 「파란통」 내부가 젖어 있었다는 점에서 물받는 용도로 쓰였음을 추정할 수 있다. 마찬가지로 「호스」도 젖어 있었고 「젖은 구두 자국」이 남아 있으므로, 누군가 물을 옮겨 오완주의 얼굴을 일시적으로 잠기게 한 뒤 현장을 정리했다고 볼 수 있다.
+        evidenceRefs:
+          - id: prologue_water_cutoff
+            sourceType: public_script
+            stepId: INTRO
+            label: '프롤로그'
+            sourceName: '지문 · 프롤로그'
+            excerpt: |
+              그날 재활수조실은 단수 상태였다. 한쪽 수조에는 3cm 남짓한 물만 남아 있었고, 다른 한쪽 수조는 비어 있었다.
+            inference: |
+              현장에 새 물이 들어오지 않았고, 깊은 물이 남아 있지 않았다는 출발점이다.
+          - id: child_tank
+            sourceType: investigation_card
+            cardId: card_child_tank_waterline
+            label: '어린이용 수조'
+            sourceName: '조사 카드 · 어린이용 수조'
+            excerpt: |
+              수조 벽면에 크기가 적혀있다. 6m × 3m, 높이 50cm다. 약 3cm의 물이 차있고, 벽면에 젖은 자국을 보니 물이 줄거나 늘어나지는 않은 것 같다.
+            inference: |
+              물은 얕지만 넓게 남아 있어, 다른 용기에 옮기면 일시적으로 사용할 수 있는 양이 된다.
+          - id: adult_tank
+            sourceType: investigation_card
+            cardId: card_adult_tank_specs
+            label: '성인용 수조'
+            sourceName: '조사 카드 · 성인용 수조'
+            excerpt: |
+              옆면 표기는 6m × 10m, 높이 120cm다. 사건 직후 물은 거의 없고 벽면에 젖은 자국이 없는 걸 보니 물은 원래 비어 있던 게 맞는 것 같다.
+            inference: |
+              오완주가 성인용 수조에 빠진 것이 아니라, 별도로 옮긴 물이 쓰였다는 방향으로 좁힌다.
+          - id: siphon_guide
+            sourceType: investigation_card
+            cardId: card_siphon_guide
+            label: '세탁실에 붙어있는 안내문'
+            sourceName: '조사 카드 · 세탁실에 붙어있는 안내문'
+            excerpt: |
+              큰 통의 액체를 작은 용기에 옮길 때는, 튜브 안을 먼저 액체로 채운 뒤 낮은 쪽 용기로 내리라고 적혀 있다.
+            inference: |
+              수조와 용기의 높낮이를 이용해 전기나 수도 없이 물을 옮기는 방법을 제시한다.
+          - id: towel_bin
+            sourceType: investigation_card
+            cardId: card_towel_bin
+            label: '파란통'
+            sourceName: '조사 카드 · 파란통'
+            excerpt: |
+              축축한 수건들이 담겨 있어서 그런지 내부에 물기가 맺혀 있다. 입구의 지름은 45cm, 높이 약 50cm다.
+            inference: |
+              통 내부가 젖어 있어 수건 회수뿐 아니라 물받이로 쓰였다고 볼 수 있다.
+          - id: rubber_hose
+            sourceType: investigation_card
+            cardId: card_rubber_hose
+            label: '호스'
+            sourceName: '조사 카드 · 호스'
+            excerpt: |
+              고무호스가 길게 말려 있다. 펼치면 길이가 약 5m, 직경은 2.3cm이고, 물기가 묻어 있다.
+            inference: |
+              물이 묻은 긴 호스는 어린이용 수조의 물을 파란통으로 옮기는 도구로 연결된다.
+          - id: wet_shoeprints
+            sourceType: investigation_card
+            cardId: card_wet_shoeprints
+            label: '젖은 구두 자국'
+            sourceName: '조사 카드 · 젖은 구두 자국'
+            excerpt: |
+              재활수조실 바닥 곳곳에 젖은 구두 자국이 흐리게 남아 있다. 어린이용 수조 턱 아래에는 발자국과 겹치지 않는 작고 둥근 물자국도 하나 남아 있다.
+            inference: |
+              물을 옮기거나 처리한 사람이 현장에서 움직였고, 그 흔적이 구두 자국으로 남았다.
+      - id: qna_yuseong_drug_not_killer
+        question: '윤유성은 왜 최종 살해자가 아닌가?'
+        answer: |
+          「윤유성 소지품 1」의 흰 가루·쓴 냄새·빠진 고무패킹과 「아내토끼 소지품 1」의 젖은 고무링은 윤유성이 약을 탄 보온병을 썼다는 쪽으로 이어진다. 윤유성 룰지를 보면 실제로 오완주에게 약을 먹이고 쓰러지는 것까지 보지만, 그는 별똥별을 보고 멈춘 뒤 서류봉투와 보온병만 챙겨 나간다. 한다정 룰지에는 그 뒤 재활수조실에 남은 오완주와 다가오는 딱딱한 발소리가 나오므로, 윤유성은 약을 먹였지만 최종 살해자는 아니라고 정리된다.
+        evidenceRefs:
+          - id: black_thermos
+            sourceType: investigation_card
+            cardId: card_black_thermos
+            label: '윤유성 소지품 1'
+            sourceName: '조사 카드 · 윤유성 소지품 1'
+            excerpt: |
+              보온병에 고무패킹이 빠져 있다. 보온병 안쪽에는 씁쓸한 냄새가 희미하게 남아 있다. 바닥에는 녹다 만 흰 가루 흔적이 조금 붙어 있다.
+            inference: |
+              윤유성이 약을 탄 보온병을 사용했다는 직접적인 물증이다.
+          - id: rubber_ring
+            sourceType: investigation_card
+            cardId: card_rubber_ring
+            label: '아내토끼 소지품 1'
+            sourceName: '조사 카드 · 아내토끼 소지품 1'
+            excerpt: |
+              작고 하얀 고무링이 나왔다. 표면이 살짝 젖어 있고, 씁쓸한 냄새가 희미하게 난다. 다른 물건에 들어가는 고무패킹으로 보인다.
+            inference: |
+              보온병의 빠진 고무패킹과 이어져 윤유성의 약물 행동을 보강한다.
+          - id: rabbit_husband_rule
+            sourceType: role_sheet
+            roleId: rabbit_husband
+            label: '윤유성'
+            sourceName: '룰지 · 윤유성'
+            excerpt: |
+              오완주가 02:24에 쓰러진 뒤, 윤유성은 목 쪽으로 손을 뻗으려다 별똥별을 보고 멈춘다. 그는 서류봉투를 집고, 수조 턱 아래로 굴러간 보온병과 뚜껑을 주워 방을 나왔다.
+            inference: |
+              윤유성은 약을 먹인 인물이지만, 쓰러진 뒤 숨을 끊는 단계에서 멈췄다.
+          - id: wife_rule_after_yuseong
+            sourceType: role_sheet
+            roleId: wife_npc
+            label: '한다정'
+            sourceName: '룰지 · 한다정'
+            excerpt: |
+              한다정은 재활수조실에서 오완주가 쓰러져 있고 서류봉투와 보온병이 사라진 것을 본다. 이어 수조 턱 아래의 하얀 고무링을 주운 직후, 안쪽 통로 위편에서 딱딱한 발소리가 내려온다.
+            inference: |
+              윤유성이 나간 뒤에도 현장에 들어오는 다른 인물이 있었음을 보여준다.
+      - id: qna_heesu_target
+        question: '조희수의 주사기는 누구를 노린 것인가?'
+        answer: |
+          「조희수 소지품 1」은 그가 진정제와 주사기를 가지고 있었음을 보여주지만, 「의료동 간이책상 1」과 조희수 룰지를 보면 그 분노의 대상은 오완주가 아니라 서기준이었다. 조희수 룰지에서 그는 비품 정리실에 숨어 서기준을 기다렸고, 발소리가 문 앞을 지나 재활수조실 쪽으로 가자 계속 주사기를 쥔 채 기다린다. 따라서 주사기는 오완주 살해도구가 아니라 서기준을 노린 준비물로 보는 것이 맞다.
+        evidenceRefs:
+          - id: syringe_trace
+            sourceType: investigation_card
+            cardId: card_syringe_trace
+            label: '조희수 소지품 1'
+            sourceName: '조사 카드 · 조희수 소지품 1'
+            excerpt: |
+              조희수의 품 속에서 손수건에 감긴 일회용 주사기와 빈 약병이 함께 나왔다. 주사기 안에는 투명한 액체가 차 있다. 약병 라벨에는 "진정제"라고 적혀 있고, 병에는 피가 조금 묻어 있다.
+            inference: |
+              조희수가 약물을 준비했다는 사실은 맞지만, 대상은 별도로 확인해야 한다.
+          - id: medical_desk_photo
+            sourceType: investigation_card
+            cardId: card_medical_desk_photo
+            label: '의료동 간이책상 1'
+            sourceName: '조사 카드 · 의료동 간이책상 1'
+            excerpt: |
+              덜 닫혀 있는 간이책상의 맨 아래 서랍을 열자 이상한 철판 하나와 빈 봉투 몇 개, 그리고 폴라로이드 사진이 발견되었다.
+            inference: |
+              조희수가 의료동에서 서기준의 과거와 정바른 사건을 확인하는 단서로 이어진다.
+          - id: fox_rule_motive
+            sourceType: role_sheet
+            roleId: fox
+            label: '조희수'
+            sourceName: '룰지 · 조희수'
+            excerpt: |
+              조희수는 폴라로이드 사진 아래의 보고서 하단에서 서기준의 이름을 본다. 이후 의료동의 진정제 약병과 주사기를 손수건에 감아 품에 넣는다.
+            inference: |
+              주사기를 챙긴 동기는 오완주가 아니라 서기준에게 향한다.
+          - id: fox_rule_waiting
+            sourceType: role_sheet
+            roleId: fox
+            label: '조희수'
+            sourceName: '룰지 · 조희수'
+            excerpt: |
+              조희수는 비품 정리실에서 약물이 든 주사기를 쥔 채 기다린다. 발소리는 문 앞을 지나쳤고, 맞은편 어딘가에서 문이 열리는 듯한 둔한 소리가 났다.
+            inference: |
+              조희수는 서기준을 찌르려 기다렸지만, 재활수조실로 들어간 사람은 따로 있었다.
+      - id: qna_culprit_route
+        question: '왜 최종 범인은 서기준으로 좁혀지는가?'
+        answer: |
+          「젖은 구두 자국」은 물을 다룬 사람이 딱딱한 구두굽을 신었음을 말하지만, 현재 네 사람 중 그런 신발을 신고 있는 사람은 없었다. 「의료동 입구 신발장 1/2」를 보면 젖은 구두가 숨겨지고 환자 운동화가 사라졌으며, 1라운드 조사 전 지문에서는 비명 직후 서기준이 의료동으로 뛰어가 의사를 데려온다. 한다정 룰지와 조희수 룰지의 딱딱한 발소리도 오완주가 쓰러진 뒤 들어온 제3자를 가리키므로, 구두를 숨기고 운동화로 갈아 신을 동선은 서기준에게 좁혀진다.
+        evidenceRefs:
+          - id: wet_shoeprints
+            sourceType: investigation_card
+            cardId: card_wet_shoeprints
+            label: '젖은 구두 자국'
+            sourceName: '조사 카드 · 젖은 구두 자국'
+            excerpt: |
+              발자국은 재활수조실 문턱을 지나 ㄱ자로 꺾이는 복도까지 이어진다. 주변을 둘러봤지만 지금 딱딱한 구두굽을 신고 있는 사람은 없다.
+            inference: |
+              범행 당시의 신발과 현재 신발이 달라졌다는 점이 핵심이다.
+          - id: medical_shoe_cabinet_1
+            sourceType: investigation_card
+            cardId: card_medical_shoe_cabinet_1
+            label: '의료동 입구 신발장 1'
+            sourceName: '조사 카드 · 의료동 입구 신발장 1'
+            excerpt: |
+              의료동 입구 신발장 깊숙한 칸 안쪽에 젖은 구두 한 켤레가 놓여 있다.
+            inference: |
+              젖은 구두를 숨긴 장소가 의료동 동선과 연결된다.
+          - id: medical_shoe_cabinet_2
+            sourceType: investigation_card
+            cardId: card_medical_shoe_cabinet_2
+            label: '의료동 입구 신발장 2'
+            sourceName: '조사 카드 · 의료동 입구 신발장 2'
+            excerpt: |
+              병원 슬리퍼를 신은 환자 한 명이 의료동 입구에서 본인이 신고 왔던 운동화가 없어졌다고 말한다.
+            inference: |
+              젖은 구두를 벗은 뒤 다른 운동화로 갈아 신은 정황을 만든다.
+          - id: round1_briefing
+            sourceType: public_script
+            stepId: ROUND1_BRIEFING
+            label: '1라운드 조사 전 지문'
+            sourceName: '지문 · 1라운드 조사 전 지문'
+            excerpt: |
+              서기준은 곧바로 직원들에게 재활수조실 앞 복도를 막고 윤유성을 찾아오라고 지시한 뒤, 의료동으로 뛰어가 의사들에게 상황을 전했습니다.
+            inference: |
+              서기준은 비명 직후 의료동으로 이동할 명분과 동선을 가진다.
+          - id: wife_rule_footsteps
+            sourceType: role_sheet
+            roleId: wife_npc
+            label: '한다정'
+            sourceName: '룰지 · 한다정'
+            excerpt: |
+              한다정은 고무링을 주운 직후 안쪽 통로 위편에서 딱딱한 발소리가 내려오는 것을 듣고 비품 정리실로 숨는다.
+            inference: |
+              윤유성 이후 재활수조실 쪽으로 들어온 제3자의 존재를 보강한다.
+          - id: fox_rule_footsteps
+            sourceType: role_sheet
+            roleId: fox
+            label: '조희수'
+            sourceName: '룰지 · 조희수'
+            excerpt: |
+              조희수는 비품 정리실 안쪽 문 너머에서 딱딱한 발소리를 듣는다. 발소리는 문 앞을 지나쳤고, 곧 맞은편 어딘가에서 문이 열리는 듯한 둔한 소리가 났다.
+            inference: |
+              발소리의 인물은 비품 정리실에 들어온 것이 아니라 재활수조실로 향했다.
+      - id: qna_jara_motive
+        question: '서기준은 왜 이런 일을 벌였나?'
+        answer: |
+          「서기준의 소지품」에는 행사 뒤 의료동 일정과 회복 음료 확인 메모가 있고, 「의료동 간이책상 2」에는 윤유성과 윤슬의 건강기록 비교 자료가 있다. 여기에 「용왕에 대한 소문2」의 병환과 「용궁섬에 대한 소문3」의 사망자 발생 시 배편 정지 조건을 합치면, 서기준은 윤유성을 섬과 의료동에 묶어 둘 필요가 있었다. 오완주가 죽으면 윤유성은 강한 용의자가 되므로, 살인은 윤유성을 움직이지 못하게 만드는 명분이 된다.
+        evidenceRefs:
+          - id: jara_belongings
+            sourceType: investigation_card
+            cardId: card_jara_belongings
+            label: '서기준의 소지품'
+            sourceName: '조사 카드 · 서기준의 소지품'
+            excerpt: |
+              행사 진행표 아래쪽에는 개인 메모처럼 보이는 작은 일정이 적혀 있다. "행사 종료 후 21:40 의료동 일정 / 회복 음료 확인"
+            inference: |
+              서기준이 행사 뒤 윤유성과 의료동을 엮는 일정을 따로 관리했음을 보여준다.
+          - id: medical_desk_records
+            sourceType: investigation_card
+            cardId: card_medical_desk_records
+            label: '의료동 간이책상 2'
+            sourceName: '조사 카드 · 의료동 간이책상 2'
+            excerpt: |
+              맨 아래 서랍의 더 안쪽을 살피니 이러한 "건강기록 비교 발췌" 자료가 있었다.
+            inference: |
+              윤유성과 윤슬의 건강기록 비교 자료는 윤유성을 의료동에 묶으려는 목적과 이어진다.
+          - id: dragon_king_rumor_2
+            sourceType: investigation_card
+            cardId: card_dragon_king_rumor_2
+            label: '용왕에 대한 소문2'
+            sourceName: '조사 카드 · 용왕에 대한 소문2'
+            excerpt: |
+              10년쯤 전부터 용왕이 아프다는 소문이 돌었다. 용왕이 업무를 돌보지 못하게 되니, 길거리에는 다시 굶는 아이들이 늘어나기 시작했다.
+            inference: |
+              용왕의 병환은 서기준이 장기 이식과 의료동 계획을 서두를 이유가 된다.
+          - id: dragon_king_rumor_3
+            sourceType: investigation_card
+            cardId: card_dragon_king_rumor_3
+            label: '용궁섬에 대한 소문3'
+            sourceName: '조사 카드 · 용궁섬에 대한 소문3'
+            excerpt: |
+              섬 안에서 사망자가 나오거나, 태풍·해일 같은 자연재해가 발생하면 선착장 배편이 한동안 멈춘다는 말이 있다.
+            inference: |
+              살인이 벌어지면 윤유성을 섬 밖으로 나가지 못하게 만드는 조건이 생긴다.
+      - id: qna_wife_coverup
+        question: '한다정의 행동은 무엇으로 봐야 하나?'
+        answer: |
+          「아내토끼 소지품 1」의 젖은 고무링과 「윤유성 소지품 1」의 빠진 고무패킹은 한다정이 남편의 흔적을 숨겼다는 쪽으로 이어진다. 한다정 룰지를 보면 그는 고무링을 보고 남편을 의심해 주머니에 넣고, 그 직후 다가오는 딱딱한 발소리와 조희수를 마주친다. 그래서 한다정의 행동은 증거 은닉이지, 젖은 「호스」·「파란통」·「젖은 구두 자국」으로 설명되는 최종 범행과는 분리된다.
+        evidenceRefs:
+          - id: rubber_ring
+            sourceType: investigation_card
+            cardId: card_rubber_ring
+            label: '아내토끼 소지품 1'
+            sourceName: '조사 카드 · 아내토끼 소지품 1'
+            excerpt: |
+              작고 하얀 고무링이 나왔다. 표면이 살짝 젖어 있고, 씁쓸한 냄새가 희미하게 난다.
+            inference: |
+              한다정이 숨긴 물건은 남편 보온병의 흔적이다.
+          - id: black_thermos
+            sourceType: investigation_card
+            cardId: card_black_thermos
+            label: '윤유성 소지품 1'
+            sourceName: '조사 카드 · 윤유성 소지품 1'
+            excerpt: |
+              보온병에 고무패킹이 빠져 있다. 보온병 안쪽에는 씁쓸한 냄새가 희미하게 남아 있다.
+            inference: |
+              고무링이 윤유성의 보온병에서 빠졌다는 연결을 만든다.
+          - id: wife_rule_coverup
+            sourceType: role_sheet
+            roleId: wife_npc
+            label: '한다정'
+            sourceName: '룰지 · 한다정'
+            excerpt: |
+              한다정은 수조 턱 아래의 하얀 고무링을 보고 남편 보온병 마개 안쪽에서 본 적 있는 것이라고 떠올린다. 그는 고무링을 주머니에 밀어 넣고, 그 직후 딱딱한 발소리를 듣는다.
+            inference: |
+              한다정의 핵심 행동은 남편을 보호하려는 증거 은닉이다.
+          - id: method_traces
+            sourceType: investigation_card
+            cardId: card_wet_shoeprints
+            label: '젖은 구두 자국'
+            sourceName: '조사 카드 · 젖은 구두 자국'
+            excerpt: |
+              재활수조실 바닥 곳곳에 젖은 구두 자국이 흐리게 남아 있고, 지금 딱딱한 구두굽을 신고 있는 사람은 없다.
+            inference: |
+              최종 범행은 한다정의 고무링 은닉보다 뒤의 구두 동선과 연결된다.
+      - id: qna_not_accident
+        question: '왜 단순 약물사고나 범인 없음이 아닌가?'
+        answer: |
+          「사체」에는 압박흔 없이 약 냄새가 남아 약물 사고처럼 보일 여지가 있지만, 「호스」와 「파란통」이 모두 젖어 있고 「세탁실에 붙어있는 안내문」은 물을 낮은 곳으로 옮기는 방법을 설명한다. 여기에 「젖은 구두 자국」까지 남아 있으므로, 누군가 물을 옮겨 쓰고 직접 현장에 들어왔다는 행동이 따로 존재한다. 따라서 단순 약물사고나 범인 없음은 물을 옮긴 흔적을 설명하지 못한다.
+        evidenceRefs:
+          - id: turtle_body
+            sourceType: investigation_card
+            cardId: card_turtle_body
+            label: '사체'
+            sourceName: '조사 카드 · 사체'
+            excerpt: |
+              입과 코 주변에 섬유 자국이나 강한 압박흔은 없다. 입가 가까이에서는 희미하게 씁쓸한 약 냄새가 난다.
+            inference: |
+              약물 정황은 있지만, 이 단서만으로 사인을 끝낼 수는 없다.
+          - id: rubber_hose
+            sourceType: investigation_card
+            cardId: card_rubber_hose
+            label: '호스'
+            sourceName: '조사 카드 · 호스'
+            excerpt: |
+              고무호스가 길게 말려 있다. 펼치면 길이가 약 5m, 직경은 2.3cm이고, 물기가 묻어 있다.
+            inference: |
+              물을 옮기는 도구가 실제로 젖은 상태로 남아 있다.
+          - id: towel_bin
+            sourceType: investigation_card
+            cardId: card_towel_bin
+            label: '파란통'
+            sourceName: '조사 카드 · 파란통'
+            excerpt: |
+              축축한 수건들이 담겨 있어서 그런지 내부에 물기가 맺혀 있다. 입구의 지름은 45cm, 높이 약 50cm다.
+            inference: |
+              물을 받아 임시로 담는 용도로 쓰였다는 흔적이다.
+          - id: siphon_guide
+            sourceType: investigation_card
+            cardId: card_siphon_guide
+            label: '세탁실에 붙어있는 안내문'
+            sourceName: '조사 카드 · 세탁실에 붙어있는 안내문'
+            excerpt: |
+              튜브 안을 먼저 액체로 채운 뒤 낮은 쪽 용기로 내리라고 적혀 있다.
+            inference: |
+              얕은 수조의 물을 파란통으로 옮길 수 있는 방법을 설명한다.
+          - id: wet_shoeprints
+            sourceType: investigation_card
+            cardId: card_wet_shoeprints
+            label: '젖은 구두 자국'
+            sourceName: '조사 카드 · 젖은 구두 자국'
+            excerpt: |
+              재활수조실 바닥 곳곳에 젖은 구두 자국이 흐리게 남아 있다.
+            inference: |
+              누군가 직접 물을 다룬 뒤 현장을 걸어 나갔다는 행동 흔적이다.
   sections:
     - id: misvote_rabbit_husband
       when:

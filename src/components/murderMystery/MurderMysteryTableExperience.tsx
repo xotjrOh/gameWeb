@@ -55,6 +55,8 @@ import {
 import {
   MurderMysteryCardScenario,
   MurderMysteryClueVaultCardView,
+  MurderMysteryEndbookEvidenceQnaScenario,
+  MurderMysteryEndbookEvidenceReferenceScenario,
   MurderMysteryFinalVoteOptionScenario,
   MurderMysteryInvestigationBackCardView,
   MurderMysteryInvestigationMapHotspotView,
@@ -106,6 +108,7 @@ type ParticipantLabelSource = {
 };
 type RoleSelectionPublicCover =
   MurderMysteryStateSnapshot['roleSelection']['publicCovers'][number];
+type EndbookEvidenceReference = MurderMysteryEndbookEvidenceReferenceScenario;
 type InvestigationTargetGroup = {
   id: string;
   label: string;
@@ -3360,6 +3363,188 @@ const PublicCoverDialog = ({
   );
 };
 
+const getEvidenceSourceLabel = (
+  sourceType: EndbookEvidenceReference['sourceType']
+) => {
+  if (sourceType === 'investigation_card') {
+    return '조사 카드';
+  }
+  if (sourceType === 'role_sheet') {
+    return '룰지';
+  }
+  return '지문';
+};
+
+const getEvidenceDetailLabel = (
+  sourceType: EndbookEvidenceReference['sourceType']
+) => {
+  if (sourceType === 'investigation_card') {
+    return '뒷면 명칭/카드 제목';
+  }
+  if (sourceType === 'role_sheet') {
+    return '룰지 소유자';
+  }
+  return '지문 단계명';
+};
+
+const EndbookEvidenceQnaPanel = ({
+  evidenceQna,
+  onOpenEvidence,
+}: {
+  evidenceQna?: MurderMysteryEndbookEvidenceQnaScenario;
+  onOpenEvidence: (reference: EndbookEvidenceReference) => void;
+}) => {
+  if (!evidenceQna || evidenceQna.items.length === 0) {
+    return null;
+  }
+
+  return (
+    <Stack spacing={1.1}>
+      <Box>
+        <Typography variant="h6" fontWeight={950}>
+          {evidenceQna.title ?? '판단근거 Q&A'}
+        </Typography>
+        {evidenceQna.description ? (
+          <Typography variant="body2" sx={{ color: '#d8d0bd' }}>
+            {evidenceQna.description}
+          </Typography>
+        ) : null}
+      </Box>
+
+      {evidenceQna.items.map((item) => (
+        <Accordion
+          key={item.id}
+          disableGutters
+          sx={{
+            color: '#f8f1de',
+            backgroundColor: 'rgba(15, 19, 24, 0.78)',
+            border: '1px solid rgba(255,255,255,0.16)',
+            borderRadius: '8px !important',
+            boxShadow: 'none',
+            '&:before': { display: 'none' },
+          }}
+        >
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon sx={{ color: '#f8f1de' }} />}
+          >
+            <Typography fontWeight={950}>{item.question}</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Stack spacing={1.2}>
+              <Typography sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.72 }}>
+                {item.answer}
+              </Typography>
+              <Stack direction="row" spacing={0.7} flexWrap="wrap" useFlexGap>
+                {item.evidenceRefs.map((reference) => (
+                  <Chip
+                    key={reference.id}
+                    size="small"
+                    icon={<ArticleIcon />}
+                    label={reference.sourceName}
+                    variant="outlined"
+                    onClick={() => onOpenEvidence(reference)}
+                    sx={{
+                      maxWidth: '100%',
+                      color: '#f8f1de',
+                      borderColor: 'rgba(248,241,222,0.42)',
+                      fontWeight: 800,
+                      '& .MuiChip-icon': { color: '#dcb66d' },
+                    }}
+                  />
+                ))}
+              </Stack>
+            </Stack>
+          </AccordionDetails>
+        </Accordion>
+      ))}
+    </Stack>
+  );
+};
+
+const EndbookEvidenceReferenceDialog = ({
+  reference,
+  fullScreen,
+  onClose,
+}: {
+  reference: EndbookEvidenceReference | null;
+  fullScreen: boolean;
+  onClose: () => void;
+}) => {
+  if (!reference) {
+    return null;
+  }
+
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      fullScreen={fullScreen}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: {
+          backgroundColor: '#f8f1de',
+          color: '#20180f',
+          borderRadius: fullScreen ? 0 : 2,
+        },
+      }}
+    >
+      <DialogTitle sx={{ pr: 7 }}>
+        <Stack spacing={0.6}>
+          <Typography variant="caption" fontWeight={900} color="text.secondary">
+            {getEvidenceSourceLabel(reference.sourceType)}
+          </Typography>
+          <Typography variant="h6" fontWeight={950}>
+            {reference.sourceName}
+          </Typography>
+        </Stack>
+        <IconButton
+          aria-label="닫기"
+          onClick={onClose}
+          sx={{ position: 'absolute', right: 12, top: 12 }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent>
+        <Stack spacing={2}>
+          <Box>
+            <Typography
+              variant="caption"
+              fontWeight={900}
+              color="text.secondary"
+            >
+              {getEvidenceDetailLabel(reference.sourceType)}
+            </Typography>
+            <Typography fontWeight={950}>{reference.label}</Typography>
+          </Box>
+          <Divider sx={{ borderColor: 'rgba(32,24,15,0.18)' }} />
+          <Box>
+            <Typography variant="subtitle2" fontWeight={950}>
+              원문/발췌
+            </Typography>
+            <Typography
+              sx={{ mt: 0.6, whiteSpace: 'pre-wrap', lineHeight: 1.7 }}
+            >
+              {reference.excerpt}
+            </Typography>
+          </Box>
+          <Box>
+            <Typography variant="subtitle2" fontWeight={950}>
+              판단 연결
+            </Typography>
+            <Typography
+              sx={{ mt: 0.6, whiteSpace: 'pre-wrap', lineHeight: 1.7 }}
+            >
+              {reference.inference}
+            </Typography>
+          </Box>
+        </Stack>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const CardDetailDialog = ({
   card,
   isPinned = false,
@@ -4097,6 +4282,8 @@ export default function MurderMysteryTableExperience({
   const [isPrivateCardsOpen, setIsPrivateCardsOpen] = useState(false);
   const [isMapDialogOpen, setIsMapDialogOpen] = useState(false);
   const [cardViewer, setCardViewer] = useState<CardViewerState | null>(null);
+  const [selectedEvidenceRef, setSelectedEvidenceRef] =
+    useState<EndbookEvidenceReference | null>(null);
   const [pinnedClue, setPinnedClue] = useState<PinnedClueReference | null>(
     null
   );
@@ -4303,6 +4490,7 @@ export default function MurderMysteryTableExperience({
     Number(isMapDialogOpen) +
     Number(Boolean(pendingSpecialEventAction)) +
     Number(Boolean(selectedCard)) +
+    Number(Boolean(selectedEvidenceRef)) +
     Number(Boolean(selectedPlayer));
   const hasOpenModal = openModalCount > 0;
   const bringPhaseActionsIntoView = () => {
@@ -4313,6 +4501,7 @@ export default function MurderMysteryTableExperience({
     setIsRulebookOpen(false);
     setIsMapDialogOpen(false);
     setPendingSpecialEventAction(null);
+    setSelectedEvidenceRef(null);
     window.setTimeout(() => {
       phaseScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     }, 0);
@@ -4416,6 +4605,10 @@ export default function MurderMysteryTableExperience({
       setPendingSpecialEventAction(null);
       return;
     }
+    if (selectedEvidenceRef) {
+      setSelectedEvidenceRef(null);
+      return;
+    }
     if (selectedCard) {
       setCardViewer(null);
       return;
@@ -4446,6 +4639,7 @@ export default function MurderMysteryTableExperience({
     isRulebookOpen,
     pendingSpecialEventAction,
     selectedCard,
+    selectedEvidenceRef,
     selectedPlayer,
   ]);
 
@@ -6275,6 +6469,11 @@ export default function MurderMysteryTableExperience({
           </Typography>
         </Box>
 
+        <EndbookEvidenceQnaPanel
+          evidenceQna={endbook.evidenceQna}
+          onOpenEvidence={setSelectedEvidenceRef}
+        />
+
         {endbook.alternateOutcomes.length > 0 ? (
           <Stack spacing={1.1}>
             <Box>
@@ -6762,6 +6961,11 @@ export default function MurderMysteryTableExperience({
         onNext={showNextCard}
         onTogglePin={toggleSelectedCardPin}
         onClose={() => setCardViewer(null)}
+      />
+      <EndbookEvidenceReferenceDialog
+        reference={selectedEvidenceRef}
+        fullScreen={isSmall}
+        onClose={() => setSelectedEvidenceRef(null)}
       />
       <MapFullscreenDialog
         open={isMapDialogOpen}

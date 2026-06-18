@@ -1767,6 +1767,7 @@ const resolveEndbookView = (
           : 'composed_endbook',
       title,
       body,
+      evidenceQna: scenario.endbook.evidenceQna,
       choiceSummaries,
       alternateOutcomes: buildEndbookAlternateOutcomes(
         room,
@@ -1781,6 +1782,7 @@ const resolveEndbookView = (
     id: variant.id,
     title: variant.title,
     body: variant.body,
+    evidenceQna: scenario.endbook.evidenceQna,
     choiceSummaries,
     alternateOutcomes: [],
   };
