@@ -331,13 +331,6 @@ export default function MurderMysteryGameScreen({
     });
   };
 
-  const handleClearRolePreferences = () => {
-    emitWithAck('mm_clear_role_preferences', {
-      roomId,
-      sessionId,
-    });
-  };
-
   const handleShareRoleSheet = async (roleId: string) => {
     const response = await emitWithAckPayload<
       { roomId: string; sessionId: string; roleId: string },
@@ -414,7 +407,6 @@ export default function MurderMysteryGameScreen({
         )
       }
       onSubmitRolePreferences={handleSubmitRolePreferences}
-      onClearRolePreferences={handleClearRolePreferences}
       onShareRoleSheet={handleShareRoleSheet}
       onSubmitInvestigationByTarget={handleSubmitInvestigationByTarget}
       onSubmitInvestigationByBack={handleSubmitInvestigationByBack}
