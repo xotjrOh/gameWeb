@@ -551,7 +551,7 @@ const BgmControl = ({
   const [isBlocked, setIsBlocked] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
-  const [userEnabled, setUserEnabled] = useState(true);
+  const [userEnabled, setUserEnabled] = useState(false);
 
   const startBgm = useCallback(() => {
     setUserEnabled(true);
