@@ -262,8 +262,8 @@ roles:
     portraitSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/characters/rabbit-husband.png'
     portraitAlt: '남편토끼 윤유성 인물 이미지'
     publicText: |
-      한때 스타였던 달리기 선수.
-      현재는 극심한 슬픔에 빠져 있는 것처럼 보인다.
+      한다정의 남편이자 한때 스타였던 달리기 선수.
+      후원선수 복귀를 앞둔 자리지만, 단정한 운동복 차림에도 가라앉은 표정과 굳은 입매가 먼저 눈에 들어온다.
     personalGoal: |
       윤슬의 수술과 오완주를 향한 분노가 한꺼번에 당신을 범인처럼 보이게 만들 수 있습니다.
       당신이 실제로 한 행동과 오완주의 마지막 사망 원인을 분리해서 설명할 명분을 확보하세요.
@@ -300,8 +300,8 @@ roles:
     portraitSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/characters/fox.png'
     portraitAlt: '여우 조희수 인물 이미지'
     publicText: |
-      세상에 불만이 많아 보이는 기자.
-      농담처럼 웃고 있어도 눈빛은 차갑고, 무엇 하나 순순히 받아들이지 않는 사람처럼 보인다.
+      후원선수 복귀 기자간담회 취재를 맡은 기자.
+      헐겁게 맨 넥타이와 웃는 듯한 입매 때문에 가벼워 보이지만, 또렷한 눈매와 집요한 시선은 상대의 약점을 먼저 짚어낼 듯하다.
     personalGoal: |
       서기준과 용왕재단의 과거를 파헤쳐, 이번 사건이 단순한 약물 사고로 덮이지 않게 만드세요.
       동시에 비품 정리실에서 당신이 준비했던 위험한 행동은 들키지 않는 편이 유리합니다.
@@ -342,8 +342,8 @@ roles:
     portraitSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/characters/jara.png'
     portraitAlt: '자라 서기준 인물 이미지'
     publicText: |
-      정중하고 빈틈없는 관찰자.
-      차분한 말투는 믿음직하지만, 지나치게 흐트러짐 없는 태도는 어딘가 거리감을 남긴다.
+      용왕재단의 행사를 조율하는 실무자.
+      짙은 정장과 반듯한 말투는 믿음직하지만, 표정 변화가 거의 없어 오래 마주하면 차갑게 느껴진다.
     personalGoal: |
       사건을 윤유성의 분노와 약물 문제로 설명하게 만들고, 실제 사망 원인과 재단의 목적이 당신에게 닿지 않게 하세요.
       최종 지목이 당신에게 오지 않도록 정보 정리자의 위치를 유지하는 것이 핵심입니다.
@@ -389,8 +389,8 @@ publicCovers:
     portraitSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/characters/rabbit-wife.png'
     portraitAlt: '아내토끼 한다정 인물 이미지'
     publicText: |
-      남편토끼의 아내.
-      불안과 슬픔이 뒤섞인 얼굴로, 무언가를 말하지 못하고 있는 듯 보인다.
+      남편토끼 윤유성의 아내이자 전직 초등학교 교사.
+      단정한 옷차림과 낮은 목소리 때문에 차분해 보인다. 낯선 자리에서는 손을 가지런히 모으고, 필요한 말만 조심스럽게 고르는 편이라고 알려져 있다.
 
 initialRoleCards:
   - roleId: fox
