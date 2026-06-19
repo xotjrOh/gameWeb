@@ -169,11 +169,14 @@ export function CharacterBookCover({
         {
           position: 'relative',
           overflow: 'hidden',
+          boxSizing: 'border-box',
+          width: '100%',
+          height: '100%',
           minHeight: { xs: 400, sm: 540 },
-          display: 'flex',
-          flexDirection: 'column',
+          display: 'grid',
+          gridTemplateRows: 'auto minmax(0, 1fr) auto',
           alignItems: 'stretch',
-          gap: { xs: 0.8, sm: 1.8 },
+          gap: { xs: 0.75, sm: 1.15 },
           px: { xs: 1.5, sm: 3.2 },
           py: { xs: 1.1, sm: 2.5 },
           borderRadius: 1.2,
@@ -182,7 +185,7 @@ export function CharacterBookCover({
             'linear-gradient(90deg, rgba(104, 71, 35, 0.2) 0 10px, rgba(255,255,255,0.12) 10px 13px, transparent 13px), radial-gradient(circle at 52% 18%, rgba(255,255,255,0.6), transparent 28%), linear-gradient(155deg, #e1d3b7 0%, #fff3d7 46%, #d3c199 100%)',
           border: '1px solid rgba(75, 58, 37, 0.24)',
           boxShadow:
-            'inset 0 0 0 1px rgba(255,255,255,0.52), inset -10px 0 18px rgba(90, 64, 32, 0.12), 0 22px 46px rgba(49, 33, 18, 0.18)',
+            'inset 0 0 0 1px rgba(255,255,255,0.52), inset -14px 0 22px rgba(90, 64, 32, 0.16), 0 26px 52px rgba(49, 33, 18, 0.22)',
         },
         ...toSxList(sx),
       ]}
@@ -244,6 +247,22 @@ export function CharacterBookCover({
           pointerEvents: 'none',
         }}
       />
+      <Box
+        aria-hidden
+        sx={{
+          position: 'absolute',
+          left: { xs: 13, sm: 20 },
+          right: { xs: 13, sm: 20 },
+          bottom: { xs: 8, sm: 13 },
+          height: { xs: 9, sm: 12 },
+          borderRadius: '0 0 7px 7px',
+          opacity: 0.48,
+          background:
+            'repeating-linear-gradient(90deg, rgba(89, 62, 30, 0.18) 0 1px, rgba(255, 248, 228, 0.78) 1px 6px)',
+          boxShadow: 'inset 0 2px 4px rgba(87,61,31,0.13)',
+          pointerEvents: 'none',
+        }}
+      />
       <Typography
         sx={{
           position: 'relative',
@@ -267,9 +286,11 @@ export function CharacterBookCover({
         alt={portraitAlt}
         label={displayName}
         sx={{
+          justifySelf: 'center',
           alignSelf: 'center',
-          width: { xs: 'min(76vw, 280px)', sm: 330 },
-          mt: { xs: -0.2, sm: -0.5 },
+          width: { xs: 'min(72vw, 280px)', sm: 'min(74%, 330px)' },
+          maxWidth: 330,
+          mt: { xs: -0.15, sm: -0.25 },
           boxShadow: '0 16px 38px rgba(49, 33, 18, 0.16)',
         }}
       />
@@ -278,6 +299,8 @@ export function CharacterBookCover({
           position: 'relative',
           zIndex: 1,
           px: { xs: 1.2, sm: 1.4 },
+          pb: { xs: 2.2, sm: 2.8 },
+          alignSelf: 'end',
         }}
       >
         <Typography
@@ -309,9 +332,10 @@ export function CharacterBookCover({
             mt: 0.65,
             whiteSpace: 'pre-wrap',
             color: '#51402b',
-            lineHeight: { xs: 1.48, sm: 1.68 },
+            lineHeight: { xs: 1.48, sm: 1.58 },
             fontWeight: 760,
             wordBreak: 'keep-all',
+            overflowWrap: 'break-word',
           }}
         >
           {publicText}

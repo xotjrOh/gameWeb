@@ -2997,20 +2997,20 @@ const RoleReadingAssignedCard = ({
       py: { xs: 0.2, sm: 0.7 },
     }}
   >
-    <Tooltip title="비공개 룰지 열기">
+    <Tooltip title="인물 설정서 읽기">
       <Box
         component="button"
         type="button"
         disabled={!roleSheet}
         aria-label={
           roleSheet
-            ? `${roleSheet.displayName} 비공개 룰지 열기`
-            : '비공개 룰지 열기'
+            ? `${roleSheet.displayName} 인물 설정서 읽기`
+            : '인물 설정서 읽기'
         }
         onClick={onOpenRulebook}
         sx={{
           position: 'relative',
-          width: { xs: 'min(100%, 390px)', sm: 430 },
+          width: { xs: 'min(100%, 400px)', sm: 440 },
           height: '100%',
           minHeight: { xs: 420, sm: 560 },
           maxHeight: '100%',
@@ -3028,44 +3028,56 @@ const RoleReadingAssignedCard = ({
           '&::before': {
             content: '""',
             position: 'absolute',
-            inset: { xs: '12px -8px 8px 14px', sm: '16px -12px 10px 18px' },
-            borderRadius: 1.8,
+            left: 0,
+            right: { xs: -10, sm: -12 },
+            bottom: { xs: -9, sm: -11 },
+            height: { xs: 10, sm: 12 },
+            zIndex: 1,
+            borderRadius: '0 0 9px 9px',
             background:
-              'linear-gradient(90deg, rgba(134, 105, 62, 0.45), rgba(244, 232, 196, 0.92) 12%, rgba(214, 192, 143, 0.96) 88%, rgba(111, 82, 44, 0.45))',
+              'repeating-linear-gradient(180deg, rgba(76,54,28,0.5) 0 1px, rgba(255,247,222,0.9) 1px 3px, rgba(219,195,145,0.78) 3px 4px)',
             boxShadow:
-              '0 28px 46px rgba(0,0,0,0.34), inset -9px 0 12px rgba(101,74,37,0.22)',
+              '0 11px 17px rgba(0,0,0,0.22), inset 0 2px 4px rgba(89,61,30,0.2)',
             transform: isLifted
-              ? 'translate3d(16px, 11px, -44px) rotateY(-8deg)'
-              : 'translate3d(10px, 8px, -36px) rotateY(-4deg)',
+              ? 'translateZ(-24px) skewX(-2.4deg)'
+              : 'translateZ(-18px) skewX(-1.8deg)',
             transformOrigin: 'left center',
             transition: 'transform 240ms ease, box-shadow 240ms ease',
           },
           '&::after': {
             content: '""',
             position: 'absolute',
-            top: { xs: 22, sm: 30 },
-            right: { xs: -7, sm: -11 },
-            bottom: { xs: 18, sm: 23 },
-            width: { xs: 12, sm: 16 },
-            borderRadius: '0 10px 10px 0',
+            top: { xs: 1, sm: 2 },
+            right: { xs: -10, sm: -12 },
+            bottom: { xs: -9, sm: -11 },
+            width: { xs: 10, sm: 12 },
+            zIndex: 1,
+            borderRadius: '0 8px 8px 0',
             background:
-              'repeating-linear-gradient(180deg, rgba(87,63,34,0.36) 0 1px, rgba(255,246,219,0.9) 1px 5px)',
-            boxShadow: '8px 14px 22px rgba(0,0,0,0.2)',
-            transform: 'translateZ(-18px) rotateY(-3deg)',
+              'repeating-linear-gradient(90deg, rgba(78,56,29,0.54) 0 1px, rgba(255,247,222,0.92) 1px 3px, rgba(216,191,141,0.8) 3px 4px)',
+            boxShadow: '5px 10px 16px rgba(0,0,0,0.16)',
+            transform: 'translateZ(-16px) skewY(-0.2deg)',
           },
           '&:hover .role-reading-book-cover': roleSheet
             ? {
                 transform:
-                  'rotateX(3deg) rotateY(-8deg) translate3d(2px, -7px, 20px)',
+                  'rotateX(3deg) rotateY(-10deg) translate3d(4px, -8px, 28px)',
                 boxShadow:
-                  '0 34px 70px rgba(0,0,0,0.38), 0 0 0 1px rgba(255,255,255,0.32)',
+                  '0 38px 82px rgba(0,0,0,0.44), 0 0 0 1px rgba(255,255,255,0.32)',
+              }
+            : undefined,
+          '&:hover .role-reading-book-hint': roleSheet
+            ? {
+                transform: 'translateY(-2px)',
+                backgroundColor: 'rgba(245, 158, 11, 0.96)',
+                color: '#241706',
               }
             : undefined,
           '&:hover::before': roleSheet
             ? {
-                transform: 'translate3d(16px, 11px, -44px) rotateY(-8deg)',
+                transform: 'translateZ(-24px) skewX(-2.4deg)',
                 boxShadow:
-                  '0 34px 58px rgba(0,0,0,0.38), inset -11px 0 14px rgba(101,74,37,0.24)',
+                  '0 13px 19px rgba(0,0,0,0.25), inset 0 2px 4px rgba(89,61,30,0.22)',
               }
             : undefined,
           '&:active .role-reading-book-cover': roleSheet
@@ -3083,13 +3095,178 @@ const RoleReadingAssignedCard = ({
         }}
       >
         <Box
+          className="role-reading-book-page-far"
+          aria-hidden
+          sx={{
+            position: 'absolute',
+            top: { xs: 3, sm: 4 },
+            left: 0,
+            right: { xs: -10, sm: -12 },
+            bottom: { xs: -10, sm: -12 },
+            zIndex: 0,
+            borderRadius: 2,
+            pointerEvents: 'none',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              bottom: 0,
+              width: { xs: 2, sm: 2 },
+              borderRadius: '0 7px 7px 0',
+              backgroundColor: 'rgba(204, 176, 123, 0.92)',
+              borderRight: '1px solid rgba(62, 45, 24, 0.48)',
+              boxShadow: 'inset 1px 0 2px rgba(255,255,255,0.36)',
+            },
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: { xs: 2, sm: 2 },
+              borderRadius: '0 0 7px 7px',
+              backgroundColor: 'rgba(204, 176, 123, 0.92)',
+              borderBottom: '1px solid rgba(62, 45, 24, 0.5)',
+              transform: 'skewX(-1deg)',
+              transformOrigin: 'left center',
+              boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.32)',
+            },
+            transform: isLifted
+              ? 'translateZ(-58px) skewY(-0.28deg)'
+              : 'translateZ(-48px) skewY(-0.18deg)',
+            transformOrigin: 'left center',
+            transition: 'transform 240ms ease',
+          }}
+        />
+        <Box
+          className="role-reading-book-page-deep"
+          aria-hidden
+          sx={{
+            position: 'absolute',
+            top: { xs: 2, sm: 3 },
+            left: 0,
+            right: { xs: -8, sm: -10 },
+            bottom: { xs: -8, sm: -10 },
+            zIndex: 1,
+            borderRadius: 2,
+            pointerEvents: 'none',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              bottom: 0,
+              width: { xs: 2, sm: 2 },
+              borderRadius: '0 7px 7px 0',
+              backgroundColor: 'rgba(219, 194, 144, 0.95)',
+              borderRight: '1px solid rgba(70, 50, 26, 0.5)',
+              boxShadow: 'inset 1px 0 2px rgba(255,255,255,0.36)',
+            },
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: { xs: 2, sm: 2 },
+              borderRadius: '0 0 7px 7px',
+              backgroundColor: 'rgba(219, 194, 144, 0.95)',
+              borderBottom: '1px solid rgba(70, 50, 26, 0.52)',
+              transform: 'skewX(-0.8deg)',
+              transformOrigin: 'left center',
+              boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.34)',
+            },
+            transform: isLifted
+              ? 'translateZ(-46px) skewY(-0.24deg)'
+              : 'translateZ(-36px) skewY(-0.14deg)',
+            transformOrigin: 'left center',
+            transition: 'transform 240ms ease',
+          }}
+        />
+        <Box
+          className="role-reading-book-page-middle"
+          aria-hidden
+          sx={{
+            position: 'absolute',
+            top: { xs: 1, sm: 2 },
+            left: 0,
+            right: { xs: -6, sm: -8 },
+            bottom: { xs: -6, sm: -8 },
+            zIndex: 2,
+            borderRadius: 2,
+            pointerEvents: 'none',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              bottom: 0,
+              width: { xs: 2, sm: 2 },
+              borderRadius: '0 7px 7px 0',
+              backgroundColor: 'rgba(234, 213, 166, 0.96)',
+              borderRight: '1px solid rgba(78, 56, 29, 0.5)',
+              boxShadow: 'inset 1px 0 2px rgba(255,255,255,0.38)',
+            },
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: { xs: 2, sm: 2 },
+              borderRadius: '0 0 7px 7px',
+              backgroundColor: 'rgba(234, 213, 166, 0.96)',
+              borderBottom: '1px solid rgba(78, 56, 29, 0.52)',
+              transform: 'skewX(-0.6deg)',
+              transformOrigin: 'left center',
+              boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.36)',
+            },
+            transform: isLifted
+              ? 'translateZ(-30px) skewY(-0.2deg)'
+              : 'translateZ(-24px) skewY(-0.1deg)',
+            transformOrigin: 'left center',
+            transition: 'transform 240ms ease',
+          }}
+        />
+        <Box
+          className="role-reading-book-hint"
+          aria-hidden
+          sx={{
+            position: 'absolute',
+            top: { xs: 12, sm: 18 },
+            right: { xs: 10, sm: 16 },
+            zIndex: 5,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 0.45,
+            px: { xs: 0.95, sm: 1.1 },
+            py: { xs: 0.55, sm: 0.65 },
+            borderRadius: 999,
+            backgroundColor: 'rgba(35, 25, 14, 0.86)',
+            color: '#fff7dc',
+            border: '1px solid rgba(255, 247, 220, 0.5)',
+            boxShadow: '0 10px 22px rgba(0,0,0,0.3)',
+            fontSize: { xs: 12, sm: 13 },
+            fontWeight: 950,
+            lineHeight: 1,
+            whiteSpace: 'nowrap',
+            pointerEvents: 'none',
+            transition:
+              'transform 170ms ease, background-color 170ms ease, color 170ms ease',
+          }}
+        >
+          <AutoStoriesIcon sx={{ fontSize: { xs: 15, sm: 16 } }} />
+          인물 설정서 읽기
+          <ChevronRightIcon sx={{ fontSize: { xs: 15, sm: 16 } }} />
+        </Box>
+        <Box
           className="role-reading-book-cover"
           sx={{
             position: 'relative',
-            zIndex: 2,
+            zIndex: 3,
             height: '100%',
             transformOrigin: 'left center',
-            transformStyle: 'preserve-3d',
             transform: isLifted
               ? 'rotateX(5deg) rotateY(-14deg) translate3d(8px, -6px, 28px)'
               : 'none',
@@ -3109,7 +3286,7 @@ const RoleReadingAssignedCard = ({
               height: '100%',
               minHeight: { xs: 420, sm: 560 },
               boxShadow:
-                'inset 0 0 0 1px rgba(255,255,255,0.5), 0 26px 58px rgba(0,0,0,0.3)',
+                'inset 0 0 0 1px rgba(255,255,255,0.5), 0 30px 68px rgba(0,0,0,0.36)',
             }}
           />
         </Box>
@@ -5415,7 +5592,7 @@ export default function MurderMysteryTableExperience({
               overflowWrap: 'break-word',
             }}
           >
-            비공개 룰지 읽기
+            인물 설정서 읽기
           </Typography>
           <Chip
             size="small"
@@ -5431,7 +5608,7 @@ export default function MurderMysteryTableExperience({
           />
         </Stack>
         <Typography sx={{ color: '#d8d0bd', lineHeight: 1.55 }}>
-          비공개 룰지를 읽고 준비되면 아래 버튼을 눌러주세요.
+          인물 설정서를 읽고 준비되면 아래 버튼을 눌러주세요.
         </Typography>
       </Stack>
 

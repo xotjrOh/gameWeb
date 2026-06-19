@@ -64,10 +64,6 @@ const clamp = (value: number, min: number, max: number) =>
 
 const pageFrameHeight = { xs: '76svh', sm: 'clamp(780px, 84dvh, 960px)' };
 const pageFramePadding = { xs: 1.7, sm: 3 };
-const pageContentMinHeight = {
-  xs: 'calc(76svh - 27.2px)',
-  sm: 'calc(clamp(780px, 84dvh, 960px) - 48px)',
-};
 
 export default function MurderMysteryRulebookReader({
   storageKey,
@@ -455,9 +451,11 @@ export default function MurderMysteryRulebookReader({
           ...(isRolebookCover
             ? [
                 {
-                  height: 'auto',
-                  minHeight: pageFrameHeight,
+                  p: 0,
                   overflow: 'visible',
+                  backgroundColor: 'transparent',
+                  border: 0,
+                  boxShadow: 'none',
                 },
               ]
             : []),
@@ -466,8 +464,8 @@ export default function MurderMysteryRulebookReader({
         <Box
           sx={{
             position: 'relative',
-            height: isRolebookCover ? 'auto' : '100%',
-            minHeight: isRolebookCover ? pageContentMinHeight : undefined,
+            height: '100%',
+            minHeight: isRolebookCover ? 0 : undefined,
             overflow: isRolebookCover ? 'visible' : 'hidden',
           }}
         >
@@ -477,7 +475,7 @@ export default function MurderMysteryRulebookReader({
               publicText={rolePublicText}
               portraitSrc={portraitSrc}
               portraitAlt={portraitAlt}
-              sx={{ minHeight: 'inherit' }}
+              sx={{ height: '100%', minHeight: '100%' }}
             />
           ) : section === 'prologue' && includePrologue ? (
             <Typography
