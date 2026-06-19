@@ -2690,7 +2690,7 @@ const RoleSelectionPanel = ({
                 캐릭터 선택 확인
               </Typography>
               <Typography variant="caption" sx={{ color: '#d8d0bd' }}>
-                확인하면 선택이 바로 제출됩니다.
+                방장 확정 전까지 다시 바꿀 수 있습니다.
               </Typography>
             </Box>
           </Stack>
@@ -2750,7 +2750,7 @@ const RoleSelectionPanel = ({
                   sx={{ color: '#ffcf6a', lineHeight: 1.6, fontWeight: 900 }}
                 >
                   현재는 {getRoleSelectionShortName(submittedRole.displayName)}
-                  입니다. 확인하면 바로 변경 제출됩니다.
+                  입니다. 방장 확정 전까지 다시 바꿀 수 있습니다.
                 </Typography>
               ) : null}
             </Stack>
@@ -4495,6 +4495,12 @@ export default function MurderMysteryTableExperience({
     !snapshot.finalVote.result &&
     (snapshot.canUseHostGameMasterControls ||
       snapshot.finalVote.submittedVoters >= snapshot.finalVote.totalVoters);
+  const isFloatingActionDockPhase =
+    phaseKind === 'intro' ||
+    phaseKind === 'role_reading' ||
+    phaseKind === 'investigate' ||
+    phaseKind === 'final_vote' ||
+    phaseKind === 'ending_choice';
   const openModalCount =
     Number(isRulebookOpen) +
     Number(isPrivateCardsOpen) +
@@ -4505,6 +4511,31 @@ export default function MurderMysteryTableExperience({
     Number(Boolean(selectedEvidenceRef)) +
     Number(Boolean(selectedPlayer));
   const hasOpenModal = openModalCount > 0;
+  const shouldShowHostRoleSelectionDock =
+    canUseHostTools && phaseKind === 'lobby' && !isRoleSelectionLocked;
+  const shouldShowFloatingActionDock =
+    isFloatingActionDockPhase &&
+    (phaseKind !== 'intro' || canUseHostTools) &&
+    (!hasOpenModal || (phaseKind === 'investigate' && canActNow));
+  const shouldReserveBottomDockSpace =
+    shouldShowHostRoleSelectionDock || shouldShowFloatingActionDock;
+  const mainBottomPadding = hasOpenModal
+    ? { xs: 10, lg: 1.4 }
+    : {
+        xs: shouldReserveBottomDockSpace ? 22 : 8,
+        lg: shouldReserveBottomDockSpace ? 10 : 1.4,
+      };
+  const phasePanelBottomPadding = hasOpenModal
+    ? { xs: 8.5, lg: 2 }
+    : {
+        xs: shouldReserveBottomDockSpace ? 18 : 2,
+        lg: shouldReserveBottomDockSpace ? 11 : 2,
+      };
+  const floatingFabBottomOffset = hasOpenModal
+    ? 96
+    : shouldReserveBottomDockSpace
+      ? 154
+      : 74;
   const bringPhaseActionsIntoView = () => {
     setCardViewer(null);
     setSelectedPlayerId(null);
@@ -6235,11 +6266,7 @@ export default function MurderMysteryTableExperience({
   };
 
   const renderFloatingActionDock = () => {
-    if (phaseKind === 'lobby') {
-      return null;
-    }
-
-    if (hasOpenModal && !(phaseKind === 'investigate' && canActNow)) {
+    if (!shouldShowFloatingActionDock) {
       return null;
     }
 
@@ -6437,22 +6464,23 @@ export default function MurderMysteryTableExperience({
   };
 
   const renderHostRoleSelectionDock = () => {
-    if (!canUseHostTools || phaseKind !== 'lobby' || isRoleSelectionLocked) {
+    if (!shouldShowHostRoleSelectionDock) {
       return null;
     }
 
     const allConnected = connectedPlayerCount >= requiredPlayerCount;
     const allSubmitted = submittedRoleSelectionCount >= requiredPlayerCount;
+    const canConfirmRoleSelection = allConnected && allSubmitted;
     const buttonLabel = !allConnected
       ? `접속 ${connectedPlayerCount}/${requiredPlayerCount}`
       : allSubmitted
-        ? '배정 준비 완료'
+        ? '이대로 배정 시작'
         : `선택 제출 ${submittedRoleSelectionCount}/${requiredPlayerCount}`;
     const helperText = !allConnected
       ? '전원 접속 대기'
       : allSubmitted
-        ? '자동 배정 중'
-        : '전원 제출 시 자동 배정';
+        ? '필요하면 구두로 조정한 뒤 확정하세요'
+        : '전원 제출 후 방장이 확정';
 
     return (
       <Box
@@ -6506,18 +6534,17 @@ export default function MurderMysteryTableExperience({
             </Typography>
           </Box>
           <Button
-            disabled
             disableElevation
+            disabled={!canConfirmRoleSelection}
             variant="contained"
             color={allSubmitted ? 'success' : 'warning'}
+            onClick={onNextPhase}
             sx={{
               minHeight: 38,
               px: 1.5,
               borderRadius: 1.4,
               fontWeight: 950,
               whiteSpace: 'nowrap',
-              opacity: 0.86,
-              cursor: 'default',
               '&.Mui-disabled': {
                 color: allSubmitted ? '#052e16' : '#3a2600',
                 backgroundColor: allSubmitted ? '#86efac' : '#fbbf24',
@@ -6661,7 +6688,7 @@ export default function MurderMysteryTableExperience({
               '&::-webkit-scrollbar': { display: 'none' },
             }}
           >
-            캐릭터 1명 선택 · 중복 가능 · 겹치면 1명 확정, 나머지 랜덤
+            캐릭터 1명 선택 · 중복 가능 · 전원 제출 후 방장이 확정
           </Typography>
           <RoleSelectionPanel
             roleSelection={snapshot.roleSelection}
@@ -6875,7 +6902,7 @@ export default function MurderMysteryTableExperience({
           },
           gap: { xs: 1, lg: 1.4 },
           p: { xs: 1, md: 1.4 },
-          pb: hasOpenModal ? { xs: 10, lg: 1.4 } : { xs: 22, lg: 10 },
+          pb: mainBottomPadding,
           overflow: 'hidden',
         }}
       >
@@ -6890,7 +6917,7 @@ export default function MurderMysteryTableExperience({
             backgroundColor: 'rgba(14, 23, 25, 0.86)',
             boxShadow: '0 28px 70px rgba(0,0,0,0.42)',
             p: { xs: 1.3, md: 2 },
-            pb: hasOpenModal ? { xs: 8.5, lg: 2 } : { xs: 18, lg: 11 },
+            pb: phasePanelBottomPadding,
             overflow: 'auto',
           }}
         >
@@ -6968,14 +6995,14 @@ export default function MurderMysteryTableExperience({
       snapshot.investigation.map?.scene ? (
         <InvestigationMapFab
           scene={snapshot.investigation.map.scene}
-          bottomOffset={hasOpenModal ? 96 : 154}
+          bottomOffset={floatingFabBottomOffset}
           onOpen={() => setIsMapDialogOpen(true)}
         />
       ) : null}
       {isSmall && pinnedCard && !selectedCard ? (
         <PinnedClueFab
           card={pinnedCard}
-          bottomOffset={hasOpenModal ? 96 : 154}
+          bottomOffset={floatingFabBottomOffset}
           onOpen={openPinnedClue}
         />
       ) : null}

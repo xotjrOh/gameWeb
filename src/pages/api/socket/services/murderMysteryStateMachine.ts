@@ -2179,7 +2179,6 @@ const resolveMurderMysteryRoleSelectionIfReady = (
 
   applyMurderMysteryRoleAssignments(room, scenario, roleIdByPlayerId);
   room.gameData.roleSelectionStatus = 'locked';
-  startMurderMysteryGame(room, scenario);
   return true;
 };
 
@@ -2203,9 +2202,14 @@ export const submitMurderMysteryRolePreferences = (
   room.gameData.rolePreferencesByPlayerId[playerId] = [
     ...validateRolePreferenceIds(scenario, roleIds),
   ];
+  clearStaleRolePreferences(room);
 
   return {
-    locked: resolveMurderMysteryRoleSelectionIfReady(room, scenario),
+    allSubmitted:
+      room.players.length === room.maxPlayers &&
+      room.players.every(
+        (player) => room.gameData.rolePreferencesByPlayerId[player.id]?.[0]
+      ),
   };
 };
 
@@ -2270,7 +2274,12 @@ export const startMurderMysteryGame = (
 ) => {
   ensureMurderMysterySeatLayout(room);
   if (room.gameData.roleSelectionStatus !== 'locked') {
-    throw new Error('캐릭터 배정이 완료되어야 게임을 시작할 수 있습니다.');
+    const locked = resolveMurderMysteryRoleSelectionIfReady(room, scenario);
+    if (!locked) {
+      throw new Error(
+        '모든 참가자가 캐릭터 선택을 제출해야 게임을 시작할 수 있습니다.'
+      );
+    }
   }
   if (room.players.some((player) => !room.gameData.roleByPlayerId[player.id])) {
     throw new Error('캐릭터 배정 결과가 부족합니다.');

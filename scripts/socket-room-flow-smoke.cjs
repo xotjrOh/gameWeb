@@ -425,7 +425,7 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
     );
     assertCondition(
       blockedStartResponse?.success === false,
-      'mm_host_start_game should fail before role selection is locked',
+      'mm_host_start_game should fail before all role preferences are submitted',
       blockedStartResponse
     );
 
@@ -534,6 +534,32 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       );
     }
 
+    const readyLobbySnapshot = await requestMurderSnapshot(
+      hostSocket,
+      roomId,
+      hostSessionId
+    );
+    assertCondition(
+      readyLobbySnapshot.phase === 'LOBBY' &&
+        readyLobbySnapshot.roleSelection?.status === 'open' &&
+        readyLobbySnapshot.roleSelection?.submittedCount === maxPlayers,
+      'murder should wait in lobby after all role preferences are submitted',
+      {
+        phase: readyLobbySnapshot.phase,
+        roleSelection: readyLobbySnapshot.roleSelection,
+      }
+    );
+
+    const startResponse = await emitAck(hostSocket, 'mm_host_start_game', {
+      roomId,
+      sessionId: hostSessionId,
+    });
+    assertCondition(
+      startResponse?.success,
+      'mm_host_start_game should lock role selection after host confirmation',
+      startResponse
+    );
+
     const sessionOrder = [
       hostSessionId,
       ...playerInfos.map((player) => player.sessionId),
@@ -551,6 +577,7 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
     );
     assertCondition(
       introSnapshot.phase === 'INTRO' &&
+        introSnapshot.roleSelection?.status === 'locked' &&
         introSnapshot.roleReading?.readyCount === 0 &&
         introSnapshot.roleReading?.totalCount === maxPlayers &&
         introSnapshot.myCards.length === 0 &&
@@ -558,9 +585,10 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
         introSnapshot.publicScripts?.some(
           (script) => script.stepId === 'INTRO' && script.current
         ),
-      'murder should auto-enter host-read intro without private cards',
+      'murder should enter host-read intro after host confirms role selection',
       {
         phase: introSnapshot.phase,
+        roleSelection: introSnapshot.roleSelection,
         roleReading: introSnapshot.roleReading,
         myCards: introSnapshot.myCards,
         specialEvents: introSnapshot.specialEvents,

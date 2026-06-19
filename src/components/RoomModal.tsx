@@ -67,6 +67,11 @@ export default function RoomModal({
     MurderMysteryScenarioOption[]
   >([]);
   const [isScenarioLoading, setIsScenarioLoading] = useState(false);
+  const [hasRequestedScenarioOptions, setHasRequestedScenarioOptions] =
+    useState(false);
+  const [scenarioLoadError, setScenarioLoadError] = useState<string | null>(
+    null
+  );
 
   const {
     register,
@@ -111,16 +116,24 @@ export default function RoomModal({
     if (selectedGameType !== 'murder_mystery') {
       setValue('scenarioId', '');
       setValue('hostParticipatesAsPlayer', false);
+      setHasRequestedScenarioOptions(false);
+      setScenarioLoadError(null);
       return;
     }
     setValue('hostParticipatesAsPlayer', true, {
       shouldDirty: false,
       shouldValidate: true,
     });
-    if (scenarioOptions.length > 0 || isScenarioLoading) {
+    if (
+      scenarioOptions.length > 0 ||
+      isScenarioLoading ||
+      hasRequestedScenarioOptions
+    ) {
       return;
     }
 
+    setHasRequestedScenarioOptions(true);
+    setScenarioLoadError(null);
     setIsScenarioLoading(true);
     fetch('/api/murder-mystery/scenarios', {
       cache: 'no-store',
@@ -138,7 +151,9 @@ export default function RoomModal({
         setScenarioOptions(nextScenarios);
       })
       .catch((error) => {
-        enqueueSnackbar((error as Error).message, {
+        const message = (error as Error).message;
+        setScenarioLoadError(message);
+        enqueueSnackbar(message, {
           variant: 'error',
         });
       })
@@ -149,6 +164,7 @@ export default function RoomModal({
     selectedGameType,
     scenarioOptions,
     isScenarioLoading,
+    hasRequestedScenarioOptions,
     setValue,
     enqueueSnackbar,
   ]);
@@ -440,7 +456,7 @@ export default function RoomModal({
               >
                 {scenarioOptions.length === 0 && (
                   <MenuItem value="" disabled>
-                    시나리오를 불러오는 중입니다.
+                    {scenarioLoadError ?? '시나리오를 불러오는 중입니다.'}
                   </MenuItem>
                 )}
                 {scenarioOptions.map((scenario) => (
@@ -453,7 +469,7 @@ export default function RoomModal({
                 {errors.scenarioId?.message ??
                   (selectedScenario
                     ? `${selectedScenario.players.min}~${selectedScenario.players.max}명 플레이`
-                    : '시나리오를 불러오는 중입니다.')}
+                    : (scenarioLoadError ?? '시나리오를 불러오는 중입니다.'))}
               </FormHelperText>
             </FormControl>
 
