@@ -3042,7 +3042,7 @@ const RoleReadingAssignedCard = ({
               ? 'translateZ(-24px) skewX(-2.4deg)'
               : 'translateZ(-18px) skewX(-1.8deg)',
             transformOrigin: 'left center',
-            transition: 'transform 240ms ease, box-shadow 240ms ease',
+            transition: 'transform 180ms ease, box-shadow 180ms ease',
           },
           '&::after': {
             content: '""',
@@ -3144,7 +3144,7 @@ const RoleReadingAssignedCard = ({
               ? 'translateZ(-58px) skewY(-0.28deg)'
               : 'translateZ(-48px) skewY(-0.18deg)',
             transformOrigin: 'left center',
-            transition: 'transform 240ms ease',
+            transition: 'transform 180ms ease',
           }}
         />
         <Box
@@ -3189,7 +3189,7 @@ const RoleReadingAssignedCard = ({
               ? 'translateZ(-46px) skewY(-0.24deg)'
               : 'translateZ(-36px) skewY(-0.14deg)',
             transformOrigin: 'left center',
-            transition: 'transform 240ms ease',
+            transition: 'transform 180ms ease',
           }}
         />
         <Box
@@ -3234,7 +3234,7 @@ const RoleReadingAssignedCard = ({
               ? 'translateZ(-30px) skewY(-0.2deg)'
               : 'translateZ(-24px) skewY(-0.1deg)',
             transformOrigin: 'left center',
-            transition: 'transform 240ms ease',
+            transition: 'transform 180ms ease',
           }}
         />
         <Box
@@ -3283,7 +3283,7 @@ const RoleReadingAssignedCard = ({
             border: '1px solid rgba(75, 58, 37, 0.22)',
             boxShadow:
               'inset 0 0 0 1px rgba(255,255,255,0.5), inset -10px 0 18px rgba(90,64,32,0.12)',
-            transition: 'opacity 120ms ease',
+            transition: 'opacity 90ms ease',
             '&::before': {
               content: '""',
               position: 'absolute',
@@ -3311,7 +3311,7 @@ const RoleReadingAssignedCard = ({
               ? 'rotateX(2deg) rotateY(-42deg) translate3d(10px, -6px, 42px)'
               : 'none',
             transition:
-              'transform 260ms cubic-bezier(0.2, 0.76, 0.24, 1), box-shadow 220ms ease',
+              'transform 180ms cubic-bezier(0.2, 0.76, 0.24, 1), box-shadow 160ms ease',
           }}
         >
           <CharacterBookCover
@@ -3438,25 +3438,8 @@ const RulebookModal = ({
   ) => void;
   onClose: () => void;
 }) => {
-  const [readerPageStatus, setReaderPageStatus] = useState<{
-    pageIndex: number;
-    pageCount: number;
-  } | null>(null);
-  const handleRulebookPageStatusChange = useCallback(
-    (status: { pageIndex: number; pageCount: number }) => {
-      setReaderPageStatus((current) =>
-        current?.pageIndex === status.pageIndex &&
-        current?.pageCount === status.pageCount
-          ? current
-          : { pageIndex: status.pageIndex, pageCount: status.pageCount }
-      );
-    },
-    []
-  );
-
   useEffect(() => {
     if (!open) {
-      setReaderPageStatus(null);
       return;
     }
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -3478,39 +3461,31 @@ const RulebookModal = ({
     >
       <DialogContent
         sx={{
-          p: { xs: 1.2, sm: 2.2 },
+          position: 'relative',
+          overflow: 'hidden',
+          p: fullScreen ? { xs: 0.75, sm: 1.2 } : { xs: 1.2, sm: 2.2 },
           background:
             'linear-gradient(145deg, #201b18 0%, #3f3226 48%, #171c23 100%)',
           color: '#f7f0df',
         }}
       >
-        <Stack direction="row" alignItems="center" sx={{ mb: 1 }}>
-          <Typography fontWeight={900} sx={{ flex: 1 }}>
-            룰북
-          </Typography>
-          {readerPageStatus ? (
-            <Typography
-              variant="caption"
-              sx={{
-                px: 1,
-                py: 0.35,
-                mr: 0.6,
-                borderRadius: 999,
-                backgroundColor: 'rgba(247,240,223,0.12)',
-                border: '1px solid rgba(247,240,223,0.16)',
-                color: '#f7f0df',
-                fontWeight: 850,
-                lineHeight: 1,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {readerPageStatus.pageIndex + 1} / {readerPageStatus.pageCount}쪽
-            </Typography>
-          ) : null}
-          <IconButton onClick={onClose} sx={{ color: '#f7f0df' }}>
+        {!fullScreen ? (
+          <IconButton
+            aria-label="룰북 닫기"
+            onClick={onClose}
+            sx={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              zIndex: 20,
+              color: '#f7f0df',
+              backgroundColor: 'rgba(24,19,16,0.58)',
+              '&:hover': { backgroundColor: 'rgba(24,19,16,0.78)' },
+            }}
+          >
             <CloseIcon />
           </IconButton>
-        </Stack>
+        ) : null}
         <MurderMysteryRulebookReader
           storageKey={
             roleSheet?.roleId
@@ -3531,17 +3506,16 @@ const RulebookModal = ({
           secretTextHighlights={roleSheet?.secretTextHighlights}
           specialEvents={specialEvents}
           onReportSpecialEvent={onReportSpecialEvent}
-          onPageStatusChange={handleRulebookPageStatusChange}
+          controlsMode="overlay"
           includePrologue={false}
           includeRolebookCover={false}
           showPageStatusFooter={false}
           pageSx={{
             height: {
-              xs: fullScreen ? 'calc(100svh - 164px)' : 700,
+              xs: fullScreen ? 'calc(100svh - 12px)' : 700,
               sm: 820,
             },
           }}
-          footerText="인게임 룰북은 본인 화면에서만 열립니다."
         />
       </DialogContent>
     </Dialog>
@@ -5133,8 +5107,8 @@ export default function MurderMysteryTableExperience({
       rulebookCoverResetTimerRef.current = window.setTimeout(() => {
         setIsRulebookCoverLifted(false);
         rulebookCoverResetTimerRef.current = null;
-      }, 260);
-    }, 240);
+      }, 180);
+    }, 160);
   }, [isRulebookOpen, snapshot.roleSheet]);
   const openPrivateCards = () => {
     if (!canOpenPrivateCards) {

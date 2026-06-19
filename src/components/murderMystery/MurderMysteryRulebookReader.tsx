@@ -33,6 +33,14 @@ type RulebookSection = 'prologue' | 'rolebook' | 'rules';
 type RulebookPageIndexBySection = Record<RulebookSection, number>;
 type RulebookPageTurnDirection = 'previous' | 'next';
 
+interface RulebookPageDragGesture {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  frameWidth: number;
+  hasDragged: boolean;
+}
+
 interface MurderMysteryRulebookPageStatus {
   section: RulebookSection;
   pageIndex: number;
@@ -52,6 +60,7 @@ interface MurderMysteryRulebookReaderProps {
   belongingHints?: MurderMysteryRoleBelongingHintScenario[];
   secretTextHighlights?: string[];
   pageSx?: SxProps<Theme>;
+  controlsMode?: 'inline' | 'overlay';
   includePrologue?: boolean;
   includeRolebookCover?: boolean;
   showProgressMarkers?: boolean;
@@ -79,6 +88,7 @@ const defaultPageIndexBySection: RulebookPageIndexBySection = {
 
 const pageFrameHeight = { xs: '80svh', sm: 'clamp(800px, 86dvh, 980px)' };
 const pageFramePadding = { xs: 1.35, sm: 2.35 };
+const pageDragActivationPx = 7;
 const rulebookPageTextSx = {
   whiteSpace: 'pre-wrap',
   fontSize: { xs: 14.5, sm: 16 },
@@ -114,6 +124,7 @@ export default function MurderMysteryRulebookReader({
   belongingHints = [],
   secretTextHighlights = [],
   pageSx,
+  controlsMode = 'inline',
   includePrologue = true,
   includeRolebookCover = true,
   showProgressMarkers = true,
@@ -141,12 +152,17 @@ export default function MurderMysteryRulebookReader({
     direction: RulebookPageTurnDirection;
     serial: number;
   } | null>(null);
+  const [areReaderControlsOpen, setAreReaderControlsOpen] = useState(false);
+  const [pageDragOffset, setPageDragOffset] = useState(0);
+  const [isPageDragging, setIsPageDragging] = useState(false);
   const loadedStorageKeyRef = useRef<string | null>(null);
-  const sectionTabs = useMemo(
+  const pageDragGestureRef = useRef<RulebookPageDragGesture | null>(null);
+  const suppressNextPageClickRef = useRef(false);
+  const sectionTabs = useMemo<readonly RulebookSection[]>(
     () =>
       includePrologue
-        ? (['prologue', 'rolebook', 'rules'] as const)
-        : (['rolebook', 'rules'] as const),
+        ? ['prologue', 'rolebook', 'rules']
+        : ['rolebook', 'rules'],
     [includePrologue]
   );
 
@@ -191,6 +207,7 @@ export default function MurderMysteryRulebookReader({
   const previewProgressRatio = previewRatio ?? progressRatio;
   const progress = Math.round(previewProgressRatio * 100);
   const canScrubProgress = pageCount > 1;
+  const useOverlayControls = controlsMode === 'overlay';
   const currentSecretPageIndex = includeRolebookCover
     ? pageIndex - 1
     : pageIndex;
@@ -336,10 +353,46 @@ export default function MurderMysteryRulebookReader({
     storageKey,
   ]);
 
+  const goToSection = (
+    nextSection: RulebookSection,
+    direction: RulebookPageTurnDirection
+  ) => {
+    setPreviewRatio(null);
+    if (useOverlayControls) {
+      setAreReaderControlsOpen(false);
+    }
+    setPageTurn((current) => ({
+      direction,
+      serial: (current?.serial ?? 0) + 1,
+    }));
+    setSection(nextSection);
+  };
+
   const goTo = (nextPageIndex: number) => {
+    if (nextPageIndex > maxPageIndex) {
+      const currentSectionIndex = sectionTabs.indexOf(section);
+      const nextSection = sectionTabs[currentSectionIndex + 1];
+      if (nextSection) {
+        goToSection(nextSection, 'next');
+      }
+      return;
+    }
+
+    if (nextPageIndex < 0) {
+      const currentSectionIndex = sectionTabs.indexOf(section);
+      const previousSection = sectionTabs[currentSectionIndex - 1];
+      if (previousSection) {
+        goToSection(previousSection, 'previous');
+      }
+      return;
+    }
+
     const resolvedPageIndex = clampPageIndex(nextPageIndex);
     if (resolvedPageIndex === pageIndex) {
       return;
+    }
+    if (useOverlayControls) {
+      setAreReaderControlsOpen(false);
     }
     setPageTurn((current) => ({
       direction: resolvedPageIndex > pageIndex ? 'next' : 'previous',
@@ -426,9 +479,138 @@ export default function MurderMysteryRulebookReader({
     setSection(nextSection);
     setPreviewRatio(null);
     setPageTurn(null);
+    setAreReaderControlsOpen(false);
+    setPageDragOffset(0);
+    setIsPageDragging(false);
+    pageDragGestureRef.current = null;
+    suppressNextPageClickRef.current = false;
+  };
+
+  const resetPageDrag = () => {
+    setPageDragOffset(0);
+    setIsPageDragging(false);
+    pageDragGestureRef.current = null;
+  };
+
+  const handlePagePointerDown = (event: ReactPointerEvent<HTMLElement>) => {
+    if (
+      pageCount <= 1 ||
+      isPageNavigationIgnoredTarget(event.target) ||
+      (event.pointerType === 'mouse' && event.button !== 0)
+    ) {
+      return;
+    }
+
+    const selection = window.getSelection();
+    if (selection && !selection.isCollapsed) {
+      return;
+    }
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+    pageDragGestureRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      frameWidth: event.currentTarget.getBoundingClientRect().width,
+      hasDragged: false,
+    };
+    setPageTurn(null);
+    setPageDragOffset(0);
+    setIsPageDragging(false);
+  };
+
+  const handlePagePointerMove = (event: ReactPointerEvent<HTMLElement>) => {
+    const gesture = pageDragGestureRef.current;
+    if (!gesture || gesture.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const deltaX = event.clientX - gesture.startX;
+    const deltaY = event.clientY - gesture.startY;
+    const absDeltaX = Math.abs(deltaX);
+    const absDeltaY = Math.abs(deltaY);
+
+    if (!gesture.hasDragged) {
+      if (
+        absDeltaX < pageDragActivationPx &&
+        absDeltaY < pageDragActivationPx
+      ) {
+        return;
+      }
+      if (absDeltaY > absDeltaX * 1.15) {
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+          event.currentTarget.releasePointerCapture(event.pointerId);
+        }
+        resetPageDrag();
+        return;
+      }
+      gesture.hasDragged = true;
+      setIsPageDragging(true);
+      suppressNextPageClickRef.current = true;
+    }
+
+    event.preventDefault();
+    const isBlockedDirection =
+      (deltaX > 0 && pageIndex <= 0) ||
+      (deltaX < 0 && pageIndex >= maxPageIndex);
+    const resistedDeltaX = isBlockedDirection ? deltaX * 0.28 : deltaX;
+    const maxOffset = gesture.frameWidth * 0.42;
+    setPageDragOffset(clamp(resistedDeltaX, -maxOffset, maxOffset));
+  };
+
+  const finishPageDrag = (event: ReactPointerEvent<HTMLElement>) => {
+    const gesture = pageDragGestureRef.current;
+    if (!gesture || gesture.pointerId !== event.pointerId) {
+      return;
+    }
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    const deltaX = event.clientX - gesture.startX;
+    const threshold = Math.min(96, Math.max(44, gesture.frameWidth * 0.16));
+    const shouldTurn = gesture.hasDragged && Math.abs(deltaX) >= threshold;
+    const nextPageIndex =
+      shouldTurn && deltaX < 0
+        ? pageIndex + 1
+        : shouldTurn && deltaX > 0
+          ? pageIndex - 1
+          : pageIndex;
+
+    resetPageDrag();
+
+    if (nextPageIndex !== pageIndex) {
+      goTo(nextPageIndex);
+      return;
+    }
+
+    if (gesture.hasDragged) {
+      suppressNextPageClickRef.current = true;
+    }
+  };
+
+  const cancelPageDrag = (event: ReactPointerEvent<HTMLElement>) => {
+    const gesture = pageDragGestureRef.current;
+    if (!gesture || gesture.pointerId !== event.pointerId) {
+      return;
+    }
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    if (gesture.hasDragged) {
+      suppressNextPageClickRef.current = true;
+    }
+    resetPageDrag();
   };
 
   const handlePageFrameClick = (event: ReactMouseEvent<HTMLElement>) => {
+    if (suppressNextPageClickRef.current) {
+      suppressNextPageClickRef.current = false;
+      return;
+    }
+
     if (isPageNavigationIgnoredTarget(event.target)) {
       return;
     }
@@ -439,65 +621,87 @@ export default function MurderMysteryRulebookReader({
     }
 
     const rect = event.currentTarget.getBoundingClientRect();
-    const nextPageIndex =
-      event.clientX < rect.left + rect.width / 2
-        ? pageIndex - 1
-        : pageIndex + 1;
+    const xRatio = (event.clientX - rect.left) / rect.width;
+
+    if (useOverlayControls && xRatio >= 0.42 && xRatio <= 0.58) {
+      setAreReaderControlsOpen((current) => !current);
+      return;
+    }
+
+    const nextPageIndex = xRatio < 0.5 ? pageIndex - 1 : pageIndex + 1;
 
     if (nextPageIndex !== pageIndex) {
       goTo(nextPageIndex);
     }
   };
 
-  return (
+  const readerControls = (
     <Stack
-      spacing={1.4}
-      onKeyDown={(event) => {
-        if (event.key === 'ArrowLeft') {
-          goTo(pageIndex - 1);
-        }
-        if (event.key === 'ArrowRight') {
-          goTo(pageIndex + 1);
-        }
-      }}
-      tabIndex={0}
-      sx={{ position: 'relative', outline: 'none' }}
+      spacing={0.8}
+      data-rulebook-navigation-skip="true"
+      sx={useOverlayControls ? { pointerEvents: 'auto' } : undefined}
     >
-      <Stack
-        direction="row"
-        spacing={0.5}
-        sx={{
-          p: 0.45,
-          borderRadius: 999,
-          backgroundColor: 'rgba(247,241,222,0.11)',
-          border: '1px solid rgba(247,241,222,0.16)',
-        }}
-      >
-        {sectionTabs.map((nextSection) => (
-          <Button
-            key={nextSection}
-            fullWidth
-            color="inherit"
-            variant={section === nextSection ? 'contained' : 'text'}
-            onClick={() => selectSection(nextSection)}
-            sx={{
-              borderRadius: 999,
-              color: section === nextSection ? '#211711' : '#f7f1de',
-              backgroundColor:
-                section === nextSection ? '#f5ecd5' : 'transparent',
-              '&:hover': {
+      <Stack direction="row" alignItems="center" spacing={0.8}>
+        <Stack
+          direction="row"
+          spacing={0.5}
+          sx={{
+            flex: 1,
+            minWidth: 0,
+            p: 0.45,
+            borderRadius: 999,
+            backgroundColor: 'rgba(247,241,222,0.11)',
+            border: '1px solid rgba(247,241,222,0.16)',
+          }}
+        >
+          {sectionTabs.map((nextSection) => (
+            <Button
+              key={nextSection}
+              fullWidth
+              color="inherit"
+              variant={section === nextSection ? 'contained' : 'text'}
+              onClick={() => selectSection(nextSection)}
+              sx={{
+                minWidth: 0,
+                borderRadius: 999,
+                color: section === nextSection ? '#211711' : '#f7f1de',
                 backgroundColor:
-                  section === nextSection ? '#f5ecd5' : 'rgba(247,241,222,0.1)',
-              },
+                  section === nextSection ? '#f5ecd5' : 'transparent',
+                '&:hover': {
+                  backgroundColor:
+                    section === nextSection
+                      ? '#f5ecd5'
+                      : 'rgba(247,241,222,0.1)',
+                },
+              }}
+            >
+              {nextSection === 'prologue'
+                ? '프롤로그'
+                : nextSection === 'rolebook'
+                  ? '룰지'
+                  : '규칙'}
+            </Button>
+          ))}
+        </Stack>
+        {useOverlayControls ? (
+          <Typography
+            variant="caption"
+            sx={{
+              flex: '0 0 auto',
+              px: 1,
+              py: 0.55,
+              borderRadius: 999,
+              backgroundColor: 'rgba(247,240,223,0.16)',
+              border: '1px solid rgba(247,240,223,0.18)',
+              color: '#f7f0df',
+              fontWeight: 900,
+              lineHeight: 1,
+              whiteSpace: 'nowrap',
             }}
           >
-            {nextSection === 'prologue'
-              ? '프롤로그'
-              : nextSection === 'rolebook'
-                ? '룰지'
-                : '규칙'}
-          </Button>
-        ))}
+            {pageIndex + 1} / {pageCount}
+          </Typography>
+        ) : null}
       </Stack>
 
       <Box
@@ -596,9 +800,31 @@ export default function MurderMysteryRulebookReader({
           />
         ))}
       </Box>
+    </Stack>
+  );
+
+  return (
+    <Stack
+      spacing={1.4}
+      onKeyDown={(event) => {
+        if (event.key === 'ArrowLeft') {
+          goTo(pageIndex - 1);
+        }
+        if (event.key === 'ArrowRight') {
+          goTo(pageIndex + 1);
+        }
+      }}
+      tabIndex={0}
+      sx={{ position: 'relative', outline: 'none' }}
+    >
+      {!useOverlayControls ? readerControls : null}
 
       <Box
         onClick={handlePageFrameClick}
+        onPointerDown={handlePagePointerDown}
+        onPointerMove={handlePagePointerMove}
+        onPointerUp={finishPageDrag}
+        onPointerCancel={cancelPageDrag}
         aria-label="페이지 영역"
         sx={[
           {
@@ -612,7 +838,14 @@ export default function MurderMysteryRulebookReader({
             color: '#241b12',
             border: '1px solid rgba(255,255,255,0.18)',
             boxShadow: '0 24px 70px rgba(0,0,0,0.35)',
-            cursor: pageCount > 1 ? 'pointer' : 'default',
+            cursor:
+              pageCount > 1
+                ? isPageDragging
+                  ? 'grabbing'
+                  : 'grab'
+                : 'default',
+            touchAction: 'pan-y',
+            userSelect: isPageDragging ? 'none' : undefined,
           },
           ...(Array.isArray(pageSx) ? pageSx : pageSx ? [pageSx] : []),
           ...(isRolebookCover
@@ -628,6 +861,52 @@ export default function MurderMysteryRulebookReader({
             : []),
         ]}
       >
+        {useOverlayControls ? (
+          <>
+            {areReaderControlsOpen ? (
+              <Box
+                data-rulebook-navigation-skip="true"
+                sx={{
+                  position: 'absolute',
+                  top: { xs: 8, sm: 12 },
+                  left: { xs: 8, sm: 12 },
+                  right: { xs: 8, sm: 12 },
+                  zIndex: 8,
+                  p: { xs: 0.75, sm: 1 },
+                  borderRadius: 2,
+                  backgroundColor: 'rgba(32,27,24,0.86)',
+                  border: '1px solid rgba(247,240,223,0.16)',
+                  boxShadow: '0 16px 36px rgba(0,0,0,0.28)',
+                  backdropFilter: 'blur(10px)',
+                }}
+              >
+                {readerControls}
+              </Box>
+            ) : null}
+            <Box
+              aria-hidden
+              sx={{
+                position: 'absolute',
+                left: '50%',
+                bottom: { xs: 6, sm: 8 },
+                zIndex: 7,
+                width: 38,
+                height: 4,
+                borderRadius: 999,
+                backgroundColor: areReaderControlsOpen
+                  ? 'rgba(245,158,11,0.72)'
+                  : 'rgba(36,27,18,0.22)',
+                boxShadow: areReaderControlsOpen
+                  ? '0 0 12px rgba(245,158,11,0.38)'
+                  : 'none',
+                transform: 'translateX(-50%)',
+                pointerEvents: 'none',
+                transition:
+                  'background-color 120ms ease-out, box-shadow 120ms ease-out',
+              }}
+            />
+          </>
+        ) : null}
         <Box
           key={`${section}:${pageIndex}:${pageTurn?.serial ?? 0}`}
           sx={{
@@ -635,32 +914,45 @@ export default function MurderMysteryRulebookReader({
             height: '100%',
             minHeight: isRolebookCover ? 0 : undefined,
             overflow: isRolebookCover ? 'visible' : 'hidden',
-            transformOrigin:
-              pageTurn?.direction === 'previous'
-                ? 'left center'
-                : 'right center',
-            animation: pageTurn
-              ? `${pageTurn.direction === 'previous' ? 'rulebook-page-return' : 'rulebook-page-forward'} 120ms ease-out both`
-              : undefined,
-            willChange: pageTurn ? 'transform, opacity' : undefined,
-            '@keyframes rulebook-page-forward': {
+            transform:
+              pageDragOffset !== 0
+                ? `translate3d(${pageDragOffset}px, 0, 0)`
+                : undefined,
+            opacity:
+              pageDragOffset !== 0
+                ? clamp(1 - Math.abs(pageDragOffset) / 520, 0.86, 1)
+                : undefined,
+            transition: isPageDragging
+              ? 'none'
+              : 'transform 120ms ease-out, opacity 120ms ease-out',
+            animation:
+              pageTurn && pageDragOffset === 0
+                ? `${pageTurn.direction === 'previous' ? 'reader-page-enter-previous' : 'reader-page-enter-next'} 110ms ease-out both`
+                : undefined,
+            willChange:
+              pageTurn || isPageDragging ? 'transform, opacity' : undefined,
+            '@media (prefers-reduced-motion: reduce)': {
+              animation: 'none',
+              transition: 'none',
+            },
+            '@keyframes reader-page-enter-next': {
               '0%': {
-                opacity: 0.72,
-                transform: 'translateX(10px) rotateY(-1.6deg)',
+                opacity: 0.88,
+                transform: 'translate3d(34px, 0, 0)',
               },
               '100%': {
                 opacity: 1,
-                transform: 'translateX(0) rotateY(0deg)',
+                transform: 'translate3d(0, 0, 0)',
               },
             },
-            '@keyframes rulebook-page-return': {
+            '@keyframes reader-page-enter-previous': {
               '0%': {
-                opacity: 0.72,
-                transform: 'translateX(-10px) rotateY(1.6deg)',
+                opacity: 0.88,
+                transform: 'translate3d(-34px, 0, 0)',
               },
               '100%': {
                 opacity: 1,
-                transform: 'translateX(0) rotateY(0deg)',
+                transform: 'translate3d(0, 0, 0)',
               },
             },
           }}
