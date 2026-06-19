@@ -46,6 +46,7 @@ interface MurderMysteryRulebookReaderProps {
   belongingHints?: MurderMysteryRoleBelongingHintScenario[];
   secretTextHighlights?: string[];
   pageSx?: SxProps<Theme>;
+  includePrologue?: boolean;
   showProgressMarkers?: boolean;
   footerText?: string;
   specialEvents?: MurderMysteryReportableSpecialEventView[];
@@ -81,6 +82,7 @@ export default function MurderMysteryRulebookReader({
   belongingHints = [],
   secretTextHighlights = [],
   pageSx,
+  includePrologue = true,
   showProgressMarkers = true,
   footerText,
   specialEvents = [],
@@ -99,12 +101,19 @@ export default function MurderMysteryRulebookReader({
   const [pageIndex, setPageIndex] = useState(0);
   const [previewRatio, setPreviewRatio] = useState<number | null>(null);
   const [isScrubbingProgress, setIsScrubbingProgress] = useState(false);
+  const sectionTabs = useMemo(
+    () =>
+      includePrologue
+        ? (['prologue', 'rolebook', 'rules'] as const)
+        : (['rolebook', 'rules'] as const),
+    [includePrologue]
+  );
   const pageCount =
-    section === 'rolebook'
-      ? secretPages.length + 1
-      : section === 'rules'
-        ? 1
-        : prologuePages.length;
+    section === 'rules'
+      ? 1
+      : section === 'prologue' && includePrologue
+        ? prologuePages.length
+        : secretPages.length + 1;
   const maxPageIndex = Math.max(pageCount - 1, 0);
   const isRolebookCover = section === 'rolebook' && pageIndex === 0;
   const clampPageIndex = (nextPageIndex: number) =>
@@ -153,25 +162,34 @@ export default function MurderMysteryRulebookReader({
     try {
       const raw = window.localStorage.getItem(storageKey);
       const saved = raw ? JSON.parse(raw) : {};
-      const savedSection = isRulebookSection(saved.section)
-        ? saved.section
-        : 'rolebook';
+      const savedSection =
+        isRulebookSection(saved.section) &&
+        (includePrologue || saved.section !== 'prologue')
+          ? saved.section
+          : 'rolebook';
       const savedPageIndex = Number(saved.pageIndex);
       setSection(savedSection);
       if (Number.isInteger(savedPageIndex)) {
         const savedPageCount =
-          savedSection === 'rolebook'
-            ? secretPages.length + 1
-            : savedSection === 'rules'
-              ? 1
-              : prologuePages.length;
+          savedSection === 'rules'
+            ? 1
+            : savedSection === 'prologue'
+              ? prologuePages.length
+              : secretPages.length + 1;
         setPageIndex(clamp(savedPageIndex, 0, Math.max(savedPageCount - 1, 0)));
       }
     } catch {
       setSection('rolebook');
       setPageIndex(0);
     }
-  }, [prologuePages.length, secretPages.length, storageKey]);
+  }, [includePrologue, prologuePages.length, secretPages.length, storageKey]);
+
+  useEffect(() => {
+    if (!includePrologue && section === 'prologue') {
+      setSection('rolebook');
+      setPageIndex(0);
+    }
+  }, [includePrologue, section]);
 
   useEffect(() => {
     if (!storageKey) {
@@ -295,7 +313,7 @@ export default function MurderMysteryRulebookReader({
           border: '1px solid rgba(247,241,222,0.16)',
         }}
       >
-        {(['prologue', 'rolebook', 'rules'] as const).map((nextSection) => (
+        {sectionTabs.map((nextSection) => (
           <Button
             key={nextSection}
             fullWidth
@@ -461,7 +479,7 @@ export default function MurderMysteryRulebookReader({
               portraitAlt={portraitAlt}
               sx={{ minHeight: 'inherit' }}
             />
-          ) : section === 'prologue' ? (
+          ) : section === 'prologue' && includePrologue ? (
             <Typography
               component="div"
               sx={{
