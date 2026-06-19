@@ -108,8 +108,6 @@ type ParticipantLabelSource = {
 };
 type RoleSelectionPublicCover =
   MurderMysteryStateSnapshot['roleSelection']['publicCovers'][number];
-type RoleSelectionRole =
-  MurderMysteryStateSnapshot['roleSelection']['roles'][number];
 type EndbookEvidenceReference = MurderMysteryEndbookEvidenceReferenceScenario;
 type InvestigationTargetGroup = {
   id: string;
@@ -517,63 +515,6 @@ const buildInvestigationMapTargetPins = (
         a.target.label.localeCompare(b.target.label)
     )
     .map((entry, index) => ({ ...entry, matNumber: index + 1 }));
-};
-
-const RoleSelectionSummaryRail = ({
-  submittedRole,
-}: {
-  submittedRole: RoleSelectionRole | null;
-}) => {
-  const submittedText = submittedRole
-    ? getRoleSelectionShortName(submittedRole.displayName)
-    : null;
-
-  return (
-    <Box
-      sx={{
-        px: 0.9,
-        py: 0.7,
-        borderRadius: 1.5,
-        backgroundColor: 'rgba(0,0,0,0.18)',
-        border: '1px solid rgba(255,255,255,0.06)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 0.75,
-        overflowX: 'auto',
-        overflowY: 'hidden',
-        whiteSpace: 'nowrap',
-        scrollbarWidth: 'thin',
-        '&::-webkit-scrollbar': { height: 4 },
-        '&::-webkit-scrollbar-thumb': {
-          backgroundColor: 'rgba(248,241,222,0.24)',
-          borderRadius: 999,
-        },
-      }}
-    >
-      <Typography
-        component="span"
-        variant="caption"
-        sx={{ color: '#d8d0bd', fontWeight: 900, lineHeight: 1.2 }}
-      >
-        {submittedText ? (
-          <>
-            제출한 선택{' '}
-            <Box component="span" sx={{ color: '#9fe3c0', fontWeight: 950 }}>
-              {submittedText}
-            </Box>
-          </>
-        ) : (
-          <>
-            선택하면{' '}
-            <Box component="span" sx={{ color: '#ffcf6a', fontWeight: 950 }}>
-              확인 후 바로 제출
-            </Box>
-            됩니다
-          </>
-        )}
-      </Typography>
-    </Box>
-  );
 };
 
 const getMurderMysteryBgmTrack = (
@@ -2649,27 +2590,12 @@ const RoleSelectionPanel = ({
           <Stack direction="row" spacing={1} alignItems="center">
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography fontWeight={950}>캐릭터 선택</Typography>
-              <Typography variant="caption" sx={{ color: '#d8d0bd' }}>
-                공개 표지만 보고 선택 · 중복 가능
-              </Typography>
             </Box>
             {roleSelection.status === 'locked' ? (
               <Chip
                 color="success"
                 label="배정 완료"
                 sx={{ flex: '0 0 auto', fontWeight: 900 }}
-              />
-            ) : hasSubmittedRolePreferences ? (
-              <Chip
-                size="small"
-                label="선택 제출됨"
-                sx={{
-                  flex: '0 0 auto',
-                  color: '#d9ffe8',
-                  fontWeight: 900,
-                  backgroundColor: 'rgba(34, 197, 94, 0.18)',
-                  border: '1px solid rgba(134, 239, 172, 0.36)',
-                }}
               />
             ) : null}
           </Stack>
@@ -2698,8 +2624,6 @@ const RoleSelectionPanel = ({
             </Stack>
           ) : (
             <>
-              <RoleSelectionSummaryRail submittedRole={submittedRole} />
-
               <Stack spacing={1}>
                 {roleSelection.publicCovers.map((cover) => (
                   <RolePublicCoverCard
@@ -2825,8 +2749,7 @@ const RoleSelectionPanel = ({
                   variant="caption"
                   sx={{ color: '#ffcf6a', lineHeight: 1.6, fontWeight: 900 }}
                 >
-                  현재 제출한 선택은{' '}
-                  {getRoleSelectionShortName(submittedRole.displayName)}
+                  현재는 {getRoleSelectionShortName(submittedRole.displayName)}
                   입니다. 확인하면 바로 변경 제출됩니다.
                 </Typography>
               ) : null}
@@ -6724,31 +6647,22 @@ export default function MurderMysteryTableExperience({
               참가 현황
             </Typography>
           </Stack>
-          <Stack
-            direction="row"
-            spacing={0.7}
-            useFlexGap
-            sx={{ flexWrap: 'wrap' }}
+          <Typography
+            variant="caption"
+            sx={{
+              display: 'block',
+              color: '#d8d0bd',
+              fontWeight: 900,
+              lineHeight: 1.35,
+              overflowX: 'auto',
+              pb: 0.1,
+              scrollbarWidth: 'none',
+              whiteSpace: 'nowrap',
+              '&::-webkit-scrollbar': { display: 'none' },
+            }}
           >
-            {[
-              '캐릭터 1명 선택',
-              '중복 선택 가능',
-              '겹치면 1명 확정 · 나머지 랜덤',
-            ].map((label) => (
-              <Chip
-                key={label}
-                size="small"
-                label={label}
-                sx={{
-                  height: 28,
-                  color: '#f8f1de',
-                  fontWeight: 900,
-                  backgroundColor: 'rgba(245, 158, 11, 0.14)',
-                  border: '1px solid rgba(245, 158, 11, 0.34)',
-                }}
-              />
-            ))}
-          </Stack>
+            캐릭터 1명 선택 · 중복 가능 · 겹치면 1명 확정, 나머지 랜덤
+          </Typography>
           <RoleSelectionPanel
             roleSelection={snapshot.roleSelection}
             onSubmitRolePreferences={onSubmitRolePreferences}
