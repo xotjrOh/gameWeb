@@ -5544,20 +5544,6 @@ export default function MurderMysteryTableExperience({
                       label={currentStep?.label ?? '프롤로그'}
                       color="warning"
                     />
-                    <Chip
-                      icon={<TimerIcon />}
-                      label={
-                        isPhaseTimerExpired
-                          ? '권장 시간이 지났습니다'
-                          : `권장 시간 ${formatSeconds(phaseRemainingSec)}`
-                      }
-                      sx={{
-                        backgroundColor: isPhaseTimerExpired
-                          ? 'rgba(245, 158, 11, 0.2)'
-                          : 'rgba(255,255,255,0.12)',
-                        color: '#f8f1de',
-                      }}
-                    />
                   </Stack>
 
                   <Box>
