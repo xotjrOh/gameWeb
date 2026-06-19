@@ -3,6 +3,7 @@ import { CommonResponse } from '@/types/socket';
 export type MurderMysteryPhase = string;
 export type MurderMysteryStepKind =
   | 'intro'
+  | 'role_selection'
   | 'role_reading'
   | 'investigate'
   | 'discuss'

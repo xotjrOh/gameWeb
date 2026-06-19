@@ -23,6 +23,8 @@ import {
   Divider,
   IconButton,
   Stack,
+  Tab,
+  Tabs,
   Tooltip,
   Typography,
   useMediaQuery,
@@ -100,6 +102,7 @@ interface MurderMysteryTableExperienceProps {
 }
 
 type PhaseKind = MurderMysteryStepKind | 'lobby';
+type IntroTab = 'prologue' | 'public-info';
 type AnyClueCard = MurderMysteryClueVaultCardView | MurderMysteryCardScenario;
 type ParticipantLabelSource = {
   name?: string | null;
@@ -108,6 +111,12 @@ type ParticipantLabelSource = {
 };
 type RoleSelectionPublicCover =
   MurderMysteryStateSnapshot['roleSelection']['publicCovers'][number];
+type RoleSelectionRole =
+  MurderMysteryStateSnapshot['roleSelection']['roles'][number];
+type RoleAssignmentNoticeRole = Pick<
+  RoleSelectionRole,
+  'displayName' | 'publicText' | 'portraitSrc' | 'portraitAlt'
+>;
 type EndbookEvidenceReference = MurderMysteryEndbookEvidenceReferenceScenario;
 type InvestigationTargetGroup = {
   id: string;
@@ -143,6 +152,8 @@ type CardViewerState = {
   cards: AnyClueCard[];
   index: number;
 };
+const ROLE_SELECTION_GUIDE_TEXT =
+  '캐릭터 1명 선택 · 겹치면 1명 확정, 나머지 랜덤';
 type PinnedClueReference = {
   sourceId: string;
   cardId: string;
@@ -2342,6 +2353,8 @@ const RolePublicCoverCard = ({
   isSelectedChoice = false,
   isSubmittedChoice = false,
   chooseActionLabel = '선택하기',
+  showChoiceControl = true,
+  showPreferenceSummary = true,
   preferredPlayerNames,
   assignedPlayerName,
   onChooseRole,
@@ -2351,12 +2364,16 @@ const RolePublicCoverCard = ({
   isSelectedChoice?: boolean;
   isSubmittedChoice?: boolean;
   chooseActionLabel?: string;
+  showChoiceControl?: boolean;
+  showPreferenceSummary?: boolean;
   preferredPlayerNames: string[];
   assignedPlayerName?: string;
   onChooseRole?: () => void;
   onRequestShareRoleSheet?: () => void;
 }) => {
-  const canChoose = Boolean(cover.selectable && onChooseRole);
+  const canChoose = Boolean(
+    showChoiceControl && cover.selectable && onChooseRole
+  );
   const canShareRoleSheet = Boolean(
     cover.selectable && onRequestShareRoleSheet
   );
@@ -2467,60 +2484,66 @@ const RolePublicCoverCard = ({
             </Typography>
           </Box>
         </Stack>
-        {cover.selectable ? (
+        {cover.selectable && (showPreferenceSummary || canChoose) ? (
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
             spacing={0.8}
             alignItems={{ xs: 'stretch', sm: 'center' }}
             justifyContent="space-between"
           >
-            <Typography
-              variant="caption"
-              sx={{ color: '#cfc5ad', fontWeight: 850, lineHeight: 1.45 }}
-            >
-              선택한 사람:{' '}
-              <Box
-                component="span"
-                sx={{
-                  color:
-                    preferredPlayerNames.length > 0 ? '#f8f1de' : '#948a78',
-                  fontWeight: 950,
-                }}
+            {showPreferenceSummary ? (
+              <Typography
+                variant="caption"
+                sx={{ color: '#cfc5ad', fontWeight: 850, lineHeight: 1.45 }}
               >
-                {preferredPlayerText}
-              </Box>
-            </Typography>
-            {canChoose ? (
-              <Button
-                size="small"
-                variant={isSelectedChoice ? 'contained' : 'outlined'}
-                color={isSelectedChoice ? 'warning' : 'inherit'}
-                aria-pressed={isSelectedChoice}
-                aria-label={`${cover.displayName} 선택`}
-                disabled={isSelectedChoice}
-                onClick={onChooseRole}
-                sx={{
-                  minWidth: 86,
-                  flex: '0 0 auto',
-                  fontWeight: 900,
-                  color: isSelectedChoice ? undefined : '#e8dec4',
-                  borderColor: isSelectedChoice
-                    ? undefined
-                    : 'rgba(248, 241, 222, 0.32)',
-                  ...(isSelectedChoice
-                    ? {
-                        '&.Mui-disabled': {
-                          color: '#2a1d0d',
-                          backgroundColor: '#f59e0b',
-                          opacity: 1,
-                        },
-                      }
-                    : {}),
-                }}
-              >
-                {isSelectedChoice ? '선택됨' : chooseActionLabel}
-              </Button>
-            ) : null}
+                선택한 사람:{' '}
+                <Box
+                  component="span"
+                  sx={{
+                    color:
+                      preferredPlayerNames.length > 0 ? '#f8f1de' : '#948a78',
+                    fontWeight: 950,
+                  }}
+                >
+                  {preferredPlayerText}
+                </Box>
+              </Typography>
+            ) : (
+              <Box sx={{ flex: 1 }} />
+            )}
+            <Stack direction="row" spacing={0.7} justifyContent="flex-end">
+              {canChoose ? (
+                <Button
+                  size="small"
+                  variant={isSelectedChoice ? 'contained' : 'outlined'}
+                  color={isSelectedChoice ? 'warning' : 'inherit'}
+                  aria-pressed={isSelectedChoice}
+                  aria-label={`${cover.displayName} 선택`}
+                  disabled={isSelectedChoice}
+                  onClick={onChooseRole}
+                  sx={{
+                    minWidth: 86,
+                    flex: '0 0 auto',
+                    fontWeight: 900,
+                    color: isSelectedChoice ? undefined : '#e8dec4',
+                    borderColor: isSelectedChoice
+                      ? undefined
+                      : 'rgba(248, 241, 222, 0.32)',
+                    ...(isSelectedChoice
+                      ? {
+                          '&.Mui-disabled': {
+                            color: '#2a1d0d',
+                            backgroundColor: '#f59e0b',
+                            opacity: 1,
+                          },
+                        }
+                      : {}),
+                  }}
+                >
+                  {isSelectedChoice ? '선택됨' : chooseActionLabel}
+                </Button>
+              ) : null}
+            </Stack>
           </Stack>
         ) : null}
       </Stack>
@@ -2533,11 +2556,17 @@ const RoleSelectionPanel = ({
   onSubmitRolePreferences,
   canShareRoleSheets = false,
   onShareRoleSheet,
+  title = '캐릭터 선택',
+  description,
+  allowRoleChoice = true,
 }: {
   roleSelection: MurderMysteryStateSnapshot['roleSelection'];
   onSubmitRolePreferences: (roleIds: string[]) => void;
   canShareRoleSheets?: boolean;
   onShareRoleSheet: (roleId: string) => void;
+  title?: string;
+  description?: string;
+  allowRoleChoice?: boolean;
 }) => {
   const [shareConfirmCover, setShareConfirmCover] =
     useState<RoleSelectionPublicCover | null>(null);
@@ -2589,7 +2618,15 @@ const RoleSelectionPanel = ({
         <Stack spacing={1.3}>
           <Stack direction="row" spacing={1} alignItems="center">
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography fontWeight={950}>캐릭터 선택</Typography>
+              <Typography fontWeight={950}>{title}</Typography>
+              {description ? (
+                <Typography
+                  variant="caption"
+                  sx={{ display: 'block', mt: 0.25, color: '#d8d0bd' }}
+                >
+                  {description}
+                </Typography>
+              ) : null}
             </Box>
             {roleSelection.status === 'locked' ? (
               <Chip
@@ -2634,9 +2671,11 @@ const RoleSelectionPanel = ({
                     chooseActionLabel={
                       hasSubmittedRolePreferences ? '변경하기' : '선택하기'
                     }
+                    showChoiceControl={allowRoleChoice}
+                    showPreferenceSummary={allowRoleChoice}
                     preferredPlayerNames={getPreferredPlayerNames(cover)}
                     onChooseRole={
-                      cover.selectable
+                      allowRoleChoice && cover.selectable
                         ? () => setSelectionConfirmCover(cover)
                         : undefined
                     }
@@ -2810,7 +2849,7 @@ const RoleSelectionPanel = ({
                 룰지 공유 확인
               </Typography>
               <Typography variant="caption" sx={{ color: '#d8d0bd' }}>
-                미접속 참가자에게 보낼 캐릭터 룰지를 확인하세요.
+                참가자에게 보낼 캐릭터 룰지를 확인하세요.
               </Typography>
             </Box>
           </Stack>
@@ -2855,8 +2894,7 @@ const RoleSelectionPanel = ({
                 </Stack>
               </Box>
               <Typography sx={{ lineHeight: 1.7, wordBreak: 'keep-all' }}>
-                {shareConfirmDisplayName}의 룰지를 미접속 인원에게 미리
-                공유하시겠습니까?
+                {shareConfirmDisplayName}의 룰지를 참가자에게 공유하시겠습니까?
               </Typography>
               <Typography
                 variant="caption"
@@ -2886,6 +2924,76 @@ const RoleSelectionPanel = ({
     </>
   );
 };
+
+const RoleAssignmentMismatchCard = ({
+  title,
+  role,
+  tone,
+}: {
+  title: string;
+  role: RoleAssignmentNoticeRole | null;
+  tone: 'wanted' | 'assigned';
+}) => (
+  <Box
+    sx={{
+      minWidth: 0,
+      flex: 1,
+      p: 1,
+      borderRadius: 1.5,
+      backgroundColor:
+        tone === 'assigned'
+          ? 'rgba(34, 197, 94, 0.12)'
+          : 'rgba(245, 158, 11, 0.12)',
+      border:
+        tone === 'assigned'
+          ? '1px solid rgba(74, 222, 128, 0.34)'
+          : '1px solid rgba(245, 158, 11, 0.36)',
+    }}
+  >
+    <Stack direction="row" spacing={1} alignItems="center">
+      <CharacterPortraitFrame
+        src={role?.portraitSrc}
+        alt={role?.portraitAlt}
+        label={role?.displayName ?? '캐릭터'}
+        variant="thumbnail"
+        sx={{ width: 58, flex: '0 0 auto' }}
+      />
+      <Box sx={{ minWidth: 0 }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: tone === 'assigned' ? '#9fe3c0' : '#ffcf6a',
+            fontWeight: 950,
+          }}
+        >
+          {title}
+        </Typography>
+        <Typography
+          fontWeight={950}
+          sx={{ color: '#fff6db', lineHeight: 1.25, wordBreak: 'keep-all' }}
+        >
+          {role?.displayName ?? '확인 불가'}
+        </Typography>
+        {role?.publicText ? (
+          <Typography
+            variant="caption"
+            sx={{
+              display: '-webkit-box',
+              mt: 0.2,
+              color: '#d8d0bd',
+              overflow: 'hidden',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              lineHeight: 1.45,
+            }}
+          >
+            {role.publicText}
+          </Typography>
+        ) : null}
+      </Box>
+    </Stack>
+  </Box>
+);
 
 const MyDeskPanel = ({
   cardCount,
@@ -4317,6 +4425,7 @@ export default function MurderMysteryTableExperience({
   const [clueTakeNotice, setClueTakeNotice] = useState<ClueTakeNotice | null>(
     null
   );
+  const [introTab, setIntroTab] = useState<IntroTab>('prologue');
   const [nowTick, setNowTick] = useState(Date.now());
   const selectedCard = cardViewer?.cards[cardViewer.index] ?? null;
 
@@ -4470,14 +4579,43 @@ export default function MurderMysteryTableExperience({
   const submittedRoleSelectionCount = snapshot.roleSelection.players.filter(
     (player) => player.submitted
   ).length;
+  const preferredRoleId = snapshot.roleSelection.yourPreferenceRoleIds[0];
+  const preferredRole = preferredRoleId
+    ? (snapshot.roleSelection.roles.find(
+        (role) => role.id === preferredRoleId
+      ) ?? null)
+    : null;
+  const assignedRoleId = snapshot.roleSelection.yourAssignedRoleId;
+  const assignedRole = assignedRoleId
+    ? (snapshot.roleSelection.roles.find(
+        (role) => role.id === assignedRoleId
+      ) ?? null)
+    : null;
+  const assignedRoleForMismatch =
+    assignedRole ??
+    (snapshot.roleSheet
+      ? {
+          displayName: snapshot.roleSheet.displayName,
+          publicText: snapshot.roleSheet.publicText,
+          portraitSrc: snapshot.roleSheet.portraitSrc,
+          portraitAlt: snapshot.roleSheet.portraitAlt,
+        }
+      : null);
   const shouldShowRoleSelectionMarkerRail =
-    phaseKind === 'lobby' && !isRoleSelectionLocked;
+    (phaseKind === 'lobby' ||
+      phaseKind === 'intro' ||
+      phaseKind === 'role_selection') &&
+    !isRoleSelectionLocked;
   const shouldShowPlayerMarkerRail = isRoleSelectionLocked;
   const shouldShowMarkerRail =
     shouldShowRoleSelectionMarkerRail || shouldShowPlayerMarkerRail;
+  const isIntroRoleSelectionOpen =
+    phaseKind === 'intro' && !isRoleSelectionLocked;
   const showNextPhaseTool =
     canUseHostTools &&
     phaseKind !== 'lobby' &&
+    !isIntroRoleSelectionOpen &&
+    phaseKind !== 'role_selection' &&
     phaseKind !== 'final_vote' &&
     phaseKind !== 'endbook';
   const canAdvancePhase =
@@ -4496,7 +4634,6 @@ export default function MurderMysteryTableExperience({
     (snapshot.canUseHostGameMasterControls ||
       snapshot.finalVote.submittedVoters >= snapshot.finalVote.totalVoters);
   const isFloatingActionDockPhase =
-    phaseKind === 'intro' ||
     phaseKind === 'role_reading' ||
     phaseKind === 'investigate' ||
     phaseKind === 'final_vote' ||
@@ -4512,10 +4649,11 @@ export default function MurderMysteryTableExperience({
     Number(Boolean(selectedPlayer));
   const hasOpenModal = openModalCount > 0;
   const shouldShowHostRoleSelectionDock =
-    canUseHostTools && phaseKind === 'lobby' && !isRoleSelectionLocked;
+    canUseHostTools &&
+    (phaseKind === 'intro' || phaseKind === 'role_selection') &&
+    !isRoleSelectionLocked;
   const shouldShowFloatingActionDock =
     isFloatingActionDockPhase &&
-    (phaseKind !== 'intro' || canUseHostTools) &&
     (!hasOpenModal || (phaseKind === 'investigate' && canActNow));
   const shouldReserveBottomDockSpace =
     shouldShowHostRoleSelectionDock || shouldShowFloatingActionDock;
@@ -4844,8 +4982,11 @@ export default function MurderMysteryTableExperience({
     ) {
       setIsRulebookOpen(false);
     }
+    if (previousPhaseRef.current !== snapshot.phase && phaseKind === 'intro') {
+      setIntroTab('prologue');
+    }
     previousPhaseRef.current = snapshot.phase;
-  }, [snapshot.phase]);
+  }, [phaseKind, snapshot.phase]);
 
   const renderIntroArea = () => {
     const introText =
@@ -4853,79 +4994,168 @@ export default function MurderMysteryTableExperience({
       currentStep?.readAloud ??
       snapshot.scenario.intro.readAloud;
     const isHostReading = canUseHostTools;
+    const introTabs: Array<{ value: IntroTab; label: string }> = [
+      { value: 'prologue', label: '프롤로그' },
+      { value: 'public-info', label: '캐릭터 선택' },
+    ];
 
     return (
-      <Stack spacing={1.8}>
+      <Stack spacing={1.3}>
         <Box
           sx={{
-            p: { xs: 1.6, md: 2.2 },
-            borderRadius: 3,
-            border: isHostReading
-              ? '1px solid rgba(245, 197, 66, 0.72)'
-              : '1px solid rgba(255,255,255,0.16)',
-            backgroundColor: isHostReading
-              ? 'rgba(245, 197, 66, 0.12)'
-              : 'rgba(255,255,255,0.06)',
-            boxShadow: isHostReading ? '0 18px 42px rgba(0,0,0,0.28)' : 'none',
+            position: 'sticky',
+            top: 0,
+            zIndex: 4,
+            borderRadius: 2,
+            border: '1px solid rgba(255,255,255,0.14)',
+            backgroundColor: 'rgba(11, 15, 20, 0.94)',
+            boxShadow: '0 12px 28px rgba(0,0,0,0.24)',
+            overflow: 'hidden',
           }}
         >
-          <Stack spacing={1.4}>
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-              <Chip
-                icon={<ArticleIcon />}
-                color={isHostReading ? 'warning' : 'default'}
-                label={currentStep?.label ?? '프롤로그'}
+          <Tabs
+            value={introTab}
+            onChange={(_, nextTab: IntroTab) => setIntroTab(nextTab)}
+            variant="fullWidth"
+            TabIndicatorProps={{ style: { display: 'none' } }}
+            sx={{
+              p: 0.65,
+              minHeight: 48,
+              borderBottom: '1px solid rgba(255,255,255,0.12)',
+              backgroundColor: 'rgba(255,255,255,0.045)',
+              '& .MuiTabs-flexContainer': {
+                gap: 0.75,
+              },
+              '& .MuiTab-root': {
+                minHeight: 36,
+                borderRadius: 1.4,
+                color: '#cfc5ad',
+                fontWeight: 950,
+                textTransform: 'none',
+                border: '1px solid transparent',
+              },
+              '& .MuiTab-root.Mui-selected': {
+                color: '#231604',
+                backgroundColor: '#f5c542',
+                borderColor: 'rgba(255,246,219,0.36)',
+                boxShadow: '0 8px 18px rgba(0,0,0,0.22)',
+              },
+            }}
+          >
+            {introTabs.map((tab) => (
+              <Tab
+                key={tab.value}
+                value={tab.value}
+                label={tab.label}
+                id={`intro-tab-${tab.value}`}
+                aria-controls={`intro-tabpanel-${tab.value}`}
               />
-              <Chip
-                icon={<TimerIcon />}
-                label={
-                  isPhaseTimerExpired
-                    ? '권장 시간이 지났습니다'
-                    : `권장 시간 ${formatSeconds(phaseRemainingSec)}`
-                }
-                sx={{
-                  backgroundColor: isPhaseTimerExpired
-                    ? 'rgba(245, 158, 11, 0.2)'
-                    : 'rgba(255,255,255,0.12)',
-                  color: '#f8f1de',
-                }}
-              />
-            </Stack>
-
-            <Box>
-              <Typography
-                variant="h4"
-                fontWeight={950}
-                sx={{
-                  fontSize: { xs: 26, md: 34 },
-                  lineHeight: 1.15,
-                  wordBreak: 'keep-all',
-                }}
-              >
-                {isHostReading
-                  ? '방장이 소리 내어 읽어주세요'
-                  : '방장이 낭독 중입니다'}
-              </Typography>
-              <Typography sx={{ mt: 0.8, color: '#d8d0bd', lineHeight: 1.65 }}>
-                {isHostReading
-                  ? '플레이어들이 같은 장면을 듣고 시작할 수 있도록 천천히 읽은 뒤 다음 단계로 넘기세요.'
-                  : '지문은 함께 볼 수 있지만, 진행은 방장이 낭독을 마친 뒤 넘어갑니다.'}
-              </Typography>
-            </Box>
-          </Stack>
+            ))}
+          </Tabs>
         </Box>
 
         <Box
-          sx={{
-            p: { xs: 1.4, md: 2 },
-            borderRadius: 2,
-            border: '1px solid rgba(255,255,255,0.14)',
-            backgroundColor: 'rgba(11, 15, 20, 0.58)',
-          }}
+          role="tabpanel"
+          hidden={introTab !== 'prologue'}
+          id="intro-tabpanel-prologue"
+          aria-labelledby="intro-tab-prologue"
         >
-          <Typography sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.78 }}>
-            {introText}
-          </Typography>
+          {introTab === 'prologue' ? (
+            <Stack spacing={1.3}>
+              <Box
+                sx={{
+                  p: { xs: 1.6, md: 2.2 },
+                  borderRadius: 3,
+                  border: isHostReading
+                    ? '1px solid rgba(245, 197, 66, 0.72)'
+                    : '1px solid rgba(255,255,255,0.16)',
+                  backgroundColor: isHostReading
+                    ? 'rgba(245, 197, 66, 0.12)'
+                    : 'rgba(255,255,255,0.06)',
+                  boxShadow: isHostReading
+                    ? '0 18px 42px rgba(0,0,0,0.28)'
+                    : 'none',
+                }}
+              >
+                <Stack spacing={1.4}>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    <Chip
+                      icon={<ArticleIcon />}
+                      color={isHostReading ? 'warning' : 'default'}
+                      label={currentStep?.label ?? '프롤로그'}
+                    />
+                    <Chip
+                      icon={<TimerIcon />}
+                      label={
+                        isPhaseTimerExpired
+                          ? '권장 시간이 지났습니다'
+                          : `권장 시간 ${formatSeconds(phaseRemainingSec)}`
+                      }
+                      sx={{
+                        backgroundColor: isPhaseTimerExpired
+                          ? 'rgba(245, 158, 11, 0.2)'
+                          : 'rgba(255,255,255,0.12)',
+                        color: '#f8f1de',
+                      }}
+                    />
+                  </Stack>
+
+                  <Box>
+                    <Typography
+                      variant="h4"
+                      fontWeight={950}
+                      sx={{
+                        fontSize: { xs: 26, md: 34 },
+                        lineHeight: 1.15,
+                        wordBreak: 'keep-all',
+                      }}
+                    >
+                      {isHostReading
+                        ? '방장이 소리 내어 읽어주세요'
+                        : '방장이 낭독 중입니다'}
+                    </Typography>
+                    <Typography
+                      sx={{ mt: 0.8, color: '#d8d0bd', lineHeight: 1.65 }}
+                    >
+                      {isHostReading
+                        ? '프롤로그를 읽는 동안에도 참가자들은 캐릭터를 고를 수 있습니다. 전원 제출 후 배정을 확정하세요.'
+                        : '프롤로그를 들으며 캐릭터를 고를 수 있습니다.'}
+                    </Typography>
+                  </Box>
+                </Stack>
+              </Box>
+              <Box
+                sx={{
+                  p: { xs: 1.4, md: 2 },
+                  borderRadius: 2,
+                  border: '1px solid rgba(255,255,255,0.14)',
+                  backgroundColor: 'rgba(11, 15, 20, 0.58)',
+                }}
+              >
+                <Typography sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.78 }}>
+                  {introText}
+                </Typography>
+              </Box>
+            </Stack>
+          ) : null}
+        </Box>
+
+        <Box
+          role="tabpanel"
+          hidden={introTab !== 'public-info'}
+          id="intro-tabpanel-public-info"
+          aria-labelledby="intro-tab-public-info"
+        >
+          {introTab === 'public-info' ? (
+            <RoleSelectionPanel
+              roleSelection={snapshot.roleSelection}
+              onSubmitRolePreferences={onSubmitRolePreferences}
+              canShareRoleSheets={canUseHostTools}
+              onShareRoleSheet={onShareRoleSheet}
+              title="캐릭터 선택"
+              description={ROLE_SELECTION_GUIDE_TEXT}
+            />
+          ) : null}
         </Box>
 
         {!isHostReading ? (
@@ -4960,11 +5190,48 @@ export default function MurderMysteryTableExperience({
             '& .MuiAlert-icon': { color: '#ffcf6a' },
           }}
         >
-          선택한 캐릭터가 다른 참가자와 겹쳐 남은 캐릭터 중 무작위로
-          배정되었습니다.
-          {snapshot.roleSheet
-            ? ` 현재 배정: ${snapshot.roleSheet.displayName}`
-            : ''}
+          <Stack spacing={1.1}>
+            <Box>
+              <Typography fontWeight={950} sx={{ color: '#fff6db' }}>
+                원한 캐릭터와 다른 캐릭터가 배정되었습니다
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{ mt: 0.2, color: '#f3dfac', lineHeight: 1.55 }}
+              >
+                선택이 겹쳐 배정이 조정되었습니다. 아래 실제 배정 캐릭터의
+                룰지를 읽어주세요.
+              </Typography>
+            </Box>
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={0.8}
+              alignItems="stretch"
+            >
+              <RoleAssignmentMismatchCard
+                title="내가 선택한 캐릭터"
+                role={preferredRole}
+                tone="wanted"
+              />
+              <Box
+                sx={{
+                  display: 'grid',
+                  placeItems: 'center',
+                  color: '#ffcf6a',
+                  minWidth: { xs: 'auto', sm: 28 },
+                  transform: { xs: 'rotate(90deg)', sm: 'none' },
+                }}
+                aria-hidden
+              >
+                <ChevronRightIcon fontSize="small" />
+              </Box>
+              <RoleAssignmentMismatchCard
+                title="실제 배정된 캐릭터"
+                role={assignedRoleForMismatch}
+                tone="assigned"
+              />
+            </Stack>
+          </Stack>
         </Alert>
       ) : null}
 
@@ -6275,25 +6542,7 @@ export default function MurderMysteryTableExperience({
     let chips: React.ReactNode = null;
     let actions: React.ReactNode = null;
 
-    if (phaseKind === 'intro') {
-      title = canUseHostTools
-        ? '방장이 낭독을 진행하세요'
-        : '방장이 낭독 중입니다';
-      description = canUseHostTools
-        ? '지문을 소리 내어 읽은 뒤 다음 단계로 넘기세요.'
-        : '지문을 함께 보며 방장의 진행을 기다려주세요.';
-      actions = canUseHostTools ? (
-        <Button
-          size="small"
-          variant="contained"
-          color="warning"
-          startIcon={<TaskAltIcon />}
-          onClick={onNextPhase}
-        >
-          낭독 완료, 다음으로
-        </Button>
-      ) : null;
-    } else if (phaseKind === 'role_reading') {
+    if (phaseKind === 'role_reading') {
       title = snapshot.roleReading.yourReady
         ? '읽음 완료'
         : '비공개 룰지를 읽고 완료를 눌러주세요';
@@ -6474,7 +6723,7 @@ export default function MurderMysteryTableExperience({
     const buttonLabel = !allConnected
       ? `접속 ${connectedPlayerCount}/${requiredPlayerCount}`
       : allSubmitted
-        ? '이대로 배정 시작'
+        ? '이대로 캐릭터 배정'
         : `선택 제출 ${submittedRoleSelectionCount}/${requiredPlayerCount}`;
     const helperText = !allConnected
       ? '전원 접속 대기'
@@ -6667,12 +6916,19 @@ export default function MurderMysteryTableExperience({
 
   const renderPhaseBody = () => {
     if (phaseKind === 'lobby') {
+      const allConnected = connectedPlayerCount >= requiredPlayerCount;
+
       return (
         <Stack spacing={1.5}>
           <Stack direction="row" spacing={1} alignItems="center">
             <Typography variant="h5" fontWeight={950} sx={{ flex: 1 }}>
               참가 현황
             </Typography>
+            <Chip
+              label={`접속 ${connectedPlayerCount}/${requiredPlayerCount}`}
+              color={allConnected ? 'success' : 'warning'}
+              sx={{ fontWeight: 900 }}
+            />
           </Stack>
           <Typography
             variant="caption"
@@ -6681,14 +6937,66 @@ export default function MurderMysteryTableExperience({
               color: '#d8d0bd',
               fontWeight: 900,
               lineHeight: 1.35,
-              overflowX: 'auto',
-              pb: 0.1,
-              scrollbarWidth: 'none',
-              whiteSpace: 'nowrap',
-              '&::-webkit-scrollbar': { display: 'none' },
+              wordBreak: 'keep-all',
             }}
           >
-            캐릭터 1명 선택 · 중복 가능 · 전원 제출 후 방장이 확정
+            {ROLE_SELECTION_GUIDE_TEXT}
+          </Typography>
+          <RoleSelectionPanel
+            roleSelection={snapshot.roleSelection}
+            onSubmitRolePreferences={onSubmitRolePreferences}
+            canShareRoleSheets={canUseHostTools}
+            onShareRoleSheet={onShareRoleSheet}
+          />
+          {canUseHostTools ? (
+            <Button
+              variant="contained"
+              color="warning"
+              startIcon={<SkipNextIcon />}
+              disabled={!allConnected}
+              onClick={onNextPhase}
+              sx={{ alignSelf: 'flex-start', fontWeight: 950 }}
+            >
+              {allConnected
+                ? '프롤로그 시작'
+                : `전원 접속 대기 ${connectedPlayerCount}/${requiredPlayerCount}`}
+            </Button>
+          ) : (
+            <Typography sx={{ color: '#d8d0bd' }}>
+              방장이 프롤로그를 시작할 때까지 기다려주세요.
+            </Typography>
+          )}
+        </Stack>
+      );
+    }
+
+    if (phaseKind === 'role_selection') {
+      return (
+        <Stack spacing={1.5}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography variant="h5" fontWeight={950} sx={{ flex: 1 }}>
+              캐릭터 선택
+            </Typography>
+            <Chip
+              label={`제출 ${submittedRoleSelectionCount}/${requiredPlayerCount}`}
+              color={
+                submittedRoleSelectionCount >= requiredPlayerCount
+                  ? 'success'
+                  : 'warning'
+              }
+              sx={{ fontWeight: 900 }}
+            />
+          </Stack>
+          <Typography
+            variant="caption"
+            sx={{
+              display: 'block',
+              color: '#d8d0bd',
+              fontWeight: 900,
+              lineHeight: 1.45,
+            }}
+          >
+            {ROLE_SELECTION_GUIDE_TEXT}
           </Typography>
           <RoleSelectionPanel
             roleSelection={snapshot.roleSelection}
@@ -6924,6 +7232,7 @@ export default function MurderMysteryTableExperience({
           <Stack spacing={1.8}>
             {renderPhaseBody()}
             {phaseKind !== 'lobby' &&
+            phaseKind !== 'role_selection' &&
             phaseKind !== 'discuss' &&
             phaseKind !== 'final_vote' ? (
               <>

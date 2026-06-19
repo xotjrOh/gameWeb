@@ -207,7 +207,6 @@ const murderMysteryGameHandler = (
       try {
         const room = toMurderMysteryRoom(validateRoom(roomId));
         ensureMurderMysteryHost(room, sessionId);
-        ensureAllowedPhase(room, ['LOBBY']);
 
         const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
         const payload = buildMurderMysteryRoleShareText(room, scenario, roleId);

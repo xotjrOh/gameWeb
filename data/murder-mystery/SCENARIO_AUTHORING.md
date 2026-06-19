@@ -32,6 +32,7 @@
 
 - `flow.steps`가 실제 진행 탭/스텝퍼를 결정합니다.
 - 필수 kind: `intro`, `final_vote`, `endbook`.
+- 캐릭터 선택을 프롤로그와 분리해 독립 진행하려면 `kind: role_selection` 단계를 `intro`와 `role_reading` 사이에 둘 수 있습니다.
 - 최종 지목 후 역할별 추가 선택이 필요하면 `kind: ending_choice` 단계를 `final_vote`와 `endbook` 사이에 둡니다.
 - 조사/토론 단계는 `kind: investigate|discuss` + `round`를 반드시 넣습니다.
 - `durationSec`은 타이머 기본값입니다. 0초가 되어도 자동 진행되지 않습니다.

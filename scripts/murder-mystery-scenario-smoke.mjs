@@ -23,6 +23,7 @@ const toFiniteNumber = (value) =>
 
 const toStepKind = (value) =>
   value === 'intro' ||
+  value === 'role_selection' ||
   value === 'role_reading' ||
   value === 'investigate' ||
   value === 'discuss' ||

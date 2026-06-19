@@ -2090,6 +2090,18 @@ const clearStaleRolePreferences = (room: MurderMysteryRoom) => {
   );
 };
 
+const isRoleSelectionOpenPhase = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario
+) => {
+  const currentStep = getFlowStepByPhase(scenario, room.gameData.phase);
+  return (
+    room.gameData.phase === 'LOBBY' ||
+    currentStep?.kind === 'intro' ||
+    currentStep?.kind === 'role_selection'
+  );
+};
+
 const applyMurderMysteryRoleAssignments = (
   room: MurderMysteryRoom,
   scenario: MurderMysteryScenario,
@@ -2188,11 +2200,11 @@ export const submitMurderMysteryRolePreferences = (
   playerId: string,
   roleIds: string[]
 ) => {
-  if (room.gameData.phase !== 'LOBBY') {
-    throw new Error('대기실에서만 캐릭터 선택을 제출할 수 있습니다.');
-  }
   if (room.gameData.roleSelectionStatus === 'locked') {
     throw new Error('이미 캐릭터 배정이 완료되었습니다.');
+  }
+  if (!isRoleSelectionOpenPhase(room, scenario)) {
+    throw new Error('캐릭터 선택이 열려있을 때만 제출할 수 있습니다.');
   }
   if (!room.players.some((player) => player.id === playerId)) {
     throw new Error('참가자만 캐릭터 선택을 제출할 수 있습니다.');
@@ -2217,11 +2229,12 @@ export const clearMurderMysteryRolePreferences = (
   room: MurderMysteryRoom,
   playerId: string
 ) => {
-  if (room.gameData.phase !== 'LOBBY') {
-    throw new Error('대기실에서만 캐릭터 선택을 수정할 수 있습니다.');
-  }
+  const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
   if (room.gameData.roleSelectionStatus === 'locked') {
     throw new Error('이미 캐릭터 배정이 완료되었습니다.');
+  }
+  if (!isRoleSelectionOpenPhase(room, scenario)) {
+    throw new Error('캐릭터 선택이 열려있을 때만 수정할 수 있습니다.');
   }
   if (!room.players.some((player) => player.id === playerId)) {
     throw new Error('참가자만 캐릭터 선택을 수정할 수 있습니다.');
@@ -2236,8 +2249,15 @@ export const buildMurderMysteryRoleShareText = (
   scenario: MurderMysteryScenario,
   roleId: string
 ) => {
-  if (room.gameData.phase !== 'LOBBY') {
-    throw new Error('대기실에서만 사전 룰지를 공유할 수 있습니다.');
+  const currentStep = getFlowStepByPhase(scenario, room.gameData.phase);
+  if (
+    room.gameData.phase !== 'LOBBY' &&
+    currentStep?.kind !== 'intro' &&
+    currentStep?.kind !== 'role_selection'
+  ) {
+    throw new Error(
+      '캐릭터 선택이 열려있을 때만 사전 룰지를 공유할 수 있습니다.'
+    );
   }
 
   const role = getRoleById(scenario, roleId);
@@ -2273,16 +2293,8 @@ export const startMurderMysteryGame = (
   scenario: MurderMysteryScenario
 ) => {
   ensureMurderMysterySeatLayout(room);
-  if (room.gameData.roleSelectionStatus !== 'locked') {
-    const locked = resolveMurderMysteryRoleSelectionIfReady(room, scenario);
-    if (!locked) {
-      throw new Error(
-        '모든 참가자가 캐릭터 선택을 제출해야 게임을 시작할 수 있습니다.'
-      );
-    }
-  }
-  if (room.players.some((player) => !room.gameData.roleByPlayerId[player.id])) {
-    throw new Error('캐릭터 배정 결과가 부족합니다.');
+  if (room.players.length !== room.maxPlayers) {
+    throw new Error('모든 참가자가 입장해야 게임을 시작할 수 있습니다.');
   }
 
   const firstStep = scenario.flow.steps[0];
@@ -2297,6 +2309,11 @@ export const startMurderMysteryGame = (
   room.gameData.revealedCardIds = [];
   room.gameData.revealedCardIdsByTargetId = {};
   room.gameData.revealedPartIds = [];
+  room.gameData.roleSelectionStatus = 'open';
+  room.gameData.rolePreferencesByPlayerId ??= {};
+  clearStaleRolePreferences(room);
+  room.gameData.roleByPlayerId = {};
+  room.gameData.roleDisplayNameByPlayerId = {};
   room.gameData.roleReadingReadyByPlayerId = {};
   room.gameData.initialRoleCardsGranted = false;
   room.gameData.privateCardIdsByPlayerId = Object.fromEntries(
@@ -2389,6 +2406,12 @@ export const moveMurderMysteryToNextPhase = (
     throw new Error('현재 단계가 시나리오 진행 단계와 일치하지 않습니다.');
   }
 
+  const nextPhase = getNextPhase(currentPhase, scenario);
+  if (!nextPhase) {
+    throw new Error('다음 단계로 이동할 수 없습니다.');
+  }
+  const nextStep = getFlowStepByPhase(scenario, nextPhase);
+
   if (currentStep.kind === 'final_vote') {
     throw new Error('최종 투표 집계를 먼저 실행해주세요.');
   }
@@ -2399,6 +2422,19 @@ export const moveMurderMysteryToNextPhase = (
     throw new Error(
       '모든 플레이어가 비공개 룰지를 읽어야 다음 단계로 이동할 수 있습니다.'
     );
+  }
+  if (
+    currentStep.kind === 'role_selection' ||
+    (currentStep.kind === 'intro' &&
+      nextStep?.kind === 'role_reading' &&
+      room.gameData.roleSelectionStatus !== 'locked')
+  ) {
+    const locked = resolveMurderMysteryRoleSelectionIfReady(room, scenario);
+    if (!locked) {
+      throw new Error(
+        '모든 참가자가 캐릭터 선택을 제출해야 배정을 확정할 수 있습니다.'
+      );
+    }
   }
   if (
     currentStep.kind === 'ending_choice' &&
@@ -2418,11 +2454,6 @@ export const moveMurderMysteryToNextPhase = (
   }
   if (currentStep.kind === 'investigate') {
     clearInvestigationTurnState(room);
-  }
-
-  const nextPhase = getNextPhase(currentPhase, scenario);
-  if (!nextPhase) {
-    throw new Error('다음 단계로 이동할 수 없습니다.');
   }
 
   enterMurderMysteryPhase(room, scenario, nextPhase);

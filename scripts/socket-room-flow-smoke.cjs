@@ -415,20 +415,6 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       playerSockets.set(playerInfo.sessionId, socket);
     }
 
-    const blockedStartResponse = await emitAck(
-      hostSocket,
-      'mm_host_start_game',
-      {
-        roomId,
-        sessionId: hostSessionId,
-      }
-    );
-    assertCondition(
-      blockedStartResponse?.success === false,
-      'mm_host_start_game should fail before all role preferences are submitted',
-      blockedStartResponse
-    );
-
     const lobbySnapshot = await requestMurderSnapshot(
       hostSocket,
       roomId,
@@ -442,6 +428,122 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
     );
 
     const firstRole = lobbySnapshot.roleSelection.roles[0];
+
+    const lobbyShareResponse = await emitAck(
+      hostSocket,
+      'mm_host_get_role_share_text',
+      {
+        roomId,
+        sessionId: hostSessionId,
+        roleId: firstRole.id,
+      }
+    );
+    assertCondition(
+      lobbyShareResponse?.success &&
+        typeof lobbyShareResponse.title === 'string' &&
+        typeof lobbyShareResponse.text === 'string' &&
+        lobbyShareResponse.title === '머더미스터리' &&
+        lobbyShareResponse.text.includes(firstRole.displayName) &&
+        !lobbyShareResponse.text.includes('방 코드') &&
+        lobbyShareResponse.text.length <= 200 &&
+        typeof lobbyShareResponse.linkPath === 'string' &&
+        lobbyShareResponse.linkPath.startsWith('/murder_mystery/pre-read/'),
+      'mm_host_get_role_share_text should work from lobby first screen',
+      lobbyShareResponse
+    );
+
+    const lobbyPreferenceResponse = await emitAck(
+      hostSocket,
+      'mm_submit_role_preferences',
+      {
+        roomId,
+        sessionId: hostSessionId,
+        roleIds: [firstRole.id],
+      }
+    );
+    assertCondition(
+      lobbyPreferenceResponse?.success,
+      'role preferences should be submitted from lobby first screen',
+      lobbyPreferenceResponse
+    );
+
+    const selectedLobbySnapshot = await requestMurderSnapshot(
+      hostSocket,
+      roomId,
+      hostSessionId
+    );
+    assertCondition(
+      selectedLobbySnapshot.phase === 'LOBBY' &&
+        selectedLobbySnapshot.roleSelection?.status === 'open' &&
+        selectedLobbySnapshot.roleSelection?.submittedCount === 1,
+      'murder should keep role selection open on lobby first screen',
+      {
+        phase: selectedLobbySnapshot.phase,
+        roleSelection: selectedLobbySnapshot.roleSelection,
+      }
+    );
+
+    const startResponse = await emitAck(hostSocket, 'mm_host_start_game', {
+      roomId,
+      sessionId: hostSessionId,
+    });
+    assertCondition(
+      startResponse?.success,
+      'mm_host_start_game should start host-read intro with role selection still open',
+      startResponse
+    );
+
+    const introSnapshot = await requestMurderSnapshot(
+      hostSocket,
+      roomId,
+      hostSessionId
+    );
+    assertCondition(
+      introSnapshot.phase === 'INTRO' &&
+        introSnapshot.roleSelection?.status === 'open' &&
+        introSnapshot.roleSelection?.submittedCount === 1 &&
+        introSnapshot.roleReading?.readyCount === 0 &&
+        introSnapshot.roleReading?.totalCount === maxPlayers &&
+        introSnapshot.myCards.length === 0 &&
+        introSnapshot.specialEvents.length === 0 &&
+        introSnapshot.publicScripts?.some(
+          (script) => script.stepId === 'INTRO' && script.current
+        ),
+      'murder should enter host-read intro with lobby role choices preserved',
+      {
+        phase: introSnapshot.phase,
+        roleSelection: introSnapshot.roleSelection,
+        roleReading: introSnapshot.roleReading,
+        myCards: introSnapshot.myCards,
+        specialEvents: introSnapshot.specialEvents,
+        publicScripts: introSnapshot.publicScripts,
+      }
+    );
+
+    const blockedIntroNextResponse = await emitAck(
+      hostSocket,
+      'mm_host_next_phase',
+      {
+        roomId,
+        sessionId: hostSessionId,
+      }
+    );
+    assertCondition(
+      blockedIntroNextResponse?.success === false,
+      'intro should block role assignment before all preferences are submitted',
+      blockedIntroNextResponse
+    );
+
+    const introReadResponse = await emitAck(hostSocket, 'mm_mark_phase_read', {
+      roomId,
+      sessionId: hostSessionId,
+    });
+    assertCondition(
+      introReadResponse?.success === false,
+      'public intro should not accept per-player read completion',
+      introReadResponse
+    );
+
     const shareResponse = await emitAck(
       hostSocket,
       'mm_host_get_role_share_text',
@@ -513,10 +615,7 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       nonHostShareResponse
     );
 
-    const preferenceSubmitters = [
-      [hostSessionId, hostSocket],
-      ...playerSockets.entries(),
-    ];
+    const preferenceSubmitters = [...playerSockets.entries()];
     for (const [sessionId, socket] of preferenceSubmitters) {
       const preferenceResponse = await emitAck(
         socket,
@@ -540,24 +639,34 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       hostSessionId
     );
     assertCondition(
-      readyLobbySnapshot.phase === 'LOBBY' &&
+      readyLobbySnapshot.phase === 'INTRO' &&
         readyLobbySnapshot.roleSelection?.status === 'open' &&
         readyLobbySnapshot.roleSelection?.submittedCount === maxPlayers,
-      'murder should wait in lobby after all role preferences are submitted',
+      'murder should keep role selection open during intro after all preferences are submitted',
       {
         phase: readyLobbySnapshot.phase,
         roleSelection: readyLobbySnapshot.roleSelection,
       }
     );
 
-    const startResponse = await emitAck(hostSocket, 'mm_host_start_game', {
-      roomId,
-      sessionId: hostSessionId,
-    });
+    const confirmRoleSelectionResponse = await emitAck(
+      hostSocket,
+      'mm_host_next_phase',
+      {
+        roomId,
+        sessionId: hostSessionId,
+      }
+    );
     assertCondition(
-      startResponse?.success,
-      'mm_host_start_game should lock role selection after host confirmation',
-      startResponse
+      confirmRoleSelectionResponse?.success,
+      'mm_host_next_phase should lock role selection after host confirmation',
+      confirmRoleSelectionResponse
+    );
+
+    const roleReadingSnapshot = await requestMurderSnapshot(
+      hostSocket,
+      roomId,
+      hostSessionId
     );
 
     const sessionOrder = [
@@ -569,58 +678,6 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       [hostSessionId, hostSocket],
       ...playerSockets.entries(),
     ]);
-
-    const introSnapshot = await requestMurderSnapshot(
-      hostSocket,
-      roomId,
-      hostSessionId
-    );
-    assertCondition(
-      introSnapshot.phase === 'INTRO' &&
-        introSnapshot.roleSelection?.status === 'locked' &&
-        introSnapshot.roleReading?.readyCount === 0 &&
-        introSnapshot.roleReading?.totalCount === maxPlayers &&
-        introSnapshot.myCards.length === 0 &&
-        introSnapshot.specialEvents.length === 0 &&
-        introSnapshot.publicScripts?.some(
-          (script) => script.stepId === 'INTRO' && script.current
-        ),
-      'murder should enter host-read intro after host confirms role selection',
-      {
-        phase: introSnapshot.phase,
-        roleSelection: introSnapshot.roleSelection,
-        roleReading: introSnapshot.roleReading,
-        myCards: introSnapshot.myCards,
-        specialEvents: introSnapshot.specialEvents,
-        publicScripts: introSnapshot.publicScripts,
-      }
-    );
-
-    const introReadResponse = await emitAck(hostSocket, 'mm_mark_phase_read', {
-      roomId,
-      sessionId: hostSessionId,
-    });
-    assertCondition(
-      introReadResponse?.success === false,
-      'public intro should not accept per-player read completion',
-      introReadResponse
-    );
-
-    const introNextResponse = await emitAck(hostSocket, 'mm_host_next_phase', {
-      roomId,
-      sessionId: hostSessionId,
-    });
-    assertCondition(
-      introNextResponse?.success,
-      'host should advance from intro to role reading',
-      introNextResponse
-    );
-
-    const roleReadingSnapshot = await requestMurderSnapshot(
-      hostSocket,
-      roomId,
-      hostSessionId
-    );
     const roleReadingSnapshots = await Promise.all(
       sessionOrder.map(async (sessionId) =>
         requestMurderSnapshot(
