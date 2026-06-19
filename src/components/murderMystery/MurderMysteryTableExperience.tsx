@@ -2978,13 +2978,10 @@ const RoleAssignmentMismatchCard = ({
           <Typography
             variant="caption"
             sx={{
-              display: '-webkit-box',
               mt: 0.2,
               color: '#d8d0bd',
-              overflow: 'hidden',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
               lineHeight: 1.45,
+              wordBreak: 'keep-all',
             }}
           >
             {role.publicText}
@@ -3000,6 +2997,7 @@ const MyDeskPanel = ({
   publicScriptCount,
   canOpenRulebook = true,
   canOpenPublicScripts = true,
+  canOpenPrivateCards = true,
   onOpenRulebook,
   onOpenPublicScripts,
   onOpenPrivateCards,
@@ -3009,6 +3007,7 @@ const MyDeskPanel = ({
   publicScriptCount: number;
   canOpenRulebook?: boolean;
   canOpenPublicScripts?: boolean;
+  canOpenPrivateCards?: boolean;
   onOpenRulebook: () => void;
   onOpenPublicScripts: () => void;
   onOpenPrivateCards: () => void;
@@ -3065,7 +3064,8 @@ const MyDeskPanel = ({
           size="small"
           variant="outlined"
           startIcon={<Inventory2Icon />}
-          onClick={onOpenPrivateCards}
+          disabled={!canOpenPrivateCards}
+          onClick={canOpenPrivateCards ? onOpenPrivateCards : undefined}
           sx={{ flex: compact ? 1 : undefined }}
         >
           카드 {cardCount}
@@ -3297,6 +3297,7 @@ const PublicCoverDialog = ({
   player,
   isSelf,
   canOpenRulebook,
+  canOpenPrivateCards,
   fullScreen,
   selfPrivateCards,
   onClose,
@@ -3309,6 +3310,7 @@ const PublicCoverDialog = ({
   player: MurderMysteryPublicPlayerView | null;
   isSelf: boolean;
   canOpenRulebook: boolean;
+  canOpenPrivateCards: boolean;
   fullScreen: boolean;
   selfPrivateCards: MurderMysteryClueVaultCardView[];
   onClose: () => void;
@@ -3485,6 +3487,7 @@ const PublicCoverDialog = ({
                 fullWidth
                 variant="outlined"
                 startIcon={<Inventory2Icon />}
+                disabled={!canOpenPrivateCards}
                 onClick={onOpenPrivateCards}
               >
                 내 개인 카드
@@ -4650,11 +4653,24 @@ export default function MurderMysteryTableExperience({
   const hasOpenModal = openModalCount > 0;
   const shouldShowHostRoleSelectionDock =
     canUseHostTools &&
-    (phaseKind === 'intro' || phaseKind === 'role_selection') &&
+    (phaseKind === 'lobby' ||
+      phaseKind === 'intro' ||
+      phaseKind === 'role_selection') &&
     !isRoleSelectionLocked;
   const shouldShowFloatingActionDock =
     isFloatingActionDockPhase &&
     (!hasOpenModal || (phaseKind === 'investigate' && canActNow));
+  const privateCardCount = snapshot.clueVault.myClues.length;
+  const canOpenPrivateCards =
+    privateCardCount > 0 &&
+    phaseKind !== 'lobby' &&
+    phaseKind !== 'intro' &&
+    phaseKind !== 'role_selection' &&
+    phaseKind !== 'role_reading';
+  const shouldShowPublicClues =
+    phaseKind === 'investigate' ||
+    phaseKind === 'ending_choice' ||
+    phaseKind === 'endbook';
   const shouldReserveBottomDockSpace =
     shouldShowHostRoleSelectionDock || shouldShowFloatingActionDock;
   const mainBottomPadding = hasOpenModal
@@ -4686,6 +4702,12 @@ export default function MurderMysteryTableExperience({
     window.setTimeout(() => {
       phaseScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     }, 0);
+  };
+  const openPrivateCards = () => {
+    if (!canOpenPrivateCards) {
+      return;
+    }
+    setIsPrivateCardsOpen(true);
   };
   const openCardViewer = useCallback(
     (sourceId: string, cards: AnyClueCard[], card: AnyClueCard) => {
@@ -7231,10 +7253,7 @@ export default function MurderMysteryTableExperience({
         >
           <Stack spacing={1.8}>
             {renderPhaseBody()}
-            {phaseKind !== 'lobby' &&
-            phaseKind !== 'role_selection' &&
-            phaseKind !== 'discuss' &&
-            phaseKind !== 'final_vote' ? (
+            {shouldShowPublicClues ? (
               <>
                 <Divider sx={{ borderColor: 'rgba(255,255,255,0.14)' }} />
                 {renderPublicClues()}
@@ -7254,13 +7273,14 @@ export default function MurderMysteryTableExperience({
           >
             <MyDeskPanel
               compact={isMapInvestigationPhase}
-              cardCount={snapshot.clueVault.myClues.length}
+              cardCount={privateCardCount}
               publicScriptCount={snapshot.publicScripts.length}
               canOpenRulebook={Boolean(snapshot.roleSheet)}
               canOpenPublicScripts={snapshot.publicScripts.length > 0}
+              canOpenPrivateCards={canOpenPrivateCards}
               onOpenRulebook={() => setIsRulebookOpen(true)}
               onOpenPublicScripts={() => setIsPublicScriptsOpen(true)}
-              onOpenPrivateCards={() => setIsPrivateCardsOpen(true)}
+              onOpenPrivateCards={openPrivateCards}
             />
           </Stack>
         ) : null}
@@ -7279,13 +7299,14 @@ export default function MurderMysteryTableExperience({
         >
           <MyDeskPanel
             compact
-            cardCount={snapshot.clueVault.myClues.length}
+            cardCount={privateCardCount}
             publicScriptCount={snapshot.publicScripts.length}
             canOpenRulebook={Boolean(snapshot.roleSheet)}
             canOpenPublicScripts={snapshot.publicScripts.length > 0}
+            canOpenPrivateCards={canOpenPrivateCards}
             onOpenRulebook={() => setIsRulebookOpen(true)}
             onOpenPublicScripts={() => setIsPublicScriptsOpen(true)}
-            onOpenPrivateCards={() => setIsPrivateCardsOpen(true)}
+            onOpenPrivateCards={openPrivateCards}
           />
         </Box>
       ) : null}
@@ -7321,6 +7342,7 @@ export default function MurderMysteryTableExperience({
         player={selectedPlayer}
         isSelf={selectedPlayer?.id === sessionId}
         canOpenRulebook={Boolean(snapshot.roleSheet)}
+        canOpenPrivateCards={canOpenPrivateCards}
         fullScreen={isSmall}
         selfPrivateCards={snapshot.clueVault.myClues}
         onClose={() => setSelectedPlayerId(null)}
@@ -7330,7 +7352,7 @@ export default function MurderMysteryTableExperience({
         }}
         onOpenPrivateCards={() => {
           setSelectedPlayerId(null);
-          setIsPrivateCardsOpen(true);
+          openPrivateCards();
         }}
         onOpenCard={(card) =>
           openCardViewer(
