@@ -4582,6 +4582,16 @@ export default function MurderMysteryTableExperience({
   const submittedRoleSelectionCount = snapshot.roleSelection.players.filter(
     (player) => player.submitted
   ).length;
+  const selectableRoleCovers = snapshot.roleSelection.publicCovers.filter(
+    (cover) => cover.selectable
+  );
+  const selectedRoleCovers = selectableRoleCovers.filter(
+    (cover) => cover.preferredPlayerIds.length > 0
+  );
+  const hasConflictFreeRoleSelections =
+    submittedRoleSelectionCount >= requiredPlayerCount &&
+    selectedRoleCovers.length === requiredPlayerCount &&
+    selectedRoleCovers.every((cover) => cover.preferredPlayerIds.length === 1);
   const preferredRoleId = snapshot.roleSelection.yourPreferenceRoleIds[0];
   const preferredRole = preferredRoleId
     ? (snapshot.roleSelection.roles.find(
@@ -4605,9 +4615,7 @@ export default function MurderMysteryTableExperience({
         }
       : null);
   const shouldShowRoleSelectionMarkerRail =
-    (phaseKind === 'lobby' ||
-      phaseKind === 'intro' ||
-      phaseKind === 'role_selection') &&
+    (phaseKind === 'intro' || phaseKind === 'role_selection') &&
     !isRoleSelectionLocked;
   const shouldShowPlayerMarkerRail = isRoleSelectionLocked;
   const shouldShowMarkerRail =
@@ -4651,6 +4659,7 @@ export default function MurderMysteryTableExperience({
     Number(Boolean(selectedEvidenceRef)) +
     Number(Boolean(selectedPlayer));
   const hasOpenModal = openModalCount > 0;
+  const isIntroPrologueTab = phaseKind === 'intro' && introTab === 'prologue';
   const shouldShowHostRoleSelectionDock =
     canUseHostTools &&
     (phaseKind === 'lobby' ||
@@ -4681,10 +4690,12 @@ export default function MurderMysteryTableExperience({
       };
   const phasePanelBottomPadding = hasOpenModal
     ? { xs: 8.5, lg: 2 }
-    : {
-        xs: shouldReserveBottomDockSpace ? 18 : 2,
-        lg: shouldReserveBottomDockSpace ? 11 : 2,
-      };
+    : isIntroPrologueTab
+      ? { xs: 1.3, md: 2 }
+      : {
+          xs: shouldReserveBottomDockSpace ? 18 : 2,
+          lg: shouldReserveBottomDockSpace ? 11 : 2,
+        };
   const floatingFabBottomOffset = hasOpenModal
     ? 96
     : shouldReserveBottomDockSpace
@@ -5022,12 +5033,20 @@ export default function MurderMysteryTableExperience({
     ];
 
     return (
-      <Stack spacing={1.3}>
+      <Stack
+        spacing={1.3}
+        sx={
+          introTab === 'prologue'
+            ? { height: '100%', minHeight: 0, display: 'flex' }
+            : undefined
+        }
+      >
         <Box
           sx={{
             position: 'sticky',
             top: 0,
             zIndex: 4,
+            flex: '0 0 auto',
             borderRadius: 2,
             border: '1px solid rgba(255,255,255,0.14)',
             backgroundColor: 'rgba(11, 15, 20, 0.94)',
@@ -5081,11 +5100,22 @@ export default function MurderMysteryTableExperience({
           hidden={introTab !== 'prologue'}
           id="intro-tabpanel-prologue"
           aria-labelledby="intro-tab-prologue"
+          sx={
+            introTab === 'prologue'
+              ? {
+                  flex: 1,
+                  minHeight: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                }
+              : undefined
+          }
         >
           {introTab === 'prologue' ? (
-            <Stack spacing={1.3}>
+            <Stack spacing={1.3} sx={{ flex: 1, minHeight: 0 }}>
               <Box
                 sx={{
+                  flex: '0 0 auto',
                   p: { xs: 1.6, md: 2.2 },
                   borderRadius: 3,
                   border: isHostReading
@@ -5140,15 +5170,25 @@ export default function MurderMysteryTableExperience({
                       sx={{ mt: 0.8, color: '#d8d0bd', lineHeight: 1.65 }}
                     >
                       {isHostReading
-                        ? '프롤로그를 읽는 동안에도 참가자들은 캐릭터를 고를 수 있습니다. 전원 제출 후 배정을 확정하세요.'
-                        : '프롤로그를 들으며 캐릭터를 고를 수 있습니다.'}
+                        ? '프롤로그를 모두 들은 뒤 선택하는 것이 기본입니다. 필요하면 듣는 중에도 캐릭터를 고를 수 있습니다.'
+                        : '프롤로그를 모두 들은 뒤 선택하는 것이 기본입니다. 필요하면 듣는 중에도 고를 수 있습니다.'}
                     </Typography>
                   </Box>
                 </Stack>
               </Box>
               <Box
                 sx={{
+                  flex: 1,
+                  minHeight: 0,
+                  overflowY: 'auto',
                   p: { xs: 1.4, md: 2 },
+                  pr: { xs: 1.85, md: 2.7 },
+                  scrollbarWidth: 'thin',
+                  '&::-webkit-scrollbar': { width: 6 },
+                  '&::-webkit-scrollbar-thumb': {
+                    backgroundColor: 'rgba(248,241,222,0.24)',
+                    borderRadius: 999,
+                  },
                   borderRadius: 2,
                   border: '1px solid rgba(255,255,255,0.14)',
                   backgroundColor: 'rgba(11, 15, 20, 0.58)',
@@ -6739,19 +6779,50 @@ export default function MurderMysteryTableExperience({
       return null;
     }
 
+    const isLobbyPhase = phaseKind === 'lobby';
     const allConnected = connectedPlayerCount >= requiredPlayerCount;
     const allSubmitted = submittedRoleSelectionCount >= requiredPlayerCount;
-    const canConfirmRoleSelection = allConnected && allSubmitted;
-    const buttonLabel = !allConnected
-      ? `접속 ${connectedPlayerCount}/${requiredPlayerCount}`
+    const isLobbyWaiting = isLobbyPhase && !allConnected;
+    const canAssignPreferredRolesDirectly =
+      !isLobbyPhase &&
+      allConnected &&
+      allSubmitted &&
+      hasConflictFreeRoleSelections;
+    const canProceed = isLobbyPhase
+      ? allConnected
+      : allConnected && allSubmitted;
+    const dockTone = isLobbyPhase
+      ? allConnected
+        ? 'success'
+        : 'warning'
       : allSubmitted
-        ? '이대로 캐릭터 배정'
-        : `선택 제출 ${submittedRoleSelectionCount}/${requiredPlayerCount}`;
-    const helperText = !allConnected
-      ? '전원 접속 대기'
-      : allSubmitted
-        ? '필요하면 구두로 조정한 뒤 확정하세요'
-        : '전원 제출 후 방장이 확정';
+        ? 'success'
+        : 'warning';
+    const buttonLabel = isLobbyPhase
+      ? '프롤로그 시작'
+      : !allConnected
+        ? `접속 ${connectedPlayerCount}/${requiredPlayerCount}`
+        : allSubmitted
+          ? '이대로 캐릭터 배정'
+          : `선택 제출 ${submittedRoleSelectionCount}/${requiredPlayerCount}`;
+    const helperText = isLobbyPhase
+      ? allConnected
+        ? '전원이 모였습니다. 아래 버튼을 눌러 낭독 화면으로 넘어가세요.'
+        : '아직 입장하지 않은 참가자가 있습니다.'
+      : canAssignPreferredRolesDirectly
+        ? '지금 배정하면 원하는 캐릭터 그대로 진행됩니다.'
+        : !allConnected
+          ? '전원 접속 대기'
+          : allSubmitted
+            ? '필요하면 구두로 조정한 뒤 확정하세요'
+            : '전원 제출 후 방장이 확정';
+    const dockTitle = isLobbyPhase
+      ? allConnected
+        ? '버튼 클릭 후 낭독'
+        : '참가자 대기 중'
+      : canAssignPreferredRolesDirectly
+        ? '겹침 없이 전원 선택 완료'
+        : '방장 진행';
 
     return (
       <Box
@@ -6774,8 +6845,15 @@ export default function MurderMysteryTableExperience({
           sx={{
             p: 1,
             borderRadius: 2,
-            border: '1px solid rgba(245, 158, 11, 0.34)',
-            backgroundColor: 'rgba(20, 26, 24, 0.94)',
+            border: `1px solid ${
+              dockTone === 'success'
+                ? 'rgba(74, 222, 128, 0.42)'
+                : 'rgba(245, 158, 11, 0.34)'
+            }`,
+            backgroundColor:
+              dockTone === 'success'
+                ? 'rgba(15, 38, 25, 0.96)'
+                : 'rgba(20, 26, 24, 0.94)',
             boxShadow: '0 18px 38px rgba(0,0,0,0.32)',
           }}
         >
@@ -6788,14 +6866,32 @@ export default function MurderMysteryTableExperience({
               sx={{ flexWrap: 'wrap' }}
             >
               <Typography fontWeight={950} sx={{ color: '#f8f1de' }}>
-                방장 진행
+                {dockTitle}
               </Typography>
-              <Chip
-                size="small"
-                label={`선택 제출 ${submittedRoleSelectionCount}/${requiredPlayerCount}`}
-                color={allSubmitted ? 'success' : 'warning'}
-                sx={{ height: 24, fontWeight: 900 }}
-              />
+              {!isLobbyPhase ? (
+                <>
+                  <Chip
+                    size="small"
+                    label={`접속 ${connectedPlayerCount}/${requiredPlayerCount}`}
+                    color={allConnected ? 'success' : 'warning'}
+                    sx={{ height: 24, fontWeight: 900 }}
+                  />
+                  <Chip
+                    size="small"
+                    label={`캐릭터 선택 ${submittedRoleSelectionCount}/${requiredPlayerCount}`}
+                    color={allSubmitted ? 'success' : 'warning'}
+                    sx={{ height: 24, fontWeight: 900 }}
+                  />
+                </>
+              ) : null}
+              {canAssignPreferredRolesDirectly ? (
+                <Chip
+                  size="small"
+                  label="겹침 없음"
+                  color="success"
+                  sx={{ height: 24, fontWeight: 900 }}
+                />
+              ) : null}
             </Stack>
             <Typography
               variant="caption"
@@ -6806,9 +6902,9 @@ export default function MurderMysteryTableExperience({
           </Box>
           <Button
             disableElevation
-            disabled={!canConfirmRoleSelection}
+            disabled={!canProceed}
             variant="contained"
-            color={allSubmitted ? 'success' : 'warning'}
+            color={dockTone}
             onClick={onNextPhase}
             sx={{
               minHeight: 38,
@@ -6816,9 +6912,22 @@ export default function MurderMysteryTableExperience({
               borderRadius: 1.4,
               fontWeight: 950,
               whiteSpace: 'nowrap',
+              border: '1px solid transparent',
               '&.Mui-disabled': {
-                color: allSubmitted ? '#052e16' : '#3a2600',
-                backgroundColor: allSubmitted ? '#86efac' : '#fbbf24',
+                color: isLobbyWaiting
+                  ? 'rgba(248, 241, 222, 0.42)'
+                  : dockTone === 'success'
+                    ? '#052e16'
+                    : '#3a2600',
+                backgroundColor: isLobbyWaiting
+                  ? 'rgba(248, 241, 222, 0.12)'
+                  : dockTone === 'success'
+                    ? '#86efac'
+                    : '#fbbf24',
+                borderColor: isLobbyWaiting
+                  ? 'rgba(248, 241, 222, 0.18)'
+                  : 'transparent',
+                boxShadow: 'none',
               },
             }}
           >
@@ -6952,42 +7061,43 @@ export default function MurderMysteryTableExperience({
               sx={{ fontWeight: 900 }}
             />
           </Stack>
-          <Typography
-            variant="caption"
+          <Alert
+            severity={canUseHostTools ? 'info' : 'warning'}
+            variant="outlined"
             sx={{
-              display: 'block',
-              color: '#d8d0bd',
-              fontWeight: 900,
-              lineHeight: 1.35,
-              wordBreak: 'keep-all',
+              borderColor: canUseHostTools
+                ? 'rgba(96, 165, 250, 0.44)'
+                : 'rgba(245, 158, 11, 0.44)',
+              backgroundColor: canUseHostTools
+                ? 'rgba(59, 130, 246, 0.1)'
+                : 'rgba(245, 158, 11, 0.1)',
+              color: '#f8f1de',
+              '& .MuiAlert-icon': {
+                color: canUseHostTools ? '#93c5fd' : '#ffcf6a',
+              },
             }}
           >
-            {ROLE_SELECTION_GUIDE_TEXT}
-          </Typography>
+            <Typography fontWeight={950} sx={{ lineHeight: 1.35 }}>
+              {canUseHostTools
+                ? '캐릭터 선택은 프롤로그 이후에 진행됩니다.'
+                : '지금은 캐릭터 공개정보만 확인합니다.'}
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ mt: 0.3, color: '#d8d0bd', lineHeight: 1.45 }}
+            >
+              프롤로그를 모두 들은 뒤 선택하는 것이 기본이며, 필요하면 듣는
+              중에도 선택할 수 있습니다.
+            </Typography>
+          </Alert>
           <RoleSelectionPanel
             roleSelection={snapshot.roleSelection}
             onSubmitRolePreferences={onSubmitRolePreferences}
             canShareRoleSheets={canUseHostTools}
             onShareRoleSheet={onShareRoleSheet}
+            title="캐릭터 공개정보"
+            allowRoleChoice={false}
           />
-          {canUseHostTools ? (
-            <Button
-              variant="contained"
-              color="warning"
-              startIcon={<SkipNextIcon />}
-              disabled={!allConnected}
-              onClick={onNextPhase}
-              sx={{ alignSelf: 'flex-start', fontWeight: 950 }}
-            >
-              {allConnected
-                ? '프롤로그 시작'
-                : `전원 접속 대기 ${connectedPlayerCount}/${requiredPlayerCount}`}
-            </Button>
-          ) : (
-            <Typography sx={{ color: '#d8d0bd' }}>
-              방장이 프롤로그를 시작할 때까지 기다려주세요.
-            </Typography>
-          )}
         </Stack>
       );
     }
@@ -7248,10 +7358,15 @@ export default function MurderMysteryTableExperience({
             boxShadow: '0 28px 70px rgba(0,0,0,0.42)',
             p: { xs: 1.3, md: 2 },
             pb: phasePanelBottomPadding,
-            overflow: 'auto',
+            overflow: isIntroPrologueTab ? 'hidden' : 'auto',
           }}
         >
-          <Stack spacing={1.8}>
+          <Stack
+            spacing={1.8}
+            sx={
+              isIntroPrologueTab ? { height: '100%', minHeight: 0 } : undefined
+            }
+          >
             {renderPhaseBody()}
             {shouldShowPublicClues ? (
               <>
