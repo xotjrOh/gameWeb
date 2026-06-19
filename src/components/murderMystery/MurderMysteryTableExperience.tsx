@@ -5039,26 +5039,36 @@ export default function MurderMysteryTableExperience({
   const shouldShowFloatingActionDock =
     isFloatingActionDockPhase &&
     (!hasOpenModal || (phaseKind === 'investigate' && canActNow));
-  const shouldShowDeskPanel = phaseKind !== 'role_reading';
-  const privateCardCount = snapshot.clueVault.myClues.length;
-  const canOpenPrivateCards =
-    privateCardCount > 0 &&
+  const isDeskPanelPhase =
     phaseKind !== 'lobby' &&
     phaseKind !== 'intro' &&
     phaseKind !== 'role_selection' &&
     phaseKind !== 'role_reading';
+  const shouldShowDeskPanel = isDeskPanelPhase;
+  const shouldShowMobileDeskPanel = isSmall && shouldShowDeskPanel;
+  const privateCardCount = snapshot.clueVault.myClues.length;
+  const canOpenPrivateCards = privateCardCount > 0 && isDeskPanelPhase;
   const shouldShowPublicClues =
     phaseKind === 'investigate' ||
     phaseKind === 'ending_choice' ||
     phaseKind === 'endbook';
+  const shouldOverlayHostRoleSelectionDock =
+    shouldShowHostRoleSelectionDock && !isSmall;
   const shouldReserveBottomDockSpace =
-    shouldShowHostRoleSelectionDock || shouldShowFloatingActionDock;
+    shouldOverlayHostRoleSelectionDock ||
+    shouldShowFloatingActionDock ||
+    shouldShowMobileDeskPanel;
+  const mobileMainBottomPadding = shouldShowMobileDeskPanel
+    ? 22
+    : shouldShowFloatingActionDock
+      ? 22
+      : 1.4;
   const mainBottomPadding = hasOpenModal
     ? { xs: 10, lg: 1.4 }
     : phaseKind === 'role_reading'
       ? { xs: shouldReserveBottomDockSpace ? 9.5 : 1.4, lg: 1.4 }
       : {
-          xs: shouldReserveBottomDockSpace ? 22 : 8,
+          xs: mobileMainBottomPadding,
           lg: shouldReserveBottomDockSpace ? 10 : 1.4,
         };
   const phasePanelBottomPadding = hasOpenModal
@@ -5439,6 +5449,13 @@ export default function MurderMysteryTableExperience({
       { value: 'prologue', label: '프롤로그' },
       { value: 'public-info', label: '캐릭터 선택' },
     ];
+    const playerStatusText = isRoleSelectionLocked
+      ? '캐릭터 배정이 완료되었습니다.'
+      : preferredRoleId
+        ? '선택을 제출했습니다. 다른 참가자의 선택을 기다려주세요.'
+        : '캐릭터 선택 탭에서 원하는 캐릭터를 선택하고 제출해주세요.';
+    const playerStatusColor =
+      !isRoleSelectionLocked && !preferredRoleId ? '#ffcf6a' : '#d8d0bd';
 
     return (
       <Stack
@@ -5615,8 +5632,8 @@ export default function MurderMysteryTableExperience({
         </Box>
 
         {!isHostReading ? (
-          <Typography sx={{ color: '#d8d0bd' }}>
-            방장의 진행을 기다려주세요.
+          <Typography sx={{ color: playerStatusColor, fontWeight: 900 }}>
+            {playerStatusText}
           </Typography>
         ) : null}
       </Stack>
@@ -7146,14 +7163,17 @@ export default function MurderMysteryTableExperience({
     return (
       <Box
         sx={{
-          position: 'fixed',
-          left: { xs: 10, md: '50%' },
-          right: { xs: 10, md: 'auto' },
-          bottom: { xs: isSmall ? 56 : 16, md: 18 },
+          position: { xs: 'relative', md: 'fixed' },
+          left: { xs: 'auto', md: '50%' },
+          right: { xs: 'auto', md: 'auto' },
+          bottom: { xs: 'auto', md: 18 },
           transform: { xs: 'none', md: 'translateX(-50%)' },
           zIndex: 1200,
           width: { xs: 'auto', md: 'min(760px, calc(100vw - 320px))' },
           maxWidth: { md: 760 },
+          mx: { xs: 1.25, md: 0 },
+          mb: { xs: 1, md: 0 },
+          flexShrink: 0,
           pointerEvents: 'auto',
         }}
       >
@@ -7723,7 +7743,7 @@ export default function MurderMysteryTableExperience({
         ) : null}
       </Box>
 
-      {isSmall && shouldShowDeskPanel ? (
+      {shouldShowMobileDeskPanel ? (
         <Box
           sx={{
             position: 'fixed',
