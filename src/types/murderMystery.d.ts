@@ -393,6 +393,7 @@ export interface MurderMysteryRoleSelectionPublicCoverView {
   portraitAlt?: string;
   selectable: boolean;
   assignedPlayerId: string | null;
+  preferredPlayerIds: string[];
 }
 
 export interface MurderMysteryRoleSelectionPlayerView {
@@ -409,6 +410,8 @@ export interface MurderMysteryRoleSelectionView {
   requiredPlayerCount: number;
   submittedCount: number;
   yourPreferenceRoleIds: string[];
+  yourAssignedRoleId: string | null;
+  yourAssignedRoleWasRandom: boolean;
 }
 
 export interface MurderMysteryRoleReadingPlayerView {

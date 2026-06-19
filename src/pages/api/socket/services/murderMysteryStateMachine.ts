@@ -2065,17 +2065,12 @@ const validateRolePreferenceIds = (
   roleIds: string[]
 ) => {
   if (!Array.isArray(roleIds)) {
-    throw new Error('캐릭터 선호 순위를 제출해주세요.');
+    throw new Error('캐릭터를 하나 선택해주세요.');
   }
-  const scenarioRoleIds = scenario.roles.map((role) => role.id);
-  const scenarioRoleIdSet = new Set(scenarioRoleIds);
-  const uniqueRoleIds = new Set(roleIds);
+  const scenarioRoleIdSet = new Set(scenario.roles.map((role) => role.id));
 
-  if (roleIds.length !== scenarioRoleIds.length) {
-    throw new Error('모든 캐릭터에 선호 순위를 매겨주세요.');
-  }
-  if (uniqueRoleIds.size !== roleIds.length) {
-    throw new Error('캐릭터 선호 순위에 중복이 있습니다.');
+  if (roleIds.length !== 1) {
+    throw new Error('캐릭터를 하나 선택해주세요.');
   }
   if (roleIds.some((roleId) => !scenarioRoleIdSet.has(roleId))) {
     throw new Error('존재하지 않는 캐릭터가 포함되어 있습니다.');
@@ -2144,7 +2139,7 @@ const resolveMurderMysteryRoleSelectionIfReady = (
   }
   if (
     room.players.some(
-      (player) => !room.gameData.rolePreferencesByPlayerId[player.id]
+      (player) => !room.gameData.rolePreferencesByPlayerId[player.id]?.[0]
     )
   ) {
     return false;
@@ -2152,18 +2147,34 @@ const resolveMurderMysteryRoleSelectionIfReady = (
 
   const remainingRoleIds = new Set(scenario.roles.map((role) => role.id));
   const roleIdByPlayerId: Record<string, string> = {};
+  const unresolvedPlayers: MurderMysteryRoom['players'] = [];
 
-  shuffled(room.players).forEach((player) => {
-    const preferredRoleIds =
-      room.gameData.rolePreferencesByPlayerId[player.id] ?? [];
-    const preferredAvailableRoleId = preferredRoleIds.find((roleId) =>
-      remainingRoleIds.has(roleId)
+  scenario.roles.forEach((role) => {
+    const contenders = room.players.filter(
+      (player) =>
+        room.gameData.rolePreferencesByPlayerId[player.id]?.[0] === role.id
     );
-    const roleId =
-      preferredAvailableRoleId ?? pickRandom([...remainingRoleIds]);
+    if (contenders.length === 0) {
+      return;
+    }
 
+    const randomizedContenders = shuffled(contenders);
+    const winner = randomizedContenders[0];
+    if (!winner) {
+      return;
+    }
+    roleIdByPlayerId[winner.id] = role.id;
+    remainingRoleIds.delete(role.id);
+    unresolvedPlayers.push(...randomizedContenders.slice(1));
+  });
+
+  const fallbackRoleIds = shuffled([...remainingRoleIds]);
+  shuffled(unresolvedPlayers).forEach((player) => {
+    const roleId = fallbackRoleIds.pop();
+    if (!roleId) {
+      throw new Error('캐릭터 배정 결과를 만들 수 없습니다.');
+    }
     roleIdByPlayerId[player.id] = roleId;
-    remainingRoleIds.delete(roleId);
   });
 
   applyMurderMysteryRoleAssignments(room, scenario, roleIdByPlayerId);
@@ -2179,13 +2190,13 @@ export const submitMurderMysteryRolePreferences = (
   roleIds: string[]
 ) => {
   if (room.gameData.phase !== 'LOBBY') {
-    throw new Error('대기실에서만 캐릭터 선호를 제출할 수 있습니다.');
+    throw new Error('대기실에서만 캐릭터 선택을 제출할 수 있습니다.');
   }
   if (room.gameData.roleSelectionStatus === 'locked') {
     throw new Error('이미 캐릭터 배정이 완료되었습니다.');
   }
   if (!room.players.some((player) => player.id === playerId)) {
-    throw new Error('참가자만 캐릭터 선호를 제출할 수 있습니다.');
+    throw new Error('참가자만 캐릭터 선택을 제출할 수 있습니다.');
   }
 
   room.gameData.rolePreferencesByPlayerId ??= {};
@@ -2203,13 +2214,13 @@ export const clearMurderMysteryRolePreferences = (
   playerId: string
 ) => {
   if (room.gameData.phase !== 'LOBBY') {
-    throw new Error('대기실에서만 캐릭터 선호를 수정할 수 있습니다.');
+    throw new Error('대기실에서만 캐릭터 선택을 수정할 수 있습니다.');
   }
   if (room.gameData.roleSelectionStatus === 'locked') {
     throw new Error('이미 캐릭터 배정이 완료되었습니다.');
   }
   if (!room.players.some((player) => player.id === playerId)) {
-    throw new Error('참가자만 캐릭터 선호를 수정할 수 있습니다.');
+    throw new Error('참가자만 캐릭터 선택을 수정할 수 있습니다.');
   }
 
   room.gameData.rolePreferencesByPlayerId ??= {};
@@ -3132,6 +3143,13 @@ export const buildMurderMysterySnapshot = (
   const roleSelectionStatus = room.gameData.roleSelectionStatus ?? 'open';
   const rolePreferencesByPlayerId =
     room.gameData.rolePreferencesByPlayerId ?? {};
+  const yourPreferenceRoleIds = player
+    ? (rolePreferencesByPlayerId[player.id] ?? [])
+    : [];
+  const yourAssignedRoleId = player
+    ? (room.gameData.roleByPlayerId[player.id] ?? null)
+    : null;
+  const yourSubmittedRoleId = yourPreferenceRoleIds[0] ?? null;
   const roleSelection = {
     status: roleSelectionStatus,
     roles: scenario.roles.map((scenarioRole) => ({
@@ -3166,6 +3184,12 @@ export const buildMurderMysterySnapshot = (
             (entry) =>
               room.gameData.roleByPlayerId[entry.id] === scenarioRole.id
           )?.id ?? null,
+        preferredPlayerIds: room.players
+          .filter(
+            (entry) =>
+              rolePreferencesByPlayerId[entry.id]?.[0] === scenarioRole.id
+          )
+          .map((entry) => entry.id),
       })),
       ...(scenario.publicCovers ?? []).map((cover) => ({
         id: cover.id,
@@ -3175,6 +3199,7 @@ export const buildMurderMysterySnapshot = (
         ...(cover.portraitAlt ? { portraitAlt: cover.portraitAlt } : {}),
         selectable: false,
         assignedPlayerId: null,
+        preferredPlayerIds: [],
       })),
     ],
     players: room.players.map((entry) => ({
@@ -3182,17 +3207,24 @@ export const buildMurderMysterySnapshot = (
       playerName: entry.name,
       submitted:
         roleSelectionStatus === 'locked' ||
-        Boolean(rolePreferencesByPlayerId[entry.id]),
+        Boolean(rolePreferencesByPlayerId[entry.id]?.[0]),
     })),
     requiredPlayerCount: room.maxPlayers,
     submittedCount:
       roleSelectionStatus === 'locked'
         ? room.players.length
-        : room.players.filter((entry) => rolePreferencesByPlayerId[entry.id])
-            .length,
-    yourPreferenceRoleIds: player
-      ? (rolePreferencesByPlayerId[player.id] ?? [])
-      : [],
+        : room.players.filter(
+            (entry) => rolePreferencesByPlayerId[entry.id]?.[0]
+          ).length,
+    yourPreferenceRoleIds,
+    yourAssignedRoleId,
+    yourAssignedRoleWasRandom: Boolean(
+      player &&
+        roleSelectionStatus === 'locked' &&
+        yourSubmittedRoleId &&
+        yourAssignedRoleId &&
+        yourSubmittedRoleId !== yourAssignedRoleId
+    ),
   };
   const roleReadingReadyByPlayerId = ensureRoleReadingReadyMap(room);
   const roleReadingPlayers = room.players.map((entry) => ({

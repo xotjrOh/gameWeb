@@ -9,6 +9,7 @@ const SOCKET_PATH = '/api/socket/io';
 const HEALTHCHECK_PATH = '/api/version';
 const ACK_TIMEOUT_MS = 10000;
 const EVENT_TIMEOUT_MS = 10000;
+const PAGE_FETCH_TIMEOUT_MS = 90000;
 const REACHABLE_CHECK_TIMEOUT_MS = 4000;
 const SERVER_BOOT_TIMEOUT_MS = 90000;
 const POST_CONNECT_SETTLE_MS = 150;
@@ -31,6 +32,12 @@ const log = (message, payload) => {
   }
   console.log(`[socket-smoke] ${message}`, payload);
 };
+
+const fetchWithTimeout = (target, options = {}, timeoutMs = 4000) =>
+  fetch(target, {
+    ...options,
+    signal: AbortSignal.timeout(timeoutMs),
+  });
 
 const makeId = (prefix) =>
   `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -67,8 +74,8 @@ const waitForHttp = async (baseUrl, timeoutMs) => {
 
   while (Date.now() - startedAt < timeoutMs) {
     try {
-      const response = await fetch(target, { cache: 'no-store' });
-      if (response.ok) {
+      const response = await fetchWithTimeout(target, { cache: 'no-store' });
+      if (response.ok || response.status === 404) {
         return true;
       }
     } catch (error) {
@@ -83,7 +90,7 @@ const waitForHttp = async (baseUrl, timeoutMs) => {
 
 const warmSocketEndpoint = async (baseUrl) => {
   const target = new URL('/api/socket/io', baseUrl).toString();
-  const response = await fetch(target, { cache: 'no-store' });
+  const response = await fetchWithTimeout(target, { cache: 'no-store' });
   if (response.ok || response.status === 400) {
     return;
   }
@@ -458,7 +465,11 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       shareResponse
     );
     const preReadUrl = new URL(shareResponse.linkPath, baseUrl);
-    const preReadResponse = await fetch(preReadUrl);
+    const preReadResponse = await fetchWithTimeout(
+      preReadUrl,
+      {},
+      PAGE_FETCH_TIMEOUT_MS
+    );
     const preReadHtml = await preReadResponse.text();
     assertCondition(
       preReadResponse.ok &&
@@ -473,8 +484,10 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
     const tamperedLinkPath = `${shareResponse.linkPath.slice(0, -1)}${
       shareResponse.linkPath.endsWith('a') ? 'b' : 'a'
     }`;
-    const tamperedPreReadResponse = await fetch(
-      new URL(tamperedLinkPath, baseUrl)
+    const tamperedPreReadResponse = await fetchWithTimeout(
+      new URL(tamperedLinkPath, baseUrl),
+      {},
+      PAGE_FETCH_TIMEOUT_MS
     );
     const tamperedPreReadHtml = await tamperedPreReadResponse.text();
     assertCondition(
@@ -504,18 +517,14 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       [hostSessionId, hostSocket],
       ...playerSockets.entries(),
     ];
-    for (const [index, [sessionId, socket]] of preferenceSubmitters.entries()) {
-      const rolePreferenceIds = [
-        ...roleIds.slice(index),
-        ...roleIds.slice(0, index),
-      ];
+    for (const [sessionId, socket] of preferenceSubmitters) {
       const preferenceResponse = await emitAck(
         socket,
         'mm_submit_role_preferences',
         {
           roomId,
           sessionId,
-          roleIds: rolePreferenceIds,
+          roleIds: [firstRole.id],
         }
       );
       assertCondition(
@@ -584,6 +593,22 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       roomId,
       hostSessionId
     );
+    const roleReadingSnapshots = await Promise.all(
+      sessionOrder.map(async (sessionId) =>
+        requestMurderSnapshot(
+          socketsBySession.get(sessionId),
+          roomId,
+          sessionId
+        )
+      )
+    );
+    const firstRoleCover =
+      roleReadingSnapshots[0].roleSelection.publicCovers.find(
+        (cover) => cover.id === firstRole.id
+      );
+    const randomlyAssignedCount = roleReadingSnapshots.filter(
+      (snapshot) => snapshot.roleSelection.yourAssignedRoleWasRandom
+    ).length;
     assertCondition(
       roleReadingSnapshot.phase === 'ROLE_READING' &&
         roleReadingSnapshot.myCards.length === 0 &&
@@ -593,6 +618,21 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
         phase: roleReadingSnapshot.phase,
         myCards: roleReadingSnapshot.myCards,
         specialEvents: roleReadingSnapshot.specialEvents,
+      }
+    );
+    assertCondition(
+      firstRoleCover?.preferredPlayerIds.length === maxPlayers &&
+        randomlyAssignedCount === maxPlayers - 1,
+      'conflicting single role choices should expose selectors and random assignment flags',
+      {
+        firstRoleCover,
+        randomlyAssignedCount,
+        roleSelections: roleReadingSnapshots.map((snapshot) => ({
+          yourPreferenceRoleIds: snapshot.roleSelection.yourPreferenceRoleIds,
+          yourAssignedRoleId: snapshot.roleSelection.yourAssignedRoleId,
+          yourAssignedRoleWasRandom:
+            snapshot.roleSelection.yourAssignedRoleWasRandom,
+        })),
       }
     );
 
@@ -1178,8 +1218,9 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       );
     });
 
-    const afterPublicRevealCurrentSnapshot =
-      snapshotsBySession.get(revealTarget.ownerId);
+    const afterPublicRevealCurrentSnapshot = snapshotsBySession.get(
+      revealTarget.ownerId
+    );
     const publicOwnerCard =
       afterPublicRevealCurrentSnapshot?.clueVault.myClues.find(
         (card) => card.id === revealTarget.card?.id
@@ -1229,9 +1270,13 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       hostSessionId
     );
     let autoAdvancePickCount = 0;
+    const maxAutoAdvancePickCount = Math.max(
+      autoDiscussSnapshot.investigation.turn?.players?.length ?? 0,
+      maxPlayers * 4
+    );
     while (
       autoDiscussSnapshot.phase === 'ROUND1_INVESTIGATE' &&
-      autoAdvancePickCount < 8
+      autoAdvancePickCount < maxAutoAdvancePickCount
     ) {
       const activePlayerId =
         autoDiscussSnapshot.investigation.turn?.currentPlayerId;
@@ -1293,6 +1338,7 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
         phase: autoDiscussSnapshot.phase,
         turn: autoDiscussSnapshot.investigation.turn,
         autoAdvancePickCount,
+        maxAutoAdvancePickCount,
       }
     );
     assertCondition(

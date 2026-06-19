@@ -93,6 +93,11 @@ export default function RoomModal({
       null,
     [scenarioOptions, selectedScenarioId]
   );
+  const scenarioSelectValue =
+    selectedScenario?.id ??
+    (selectedGameType === 'murder_mystery'
+      ? (scenarioOptions[0]?.id ?? '')
+      : '');
   const isFixedMurderPlayerCount =
     selectedGameType === 'murder_mystery' &&
     Boolean(selectedScenario) &&
@@ -131,14 +136,6 @@ export default function RoomModal({
           ? data.scenarios
           : [];
         setScenarioOptions(nextScenarios);
-        if (nextScenarios.length > 0) {
-          setValue('scenarioId', nextScenarios[0].id, {
-            shouldValidate: true,
-          });
-          setValue('maxPlayers', nextScenarios[0].players.max, {
-            shouldValidate: true,
-          });
-        }
       })
       .catch((error) => {
         enqueueSnackbar((error as Error).message, {
@@ -157,13 +154,31 @@ export default function RoomModal({
   ]);
 
   useEffect(() => {
-    if (selectedGameType !== 'murder_mystery' || !selectedScenario) {
+    if (selectedGameType !== 'murder_mystery') {
       return;
     }
-    setValue('maxPlayers', selectedScenario.players.max, {
+
+    const firstScenario = scenarioOptions[0];
+    if (!firstScenario) {
+      return;
+    }
+
+    const scenarioToSelect =
+      scenarioOptions.find((scenario) => scenario.id === selectedScenarioId) ??
+      firstScenario;
+
+    if (selectedScenarioId !== scenarioToSelect.id) {
+      setValue('scenarioId', scenarioToSelect.id, {
+        shouldDirty: false,
+        shouldValidate: true,
+      });
+    }
+
+    setValue('maxPlayers', scenarioToSelect.players.max, {
+      shouldDirty: false,
       shouldValidate: true,
     });
-  }, [selectedGameType, selectedScenario, setValue]);
+  }, [selectedGameType, scenarioOptions, selectedScenarioId, setValue]);
 
   const onSubmit: SubmitHandler<FormData> = (data) => {
     if (!socket || !socket.connected || !socket.id) {
@@ -399,7 +414,7 @@ export default function RoomModal({
               </InputLabel>
               <Select
                 labelId="scenario-id-label"
-                defaultValue=""
+                value={scenarioSelectValue}
                 label="머더미스터리 시나리오"
                 sx={{
                   backgroundColor: 'rgba(255, 255, 255, 0.8)',
@@ -423,6 +438,11 @@ export default function RoomModal({
                   }
                 }}
               >
+                {scenarioOptions.length === 0 && (
+                  <MenuItem value="" disabled>
+                    시나리오를 불러오는 중입니다.
+                  </MenuItem>
+                )}
                 {scenarioOptions.map((scenario) => (
                   <MenuItem key={scenario.id} value={scenario.id}>
                     {scenario.roomDisplayName}

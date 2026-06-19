@@ -273,8 +273,8 @@ const murderMysteryGameHandler = (
         return callback({
           success: true,
           message: result.locked
-            ? '모든 선호가 모여 캐릭터 배정이 완료되었습니다.'
-            : '캐릭터 선호를 제출했습니다.',
+            ? '모든 선택이 모여 캐릭터 배정이 완료되었습니다.'
+            : '캐릭터 선택을 제출했습니다.',
         });
       } catch (error) {
         return callback({ success: false, message: (error as Error).message });
@@ -292,7 +292,7 @@ const murderMysteryGameHandler = (
       io.emit('room-updated', rooms);
       return callback({
         success: true,
-        message: '캐릭터 선호 제출을 취소했습니다.',
+        message: '캐릭터 선택 제출을 취소했습니다.',
       });
     } catch (error) {
       return callback({ success: false, message: (error as Error).message });
