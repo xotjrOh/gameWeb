@@ -3058,14 +3058,15 @@ const RoleReadingAssignedCard = ({
             boxShadow: '5px 10px 16px rgba(0,0,0,0.16)',
             transform: 'translateZ(-16px) skewY(-0.2deg)',
           },
-          '&:hover .role-reading-book-cover': roleSheet
-            ? {
-                transform:
-                  'rotateX(3deg) rotateY(-10deg) translate3d(4px, -8px, 28px)',
-                boxShadow:
-                  '0 38px 82px rgba(0,0,0,0.44), 0 0 0 1px rgba(255,255,255,0.32)',
-              }
-            : undefined,
+          '&:hover .role-reading-book-cover':
+            roleSheet && !isLifted
+              ? {
+                  transform:
+                    'rotateX(1deg) rotateY(-10deg) translate3d(4px, -5px, 24px)',
+                  boxShadow:
+                    '0 38px 82px rgba(0,0,0,0.42), 0 0 0 1px rgba(255,255,255,0.32)',
+                }
+              : undefined,
           '&:hover .role-reading-book-hint': roleSheet
             ? {
                 transform: 'translateY(-2px)',
@@ -3080,12 +3081,19 @@ const RoleReadingAssignedCard = ({
                   '0 13px 19px rgba(0,0,0,0.25), inset 0 2px 4px rgba(89,61,30,0.22)',
               }
             : undefined,
-          '&:active .role-reading-book-cover': roleSheet
-            ? {
-                transform:
-                  'rotateX(5deg) rotateY(-14deg) translate3d(8px, -6px, 28px)',
-              }
-            : undefined,
+          '&:active .role-reading-book-cover':
+            roleSheet && !isLifted
+              ? {
+                  transform:
+                    'rotateX(2deg) rotateY(-18deg) translate3d(6px, -5px, 30px)',
+                }
+              : undefined,
+          '& .role-reading-book-inner-page': {
+            opacity: isLifted ? 1 : 0,
+          },
+          '& .role-reading-book-hint': {
+            opacity: isLifted ? 0 : 1,
+          },
           '&:focus-visible': {
             boxShadow: '0 0 0 3px rgba(245,197,66,0.72)',
           },
@@ -3253,7 +3261,7 @@ const RoleReadingAssignedCard = ({
             whiteSpace: 'nowrap',
             pointerEvents: 'none',
             transition:
-              'transform 170ms ease, background-color 170ms ease, color 170ms ease',
+              'opacity 120ms ease, transform 170ms ease, background-color 170ms ease, color 170ms ease',
           }}
         >
           <AutoStoriesIcon sx={{ fontSize: { xs: 15, sm: 16 } }} />
@@ -3261,17 +3269,49 @@ const RoleReadingAssignedCard = ({
           <ChevronRightIcon sx={{ fontSize: { xs: 15, sm: 16 } }} />
         </Box>
         <Box
+          className="role-reading-book-inner-page"
+          aria-hidden
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 3,
+            borderRadius: 1.2,
+            overflow: 'hidden',
+            pointerEvents: 'none',
+            background:
+              'linear-gradient(90deg, rgba(88, 62, 31, 0.16) 0 10px, rgba(255,255,255,0.1) 10px 13px, transparent 13px), linear-gradient(155deg, #ded0b4 0%, #fff1d4 48%, #d1be94 100%)',
+            border: '1px solid rgba(75, 58, 37, 0.22)',
+            boxShadow:
+              'inset 0 0 0 1px rgba(255,255,255,0.5), inset -10px 0 18px rgba(90,64,32,0.12)',
+            transition: 'opacity 120ms ease',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              inset: { xs: 14, sm: 20 },
+              border: '1px solid rgba(72, 51, 32, 0.2)',
+            },
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              inset: 0,
+              background:
+                'repeating-linear-gradient(0deg, rgba(55, 39, 21, 0.035) 0 1px, transparent 1px 9px), repeating-linear-gradient(90deg, rgba(55, 39, 21, 0.022) 0 1px, transparent 1px 13px)',
+            },
+          }}
+        />
+        <Box
           className="role-reading-book-cover"
           sx={{
             position: 'relative',
-            zIndex: 3,
+            zIndex: 4,
             height: '100%',
             transformOrigin: 'left center',
+            backfaceVisibility: 'hidden',
             transform: isLifted
-              ? 'rotateX(5deg) rotateY(-14deg) translate3d(8px, -6px, 28px)'
+              ? 'rotateX(2deg) rotateY(-42deg) translate3d(10px, -6px, 42px)'
               : 'none',
             transition:
-              'transform 260ms cubic-bezier(0.2, 0.76, 0.24, 1), box-shadow 260ms ease',
+              'transform 260ms cubic-bezier(0.2, 0.76, 0.24, 1), box-shadow 220ms ease',
           }}
         >
           <CharacterBookCover
@@ -3398,8 +3438,25 @@ const RulebookModal = ({
   ) => void;
   onClose: () => void;
 }) => {
+  const [readerPageStatus, setReaderPageStatus] = useState<{
+    pageIndex: number;
+    pageCount: number;
+  } | null>(null);
+  const handleRulebookPageStatusChange = useCallback(
+    (status: { pageIndex: number; pageCount: number }) => {
+      setReaderPageStatus((current) =>
+        current?.pageIndex === status.pageIndex &&
+        current?.pageCount === status.pageCount
+          ? current
+          : { pageIndex: status.pageIndex, pageCount: status.pageCount }
+      );
+    },
+    []
+  );
+
   useEffect(() => {
     if (!open) {
+      setReaderPageStatus(null);
       return;
     }
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -3431,6 +3488,25 @@ const RulebookModal = ({
           <Typography fontWeight={900} sx={{ flex: 1 }}>
             룰북
           </Typography>
+          {readerPageStatus ? (
+            <Typography
+              variant="caption"
+              sx={{
+                px: 1,
+                py: 0.35,
+                mr: 0.6,
+                borderRadius: 999,
+                backgroundColor: 'rgba(247,240,223,0.12)',
+                border: '1px solid rgba(247,240,223,0.16)',
+                color: '#f7f0df',
+                fontWeight: 850,
+                lineHeight: 1,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {readerPageStatus.pageIndex + 1} / {readerPageStatus.pageCount}쪽
+            </Typography>
+          ) : null}
           <IconButton onClick={onClose} sx={{ color: '#f7f0df' }}>
             <CloseIcon />
           </IconButton>
@@ -3455,11 +3531,14 @@ const RulebookModal = ({
           secretTextHighlights={roleSheet?.secretTextHighlights}
           specialEvents={specialEvents}
           onReportSpecialEvent={onReportSpecialEvent}
+          onPageStatusChange={handleRulebookPageStatusChange}
           includePrologue={false}
+          includeRolebookCover={false}
+          showPageStatusFooter={false}
           pageSx={{
             height: {
-              xs: fullScreen ? 'calc(100svh - 206px)' : 660,
-              sm: 760,
+              xs: fullScreen ? 'calc(100svh - 164px)' : 700,
+              sm: 820,
             },
           }}
           footerText="인게임 룰북은 본인 화면에서만 열립니다."
@@ -4717,6 +4796,7 @@ export default function MurderMysteryTableExperience({
   const suppressModalPopCountRef = useRef(0);
   const previousPhaseRef = useRef(snapshot.phase);
   const rulebookLiftTimerRef = useRef<number | null>(null);
+  const rulebookCoverResetTimerRef = useRef<number | null>(null);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [isRulebookOpen, setIsRulebookOpen] = useState(false);
   const [isRulebookCoverLifted, setIsRulebookCoverLifted] = useState(false);
@@ -5042,12 +5122,19 @@ export default function MurderMysteryTableExperience({
     if (rulebookLiftTimerRef.current !== null) {
       window.clearTimeout(rulebookLiftTimerRef.current);
     }
+    if (rulebookCoverResetTimerRef.current !== null) {
+      window.clearTimeout(rulebookCoverResetTimerRef.current);
+      rulebookCoverResetTimerRef.current = null;
+    }
     setIsRulebookCoverLifted(true);
     rulebookLiftTimerRef.current = window.setTimeout(() => {
       setIsRulebookOpen(true);
-      setIsRulebookCoverLifted(false);
       rulebookLiftTimerRef.current = null;
-    }, 180);
+      rulebookCoverResetTimerRef.current = window.setTimeout(() => {
+        setIsRulebookCoverLifted(false);
+        rulebookCoverResetTimerRef.current = null;
+      }, 260);
+    }, 240);
   }, [isRulebookOpen, snapshot.roleSheet]);
   const openPrivateCards = () => {
     if (!canOpenPrivateCards) {
@@ -5201,6 +5288,9 @@ export default function MurderMysteryTableExperience({
     () => () => {
       if (rulebookLiftTimerRef.current !== null) {
         window.clearTimeout(rulebookLiftTimerRef.current);
+      }
+      if (rulebookCoverResetTimerRef.current !== null) {
+        window.clearTimeout(rulebookCoverResetTimerRef.current);
       }
     },
     []

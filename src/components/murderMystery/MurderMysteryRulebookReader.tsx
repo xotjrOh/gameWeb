@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   KeyboardEvent as ReactKeyboardEvent,
   MouseEvent as ReactMouseEvent,
@@ -16,8 +16,6 @@ import {
   Typography,
 } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { CharacterBookCover } from '@/components/murderMystery/CharacterPortraitFrame';
 import RulebookRichText from '@/components/murderMystery/RulebookRichText';
 import {
@@ -32,6 +30,14 @@ import {
 } from '@/types/murderMystery';
 
 type RulebookSection = 'prologue' | 'rolebook' | 'rules';
+type RulebookPageIndexBySection = Record<RulebookSection, number>;
+type RulebookPageTurnDirection = 'previous' | 'next';
+
+interface MurderMysteryRulebookPageStatus {
+  section: RulebookSection;
+  pageIndex: number;
+  pageCount: number;
+}
 
 interface MurderMysteryRulebookReaderProps {
   storageKey?: string;
@@ -47,13 +53,16 @@ interface MurderMysteryRulebookReaderProps {
   secretTextHighlights?: string[];
   pageSx?: SxProps<Theme>;
   includePrologue?: boolean;
+  includeRolebookCover?: boolean;
   showProgressMarkers?: boolean;
+  showPageStatusFooter?: boolean;
   footerText?: string;
   specialEvents?: MurderMysteryReportableSpecialEventView[];
   onReportSpecialEvent?: (
     eventId: string,
     outcome: MurderMysterySpecialEventOutcome
   ) => void;
+  onPageStatusChange?: (status: MurderMysteryRulebookPageStatus) => void;
 }
 
 const isRulebookSection = (value: unknown): value is RulebookSection =>
@@ -62,8 +71,35 @@ const isRulebookSection = (value: unknown): value is RulebookSection =>
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
 
-const pageFrameHeight = { xs: '76svh', sm: 'clamp(780px, 84dvh, 960px)' };
-const pageFramePadding = { xs: 1.7, sm: 3 };
+const defaultPageIndexBySection: RulebookPageIndexBySection = {
+  prologue: 0,
+  rolebook: 0,
+  rules: 0,
+};
+
+const pageFrameHeight = { xs: '80svh', sm: 'clamp(800px, 86dvh, 980px)' };
+const pageFramePadding = { xs: 1.35, sm: 2.35 };
+const rulebookPageTextSx = {
+  whiteSpace: 'pre-wrap',
+  fontSize: { xs: 14.5, sm: 16 },
+  lineHeight: { xs: 1.48, sm: 1.62 },
+  wordBreak: 'keep-all',
+  height: '100%',
+  overflow: 'hidden',
+} as const;
+
+const getInteger = (value: unknown) => {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) ? parsed : null;
+};
+
+const isPageNavigationIgnoredTarget = (target: EventTarget | null) =>
+  target instanceof HTMLElement &&
+  Boolean(
+    target.closest(
+      'button, a, input, textarea, select, [role="button"], [role="slider"], [data-rulebook-navigation-skip="true"]'
+    )
+  );
 
 export default function MurderMysteryRulebookReader({
   storageKey,
@@ -79,10 +115,13 @@ export default function MurderMysteryRulebookReader({
   secretTextHighlights = [],
   pageSx,
   includePrologue = true,
+  includeRolebookCover = true,
   showProgressMarkers = true,
+  showPageStatusFooter = true,
   footerText,
   specialEvents = [],
   onReportSpecialEvent,
+  onPageStatusChange,
 }: MurderMysteryRulebookReaderProps) {
   const secretMeasureRef = useRef<HTMLDivElement | null>(null);
   const prologuePages = useMemo(
@@ -94,9 +133,15 @@ export default function MurderMysteryRulebookReader({
       highlights: secretTextHighlights,
     });
   const [section, setSection] = useState<RulebookSection>('rolebook');
-  const [pageIndex, setPageIndex] = useState(0);
+  const [pageIndexBySection, setPageIndexBySection] =
+    useState<RulebookPageIndexBySection>(defaultPageIndexBySection);
   const [previewRatio, setPreviewRatio] = useState<number | null>(null);
   const [isScrubbingProgress, setIsScrubbingProgress] = useState(false);
+  const [pageTurn, setPageTurn] = useState<{
+    direction: RulebookPageTurnDirection;
+    serial: number;
+  } | null>(null);
+  const loadedStorageKeyRef = useRef<string | null>(null);
   const sectionTabs = useMemo(
     () =>
       includePrologue
@@ -104,16 +149,40 @@ export default function MurderMysteryRulebookReader({
         : (['rolebook', 'rules'] as const),
     [includePrologue]
   );
-  const pageCount =
-    section === 'rules'
-      ? 1
-      : section === 'prologue' && includePrologue
-        ? prologuePages.length
-        : secretPages.length + 1;
+
+  const getSectionPageCount = useCallback(
+    (targetSection: RulebookSection) => {
+      if (targetSection === 'rules') {
+        return 1;
+      }
+      if (targetSection === 'prologue' && includePrologue) {
+        return prologuePages.length;
+      }
+      return secretPages.length + (includeRolebookCover ? 1 : 0);
+    },
+    [
+      includePrologue,
+      includeRolebookCover,
+      prologuePages.length,
+      secretPages.length,
+    ]
+  );
+
+  const pageCount = getSectionPageCount(section);
   const maxPageIndex = Math.max(pageCount - 1, 0);
-  const isRolebookCover = section === 'rolebook' && pageIndex === 0;
-  const clampPageIndex = (nextPageIndex: number) =>
-    clamp(nextPageIndex, 0, maxPageIndex);
+  const pageIndex = clamp(pageIndexBySection[section] ?? 0, 0, maxPageIndex);
+  const rolebookPageOffset = includeRolebookCover ? 1 : 0;
+  const isRolebookCover =
+    section === 'rolebook' && includeRolebookCover && pageIndex === 0;
+  const clampPageIndex = useCallback(
+    (nextPageIndex: number, targetSection: RulebookSection = section) =>
+      clamp(
+        nextPageIndex,
+        0,
+        Math.max(getSectionPageCount(targetSection) - 1, 0)
+      ),
+    [getSectionPageCount, section]
+  );
   const getProgressRatioForPage = (targetPageIndex: number) =>
     pageCount > 0 ? (clampPageIndex(targetPageIndex) + 1) / pageCount : 0;
   const getPageIndexForProgressRatio = (ratio: number) =>
@@ -122,8 +191,11 @@ export default function MurderMysteryRulebookReader({
   const previewProgressRatio = previewRatio ?? progressRatio;
   const progress = Math.round(previewProgressRatio * 100);
   const canScrubProgress = pageCount > 1;
+  const currentSecretPageIndex = includeRolebookCover
+    ? pageIndex - 1
+    : pageIndex;
   const currentSecretPage =
-    secretPages[clamp(pageIndex - 1, 0, secretPages.length - 1)] ?? '';
+    secretPages[clamp(currentSecretPageIndex, 0, secretPages.length - 1)] ?? '';
   const progressMarkers = useMemo(
     () =>
       showProgressMarkers && section === 'rolebook'
@@ -132,7 +204,7 @@ export default function MurderMysteryRulebookReader({
               const heading = getRulebookPageHeading(page);
               return heading
                 ? {
-                    pageIndex: index + 1,
+                    pageIndex: index + rolebookPageOffset,
                     label: heading,
                     isPrimary: heading.includes('당일의 기억'),
                   }
@@ -145,68 +217,138 @@ export default function MurderMysteryRulebookReader({
                 pageIndex: number;
                 label: string;
                 isPrimary: boolean;
-              } => Boolean(marker)
+              } =>
+                marker !== null &&
+                (includeRolebookCover || marker.pageIndex > 0)
             )
         : [],
-    [section, secretPages, showProgressMarkers]
+    [
+      includeRolebookCover,
+      rolebookPageOffset,
+      section,
+      secretPages,
+      showProgressMarkers,
+    ]
   );
 
   useEffect(() => {
     if (!storageKey) {
       return;
     }
+    if (loadedStorageKeyRef.current === storageKey) {
+      return;
+    }
     try {
       const raw = window.localStorage.getItem(storageKey);
       const saved = raw ? JSON.parse(raw) : {};
-      const savedSection =
+      const savedSection: RulebookSection =
         isRulebookSection(saved.section) &&
         (includePrologue || saved.section !== 'prologue')
           ? saved.section
           : 'rolebook';
-      const savedPageIndex = Number(saved.pageIndex);
-      setSection(savedSection);
-      if (Number.isInteger(savedPageIndex)) {
-        const savedPageCount =
-          savedSection === 'rules'
-            ? 1
-            : savedSection === 'prologue'
-              ? prologuePages.length
-              : secretPages.length + 1;
-        setPageIndex(clamp(savedPageIndex, 0, Math.max(savedPageCount - 1, 0)));
+      const savedPageIndexBySection: Partial<Record<RulebookSection, unknown>> =
+        typeof saved.pageIndexBySection === 'object' &&
+        saved.pageIndexBySection !== null
+          ? saved.pageIndexBySection
+          : {};
+      const wasSavedWithRolebookCover = saved.includeRolebookCover !== false;
+      const nextPageIndexBySection: RulebookPageIndexBySection = {
+        ...defaultPageIndexBySection,
+      };
+
+      sectionTabs.forEach((targetSection) => {
+        const savedPageIndex = getInteger(
+          savedPageIndexBySection[targetSection]
+        );
+        if (savedPageIndex === null) {
+          return;
+        }
+        nextPageIndexBySection[targetSection] =
+          targetSection === 'rolebook' &&
+          wasSavedWithRolebookCover &&
+          !includeRolebookCover
+            ? Math.max(savedPageIndex - 1, 0)
+            : savedPageIndex;
+      });
+
+      const legacyPageIndex = getInteger(saved.pageIndex);
+      if (
+        legacyPageIndex !== null &&
+        nextPageIndexBySection[savedSection] === 0
+      ) {
+        nextPageIndexBySection[savedSection] =
+          savedSection === 'rolebook' &&
+          wasSavedWithRolebookCover &&
+          !includeRolebookCover
+            ? Math.max(legacyPageIndex - 1, 0)
+            : legacyPageIndex;
       }
+
+      setSection(savedSection);
+      setPageIndexBySection(nextPageIndexBySection);
     } catch {
       setSection('rolebook');
-      setPageIndex(0);
+      setPageIndexBySection(defaultPageIndexBySection);
     }
-  }, [includePrologue, prologuePages.length, secretPages.length, storageKey]);
+    loadedStorageKeyRef.current = storageKey;
+  }, [includePrologue, includeRolebookCover, sectionTabs, storageKey]);
 
   useEffect(() => {
     if (!includePrologue && section === 'prologue') {
       setSection('rolebook');
-      setPageIndex(0);
     }
   }, [includePrologue, section]);
 
   useEffect(() => {
-    if (!storageKey) {
+    onPageStatusChange?.({ section, pageIndex, pageCount });
+  }, [onPageStatusChange, pageCount, pageIndex, section]);
+
+  useEffect(() => {
+    if (!storageKey || isSecretPaginating) {
       return;
     }
     try {
+      const clampedPageIndexBySection: RulebookPageIndexBySection = {
+        prologue: clampPageIndex(pageIndexBySection.prologue, 'prologue'),
+        rolebook: clampPageIndex(pageIndexBySection.rolebook, 'rolebook'),
+        rules: clampPageIndex(pageIndexBySection.rules, 'rules'),
+      };
       window.localStorage.setItem(
         storageKey,
-        JSON.stringify({ section, pageIndex, updatedAt: Date.now() })
+        JSON.stringify({
+          section,
+          pageIndex,
+          pageIndexBySection: clampedPageIndexBySection,
+          includeRolebookCover,
+          updatedAt: Date.now(),
+        })
       );
     } catch {
       // 읽기 위치 저장은 편의 기능이므로 실패해도 진행을 막지 않는다.
     }
-  }, [pageIndex, section, storageKey]);
-
-  useEffect(() => {
-    setPageIndex((current) => clamp(current, 0, maxPageIndex));
-  }, [maxPageIndex]);
+  }, [
+    clampPageIndex,
+    includeRolebookCover,
+    isSecretPaginating,
+    pageIndex,
+    pageIndexBySection,
+    section,
+    storageKey,
+  ]);
 
   const goTo = (nextPageIndex: number) => {
-    setPageIndex(clampPageIndex(nextPageIndex));
+    const resolvedPageIndex = clampPageIndex(nextPageIndex);
+    if (resolvedPageIndex === pageIndex) {
+      return;
+    }
+    setPageTurn((current) => ({
+      direction: resolvedPageIndex > pageIndex ? 'next' : 'previous',
+      serial: (current?.serial ?? 0) + 1,
+    }));
+    setPageIndexBySection((current) => ({
+      ...current,
+      [section]: resolvedPageIndex,
+    }));
   };
 
   const getProgressRatio = (clientX: number, target: HTMLElement) => {
@@ -282,7 +424,29 @@ export default function MurderMysteryRulebookReader({
 
   const selectSection = (nextSection: RulebookSection) => {
     setSection(nextSection);
-    setPageIndex(0);
+    setPreviewRatio(null);
+    setPageTurn(null);
+  };
+
+  const handlePageFrameClick = (event: ReactMouseEvent<HTMLElement>) => {
+    if (isPageNavigationIgnoredTarget(event.target)) {
+      return;
+    }
+
+    const selection = window.getSelection();
+    if (selection && !selection.isCollapsed) {
+      return;
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const nextPageIndex =
+      event.clientX < rect.left + rect.width / 2
+        ? pageIndex - 1
+        : pageIndex + 1;
+
+    if (nextPageIndex !== pageIndex) {
+      goTo(nextPageIndex);
+    }
   };
 
   return (
@@ -434,6 +598,8 @@ export default function MurderMysteryRulebookReader({
       </Box>
 
       <Box
+        onClick={handlePageFrameClick}
+        aria-label="페이지 영역"
         sx={[
           {
             position: 'relative',
@@ -446,6 +612,7 @@ export default function MurderMysteryRulebookReader({
             color: '#241b12',
             border: '1px solid rgba(255,255,255,0.18)',
             boxShadow: '0 24px 70px rgba(0,0,0,0.35)',
+            cursor: pageCount > 1 ? 'pointer' : 'default',
           },
           ...(Array.isArray(pageSx) ? pageSx : pageSx ? [pageSx] : []),
           ...(isRolebookCover
@@ -462,11 +629,40 @@ export default function MurderMysteryRulebookReader({
         ]}
       >
         <Box
+          key={`${section}:${pageIndex}:${pageTurn?.serial ?? 0}`}
           sx={{
             position: 'relative',
             height: '100%',
             minHeight: isRolebookCover ? 0 : undefined,
             overflow: isRolebookCover ? 'visible' : 'hidden',
+            transformOrigin:
+              pageTurn?.direction === 'previous'
+                ? 'left center'
+                : 'right center',
+            animation: pageTurn
+              ? `${pageTurn.direction === 'previous' ? 'rulebook-page-return' : 'rulebook-page-forward'} 120ms ease-out both`
+              : undefined,
+            willChange: pageTurn ? 'transform, opacity' : undefined,
+            '@keyframes rulebook-page-forward': {
+              '0%': {
+                opacity: 0.72,
+                transform: 'translateX(10px) rotateY(-1.6deg)',
+              },
+              '100%': {
+                opacity: 1,
+                transform: 'translateX(0) rotateY(0deg)',
+              },
+            },
+            '@keyframes rulebook-page-return': {
+              '0%': {
+                opacity: 0.72,
+                transform: 'translateX(-10px) rotateY(1.6deg)',
+              },
+              '100%': {
+                opacity: 1,
+                transform: 'translateX(0) rotateY(0deg)',
+              },
+            },
           }}
         >
           {isRolebookCover ? (
@@ -481,11 +677,7 @@ export default function MurderMysteryRulebookReader({
             <Typography
               component="div"
               sx={{
-                whiteSpace: 'pre-wrap',
-                fontSize: { xs: 15, sm: 17 },
-                lineHeight: { xs: 1.55, sm: 1.78 },
-                wordBreak: 'keep-all',
-                height: '100%',
+                ...rulebookPageTextSx,
                 overflowY: 'auto',
               }}
             >
@@ -641,17 +833,7 @@ export default function MurderMysteryRulebookReader({
               </Box>
             </Stack>
           ) : (
-            <Typography
-              component="div"
-              sx={{
-                whiteSpace: 'pre-wrap',
-                fontSize: { xs: 15, sm: 17 },
-                lineHeight: { xs: 1.55, sm: 1.78 },
-                wordBreak: 'keep-all',
-                height: '100%',
-                overflow: 'hidden',
-              }}
-            >
+            <Typography component="div" sx={rulebookPageTextSx}>
               <RulebookRichText
                 text={currentSecretPage}
                 highlights={secretTextHighlights}
@@ -693,45 +875,18 @@ export default function MurderMysteryRulebookReader({
         <Typography
           ref={secretMeasureRef}
           component="div"
-          sx={{
-            whiteSpace: 'pre-wrap',
-            fontSize: { xs: 15, sm: 17 },
-            lineHeight: { xs: 1.55, sm: 1.78 },
-            wordBreak: 'keep-all',
-            height: '100%',
-            overflow: 'hidden',
-          }}
+          sx={rulebookPageTextSx}
         />
       </Box>
 
-      <Stack direction="row" spacing={1} alignItems="center">
-        <Button
-          variant="outlined"
-          color="inherit"
-          startIcon={<ChevronLeftIcon />}
-          disabled={pageIndex === 0}
-          onClick={() => goTo(pageIndex - 1)}
-          sx={{ flex: 1 }}
-        >
-          이전
-        </Button>
+      {showPageStatusFooter ? (
         <Typography
           variant="body2"
           sx={{ minWidth: 72, textAlign: 'center', color: '#d8d0bd' }}
         >
           {pageIndex + 1} / {pageCount}
         </Typography>
-        <Button
-          variant="contained"
-          color="warning"
-          endIcon={<ChevronRightIcon />}
-          disabled={pageIndex >= maxPageIndex}
-          onClick={() => goTo(pageIndex + 1)}
-          sx={{ flex: 1 }}
-        >
-          다음
-        </Button>
-      </Stack>
+      ) : null}
 
       {footerText ? (
         <Typography
