@@ -73,7 +73,9 @@ import {
   MurderMysteryStateSnapshot,
   MurderMysteryStepKind,
 } from '@/types/murderMystery';
-import CharacterPortraitFrame from '@/components/murderMystery/CharacterPortraitFrame';
+import CharacterPortraitFrame, {
+  CharacterBookCover,
+} from '@/components/murderMystery/CharacterPortraitFrame';
 import MurderMysteryRulebookReader from '@/components/murderMystery/MurderMysteryRulebookReader';
 import RulebookRichText from '@/components/murderMystery/RulebookRichText';
 
@@ -113,10 +115,6 @@ type RoleSelectionPublicCover =
   MurderMysteryStateSnapshot['roleSelection']['publicCovers'][number];
 type RoleSelectionRole =
   MurderMysteryStateSnapshot['roleSelection']['roles'][number];
-type RoleAssignmentNoticeRole = Pick<
-  RoleSelectionRole,
-  'displayName' | 'publicText' | 'portraitSrc' | 'portraitAlt'
->;
 type EndbookEvidenceReference = MurderMysteryEndbookEvidenceReferenceScenario;
 type InvestigationTargetGroup = {
   id: string;
@@ -2979,152 +2977,144 @@ const RoleSelectionPanel = ({
   );
 };
 
-const RoleAssignmentMismatchCard = ({
-  title,
-  role,
-  tone,
-}: {
-  title: string;
-  role: RoleAssignmentNoticeRole | null;
-  tone: 'wanted' | 'assigned';
-}) => (
-  <Box
-    sx={{
-      minWidth: 0,
-      flex: 1,
-      minHeight: { xs: 126, sm: 118 },
-      p: 1.1,
-      borderRadius: 1.5,
-      backgroundColor:
-        tone === 'assigned'
-          ? 'rgba(34, 197, 94, 0.12)'
-          : 'rgba(245, 158, 11, 0.12)',
-      border:
-        tone === 'assigned'
-          ? '1px solid rgba(74, 222, 128, 0.34)'
-          : '1px solid rgba(245, 158, 11, 0.36)',
-    }}
-  >
-    <Stack
-      direction="row"
-      spacing={1}
-      alignItems="flex-start"
-      sx={{ height: '100%' }}
-    >
-      <CharacterPortraitFrame
-        src={role?.portraitSrc}
-        alt={role?.portraitAlt}
-        label={role?.displayName ?? '캐릭터'}
-        variant="thumbnail"
-        sx={{ width: { xs: 62, sm: 58 }, flex: '0 0 auto' }}
-      />
-      <Box sx={{ minWidth: 0, flex: 1 }}>
-        <Typography
-          variant="caption"
-          sx={{
-            color: tone === 'assigned' ? '#9fe3c0' : '#ffcf6a',
-            fontWeight: 950,
-          }}
-        >
-          {title}
-        </Typography>
-        <Typography
-          fontWeight={950}
-          sx={{ color: '#fff6db', lineHeight: 1.25, wordBreak: 'keep-all' }}
-        >
-          {role?.displayName ?? '확인 불가'}
-        </Typography>
-        {role?.publicText ? (
-          <Typography
-            variant="caption"
-            sx={{
-              display: 'block',
-              mt: 0.2,
-              color: '#d8d0bd',
-              lineHeight: 1.5,
-              wordBreak: 'keep-all',
-              overflowWrap: 'break-word',
-            }}
-          >
-            {role.publicText}
-          </Typography>
-        ) : null}
-      </Box>
-    </Stack>
-  </Box>
-);
-
 const RoleReadingAssignedCard = ({
   roleSheet,
+  isLifted = false,
+  onOpenRulebook,
 }: {
   roleSheet: MurderMysteryRoleSheetView | null;
+  isLifted?: boolean;
+  onOpenRulebook: () => void;
 }) => (
   <Box
     sx={{
-      minHeight: { xs: 390, sm: 430 },
-      p: { xs: 1.5, sm: 2 },
-      borderRadius: 2.2,
-      border: '1px solid rgba(255,255,255,0.14)',
-      background:
-        'linear-gradient(160deg, rgba(247,241,222,0.12), rgba(12,21,22,0.42))',
+      flex: '1 1 auto',
+      minHeight: { xs: 0, sm: 0 },
       display: 'grid',
-      alignItems: 'center',
+      placeItems: 'stretch center',
+      perspective: 1500,
+      px: { xs: 0, sm: 1.4 },
+      py: { xs: 0.2, sm: 0.7 },
     }}
   >
-    <Stack
-      direction={{ xs: 'column', sm: 'row' }}
-      spacing={{ xs: 1.6, sm: 2.2 }}
-      alignItems="center"
-    >
-      <CharacterPortraitFrame
-        src={roleSheet?.portraitSrc}
-        alt={roleSheet?.portraitAlt}
-        label={roleSheet?.displayName ?? '캐릭터'}
+    <Tooltip title="비공개 룰지 열기">
+      <Box
+        component="button"
+        type="button"
+        disabled={!roleSheet}
+        aria-label={
+          roleSheet
+            ? `${roleSheet.displayName} 비공개 룰지 열기`
+            : '비공개 룰지 열기'
+        }
+        onClick={onOpenRulebook}
         sx={{
-          width: { xs: 'min(58vw, 210px)', sm: 230 },
-          boxShadow: '0 18px 38px rgba(0,0,0,0.28)',
+          position: 'relative',
+          width: { xs: 'min(100%, 390px)', sm: 430 },
+          height: '100%',
+          minHeight: { xs: 420, sm: 560 },
+          maxHeight: '100%',
+          p: 0,
+          border: 0,
+          borderRadius: 2.1,
+          background: 'transparent',
+          color: 'inherit',
+          font: 'inherit',
+          textAlign: 'left',
+          cursor: roleSheet ? 'pointer' : 'default',
+          transformStyle: 'preserve-3d',
+          userSelect: 'none',
+          outline: 'none',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            inset: { xs: '12px -8px 8px 14px', sm: '16px -12px 10px 18px' },
+            borderRadius: 1.8,
+            background:
+              'linear-gradient(90deg, rgba(134, 105, 62, 0.45), rgba(244, 232, 196, 0.92) 12%, rgba(214, 192, 143, 0.96) 88%, rgba(111, 82, 44, 0.45))',
+            boxShadow:
+              '0 28px 46px rgba(0,0,0,0.34), inset -9px 0 12px rgba(101,74,37,0.22)',
+            transform: isLifted
+              ? 'translate3d(16px, 11px, -44px) rotateY(-8deg)'
+              : 'translate3d(10px, 8px, -36px) rotateY(-4deg)',
+            transformOrigin: 'left center',
+            transition: 'transform 240ms ease, box-shadow 240ms ease',
+          },
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            top: { xs: 22, sm: 30 },
+            right: { xs: -7, sm: -11 },
+            bottom: { xs: 18, sm: 23 },
+            width: { xs: 12, sm: 16 },
+            borderRadius: '0 10px 10px 0',
+            background:
+              'repeating-linear-gradient(180deg, rgba(87,63,34,0.36) 0 1px, rgba(255,246,219,0.9) 1px 5px)',
+            boxShadow: '8px 14px 22px rgba(0,0,0,0.2)',
+            transform: 'translateZ(-18px) rotateY(-3deg)',
+          },
+          '&:hover .role-reading-book-cover': roleSheet
+            ? {
+                transform:
+                  'rotateX(3deg) rotateY(-8deg) translate3d(2px, -7px, 20px)',
+                boxShadow:
+                  '0 34px 70px rgba(0,0,0,0.38), 0 0 0 1px rgba(255,255,255,0.32)',
+              }
+            : undefined,
+          '&:hover::before': roleSheet
+            ? {
+                transform: 'translate3d(16px, 11px, -44px) rotateY(-8deg)',
+                boxShadow:
+                  '0 34px 58px rgba(0,0,0,0.38), inset -11px 0 14px rgba(101,74,37,0.24)',
+              }
+            : undefined,
+          '&:active .role-reading-book-cover': roleSheet
+            ? {
+                transform:
+                  'rotateX(5deg) rotateY(-14deg) translate3d(8px, -6px, 28px)',
+              }
+            : undefined,
+          '&:focus-visible': {
+            boxShadow: '0 0 0 3px rgba(245,197,66,0.72)',
+          },
+          '&:disabled': {
+            opacity: 0.74,
+          },
         }}
-      />
-      <Box sx={{ minWidth: 0, flex: 1 }}>
-        <Typography
-          variant="caption"
+      >
+        <Box
+          className="role-reading-book-cover"
           sx={{
-            color: '#ffcf6a',
-            fontWeight: 950,
-            letterSpacing: 0,
+            position: 'relative',
+            zIndex: 2,
+            height: '100%',
+            transformOrigin: 'left center',
+            transformStyle: 'preserve-3d',
+            transform: isLifted
+              ? 'rotateX(5deg) rotateY(-14deg) translate3d(8px, -6px, 28px)'
+              : 'none',
+            transition:
+              'transform 260ms cubic-bezier(0.2, 0.76, 0.24, 1), box-shadow 260ms ease',
           }}
         >
-          내 배정 캐릭터
-        </Typography>
-        <Typography
-          component="h2"
-          sx={{
-            mt: 0.35,
-            color: '#fff6db',
-            fontSize: { xs: 28, sm: 34 },
-            fontWeight: 950,
-            lineHeight: 1.08,
-            wordBreak: 'keep-all',
-            overflowWrap: 'break-word',
-          }}
-        >
-          {roleSheet?.displayName ?? '캐릭터 확인 전'}
-        </Typography>
-        <Typography
-          sx={{
-            mt: 1.2,
-            color: '#d8d0bd',
-            lineHeight: 1.72,
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'keep-all',
-            overflowWrap: 'break-word',
-          }}
-        >
-          {roleSheet?.publicText ??
-            '배정이 완료되면 이곳에 캐릭터 공개 정보가 표시됩니다.'}
-        </Typography>
+          <CharacterBookCover
+            displayName={roleSheet?.displayName ?? '캐릭터 확인 전'}
+            publicText={
+              roleSheet?.publicText ??
+              '배정이 완료되면 이곳에 캐릭터 공개 정보가 표시됩니다.'
+            }
+            portraitSrc={roleSheet?.portraitSrc}
+            portraitAlt={roleSheet?.portraitAlt}
+            sx={{
+              height: '100%',
+              minHeight: { xs: 420, sm: 560 },
+              boxShadow:
+                'inset 0 0 0 1px rgba(255,255,255,0.5), 0 26px 58px rgba(0,0,0,0.3)',
+            }}
+          />
+        </Box>
       </Box>
-    </Stack>
+    </Tooltip>
   </Box>
 );
 
@@ -4549,8 +4539,10 @@ export default function MurderMysteryTableExperience({
   const openModalCountRef = useRef(0);
   const suppressModalPopCountRef = useRef(0);
   const previousPhaseRef = useRef(snapshot.phase);
+  const rulebookLiftTimerRef = useRef<number | null>(null);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [isRulebookOpen, setIsRulebookOpen] = useState(false);
+  const [isRulebookCoverLifted, setIsRulebookCoverLifted] = useState(false);
   const [isPublicScriptsOpen, setIsPublicScriptsOpen] = useState(false);
   const [isPrivateCardsOpen, setIsPrivateCardsOpen] = useState(false);
   const [isMapDialogOpen, setIsMapDialogOpen] = useState(false);
@@ -4833,7 +4825,7 @@ export default function MurderMysteryTableExperience({
   const mainBottomPadding = hasOpenModal
     ? { xs: 10, lg: 1.4 }
     : phaseKind === 'role_reading'
-      ? { xs: shouldReserveBottomDockSpace ? 14 : 8, lg: 1.4 }
+      ? { xs: shouldReserveBottomDockSpace ? 9.5 : 1.4, lg: 1.4 }
       : {
           xs: shouldReserveBottomDockSpace ? 22 : 8,
           lg: shouldReserveBottomDockSpace ? 10 : 1.4,
@@ -4843,7 +4835,7 @@ export default function MurderMysteryTableExperience({
     : isIntroPrologueTab
       ? { xs: 1.3, md: 2 }
       : phaseKind === 'role_reading'
-        ? { xs: shouldReserveBottomDockSpace ? 5 : 2, lg: 3 }
+        ? { xs: 1.3, md: 2 }
         : {
             xs: shouldReserveBottomDockSpace ? 18 : 2,
             lg: shouldReserveBottomDockSpace ? 11 : 2,
@@ -4866,6 +4858,20 @@ export default function MurderMysteryTableExperience({
       phaseScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     }, 0);
   };
+  const openRoleReadingRulebook = useCallback(() => {
+    if (!snapshot.roleSheet || isRulebookOpen) {
+      return;
+    }
+    if (rulebookLiftTimerRef.current !== null) {
+      window.clearTimeout(rulebookLiftTimerRef.current);
+    }
+    setIsRulebookCoverLifted(true);
+    rulebookLiftTimerRef.current = window.setTimeout(() => {
+      setIsRulebookOpen(true);
+      setIsRulebookCoverLifted(false);
+      rulebookLiftTimerRef.current = null;
+    }, 180);
+  }, [isRulebookOpen, snapshot.roleSheet]);
   const openPrivateCards = () => {
     if (!canOpenPrivateCards) {
       return;
@@ -5013,6 +5019,15 @@ export default function MurderMysteryTableExperience({
     const timer = window.setInterval(() => setNowTick(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(
+    () => () => {
+      if (rulebookLiftTimerRef.current !== null) {
+        window.clearTimeout(rulebookLiftTimerRef.current);
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     openModalCountRef.current = openModalCount;
@@ -5382,8 +5397,8 @@ export default function MurderMysteryTableExperience({
   };
 
   const renderRoleReadingArea = () => (
-    <Stack spacing={1.8}>
-      <Stack spacing={0.8}>
+    <Stack spacing={1.05} sx={{ height: '100%', minHeight: 0 }}>
+      <Stack spacing={0.45} sx={{ flex: '0 0 auto' }}>
         <Stack
           direction="row"
           spacing={1}
@@ -5415,8 +5430,8 @@ export default function MurderMysteryTableExperience({
             }}
           />
         </Stack>
-        <Typography sx={{ color: '#d8d0bd', lineHeight: 1.7 }}>
-          각자 비공개 룰지를 읽고, 준비되면 다 읽었어요를 눌러주세요.
+        <Typography sx={{ color: '#d8d0bd', lineHeight: 1.55 }}>
+          비공개 룰지를 읽고 준비되면 아래 버튼을 눌러주세요.
         </Typography>
       </Stack>
 
@@ -5428,61 +5443,33 @@ export default function MurderMysteryTableExperience({
             color: '#fff6db',
             borderColor: 'rgba(245, 158, 11, 0.56)',
             backgroundColor: 'rgba(245, 158, 11, 0.12)',
+            py: 0.65,
             '& .MuiAlert-icon': { color: '#ffcf6a' },
           }}
         >
-          <Stack spacing={1.1}>
-            <Box>
-              <Typography fontWeight={950} sx={{ color: '#fff6db' }}>
-                원한 캐릭터와 다른 캐릭터가 배정되었습니다
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{ mt: 0.2, color: '#f3dfac', lineHeight: 1.55 }}
-              >
-                선택이 겹쳐 배정이 조정되었습니다. 아래 실제 배정 캐릭터의
-                룰지를 읽어주세요.
-              </Typography>
-            </Box>
-            <Stack
-              direction={{ xs: 'column', sm: 'row' }}
-              spacing={0.8}
-              alignItems="stretch"
-            >
-              <RoleAssignmentMismatchCard
-                title="내가 선택한 캐릭터"
-                role={preferredRole}
-                tone="wanted"
-              />
-              <Box
-                sx={{
-                  display: 'grid',
-                  placeItems: 'center',
-                  color: '#ffcf6a',
-                  minWidth: { xs: 'auto', sm: 28 },
-                  transform: { xs: 'rotate(90deg)', sm: 'none' },
-                }}
-                aria-hidden
-              >
-                <ChevronRightIcon fontSize="small" />
-              </Box>
-              <RoleAssignmentMismatchCard
-                title="실제 배정된 캐릭터"
-                role={assignedRoleForMismatch}
-                tone="assigned"
-              />
-            </Stack>
-          </Stack>
+          <Typography
+            variant="body2"
+            sx={{
+              color: '#f3dfac',
+              lineHeight: 1.45,
+              wordBreak: 'keep-all',
+              overflowWrap: 'break-word',
+            }}
+          >
+            선택이 겹쳐 {preferredRole?.displayName ?? '선택 캐릭터'} 대신{' '}
+            {assignedRoleForMismatch?.displayName ??
+              snapshot.roleSheet?.displayName ??
+              '실제 배정 캐릭터'}
+            이 배정되었습니다.
+          </Typography>
         </Alert>
-      ) : (
-        <RoleReadingAssignedCard roleSheet={snapshot.roleSheet} />
-      )}
-
-      {canUseHostTools ? (
-        <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
-          모두가 다 읽었어요를 누르면 자동으로 조사 전 낭독 단계로 이동합니다.
-        </Typography>
       ) : null}
+
+      <RoleReadingAssignedCard
+        roleSheet={snapshot.roleSheet}
+        isLifted={isRulebookCoverLifted}
+        onOpenRulebook={openRoleReadingRulebook}
+      />
     </Stack>
   );
 
@@ -6706,48 +6693,54 @@ export default function MurderMysteryTableExperience({
       return null;
     }
 
+    if (phaseKind === 'role_reading') {
+      return (
+        <Box
+          sx={{
+            position: 'fixed',
+            left: { xs: 10, md: '50%' },
+            right: { xs: 10, md: 'auto' },
+            bottom: { xs: 14, md: 18 },
+            transform: { xs: 'none', md: 'translateX(-50%)' },
+            zIndex: 1500,
+            width: { xs: 'auto', md: 'min(560px, calc(100vw - 360px))' },
+            pointerEvents: 'auto',
+          }}
+        >
+          <Button
+            fullWidth
+            size="large"
+            variant="contained"
+            color="warning"
+            startIcon={<TaskAltIcon />}
+            disabled={!selfPlayer || snapshot.roleReading.yourReady}
+            onClick={onMarkRoleSheetRead}
+            sx={{
+              minHeight: 52,
+              borderRadius: 1.7,
+              fontWeight: 950,
+              fontSize: 16,
+              boxShadow: '0 16px 36px rgba(0,0,0,0.42)',
+              '&.Mui-disabled': {
+                backgroundColor: '#22643a',
+                color: '#eafff0',
+                opacity: 1,
+                boxShadow: '0 12px 28px rgba(0,0,0,0.34)',
+              },
+            }}
+          >
+            다 읽었어요
+          </Button>
+        </Box>
+      );
+    }
+
     let title = '';
     let description = '';
     let chips: React.ReactNode = null;
     let actions: React.ReactNode = null;
 
-    if (phaseKind === 'role_reading') {
-      title = snapshot.roleReading.yourReady
-        ? '완료 제출됨'
-        : '룰지 확인 후 완료';
-      description = snapshot.roleReading.yourReady
-        ? '다른 플레이어 준비를 기다립니다.'
-        : '룰지 열고 확인한 뒤 다 읽었어요.';
-      actions = (
-        <>
-          <Button
-            size="small"
-            variant="contained"
-            startIcon={<AutoStoriesIcon />}
-            disabled={!snapshot.roleSheet}
-            onClick={() => setIsRulebookOpen(true)}
-            sx={{
-              backgroundColor: '#4655c7',
-              '&:hover': { backgroundColor: '#3542a5' },
-            }}
-          >
-            비공개 룰지 열기
-          </Button>
-          {!snapshot.roleReading.yourReady ? (
-            <Button
-              size="small"
-              variant="contained"
-              color="warning"
-              startIcon={<TaskAltIcon />}
-              disabled={!selfPlayer}
-              onClick={onMarkRoleSheetRead}
-            >
-              다 읽었어요
-            </Button>
-          ) : null}
-        </>
-      );
-    } else if (phaseKind === 'investigate') {
+    if (phaseKind === 'investigate') {
       title = canActNow
         ? snapshot.investigation.turn?.extraInvestigationPending
           ? '추가 조사 가능'
@@ -6870,7 +6863,7 @@ export default function MurderMysteryTableExperience({
         chips={chips}
         actions={actions}
         bottomOffset={{
-          xs: phaseKind === 'role_reading' ? 16 : isSmall ? 74 : 16,
+          xs: isSmall ? 74 : 16,
           md: 18,
         }}
       />
@@ -7452,13 +7445,21 @@ export default function MurderMysteryTableExperience({
             boxShadow: '0 28px 70px rgba(0,0,0,0.42)',
             p: { xs: 1.3, md: 2 },
             pb: phasePanelBottomPadding,
-            overflow: isIntroPrologueTab ? 'hidden' : 'auto',
+            overflow:
+              isIntroPrologueTab || phaseKind === 'role_reading'
+                ? 'hidden'
+                : 'auto',
+            touchAction: phaseKind === 'role_reading' ? 'none' : undefined,
+            overscrollBehavior:
+              phaseKind === 'role_reading' ? 'none' : undefined,
           }}
         >
           <Stack
             spacing={1.8}
             sx={
-              isIntroPrologueTab ? { height: '100%', minHeight: 0 } : undefined
+              isIntroPrologueTab || phaseKind === 'role_reading'
+                ? { height: '100%', minHeight: 0 }
+                : undefined
             }
           >
             {renderPhaseBody()}

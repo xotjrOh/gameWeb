@@ -179,10 +179,10 @@ export function CharacterBookCover({
           borderRadius: 1.2,
           color: '#1f1710',
           background:
-            'radial-gradient(circle at 52% 18%, rgba(255,255,255,0.6), transparent 28%), linear-gradient(155deg, #e1d3b7 0%, #fff3d7 46%, #d3c199 100%)',
+            'linear-gradient(90deg, rgba(104, 71, 35, 0.2) 0 10px, rgba(255,255,255,0.12) 10px 13px, transparent 13px), radial-gradient(circle at 52% 18%, rgba(255,255,255,0.6), transparent 28%), linear-gradient(155deg, #e1d3b7 0%, #fff3d7 46%, #d3c199 100%)',
           border: '1px solid rgba(75, 58, 37, 0.24)',
           boxShadow:
-            'inset 0 0 0 1px rgba(255,255,255,0.52), 0 22px 46px rgba(49, 33, 18, 0.18)',
+            'inset 0 0 0 1px rgba(255,255,255,0.52), inset -10px 0 18px rgba(90, 64, 32, 0.12), 0 22px 46px rgba(49, 33, 18, 0.18)',
         },
         ...toSxList(sx),
       ]}
@@ -211,6 +211,36 @@ export function CharacterBookCover({
           position: 'absolute',
           inset: { xs: 18, sm: 26 },
           border: '1px solid rgba(255, 255, 255, 0.42)',
+          pointerEvents: 'none',
+        }}
+      />
+      <Box
+        aria-hidden
+        sx={{
+          position: 'absolute',
+          top: { xs: 14, sm: 21 },
+          right: { xs: 10, sm: 16 },
+          bottom: { xs: 14, sm: 21 },
+          width: { xs: 8, sm: 11 },
+          borderRadius: '0 8px 8px 0',
+          opacity: 0.62,
+          background:
+            'repeating-linear-gradient(180deg, rgba(88, 62, 31, 0.24) 0 1px, rgba(255, 247, 226, 0.72) 1px 5px)',
+          boxShadow: 'inset 2px 0 4px rgba(87,61,31,0.16)',
+          pointerEvents: 'none',
+        }}
+      />
+      <Box
+        aria-hidden
+        sx={{
+          position: 'absolute',
+          top: { xs: 17, sm: 25 },
+          left: { xs: 15, sm: 24 },
+          bottom: { xs: 17, sm: 25 },
+          width: { xs: 5, sm: 7 },
+          borderRadius: 999,
+          background:
+            'linear-gradient(90deg, rgba(76,50,24,0.22), rgba(255,255,255,0.16), transparent)',
           pointerEvents: 'none',
         }}
       />
