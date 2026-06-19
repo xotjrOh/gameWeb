@@ -2227,61 +2227,69 @@ const RoleSelectionMarkerRail = ({
     >
       <Stack
         direction="row"
-        spacing={0.75}
+        spacing={1}
         alignItems="center"
-        sx={{
-          minHeight: { xs: 50, md: 54 },
-          overflowX: 'auto',
-          overflowY: 'hidden',
-          scrollbarWidth: 'thin',
-          '&::-webkit-scrollbar': { height: 4 },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(248,241,222,0.28)',
-            borderRadius: 999,
-          },
-        }}
+        sx={{ minHeight: { xs: 50, md: 54 }, overflow: 'hidden' }}
       >
-        {players.map((player) => {
-          const isSelf = player.playerId === sessionId;
-          const submitted = player.submitted;
+        <Stack
+          direction="row"
+          spacing={0.75}
+          alignItems="center"
+          sx={{
+            minWidth: 0,
+            flex: 1,
+            overflowX: 'auto',
+            overflowY: 'hidden',
+            scrollbarWidth: 'thin',
+            '&::-webkit-scrollbar': { height: 4 },
+            '&::-webkit-scrollbar-thumb': {
+              backgroundColor: 'rgba(248,241,222,0.28)',
+              borderRadius: 999,
+            },
+          }}
+        >
+          {players.map((player) => {
+            const isSelf = player.playerId === sessionId;
+            const submitted = player.submitted;
 
-          return (
-            <Tooltip
-              key={player.playerId}
-              title={`${player.playerName} · ${submitted ? '선택 제출 완료' : '선택 대기'}`}
-            >
-              <Box
-                aria-label={`${player.playerName} ${submitted ? '선택 제출 완료' : '선택 대기'}`}
-                sx={{
-                  position: 'relative',
-                  width: { xs: 42, md: 46 },
-                  minWidth: { xs: 42, md: 46 },
-                  height: { xs: 42, md: 46 },
-                  borderRadius: '50%',
-                  display: 'grid',
-                  placeItems: 'center',
-                  border: isSelf
-                    ? '2px solid rgba(245, 197, 66, 0.98)'
-                    : submitted
-                      ? '2px solid rgba(74, 222, 128, 0.9)'
-                      : '1px solid rgba(255,255,255,0.28)',
-                  background: submitted
-                    ? 'linear-gradient(180deg, #2e7d32, #14532d)'
-                    : 'linear-gradient(180deg, rgba(71, 85, 105, 0.92), rgba(30, 41, 59, 0.92))',
-                  color: submitted ? '#f5fff8' : '#e8dec4',
-                  boxShadow: submitted
-                    ? '0 0 0 3px rgba(46,125,50,0.18), 0 8px 18px rgba(0,0,0,0.26)'
-                    : '0 6px 14px rgba(0,0,0,0.24)',
-                  fontSize: { xs: 16, md: 17 },
-                  fontWeight: 950,
-                  flex: '0 0 auto',
-                }}
+            return (
+              <Tooltip
+                key={player.playerId}
+                title={`${player.playerName} · ${submitted ? '선택 제출 완료' : '선택 대기'}`}
               >
-                {getPlayerInitial(player.playerName)}
-              </Box>
-            </Tooltip>
-          );
-        })}
+                <Box
+                  aria-label={`${player.playerName} ${submitted ? '선택 제출 완료' : '선택 대기'}`}
+                  sx={{
+                    position: 'relative',
+                    width: { xs: 42, md: 46 },
+                    minWidth: { xs: 42, md: 46 },
+                    height: { xs: 42, md: 46 },
+                    borderRadius: '50%',
+                    display: 'grid',
+                    placeItems: 'center',
+                    border: isSelf
+                      ? '2px solid rgba(245, 197, 66, 0.98)'
+                      : submitted
+                        ? '2px solid rgba(74, 222, 128, 0.9)'
+                        : '1px solid rgba(255,255,255,0.28)',
+                    background: submitted
+                      ? 'linear-gradient(180deg, #2e7d32, #14532d)'
+                      : 'linear-gradient(180deg, rgba(71, 85, 105, 0.92), rgba(30, 41, 59, 0.92))',
+                    color: submitted ? '#f5fff8' : '#e8dec4',
+                    boxShadow: submitted
+                      ? '0 0 0 3px rgba(46,125,50,0.18), 0 8px 18px rgba(0,0,0,0.26)'
+                      : '0 6px 14px rgba(0,0,0,0.24)',
+                    fontSize: { xs: 16, md: 17 },
+                    fontWeight: 950,
+                    flex: '0 0 auto',
+                  }}
+                >
+                  {getPlayerInitial(player.playerName)}
+                </Box>
+              </Tooltip>
+            );
+          })}
+        </Stack>
         <Chip
           size="small"
           label={`선택 제출 ${submittedCount}/${requiredPlayerCount}`}
@@ -5133,8 +5141,8 @@ export default function MurderMysteryTableExperience({
                   <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                     <Chip
                       icon={<ArticleIcon />}
-                      color={isHostReading ? 'warning' : 'default'}
                       label={currentStep?.label ?? '프롤로그'}
+                      color="warning"
                     />
                     <Chip
                       icon={<TimerIcon />}
@@ -5164,7 +5172,7 @@ export default function MurderMysteryTableExperience({
                     >
                       {isHostReading
                         ? '방장이 소리 내어 읽어주세요'
-                        : '방장이 낭독 중입니다'}
+                        : '방장이 프롤로그를 낭독 중입니다'}
                     </Typography>
                     <Typography
                       sx={{ mt: 0.8, color: '#d8d0bd', lineHeight: 1.65 }}
@@ -5212,7 +5220,7 @@ export default function MurderMysteryTableExperience({
             <RoleSelectionPanel
               roleSelection={snapshot.roleSelection}
               onSubmitRolePreferences={onSubmitRolePreferences}
-              canShareRoleSheets={canUseHostTools}
+              canShareRoleSheets={false}
               onShareRoleSheet={onShareRoleSheet}
               title="캐릭터 선택"
               description={ROLE_SELECTION_GUIDE_TEXT}
@@ -6782,7 +6790,6 @@ export default function MurderMysteryTableExperience({
     const isLobbyPhase = phaseKind === 'lobby';
     const allConnected = connectedPlayerCount >= requiredPlayerCount;
     const allSubmitted = submittedRoleSelectionCount >= requiredPlayerCount;
-    const isLobbyWaiting = isLobbyPhase && !allConnected;
     const canAssignPreferredRolesDirectly =
       !isLobbyPhase &&
       allConnected &&
@@ -6798,31 +6805,28 @@ export default function MurderMysteryTableExperience({
       : allSubmitted
         ? 'success'
         : 'warning';
-    const buttonLabel = isLobbyPhase
-      ? '프롤로그 시작'
-      : !allConnected
-        ? `접속 ${connectedPlayerCount}/${requiredPlayerCount}`
-        : allSubmitted
-          ? '이대로 캐릭터 배정'
-          : `선택 제출 ${submittedRoleSelectionCount}/${requiredPlayerCount}`;
+    const buttonLabel = isLobbyPhase ? '프롤로그 시작' : '이대로 캐릭터 배정';
     const helperText = isLobbyPhase
       ? allConnected
         ? '전원이 모였습니다. 아래 버튼을 눌러 낭독 화면으로 넘어가세요.'
         : '아직 입장하지 않은 참가자가 있습니다.'
       : canAssignPreferredRolesDirectly
-        ? '지금 배정하면 원하는 캐릭터 그대로 진행됩니다.'
+        ? '아래 버튼을 누르면 원하는 캐릭터 그대로 진행됩니다.'
         : !allConnected
-          ? '전원 접속 대기'
+          ? '참가자 재접속 후 배정을 확정할 수 있습니다.'
           : allSubmitted
-            ? '필요하면 구두로 조정한 뒤 확정하세요'
-            : '전원 제출 후 방장이 확정';
+            ? '선택이 겹친 캐릭터는 자동 조정됩니다.\n필요하면 캐릭터를 겹치지않게 조정 후 확정하셔도 좋습니다.'
+            : '프롤로그를 읽고 참가자들이 캐릭터를 고르면 아래 버튼이 켜집니다.';
     const dockTitle = isLobbyPhase
       ? allConnected
         ? '버튼 클릭 후 낭독'
         : '참가자 대기 중'
       : canAssignPreferredRolesDirectly
         ? '겹침 없이 전원 선택 완료'
-        : '방장 진행';
+        : allSubmitted
+          ? '전원 선택 완료'
+          : '읽은 뒤 캐릭터 선택';
+    const shouldUseMutedDisabledButton = !canProceed;
 
     return (
       <Box
@@ -6868,22 +6872,6 @@ export default function MurderMysteryTableExperience({
               <Typography fontWeight={950} sx={{ color: '#f8f1de' }}>
                 {dockTitle}
               </Typography>
-              {!isLobbyPhase ? (
-                <>
-                  <Chip
-                    size="small"
-                    label={`접속 ${connectedPlayerCount}/${requiredPlayerCount}`}
-                    color={allConnected ? 'success' : 'warning'}
-                    sx={{ height: 24, fontWeight: 900 }}
-                  />
-                  <Chip
-                    size="small"
-                    label={`캐릭터 선택 ${submittedRoleSelectionCount}/${requiredPlayerCount}`}
-                    color={allSubmitted ? 'success' : 'warning'}
-                    sx={{ height: 24, fontWeight: 900 }}
-                  />
-                </>
-              ) : null}
               {canAssignPreferredRolesDirectly ? (
                 <Chip
                   size="small"
@@ -6895,7 +6883,13 @@ export default function MurderMysteryTableExperience({
             </Stack>
             <Typography
               variant="caption"
-              sx={{ color: '#cfc5ad', display: 'block', mt: 0.25 }}
+              sx={{
+                color: '#cfc5ad',
+                display: 'block',
+                mt: 0.25,
+                whiteSpace: 'pre-line',
+                wordBreak: 'keep-all',
+              }}
             >
               {helperText}
             </Typography>
@@ -6914,17 +6908,17 @@ export default function MurderMysteryTableExperience({
               whiteSpace: 'nowrap',
               border: '1px solid transparent',
               '&.Mui-disabled': {
-                color: isLobbyWaiting
+                color: shouldUseMutedDisabledButton
                   ? 'rgba(248, 241, 222, 0.42)'
                   : dockTone === 'success'
                     ? '#052e16'
                     : '#3a2600',
-                backgroundColor: isLobbyWaiting
+                backgroundColor: shouldUseMutedDisabledButton
                   ? 'rgba(248, 241, 222, 0.12)'
                   : dockTone === 'success'
                     ? '#86efac'
                     : '#fbbf24',
-                borderColor: isLobbyWaiting
+                borderColor: shouldUseMutedDisabledButton
                   ? 'rgba(248, 241, 222, 0.18)'
                   : 'transparent',
                 boxShadow: 'none',
@@ -7133,7 +7127,7 @@ export default function MurderMysteryTableExperience({
           <RoleSelectionPanel
             roleSelection={snapshot.roleSelection}
             onSubmitRolePreferences={onSubmitRolePreferences}
-            canShareRoleSheets={canUseHostTools}
+            canShareRoleSheets={false}
             onShareRoleSheet={onShareRoleSheet}
           />
         </Stack>
