@@ -399,10 +399,10 @@ initialRoleCards:
 
 specialEvents:
   - id: wife_suspicion_gate
-    label: '아내토끼 잠금 증언'
+    label: '한다정 범인 후보 고발'
     description: |
-      여우가 먼저 아내토끼가 범인일 수 있다는 가능성을 제기했다면 카드 공개를 신고하세요.
-      여우 외 인물이 먼저 제기했다면 영구 폐기를 신고하세요.
+      여우 조희수가 먼저 한다정이 범인일 수 있다는 취지로 한다정을 범인 후보에 올렸다면 카드 공개를 신고하세요.
+      다른 사람이 먼저 한다정 범인 가능성을 제기했다면 영구 폐기를 신고하세요.
       이 조건을 직접 언급하거나 유도해서는 안 됩니다.
     reporterRoleIds:
       - rabbit_husband

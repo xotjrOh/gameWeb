@@ -30,7 +30,7 @@ import {
   Typography,
   useMediaQuery,
 } from '@mui/material';
-import { type SxProps, type Theme, useTheme } from '@mui/material/styles';
+import { useTheme } from '@mui/material/styles';
 import {
   AutoStories as AutoStoriesIcon,
   Article as ArticleIcon,
@@ -80,6 +80,7 @@ import CharacterPortraitFrame, {
   CharacterBookCover,
 } from '@/components/murderMystery/CharacterPortraitFrame';
 import MurderMysteryRulebookReader from '@/components/murderMystery/MurderMysteryRulebookReader';
+import MurderMysteryInvestigationMapViewer from '@/components/murderMystery/MurderMysteryInvestigationMapViewer';
 import RulebookRichText from '@/components/murderMystery/RulebookRichText';
 
 interface MurderMysteryTableExperienceProps {
@@ -306,6 +307,25 @@ const getDisplayCardText = (card: AnyClueCard) =>
   card.extraInvestigationOnReveal
     ? card.text.replace(EXTRA_INVESTIGATION_TEXT_PATTERN, '').trimStart()
     : card.text;
+
+const getCompactCardPreviewText = (card: AnyClueCard) => {
+  const normalizedText = getDisplayCardText(card).replace(/\s+/g, ' ').trim();
+  if (normalizedText.length <= 52) {
+    return normalizedText;
+  }
+  return `${normalizedText.slice(0, 52).trimEnd()}...`;
+};
+
+const getUniqueClueCards = (cards: MurderMysteryClueVaultCardView[]) => {
+  const seenCardIds = new Set<string>();
+  return cards.filter((card) => {
+    if (seenCardIds.has(card.id)) {
+      return false;
+    }
+    seenCardIds.add(card.id);
+    return true;
+  });
+};
 
 const getClueVaultCardState = (card: AnyClueCard) => {
   const clueCard = card as MurderMysteryClueVaultCardView;
@@ -1534,6 +1554,7 @@ const InvestigationMapFab = ({
 const EvidenceCardFace = ({
   card,
   dense = false,
+  compactPreview = false,
   onOpen,
   showPublicRevealControl = false,
   publicRevealDisabled = false,
@@ -1541,17 +1562,34 @@ const EvidenceCardFace = ({
 }: {
   card: AnyClueCard;
   dense?: boolean;
+  compactPreview?: boolean;
   onOpen: (card: AnyClueCard) => void;
   showPublicRevealControl?: boolean;
   publicRevealDisabled?: boolean;
   onRevealPublicly?: (cardId: string) => void;
 }) => {
   const sourceDisplayText = getCardSourceDisplayText(card);
-  const displayText = getDisplayCardText(card);
+  const displayText = compactPreview
+    ? getCompactCardPreviewText(card)
+    : getDisplayCardText(card);
   const { isPublic, canRevealPublicly } = getClueVaultCardState(card);
+  const canUsePublicRevealButton = canRevealPublicly && !publicRevealDisabled;
+  const revealBlockedByCard = card.publicRevealDisabled === true;
+  const revealButtonLabel = isPublic
+    ? '공개됨'
+    : revealBlockedByCard
+      ? '반복조사 공개불가'
+      : canRevealPublicly
+        ? '전체공개하기'
+        : '전체공개 불가';
+  const mediaIsCompact = dense || compactPreview;
+  const cardWidth = dense ? 112 : compactPreview ? '100%' : 174;
+  const cardMinHeight = dense ? 146 : compactPreview ? 176 : 224;
+  const mediaHeight = mediaIsCompact ? 70 : 108;
+  const showPreviewText = compactPreview || !dense;
 
   return (
-    <Stack spacing={0.8} sx={{ width: dense ? 112 : 174, flex: '0 0 auto' }}>
+    <Stack spacing={0.8} sx={{ width: cardWidth, flex: '0 0 auto' }}>
       <Box
         component="button"
         type="button"
@@ -1559,7 +1597,7 @@ const EvidenceCardFace = ({
         sx={{
           border: 0,
           width: '100%',
-          minHeight: dense ? 146 : 224,
+          minHeight: cardMinHeight,
           p: 0,
           backgroundColor: 'transparent',
           color: 'inherit',
@@ -1571,7 +1609,7 @@ const EvidenceCardFace = ({
           sx={{
             position: 'relative',
             height: '100%',
-            minHeight: dense ? 146 : 224,
+            minHeight: cardMinHeight,
             borderRadius: 1,
             overflow: 'hidden',
             backgroundColor: '#f8f1de',
@@ -1593,17 +1631,20 @@ const EvidenceCardFace = ({
               alt={card.imageAlt ?? sourceDisplayText}
               sx={{
                 width: '100%',
-                height: dense ? 70 : 108,
+                height: mediaHeight,
                 objectFit: 'cover',
                 backgroundColor: '#ddd3bb',
               }}
             />
           ) : (
-            <TextOnlyClueMedia dense={dense} />
+            <TextOnlyClueMedia dense={mediaIsCompact} />
           )}
-          <Stack spacing={0.55} sx={{ p: dense ? 1 : 1.2, flex: 1 }}>
+          <Stack
+            spacing={compactPreview ? 0.35 : 0.55}
+            sx={{ p: dense || compactPreview ? 0.9 : 1.2, flex: 1 }}
+          >
             <Typography
-              variant={dense ? 'caption' : 'body2'}
+              variant={dense || compactPreview ? 'caption' : 'body2'}
               fontWeight={900}
               sx={{
                 color: '#2d2419',
@@ -1617,35 +1658,15 @@ const EvidenceCardFace = ({
             >
               {sourceDisplayText}
             </Typography>
-            {card.extraInvestigationOnReveal ? (
-              <Stack
-                direction="row"
-                spacing={0.55}
-                alignItems="center"
-                sx={{ minWidth: 0 }}
-              >
-                <Box sx={{ flex: 1, minWidth: 0 }} />
-                <ExtraInvestigationFrontBadge
-                  dense
-                  sx={{
-                    width: dense ? 22 : 24,
-                    height: dense ? 22 : 24,
-                    '& svg': {
-                      fontSize: dense ? 15 : 17,
-                    },
-                  }}
-                />
-              </Stack>
-            ) : null}
-            {!dense ? (
+            {showPreviewText ? (
               <Typography
                 variant="caption"
                 sx={{
                   color: '#514538',
-                  lineHeight: 1.45,
+                  lineHeight: compactPreview ? 1.35 : 1.45,
                   display: '-webkit-box',
                   WebkitBoxOrient: 'vertical',
-                  WebkitLineClamp: 4,
+                  WebkitLineClamp: compactPreview ? 2 : 4,
                   overflow: 'hidden',
                 }}
               >
@@ -1659,27 +1680,36 @@ const EvidenceCardFace = ({
         </Box>
       </Box>
       {showPublicRevealControl ? (
-        canRevealPublicly ? (
-          <Button
-            size="small"
-            variant="contained"
-            color="warning"
-            disabled={publicRevealDisabled}
-            onClick={() => onRevealPublicly?.(card.id)}
-            sx={{
-              fontWeight: 900,
-              '&.Mui-disabled': {
-                color: 'rgba(45, 36, 25, 0.48)',
-                backgroundColor: 'rgba(45, 36, 25, 0.16)',
-                boxShadow: 'none',
-              },
-            }}
-          >
-            전체공개하기
-          </Button>
-        ) : isPublic ? (
-          <Chip size="small" color="success" label="공개됨" />
-        ) : null
+        <Button
+          size="small"
+          variant="contained"
+          color={isPublic ? 'success' : 'warning'}
+          disabled={!canUsePublicRevealButton}
+          onClick={() => onRevealPublicly?.(card.id)}
+          sx={{
+            minHeight: 30,
+            px: compactPreview ? 0.7 : 1,
+            fontSize: compactPreview ? 11 : undefined,
+            lineHeight: 1.15,
+            fontWeight: 900,
+            whiteSpace: 'nowrap',
+            '&.Mui-disabled': {
+              color: isPublic
+                ? '#e9ffe9'
+                : revealBlockedByCard
+                  ? 'rgba(95, 57, 24, 0.68)'
+                  : 'rgba(45, 36, 25, 0.48)',
+              backgroundColor: isPublic
+                ? 'rgba(46, 125, 50, 0.82)'
+                : revealBlockedByCard
+                  ? 'rgba(245, 197, 66, 0.24)'
+                  : 'rgba(45, 36, 25, 0.16)',
+              boxShadow: 'none',
+            },
+          }}
+        >
+          {revealButtonLabel}
+        </Button>
       ) : null}
     </Stack>
   );
@@ -3093,7 +3123,7 @@ const RoleSelectionPanel = ({
                 variant="caption"
                 sx={{ color: '#cfc5ad', lineHeight: 1.6 }}
               >
-                공유 링크에는 프롤로그, 캐릭터 룰지, 기본 규칙이 포함됩니다.
+                공유 링크에는 프롤로그, 캐릭터 룰지, 기본 규칙, 맵이 포함됩니다.
               </Typography>
             </Stack>
           ) : null}
@@ -3660,7 +3690,7 @@ const RulebookModal = ({
           showPageStatusFooter={false}
           mapContent={
             mapScene ? (
-              <InvestigationMapViewer
+              <MurderMysteryInvestigationMapViewer
                 scene={mapScene}
                 pins={[]}
                 sx={{
@@ -3699,8 +3729,8 @@ const SpecialEventConfirmDialog = ({
       <DialogContent>
         <Typography sx={{ lineHeight: 1.7, wordBreak: 'keep-all' }}>
           {isReveal
-            ? '여우가 아내토끼가 범인일거라고 발언한 게 맞습니까?'
-            : '여우 외 인물이 먼저 아내토끼 범인 가능성을 제기했습니까?'}
+            ? '정말 여우 조희수가 먼저 "한다정이 범인일 수 있다"는 취지로 한다정을 범인 후보에 올렸나요?'
+            : '정말 여우가 아니라 다른 사람이 먼저 한다정 범인 가능성을 제기했나요? 이 카드는 더 이상 공개되지 않습니다.'}
         </Typography>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
@@ -3714,7 +3744,7 @@ const SpecialEventConfirmDialog = ({
             }
           }}
         >
-          {isReveal ? '공개 확정' : '폐기 확정'}
+          {isReveal ? '맞습니다, 공개합니다' : '맞습니다, 폐기합니다'}
         </Button>
       </DialogActions>
     </Dialog>
@@ -4715,314 +4745,6 @@ const CardDetailDialog = ({
   );
 };
 
-const InvestigationMapViewer = ({
-  scene,
-  pins = [],
-  onSelectPin,
-  toolbarEnd,
-  resetKey,
-  sx,
-}: {
-  scene: MurderMysteryInvestigationMapSceneScenario | null;
-  pins?: InvestigationMapTargetPin[];
-  onSelectPin?: (targetId: string) => void;
-  toolbarEnd?: React.ReactNode;
-  resetKey?: unknown;
-  sx?: SxProps<Theme>;
-}) => {
-  const pointersRef = useRef(new Map<number, { x: number; y: number }>());
-  const lastGestureRef = useRef<{
-    centerX: number;
-    centerY: number;
-    distance: number | null;
-  } | null>(null);
-  const [scale, setScale] = useState(1);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const pinRadius = scene ? Math.max(scene.width, scene.height) * 0.018 : 0;
-
-  const resetView = useCallback(() => {
-    setScale(1);
-    setOffset({ x: 0, y: 0 });
-    pointersRef.current.clear();
-    lastGestureRef.current = null;
-  }, []);
-
-  useEffect(() => {
-    resetView();
-  }, [resetKey, resetView, scene?.imageSrc]);
-
-  const applyScale = useCallback((nextScale: number) => {
-    setScale(clamp(nextScale, 1, 4));
-  }, []);
-
-  const updateGesture = () => {
-    const pointers = [...pointersRef.current.values()];
-    if (pointers.length === 0) {
-      lastGestureRef.current = null;
-      return;
-    }
-    const center = pointers.reduce(
-      (acc, pointer) => ({
-        x: acc.x + pointer.x / pointers.length,
-        y: acc.y + pointer.y / pointers.length,
-      }),
-      { x: 0, y: 0 }
-    );
-    const distance =
-      pointers.length >= 2
-        ? Math.hypot(
-            pointers[0].x - pointers[1].x,
-            pointers[0].y - pointers[1].y
-          )
-        : null;
-    lastGestureRef.current = {
-      centerX: center.x,
-      centerY: center.y,
-      distance,
-    };
-  };
-
-  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    event.currentTarget.setPointerCapture(event.pointerId);
-    pointersRef.current.set(event.pointerId, {
-      x: event.clientX,
-      y: event.clientY,
-    });
-    updateGesture();
-  };
-
-  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!pointersRef.current.has(event.pointerId)) {
-      return;
-    }
-    pointersRef.current.set(event.pointerId, {
-      x: event.clientX,
-      y: event.clientY,
-    });
-
-    const previous = lastGestureRef.current;
-    const pointers = [...pointersRef.current.values()];
-    if (!previous || pointers.length === 0) {
-      updateGesture();
-      return;
-    }
-
-    const center = pointers.reduce(
-      (acc, pointer) => ({
-        x: acc.x + pointer.x / pointers.length,
-        y: acc.y + pointer.y / pointers.length,
-      }),
-      { x: 0, y: 0 }
-    );
-    setOffset((current) => ({
-      x: current.x + center.x - previous.centerX,
-      y: current.y + center.y - previous.centerY,
-    }));
-
-    const previousDistance = previous.distance;
-    if (pointers.length >= 2 && previousDistance) {
-      const nextDistance = Math.hypot(
-        pointers[0].x - pointers[1].x,
-        pointers[0].y - pointers[1].y
-      );
-      setScale((current) =>
-        clamp(current * (nextDistance / previousDistance), 1, 4)
-      );
-    }
-
-    updateGesture();
-  };
-
-  const handlePointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
-    pointersRef.current.delete(event.pointerId);
-    updateGesture();
-  };
-
-  return (
-    <Stack
-      sx={[
-        {
-          height: '100%',
-          minHeight: 0,
-          overflow: 'hidden',
-          backgroundColor: '#0b1117',
-          color: '#f8f1de',
-        },
-        ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
-      ]}
-    >
-      <Stack
-        direction="row"
-        spacing={1}
-        alignItems="center"
-        sx={{
-          p: 1,
-          borderBottom: '1px solid rgba(255,255,255,0.14)',
-          backgroundColor: 'rgba(11,17,23,0.96)',
-        }}
-      >
-        <MapIcon />
-        <Typography fontWeight={950} sx={{ flex: 1 }}>
-          사건 맵
-        </Typography>
-        <Tooltip title="축소">
-          <IconButton
-            onClick={() => applyScale(scale - 0.25)}
-            sx={{ color: '#f8f1de' }}
-          >
-            <ZoomOutIcon />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="확대">
-          <IconButton
-            onClick={() => applyScale(scale + 0.25)}
-            sx={{ color: '#f8f1de' }}
-          >
-            <ZoomInIcon />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="원래 크기">
-          <IconButton onClick={resetView} sx={{ color: '#f8f1de' }}>
-            <RestartAltIcon />
-          </IconButton>
-        </Tooltip>
-        {toolbarEnd}
-      </Stack>
-      <Box
-        onWheel={(event) => {
-          event.preventDefault();
-          applyScale(scale + (event.deltaY < 0 ? 0.18 : -0.18));
-        }}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerEnd}
-        onPointerCancel={handlePointerEnd}
-        sx={{
-          position: 'relative',
-          flex: 1,
-          minHeight: 0,
-          overflow: 'hidden',
-          display: 'grid',
-          placeItems: 'center',
-          touchAction: 'none',
-          cursor: scale > 1 ? 'grab' : 'zoom-in',
-          backgroundColor: '#0b1117',
-        }}
-      >
-        {scene ? (
-          <Box
-            component="svg"
-            viewBox={`0 0 ${scene.width} ${scene.height}`}
-            role="img"
-            aria-label={scene.alt}
-            preserveAspectRatio="xMidYMid meet"
-            sx={{
-              width: '100%',
-              height: '100%',
-              transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
-              transformOrigin: 'center',
-              transition:
-                pointersRef.current.size > 0
-                  ? 'none'
-                  : 'transform 120ms ease-out',
-              userSelect: 'none',
-            }}
-          >
-            <image
-              href={scene.imageSrc}
-              width={scene.width}
-              height={scene.height}
-              preserveAspectRatio="xMidYMid meet"
-            />
-            {pins.map(({ hotspot, matNumber, target }) => {
-              const cx =
-                ((hotspot.xPct + hotspot.widthPct / 2) / 100) * scene.width;
-              const cy =
-                ((hotspot.yPct + hotspot.heightPct / 2) / 100) * scene.height;
-
-              return (
-                <Box
-                  key={hotspot.id}
-                  component="g"
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`${target.label} 단서로 이동`}
-                  onPointerDown={(event) => event.stopPropagation()}
-                  onPointerMove={(event) => event.stopPropagation()}
-                  onPointerUp={(event) => event.stopPropagation()}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onSelectPin?.(target.id);
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key !== 'Enter' && event.key !== ' ') {
-                      return;
-                    }
-                    event.preventDefault();
-                    onSelectPin?.(target.id);
-                  }}
-                  sx={{
-                    cursor: 'pointer',
-                    outline: 'none',
-                    '&:focus-visible circle': {
-                      stroke: '#ffffff',
-                      strokeWidth: pinRadius * 0.24,
-                    },
-                  }}
-                >
-                  <title>{`${target.label} 단서로 이동`}</title>
-                  <circle
-                    cx={cx}
-                    cy={cy}
-                    r={pinRadius}
-                    fill={
-                      target.isExhausted
-                        ? 'rgba(71,85,105,0.94)'
-                        : 'rgba(245,197,66,0.96)'
-                    }
-                    stroke="rgba(255,248,230,0.92)"
-                    strokeWidth={pinRadius * 0.16}
-                  />
-                  <text
-                    x={cx}
-                    y={cy}
-                    textAnchor="middle"
-                    dominantBaseline="central"
-                    fill={target.isExhausted ? '#f8f1de' : '#2b2112'}
-                    fontSize={pinRadius * 0.95}
-                    fontWeight={950}
-                    pointerEvents="none"
-                  >
-                    {matNumber}
-                  </text>
-                </Box>
-              );
-            })}
-          </Box>
-        ) : null}
-        <Typography
-          variant="caption"
-          sx={{
-            position: 'absolute',
-            left: '50%',
-            bottom: 12,
-            transform: 'translateX(-50%)',
-            px: 1.2,
-            py: 0.45,
-            borderRadius: 999,
-            backgroundColor: 'rgba(0,0,0,0.62)',
-            color: '#fff',
-            fontWeight: 850,
-            whiteSpace: 'nowrap',
-          }}
-        >
-          드래그로 이동 · 핀치/휠로 확대
-        </Typography>
-      </Box>
-    </Stack>
-  );
-};
-
 const MapFullscreenDialog = ({
   open,
   scene,
@@ -5054,7 +4776,7 @@ const MapFullscreenDialog = ({
       },
     }}
   >
-    <InvestigationMapViewer
+    <MurderMysteryInvestigationMapViewer
       scene={scene}
       pins={pins}
       onSelectPin={onSelectPin}
@@ -5125,8 +4847,8 @@ const PrivateCardsDialog = ({
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(156px, 174px))',
-              gap: 1.4,
+              gridTemplateColumns: 'repeat(auto-fit, minmax(132px, 1fr))',
+              gap: 1.1,
               alignItems: 'start',
             }}
           >
@@ -5134,6 +4856,7 @@ const PrivateCardsDialog = ({
               <EvidenceCardFace
                 key={card.id}
                 card={card}
+                compactPreview
                 onOpen={onOpenCard}
                 showPublicRevealControl
                 publicRevealDisabled={!canRevealPubliclyNow}
@@ -5244,24 +4967,26 @@ export default function MurderMysteryTableExperience({
     snapshot.players.find((player) => player.id === sessionId) ?? null;
   const selectedPlayer =
     snapshot.players.find((player) => player.id === selectedPlayerId) ?? null;
+  const discussionPublicClues = useMemo(
+    () =>
+      getUniqueClueCards([
+        ...snapshot.clueVault.publicClues,
+        ...snapshot.players.flatMap((player) => player.publicRevealedClues),
+      ]),
+    [snapshot.clueVault.publicClues, snapshot.players]
+  );
   const cardViewerSources = useMemo(() => {
-    const playerPublicCardIds = new Set(
-      snapshot.players.flatMap((player) =>
-        player.publicRevealedClues.map((card) => card.id)
-      )
-    );
     const sources: Record<string, AnyClueCard[]> = {
       'my-clues': snapshot.clueVault.myClues,
       'public-clues': snapshot.clueVault.publicClues,
-      'discussion:table-public': snapshot.clueVault.publicClues.filter(
-        (card) => !playerPublicCardIds.has(card.id)
-      ),
+      'discussion:public': discussionPublicClues,
     };
     snapshot.players.forEach((player) => {
       sources[`player:${player.id}:public`] = player.publicRevealedClues;
     });
     return sources;
   }, [
+    discussionPublicClues,
     snapshot.clueVault.myClues,
     snapshot.clueVault.publicClues,
     snapshot.players,
@@ -5567,10 +5292,12 @@ export default function MurderMysteryTableExperience({
       ? { xs: 1.3, md: 2 }
       : phaseKind === 'role_reading'
         ? { xs: 1.3, md: 2 }
-        : {
-            xs: shouldReserveBottomDockSpace ? 18 : 2,
-            lg: shouldReserveBottomDockSpace ? 11 : 2,
-          };
+        : phaseKind === 'discuss'
+          ? { xs: 2, md: 2 }
+          : {
+              xs: shouldReserveBottomDockSpace ? 18 : 2,
+              lg: shouldReserveBottomDockSpace ? 11 : 2,
+            };
   const floatingFabBottomOffset = hasOpenModal
     ? 96
     : shouldReserveBottomDockSpace
@@ -7212,19 +6939,8 @@ export default function MurderMysteryTableExperience({
   );
 
   const renderDiscussionArea = () => {
-    const playerPublicCardIds = new Set(
-      snapshot.players.flatMap((player) =>
-        player.publicRevealedClues.map((card) => card.id)
-      )
-    );
-    const tablePublicClues = snapshot.clueVault.publicClues.filter(
-      (card) => !playerPublicCardIds.has(card.id)
-    );
-    const playersWithPublicCards = snapshot.players.filter(
-      (player) => player.publicRevealedClues.length > 0
-    );
-    const hasAnyPublicCard =
-      tablePublicClues.length > 0 || playersWithPublicCards.length > 0;
+    const hasAnyPublicCard = discussionPublicClues.length > 0;
+    const reportableSpecialEvents = snapshot.specialEvents;
 
     return (
       <Stack spacing={1.6}>
@@ -7255,29 +6971,89 @@ export default function MurderMysteryTableExperience({
                 회의 시간
               </Typography>
               <Typography sx={{ mt: 0.6, color: '#f5e7bf', lineHeight: 1.6 }}>
-                공개된 단서와 맵을 보며 결론을 정리하세요. 시간이 끝나면 다음
-                단계로 자동 진행됩니다.
+                필요한 개인 카드는 전체공개하기로 테이블에 올리고, 맵과 단서를
+                함께 보며 결론을 정리하세요.
               </Typography>
             </Box>
-            <Chip
-              icon={<TimerIcon />}
-              color={isPhaseTimerExpired ? 'warning' : 'default'}
-              label={
-                isPhaseTimerExpired
-                  ? '곧 다음 단계'
-                  : `남은 시간 ${formatSeconds(phaseRemainingSec)}`
-              }
-              sx={{
-                alignSelf: { xs: 'flex-start', sm: 'center' },
-                backgroundColor: isPhaseTimerExpired
-                  ? undefined
-                  : 'rgba(255,255,255,0.14)',
-                color: isPhaseTimerExpired ? undefined : '#f8f1de',
-                fontWeight: 900,
-              }}
-            />
           </Stack>
         </Box>
+
+        {reportableSpecialEvents.length > 0 ? (
+          <Stack spacing={1}>
+            {reportableSpecialEvents.map((event) => (
+              <Box
+                key={`discussion-special-event:${event.id}`}
+                sx={{
+                  p: { xs: 1.2, md: 1.4 },
+                  borderRadius: 2,
+                  border: '1px solid rgba(245, 197, 66, 0.48)',
+                  backgroundColor: 'rgba(245, 197, 66, 0.1)',
+                  boxShadow: '0 16px 34px rgba(0,0,0,0.22)',
+                }}
+              >
+                <Stack spacing={1.1}>
+                  <Stack direction="row" spacing={0.9} alignItems="center">
+                    <LockIcon
+                      fontSize="small"
+                      sx={{ color: '#f5c542', flex: '0 0 auto' }}
+                    />
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography fontWeight={950}>잠금 증언 신고</Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          mt: 0.25,
+                          color: '#f5e7bf',
+                          lineHeight: 1.55,
+                          wordBreak: 'keep-all',
+                        }}
+                      >
+                        여우 조희수가 먼저 한다정을 범인 후보로 명확히 언급했을
+                        때만 누르세요. 다른 사람이 먼저 제기했다면 폐기
+                        처리하세요.
+                      </Typography>
+                    </Box>
+                  </Stack>
+                  <Stack
+                    direction="row"
+                    spacing={0.8}
+                    flexWrap="wrap"
+                    useFlexGap
+                  >
+                    <Button
+                      size="small"
+                      variant="contained"
+                      color="warning"
+                      startIcon={<TaskAltIcon />}
+                      onClick={() =>
+                        requestSpecialEventReport(event.id, 'reveal')
+                      }
+                      sx={{ fontWeight: 900 }}
+                    >
+                      여우가 한다정을 범인 후보로 올렸어요
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color="inherit"
+                      startIcon={<LockIcon />}
+                      onClick={() =>
+                        requestSpecialEventReport(event.id, 'seal')
+                      }
+                      sx={{
+                        borderColor: 'rgba(245, 231, 191, 0.45)',
+                        color: '#f5e7bf',
+                        fontWeight: 900,
+                      }}
+                    >
+                      다른 사람이 먼저 말했어요
+                    </Button>
+                  </Stack>
+                </Stack>
+              </Box>
+            ))}
+          </Stack>
+        ) : null}
 
         {snapshot.investigation.map?.scene ? (
           <Box
@@ -7335,7 +7111,15 @@ export default function MurderMysteryTableExperience({
             <Typography fontWeight={950}>회의 공개 카드</Typography>
             <Chip
               size="small"
-              label={`${snapshot.clueVault.publicClues.length}장`}
+              label={`${discussionPublicClues.length}장`}
+              sx={{
+                height: 24,
+                backgroundColor: 'rgba(245, 197, 66, 0.24)',
+                border: '1px solid rgba(245, 197, 66, 0.64)',
+                color: '#f8f1de',
+                fontWeight: 950,
+                '& .MuiChip-label': { px: 0.9 },
+              }}
             />
           </Stack>
 
@@ -7345,89 +7129,31 @@ export default function MurderMysteryTableExperience({
             </Typography>
           ) : null}
 
-          {tablePublicClues.length > 0 ? (
+          {hasAnyPublicCard ? (
             <Box
               sx={{
-                p: 1.2,
-                borderRadius: 2,
-                backgroundColor: 'rgba(255,255,255,0.07)',
-                border: '1px solid rgba(255,255,255,0.14)',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(132px, 1fr))',
+                gap: 1.05,
+                alignItems: 'start',
               }}
             >
-              <Typography fontWeight={950} sx={{ mb: 1 }}>
-                테이블 공개 카드
-              </Typography>
-              <Box
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(142px, 174px))',
-                  gap: 1.2,
-                  alignItems: 'start',
-                }}
-              >
-                {tablePublicClues.map((card) => (
-                  <EvidenceCardFace
-                    key={`discussion:table:${card.id}`}
-                    card={card}
-                    onOpen={(openedCard) =>
-                      openCardViewer(
-                        'discussion:table-public',
-                        tablePublicClues,
-                        openedCard
-                      )
-                    }
-                  />
-                ))}
-              </Box>
+              {discussionPublicClues.map((card) => (
+                <EvidenceCardFace
+                  key={`discussion:public:${card.id}`}
+                  card={card}
+                  compactPreview
+                  onOpen={(openedCard) =>
+                    openCardViewer(
+                      'discussion:public',
+                      discussionPublicClues,
+                      openedCard
+                    )
+                  }
+                />
+              ))}
             </Box>
           ) : null}
-
-          {playersWithPublicCards.map((player) => (
-            <Box
-              key={`discussion:${player.id}`}
-              sx={{
-                p: 1.2,
-                borderRadius: 2,
-                backgroundColor: 'rgba(255,255,255,0.07)',
-                border: '1px solid rgba(255,255,255,0.14)',
-              }}
-            >
-              <Stack spacing={1}>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <Typography fontWeight={950} sx={{ flex: 1 }}>
-                    {formatParticipantLabel(player)}
-                  </Typography>
-                  <Chip
-                    size="small"
-                    label={`${player.publicRevealedClues.length}장`}
-                  />
-                </Stack>
-                <Box
-                  sx={{
-                    display: 'grid',
-                    gridTemplateColumns:
-                      'repeat(auto-fit, minmax(142px, 174px))',
-                    gap: 1.2,
-                    alignItems: 'start',
-                  }}
-                >
-                  {player.publicRevealedClues.map((card) => (
-                    <EvidenceCardFace
-                      key={`discussion:${player.id}:${card.id}`}
-                      card={card}
-                      onOpen={(openedCard) =>
-                        openCardViewer(
-                          `player:${player.id}:public`,
-                          player.publicRevealedClues,
-                          openedCard
-                        )
-                      }
-                    />
-                  ))}
-                </Box>
-              </Stack>
-            </Box>
-          ))}
         </Stack>
       </Stack>
     );

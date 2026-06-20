@@ -1,8 +1,12 @@
 'use client';
 
 import { Box, Chip, Stack, Typography } from '@mui/material';
+import MurderMysteryInvestigationMapViewer from '@/components/murderMystery/MurderMysteryInvestigationMapViewer';
 import MurderMysteryRulebookReader from '@/components/murderMystery/MurderMysteryRulebookReader';
-import type { MurderMysteryRoleBelongingHintScenario } from '@/types/murderMystery';
+import type {
+  MurderMysteryInvestigationMapSceneScenario,
+  MurderMysteryRoleBelongingHintScenario,
+} from '@/types/murderMystery';
 
 interface MurderMysteryPreReadClientProps {
   token: string;
@@ -17,6 +21,7 @@ interface MurderMysteryPreReadClientProps {
   ruleText?: string;
   belongingHints?: MurderMysteryRoleBelongingHintScenario[];
   secretTextHighlights?: string[];
+  mapScene?: MurderMysteryInvestigationMapSceneScenario | null;
 }
 
 export default function MurderMysteryPreReadClient({
@@ -32,6 +37,7 @@ export default function MurderMysteryPreReadClient({
   ruleText,
   belongingHints,
   secretTextHighlights = [],
+  mapScene,
 }: MurderMysteryPreReadClientProps) {
   return (
     <Box
@@ -85,7 +91,24 @@ export default function MurderMysteryPreReadClient({
           ruleText={ruleText}
           belongingHints={belongingHints}
           secretTextHighlights={secretTextHighlights}
-          footerText="이 링크는 방 상태와 관계없이 사전 룰지와 규칙을 보여줍니다."
+          footerText={
+            mapScene
+              ? '이 링크는 방 상태와 관계없이 사전 룰지, 규칙, 맵을 보여줍니다.'
+              : '이 링크는 방 상태와 관계없이 사전 룰지와 규칙을 보여줍니다.'
+          }
+          mapContent={
+            mapScene ? (
+              <MurderMysteryInvestigationMapViewer
+                scene={mapScene}
+                pins={[]}
+                sx={{
+                  border: '1px solid rgba(255,255,255,0.18)',
+                  borderRadius: 2,
+                  boxShadow: '0 24px 70px rgba(0,0,0,0.35)',
+                }}
+              />
+            ) : null
+          }
         />
       </Stack>
     </Box>

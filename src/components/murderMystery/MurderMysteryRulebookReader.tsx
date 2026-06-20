@@ -1134,7 +1134,7 @@ export default function MurderMysteryRulebookReader({
                               onReportSpecialEvent?.(event.id, 'reveal')
                             }
                           >
-                            공개
+                            여우 발언으로 공개
                           </Button>
                           <Button
                             size="small"
@@ -1144,7 +1144,7 @@ export default function MurderMysteryRulebookReader({
                               onReportSpecialEvent?.(event.id, 'seal')
                             }
                           >
-                            폐기
+                            다른 사람이 먼저 말해 폐기
                           </Button>
                         </Stack>
                       </Box>

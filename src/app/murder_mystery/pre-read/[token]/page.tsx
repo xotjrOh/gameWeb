@@ -73,6 +73,7 @@ export default function MurderMysteryPreReadPage({
         ruleText={role.ruleText}
         belongingHints={role.belongingHints}
         secretTextHighlights={role.secretTextHighlights}
+        mapScene={scenario.investigations.layout.map?.scene ?? null}
       />
     );
   } catch {
