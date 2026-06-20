@@ -5541,8 +5541,9 @@ export default function MurderMysteryTableExperience({
     shouldOverlayHostBriefingDock ||
     shouldShowFloatingActionDock ||
     shouldShowMobileDeskPanel;
+  const mobileDeskPanelBottomPadding = phaseKind === 'discuss' ? 8.5 : 22;
   const mobileMainBottomPadding = shouldShowMobileDeskPanel
-    ? 22
+    ? mobileDeskPanelBottomPadding
     : shouldShowFloatingActionDock
       ? 22
       : 1.4;
@@ -7371,9 +7372,8 @@ export default function MurderMysteryTableExperience({
                           wordBreak: 'keep-all',
                         }}
                       >
-                        여우 조희수가 먼저 한다정을 범인 후보로 명확히 언급했을
-                        때만 누르세요. 다른 사람이 먼저 제기했다면 폐기
-                        처리하세요.
+                        여우 조희수가 먼저 한다정을 범인 후보로 언급했을 때만
+                        누르세요. 다른 사람이 먼저 제기했다면 폐기 처리하세요.
                       </Typography>
                     </Box>
                   </Stack>
