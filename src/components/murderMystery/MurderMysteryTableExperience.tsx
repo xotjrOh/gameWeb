@@ -1898,11 +1898,15 @@ const EvidenceCardFace = ({
           onClick={() => onRevealPublicly?.(card.id)}
           sx={{
             minHeight: 30,
+            minWidth: 0,
+            maxWidth: '100%',
             px: compactPreview ? 0.7 : 1,
             fontSize: compactPreview ? 11 : undefined,
             lineHeight: 1.15,
             fontWeight: 900,
             whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
             '&.Mui-disabled': {
               color: isPublic
                 ? '#e9ffe9'
@@ -5181,7 +5185,7 @@ const PrivateCardsDialog = ({
     open={open}
     onClose={onClose}
     fullWidth
-    maxWidth="md"
+    maxWidth="sm"
     fullScreen={fullScreen}
   >
     <DialogTitle>
@@ -5213,8 +5217,8 @@ const PrivateCardsDialog = ({
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-              gap: 1.1,
+              gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+              gap: 0.65,
               alignItems: 'start',
             }}
           >
@@ -5223,8 +5227,10 @@ const PrivateCardsDialog = ({
                 key={card.id}
                 card={card}
                 compactPreview
-                previewLineClamp={3}
-                previewMaxLength={84}
+                previewLineClamp={1}
+                previewMaxLength={36}
+                cardMinHeight={132}
+                mediaHeight={58}
                 onOpen={onOpenCard}
                 showPublicRevealControl
                 publicRevealDisabled={!canRevealPubliclyNow}
