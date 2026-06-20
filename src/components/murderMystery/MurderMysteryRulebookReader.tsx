@@ -5,6 +5,7 @@ import type {
   KeyboardEvent as ReactKeyboardEvent,
   MouseEvent as ReactMouseEvent,
   PointerEvent as ReactPointerEvent,
+  ReactNode,
 } from 'react';
 import {
   Box,
@@ -29,7 +30,7 @@ import {
   MurderMysterySpecialEventOutcome,
 } from '@/types/murderMystery';
 
-type RulebookSection = 'prologue' | 'rolebook' | 'rules';
+type RulebookSection = 'prologue' | 'rolebook' | 'rules' | 'map';
 type RulebookPageIndexBySection = Record<RulebookSection, number>;
 type RulebookPageTurnDirection = 'previous' | 'next';
 
@@ -66,6 +67,7 @@ interface MurderMysteryRulebookReaderProps {
   showProgressMarkers?: boolean;
   showPageStatusFooter?: boolean;
   footerText?: string;
+  mapContent?: ReactNode;
   specialEvents?: MurderMysteryReportableSpecialEventView[];
   onReportSpecialEvent?: (
     eventId: string,
@@ -75,7 +77,10 @@ interface MurderMysteryRulebookReaderProps {
 }
 
 const isRulebookSection = (value: unknown): value is RulebookSection =>
-  value === 'prologue' || value === 'rolebook' || value === 'rules';
+  value === 'prologue' ||
+  value === 'rolebook' ||
+  value === 'rules' ||
+  value === 'map';
 
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
@@ -84,6 +89,7 @@ const defaultPageIndexBySection: RulebookPageIndexBySection = {
   prologue: 0,
   rolebook: 0,
   rules: 0,
+  map: 0,
 };
 
 const pageFrameHeight = { xs: '80svh', sm: 'clamp(800px, 86dvh, 980px)' };
@@ -130,6 +136,7 @@ export default function MurderMysteryRulebookReader({
   showProgressMarkers = true,
   showPageStatusFooter = true,
   footerText,
+  mapContent,
   specialEvents = [],
   onReportSpecialEvent,
   onPageStatusChange,
@@ -158,17 +165,20 @@ export default function MurderMysteryRulebookReader({
   const loadedStorageKeyRef = useRef<string | null>(null);
   const pageDragGestureRef = useRef<RulebookPageDragGesture | null>(null);
   const suppressNextPageClickRef = useRef(false);
+  const hasMapSection = Boolean(mapContent);
   const sectionTabs = useMemo<readonly RulebookSection[]>(
-    () =>
-      includePrologue
-        ? ['prologue', 'rolebook', 'rules']
-        : ['rolebook', 'rules'],
-    [includePrologue]
+    () => [
+      ...(includePrologue ? (['prologue'] as const) : []),
+      'rolebook',
+      'rules',
+      ...(hasMapSection ? (['map'] as const) : []),
+    ],
+    [hasMapSection, includePrologue]
   );
 
   const getSectionPageCount = useCallback(
     (targetSection: RulebookSection) => {
-      if (targetSection === 'rules') {
+      if (targetSection === 'rules' || targetSection === 'map') {
         return 1;
       }
       if (targetSection === 'prologue' && includePrologue) {
@@ -208,6 +218,7 @@ export default function MurderMysteryRulebookReader({
   const progress = Math.round(previewProgressRatio * 100);
   const canScrubProgress = pageCount > 1;
   const useOverlayControls = controlsMode === 'overlay';
+  const isMapSection = section === 'map' && hasMapSection;
   const currentSecretPageIndex = includeRolebookCover
     ? pageIndex - 1
     : pageIndex;
@@ -258,10 +269,11 @@ export default function MurderMysteryRulebookReader({
     try {
       const raw = window.localStorage.getItem(storageKey);
       const saved = raw ? JSON.parse(raw) : {};
+      const savedSectionCandidate: unknown = saved.section;
       const savedSection: RulebookSection =
-        isRulebookSection(saved.section) &&
-        (includePrologue || saved.section !== 'prologue')
-          ? saved.section
+        isRulebookSection(savedSectionCandidate) &&
+        sectionTabs.includes(savedSectionCandidate)
+          ? savedSectionCandidate
           : 'rolebook';
       const savedPageIndexBySection: Partial<Record<RulebookSection, unknown>> =
         typeof saved.pageIndexBySection === 'object' &&
@@ -311,10 +323,10 @@ export default function MurderMysteryRulebookReader({
   }, [includePrologue, includeRolebookCover, sectionTabs, storageKey]);
 
   useEffect(() => {
-    if (!includePrologue && section === 'prologue') {
+    if (!sectionTabs.includes(section)) {
       setSection('rolebook');
     }
-  }, [includePrologue, section]);
+  }, [section, sectionTabs]);
 
   useEffect(() => {
     onPageStatusChange?.({ section, pageIndex, pageCount });
@@ -329,6 +341,7 @@ export default function MurderMysteryRulebookReader({
         prologue: clampPageIndex(pageIndexBySection.prologue, 'prologue'),
         rolebook: clampPageIndex(pageIndexBySection.rolebook, 'rolebook'),
         rules: clampPageIndex(pageIndexBySection.rules, 'rules'),
+        map: clampPageIndex(pageIndexBySection.map, 'map'),
       };
       window.localStorage.setItem(
         storageKey,
@@ -359,7 +372,7 @@ export default function MurderMysteryRulebookReader({
   ) => {
     setPreviewRatio(null);
     if (useOverlayControls) {
-      setAreReaderControlsOpen(false);
+      setAreReaderControlsOpen(nextSection === 'map');
     }
     setPageTurn((current) => ({
       direction,
@@ -479,7 +492,7 @@ export default function MurderMysteryRulebookReader({
     setSection(nextSection);
     setPreviewRatio(null);
     setPageTurn(null);
-    setAreReaderControlsOpen(false);
+    setAreReaderControlsOpen(useOverlayControls && nextSection === 'map');
     setPageDragOffset(0);
     setIsPageDragging(false);
     pageDragGestureRef.current = null;
@@ -679,7 +692,9 @@ export default function MurderMysteryRulebookReader({
                 ? '프롤로그'
                 : nextSection === 'rolebook'
                   ? '룰지'
-                  : '규칙'}
+                  : nextSection === 'rules'
+                    ? '규칙'
+                    : '맵'}
             </Button>
           ))}
         </Stack>
@@ -839,12 +854,12 @@ export default function MurderMysteryRulebookReader({
             border: '1px solid rgba(255,255,255,0.18)',
             boxShadow: '0 24px 70px rgba(0,0,0,0.35)',
             cursor:
-              pageCount > 1
+              pageCount > 1 && !isMapSection
                 ? isPageDragging
                   ? 'grabbing'
                   : 'grab'
                 : 'default',
-            touchAction: 'pan-y',
+            touchAction: isMapSection ? 'none' : 'pan-y',
             userSelect: isPageDragging ? 'none' : undefined,
           },
           ...(Array.isArray(pageSx) ? pageSx : pageSx ? [pageSx] : []),
@@ -853,6 +868,17 @@ export default function MurderMysteryRulebookReader({
                 {
                   p: 0,
                   overflow: 'visible',
+                  backgroundColor: 'transparent',
+                  border: 0,
+                  boxShadow: 'none',
+                },
+              ]
+            : []),
+          ...(isMapSection
+            ? [
+                {
+                  p: 0,
+                  overflow: 'hidden',
                   backgroundColor: 'transparent',
                   border: 0,
                   boxShadow: 'none',
@@ -975,6 +1001,13 @@ export default function MurderMysteryRulebookReader({
             >
               {prologuePages[pageIndex]}
             </Typography>
+          ) : isMapSection ? (
+            <Box
+              data-rulebook-navigation-skip="true"
+              sx={{ height: '100%', minHeight: 0 }}
+            >
+              {mapContent}
+            </Box>
           ) : section === 'rules' ? (
             <Stack
               spacing={1.4}

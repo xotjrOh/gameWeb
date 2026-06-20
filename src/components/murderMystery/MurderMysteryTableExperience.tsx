@@ -2,6 +2,7 @@
 
 import {
   Fragment,
+  type RefObject,
   useCallback,
   useEffect,
   useMemo,
@@ -29,7 +30,7 @@ import {
   Typography,
   useMediaQuery,
 } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
+import { type SxProps, type Theme, useTheme } from '@mui/material/styles';
 import {
   AutoStories as AutoStoriesIcon,
   Article as ArticleIcon,
@@ -169,15 +170,15 @@ type FloatingFabPosition = {
 type FloatingFabViewport = {
   width: number;
   height: number;
+  frameLeft: number;
+  frameRight: number;
+  frameTop: number;
+  frameBottom: number;
 };
 type FloatingFabDragPosition = {
   left: number;
   top: number;
 };
-type PinnedClueDockSide = FloatingFabDockSide;
-type PinnedClueFabPosition = FloatingFabPosition;
-type PinnedClueFabViewport = FloatingFabViewport;
-type PinnedClueFabDragPosition = FloatingFabDragPosition;
 type InvestigationMapTargetPin = {
   target: MurderMysteryInvestigationTargetView;
   hotspot: MurderMysteryInvestigationMapHotspotView;
@@ -212,14 +213,11 @@ const EXTRA_INVESTIGATION_LABEL = '전체공개 후 추가조사';
 const EXTRA_INVESTIGATION_DESCRIPTION =
   '이 표식이 있는 카드는 획득 즉시 전체 공개되고, 조사자가 같은 라운드에서 한 번 더 조사합니다.';
 const EXTRA_INVESTIGATION_TEXT_PATTERN = /\s*\[전체공개 후 추가조사\]\s*/g;
-const FLOATING_FAB_SIZE = 64;
-const FLOATING_FAB_EDGE_OFFSET = 12;
-const FLOATING_FAB_TOP_SAFE_OFFSET = 50;
-const FLOATING_FAB_DRAG_THRESHOLD = 5;
-const PINNED_CLUE_FAB_SIZE = FLOATING_FAB_SIZE;
-const PINNED_CLUE_FAB_EDGE_OFFSET = FLOATING_FAB_EDGE_OFFSET;
-const PINNED_CLUE_FAB_TOP_SAFE_OFFSET = FLOATING_FAB_TOP_SAFE_OFFSET;
-const PINNED_CLUE_FAB_DRAG_THRESHOLD = FLOATING_FAB_DRAG_THRESHOLD;
+const EDGE_PANEL_FAB_WIDTH = 40;
+const EDGE_PANEL_FAB_HEIGHT = 68;
+const EDGE_PANEL_FAB_VERTICAL_EDGE_OFFSET = 12;
+const EDGE_PANEL_FAB_TOP_SAFE_OFFSET = 50;
+const EDGE_PANEL_FAB_DRAG_THRESHOLD = 5;
 const PINNED_CLUE_FAB_STORAGE_KEY = 'murderMystery:pinnedClueFabPosition:v1';
 const MAP_FAB_STORAGE_KEY = 'murderMystery:mapFabPosition:v1';
 const DEFAULT_PINNED_CLUE_FAB_POSITION: FloatingFabPosition = {
@@ -1028,51 +1026,57 @@ const ClueTakeOverlay = ({
   );
 };
 
-const getPinnedClueFabBounds = (
-  viewport: PinnedClueFabViewport,
+const getEdgePanelFabBounds = (
+  viewport: FloatingFabViewport,
   bottomOffset: number
 ) => {
   const maxTop = Math.max(
-    PINNED_CLUE_FAB_EDGE_OFFSET,
-    viewport.height - bottomOffset - PINNED_CLUE_FAB_SIZE
+    viewport.frameTop + EDGE_PANEL_FAB_VERTICAL_EDGE_OFFSET,
+    viewport.frameBottom - bottomOffset - EDGE_PANEL_FAB_HEIGHT
   );
-  const minTop = Math.min(PINNED_CLUE_FAB_TOP_SAFE_OFFSET, maxTop);
+  const minTop = Math.min(
+    viewport.frameTop + EDGE_PANEL_FAB_TOP_SAFE_OFFSET,
+    maxTop
+  );
   const maxLeft = Math.max(
-    PINNED_CLUE_FAB_EDGE_OFFSET,
-    viewport.width - PINNED_CLUE_FAB_SIZE - PINNED_CLUE_FAB_EDGE_OFFSET
+    viewport.frameLeft,
+    viewport.frameRight - EDGE_PANEL_FAB_WIDTH
   );
 
   return {
     minTop,
     maxTop,
-    minLeft: PINNED_CLUE_FAB_EDGE_OFFSET,
+    minLeft: viewport.frameLeft,
     maxLeft,
   };
 };
 
-const getPinnedClueFabTop = (
-  position: PinnedClueFabPosition,
-  viewport: PinnedClueFabViewport,
+const getEdgePanelFabTop = (
+  position: FloatingFabPosition,
+  viewport: FloatingFabViewport,
   bottomOffset: number
 ) => {
-  const bounds = getPinnedClueFabBounds(viewport, bottomOffset);
+  const bounds = getEdgePanelFabBounds(viewport, bottomOffset);
   return (
     bounds.minTop +
     (bounds.maxTop - bounds.minTop) * clamp(position.yRatio, 0, 1)
   );
 };
 
-const getPinnedClueFabLeft = (
-  position: PinnedClueFabPosition,
-  viewport: PinnedClueFabViewport
+const getEdgePanelFabLeft = (
+  position: FloatingFabPosition,
+  viewport: FloatingFabViewport
 ) => {
-  const bounds = getPinnedClueFabBounds(viewport, 0);
+  const bounds = getEdgePanelFabBounds(viewport, 0);
   return position.side === 'left' ? bounds.minLeft : bounds.maxLeft;
 };
 
-const readPinnedClueFabPosition = (): PinnedClueFabPosition => {
+const readEdgePanelFabPosition = (
+  storageKey: string,
+  defaultPosition: FloatingFabPosition
+): FloatingFabPosition => {
   try {
-    const raw = window.localStorage.getItem(PINNED_CLUE_FAB_STORAGE_KEY);
+    const raw = window.localStorage.getItem(storageKey);
     const saved = raw ? JSON.parse(raw) : null;
     const side: unknown = saved?.side;
     const yRatio = Number(saved?.yRatio);
@@ -1084,52 +1088,47 @@ const readPinnedClueFabPosition = (): PinnedClueFabPosition => {
     // 위치 저장은 편의 기능이므로 실패해도 기본 위치로 동작한다.
   }
 
-  return DEFAULT_PINNED_CLUE_FAB_POSITION;
+  return defaultPosition;
 };
 
-const savePinnedClueFabPosition = (position: PinnedClueFabPosition) => {
+const saveEdgePanelFabPosition = (
+  storageKey: string,
+  position: FloatingFabPosition
+) => {
   try {
-    window.localStorage.setItem(
-      PINNED_CLUE_FAB_STORAGE_KEY,
-      JSON.stringify(position)
-    );
+    window.localStorage.setItem(storageKey, JSON.stringify(position));
   } catch {
-    // 위치 저장 실패는 단서 열기 동작을 막지 않는다.
+    // 위치 저장 실패는 탭 열기 동작을 막지 않는다.
   }
 };
 
-const readMapFabPosition = (): FloatingFabPosition => {
-  try {
-    const raw = window.localStorage.getItem(MAP_FAB_STORAGE_KEY);
-    const saved = raw ? JSON.parse(raw) : null;
-    const side: unknown = saved?.side;
-    const yRatio = Number(saved?.yRatio);
-
-    if ((side === 'left' || side === 'right') && Number.isFinite(yRatio)) {
-      return { side, yRatio: clamp(yRatio, 0, 1) };
-    }
-  } catch {
-    // 위치 저장은 편의 기능이므로 실패해도 기본 위치로 동작한다.
-  }
-
-  return DEFAULT_MAP_FAB_POSITION;
-};
-
-const saveMapFabPosition = (position: FloatingFabPosition) => {
-  try {
-    window.localStorage.setItem(MAP_FAB_STORAGE_KEY, JSON.stringify(position));
-  } catch {
-    // 위치 저장 실패는 지도 열기 동작을 막지 않는다.
-  }
-};
-
-const PinnedClueFab = ({
-  card,
+const EdgePanelFab = ({
+  ariaLabel,
+  tooltip,
   bottomOffset,
+  defaultPosition,
+  frameRef,
+  storageKey,
+  zIndex,
+  borderColor,
+  backgroundColor,
+  badgeColor,
+  badgeIcon,
+  children,
   onOpen,
 }: {
-  card: AnyClueCard;
+  ariaLabel: string;
+  tooltip: string;
   bottomOffset: number;
+  defaultPosition: FloatingFabPosition;
+  frameRef: RefObject<HTMLElement | null>;
+  storageKey: string;
+  zIndex: number;
+  borderColor: string;
+  backgroundColor: string;
+  badgeColor: string;
+  badgeIcon: React.ReactNode;
+  children: React.ReactNode;
   onOpen: () => void;
 }) => {
   const pointerRef = useRef<{
@@ -1141,39 +1140,71 @@ const PinnedClueFab = ({
     moved: boolean;
   } | null>(null);
   const suppressClickUntilRef = useRef(0);
-  const [position, setPosition] = useState<PinnedClueFabPosition>(
-    DEFAULT_PINNED_CLUE_FAB_POSITION
-  );
-  const [viewport, setViewport] = useState<PinnedClueFabViewport | null>(null);
+  const [position, setPosition] =
+    useState<FloatingFabPosition>(defaultPosition);
+  const [viewport, setViewport] = useState<FloatingFabViewport | null>(null);
   const [dragPosition, setDragPosition] =
-    useState<PinnedClueFabDragPosition | null>(null);
+    useState<FloatingFabDragPosition | null>(null);
   const resolvedTop =
     viewport && !dragPosition
-      ? getPinnedClueFabTop(position, viewport, bottomOffset)
+      ? getEdgePanelFabTop(position, viewport, bottomOffset)
       : null;
   const resolvedLeft =
-    viewport && !dragPosition ? getPinnedClueFabLeft(position, viewport) : null;
+    viewport && !dragPosition ? getEdgePanelFabLeft(position, viewport) : null;
   const tooltipPlacement = position.side === 'left' ? 'right' : 'left';
+  const borderRadius =
+    position.side === 'left' ? '0 999px 999px 0' : '999px 0 0 999px';
 
   useEffect(() => {
-    setPosition(readPinnedClueFabPosition());
-  }, []);
+    setPosition(readEdgePanelFabPosition(storageKey, defaultPosition));
+  }, [defaultPosition, storageKey]);
 
   useEffect(() => {
-    const updateViewport = () =>
-      setViewport({ width: window.innerWidth, height: window.innerHeight });
+    const updateViewport = () => {
+      const frameRect = frameRef.current?.getBoundingClientRect();
+      const fallbackRect = {
+        left: 0,
+        right: window.innerWidth,
+        top: 0,
+        bottom: window.innerHeight,
+      };
+      const rect = frameRect ?? fallbackRect;
+
+      setViewport({
+        width: window.innerWidth,
+        height: window.innerHeight,
+        frameLeft: rect.left,
+        frameRight: rect.right,
+        frameTop: rect.top,
+        frameBottom: rect.bottom,
+      });
+    };
 
     updateViewport();
     window.addEventListener('resize', updateViewport);
-    return () => window.removeEventListener('resize', updateViewport);
-  }, []);
+    window.addEventListener('orientationchange', updateViewport);
+
+    const resizeObserver =
+      typeof ResizeObserver !== 'undefined' && frameRef.current
+        ? new ResizeObserver(updateViewport)
+        : null;
+    if (frameRef.current) {
+      resizeObserver?.observe(frameRef.current);
+    }
+
+    return () => {
+      window.removeEventListener('resize', updateViewport);
+      window.removeEventListener('orientationchange', updateViewport);
+      resizeObserver?.disconnect();
+    };
+  }, [frameRef]);
 
   const getDragPosition = (event: React.PointerEvent<HTMLElement>) => {
     if (!viewport || !pointerRef.current) {
       return null;
     }
 
-    const bounds = getPinnedClueFabBounds(viewport, bottomOffset);
+    const bounds = getEdgePanelFabBounds(viewport, bottomOffset);
     const nextLeft = clamp(
       pointerRef.current.startLeft + event.clientX - pointerRef.current.startX,
       bounds.minLeft,
@@ -1215,7 +1246,7 @@ const PinnedClueFab = ({
       event.clientX - pointer.startX,
       event.clientY - pointer.startY
     );
-    if (distance < PINNED_CLUE_FAB_DRAG_THRESHOLD && !pointer.moved) {
+    if (distance < EDGE_PANEL_FAB_DRAG_THRESHOLD && !pointer.moved) {
       return;
     }
 
@@ -1251,23 +1282,24 @@ const PinnedClueFab = ({
       return;
     }
 
-    const bounds = getPinnedClueFabBounds(viewport, bottomOffset);
-    const nextSide: PinnedClueDockSide =
-      nextDragPosition.left + PINNED_CLUE_FAB_SIZE / 2 < viewport.width / 2
+    const bounds = getEdgePanelFabBounds(viewport, bottomOffset);
+    const frameCenterX = (viewport.frameLeft + viewport.frameRight) / 2;
+    const nextSide: FloatingFabDockSide =
+      nextDragPosition.left + EDGE_PANEL_FAB_WIDTH / 2 < frameCenterX
         ? 'left'
         : 'right';
     const nextYRatio =
       bounds.maxTop > bounds.minTop
         ? (nextDragPosition.top - bounds.minTop) /
           (bounds.maxTop - bounds.minTop)
-        : DEFAULT_PINNED_CLUE_FAB_POSITION.yRatio;
-    const nextPosition: PinnedClueFabPosition = {
+        : defaultPosition.yRatio;
+    const nextPosition: FloatingFabPosition = {
       side: nextSide,
       yRatio: clamp(nextYRatio, 0, 1),
     };
 
     setPosition(nextPosition);
-    savePinnedClueFabPosition(nextPosition);
+    saveEdgePanelFabPosition(storageKey, nextPosition);
     setDragPosition(null);
     suppressClickUntilRef.current = Date.now() + 180;
     event.preventDefault();
@@ -1287,11 +1319,11 @@ const PinnedClueFab = ({
   };
 
   return (
-    <Tooltip title="고정한 단서 열기" placement={tooltipPlacement}>
+    <Tooltip title={tooltip} placement={tooltipPlacement}>
       <Box
         component="button"
         type="button"
-        aria-label={`고정한 단서 열기: ${getCardSourceDisplayText(card)}`}
+        aria-label={ariaLabel}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -1300,23 +1332,22 @@ const PinnedClueFab = ({
         sx={{
           position: 'fixed',
           left: dragPosition?.left ?? resolvedLeft ?? 'auto',
-          right:
-            dragPosition || resolvedLeft !== null
-              ? 'auto'
-              : PINNED_CLUE_FAB_EDGE_OFFSET,
+          right: dragPosition || resolvedLeft !== null ? 'auto' : 0,
           top: dragPosition?.top ?? resolvedTop ?? 'auto',
           bottom: dragPosition || resolvedTop !== null ? 'auto' : bottomOffset,
-          zIndex: 1700,
-          width: PINNED_CLUE_FAB_SIZE,
-          height: PINNED_CLUE_FAB_SIZE,
+          zIndex,
+          width: EDGE_PANEL_FAB_WIDTH,
+          height: EDGE_PANEL_FAB_HEIGHT,
           p: 0,
-          border: '2px solid rgba(245, 197, 66, 0.92)',
-          borderRadius: '50%',
+          border: `2px solid ${borderColor}`,
+          borderLeftWidth: position.side === 'left' ? 0 : 2,
+          borderRightWidth: position.side === 'right' ? 0 : 2,
+          borderRadius,
           overflow: 'hidden',
           color: '#f8f1de',
-          backgroundColor: '#201b18',
+          backgroundColor,
           boxShadow:
-            '0 14px 34px rgba(0,0,0,0.46), 0 0 0 5px rgba(245,197,66,0.15)',
+            '0 14px 34px rgba(0,0,0,0.46), 0 0 0 5px rgba(255,255,255,0.08)',
           cursor: dragPosition ? 'grabbing' : 'pointer',
           pointerEvents: 'auto',
           touchAction: 'none',
@@ -1324,10 +1355,12 @@ const PinnedClueFab = ({
             ? 'none'
             : 'left 190ms ease, right 190ms ease, top 190ms ease, transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease',
           '&:hover': {
-            transform: dragPosition ? 'none' : 'translateY(-2px)',
-            borderColor: '#fbbf24',
+            transform: dragPosition
+              ? 'none'
+              : `translateX(${position.side === 'left' ? 3 : -3}px)`,
+            borderColor,
             boxShadow:
-              '0 18px 40px rgba(0,0,0,0.52), 0 0 0 6px rgba(245,197,66,0.2)',
+              '0 18px 40px rgba(0,0,0,0.52), 0 0 0 6px rgba(255,255,255,0.11)',
           },
           '&:focus-visible': {
             outline: '3px solid rgba(251, 191, 36, 0.72)',
@@ -1335,317 +1368,144 @@ const PinnedClueFab = ({
           },
         }}
       >
-        {card.imageSrc ? (
-          <Box
-            component="img"
-            src={card.imageSrc}
-            alt=""
-            draggable={false}
-            sx={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              display: 'block',
-              userSelect: 'none',
-              pointerEvents: 'none',
-            }}
-          />
-        ) : (
-          <Stack
-            alignItems="center"
-            justifyContent="center"
-            sx={{
-              width: '100%',
-              height: '100%',
-              background:
-                'linear-gradient(135deg, #e8dcc2 0%, #f8f1de 52%, #d4c29f 100%)',
-              color: '#5f4b2e',
-              pointerEvents: 'none',
-            }}
-          >
-            <ArticleIcon />
-          </Stack>
-        )}
+        {children}
         <Box
           sx={{
             position: 'absolute',
-            right: -1,
-            bottom: -1,
-            width: 25,
-            height: 25,
+            left: position.side === 'right' ? 5 : 'auto',
+            right: position.side === 'left' ? 5 : 'auto',
+            bottom: 6,
+            width: 22,
+            height: 22,
             display: 'grid',
             placeItems: 'center',
             borderRadius: '50%',
-            backgroundColor: '#f59e0b',
+            backgroundColor: badgeColor,
             color: '#241706',
-            border: '2px solid #201b18',
+            border: `2px solid ${backgroundColor}`,
             pointerEvents: 'none',
           }}
         >
-          <PushPinIcon sx={{ width: 15, height: 15 }} />
+          {badgeIcon}
         </Box>
       </Box>
     </Tooltip>
   );
 };
+
+const EdgePanelImage = ({
+  src,
+  alt,
+  filter,
+}: {
+  src: string;
+  alt: string;
+  filter?: string;
+}) => (
+  <Box
+    component="img"
+    src={src}
+    alt={alt}
+    draggable={false}
+    sx={{
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover',
+      display: 'block',
+      filter,
+      userSelect: 'none',
+      pointerEvents: 'none',
+    }}
+  />
+);
+
+const PinnedClueFab = ({
+  card,
+  bottomOffset,
+  frameRef,
+  onOpen,
+}: {
+  card: AnyClueCard;
+  bottomOffset: number;
+  frameRef: RefObject<HTMLElement | null>;
+  onOpen: () => void;
+}) => (
+  <EdgePanelFab
+    ariaLabel={`고정한 단서 열기: ${getCardSourceDisplayText(card)}`}
+    tooltip="고정한 단서 열기"
+    bottomOffset={bottomOffset}
+    defaultPosition={DEFAULT_PINNED_CLUE_FAB_POSITION}
+    frameRef={frameRef}
+    storageKey={PINNED_CLUE_FAB_STORAGE_KEY}
+    zIndex={1700}
+    borderColor="rgba(245, 197, 66, 0.92)"
+    backgroundColor="#201b18"
+    badgeColor="#f59e0b"
+    badgeIcon={<PushPinIcon sx={{ width: 13, height: 13 }} />}
+    onOpen={onOpen}
+  >
+    {card.imageSrc ? (
+      <EdgePanelImage src={card.imageSrc} alt="" />
+    ) : (
+      <Stack
+        alignItems="center"
+        justifyContent="center"
+        sx={{
+          width: '100%',
+          height: '100%',
+          background:
+            'linear-gradient(135deg, #e8dcc2 0%, #f8f1de 52%, #d4c29f 100%)',
+          color: '#5f4b2e',
+          pointerEvents: 'none',
+        }}
+      >
+        <ArticleIcon />
+      </Stack>
+    )}
+  </EdgePanelFab>
+);
 
 const InvestigationMapFab = ({
   scene,
   bottomOffset,
+  frameRef,
   onOpen,
 }: {
   scene: MurderMysteryInvestigationMapSceneScenario;
   bottomOffset: number;
+  frameRef: RefObject<HTMLElement | null>;
   onOpen: () => void;
-}) => {
-  const pointerRef = useRef<{
-    pointerId: number;
-    startX: number;
-    startY: number;
-    startLeft: number;
-    startTop: number;
-    moved: boolean;
-  } | null>(null);
-  const [position, setPosition] = useState<FloatingFabPosition>(
-    DEFAULT_MAP_FAB_POSITION
-  );
-  const [viewport, setViewport] = useState<FloatingFabViewport | null>(null);
-  const [dragPosition, setDragPosition] =
-    useState<FloatingFabDragPosition | null>(null);
-  const resolvedTop =
-    viewport && !dragPosition
-      ? getPinnedClueFabTop(position, viewport, bottomOffset)
-      : null;
-  const resolvedLeft =
-    viewport && !dragPosition ? getPinnedClueFabLeft(position, viewport) : null;
-  const tooltipPlacement = position.side === 'left' ? 'right' : 'left';
-
-  useEffect(() => {
-    setPosition(readMapFabPosition());
-  }, []);
-
-  useEffect(() => {
-    const updateViewport = () =>
-      setViewport({ width: window.innerWidth, height: window.innerHeight });
-
-    updateViewport();
-    window.addEventListener('resize', updateViewport);
-    return () => window.removeEventListener('resize', updateViewport);
-  }, []);
-
-  const getDragPosition = (event: React.PointerEvent<HTMLElement>) => {
-    if (!viewport || !pointerRef.current) {
-      return null;
-    }
-
-    const bounds = getPinnedClueFabBounds(viewport, bottomOffset);
-    const nextLeft = clamp(
-      pointerRef.current.startLeft + event.clientX - pointerRef.current.startX,
-      bounds.minLeft,
-      bounds.maxLeft
-    );
-    const nextTop = clamp(
-      pointerRef.current.startTop + event.clientY - pointerRef.current.startY,
-      bounds.minTop,
-      bounds.maxTop
-    );
-
-    return { left: nextLeft, top: nextTop };
-  };
-
-  const handlePointerDown = (event: React.PointerEvent<HTMLElement>) => {
-    if (!viewport) {
-      return;
-    }
-
-    const rect = event.currentTarget.getBoundingClientRect();
-    pointerRef.current = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      startLeft: rect.left,
-      startTop: rect.top,
-      moved: false,
-    };
-    event.currentTarget.setPointerCapture(event.pointerId);
-  };
-
-  const handlePointerMove = (event: React.PointerEvent<HTMLElement>) => {
-    const pointer = pointerRef.current;
-    if (!pointer || pointer.pointerId !== event.pointerId) {
-      return;
-    }
-
-    const distance = Math.hypot(
-      event.clientX - pointer.startX,
-      event.clientY - pointer.startY
-    );
-    if (distance < FLOATING_FAB_DRAG_THRESHOLD && !pointer.moved) {
-      return;
-    }
-
-    pointer.moved = true;
-    const nextDragPosition = getDragPosition(event);
-    if (nextDragPosition) {
-      setDragPosition(nextDragPosition);
-    }
-    event.preventDefault();
-  };
-
-  const handlePointerUp = (event: React.PointerEvent<HTMLElement>) => {
-    const pointer = pointerRef.current;
-    if (!pointer || pointer.pointerId !== event.pointerId) {
-      return;
-    }
-
-    try {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    } catch {
-      // 포인터 캡처가 이미 해제된 경우에는 후속 처리를 계속한다.
-    }
-    pointerRef.current = null;
-
-    if (!pointer.moved || !viewport) {
-      setDragPosition(null);
-      onOpen();
-      return;
-    }
-
-    const nextDragPosition = getDragPosition(event) ?? dragPosition;
-    if (!nextDragPosition) {
-      setDragPosition(null);
-      return;
-    }
-
-    const bounds = getPinnedClueFabBounds(viewport, bottomOffset);
-    const nextSide: FloatingFabDockSide =
-      nextDragPosition.left + FLOATING_FAB_SIZE / 2 < viewport.width / 2
-        ? 'left'
-        : 'right';
-    const nextYRatio =
-      bounds.maxTop > bounds.minTop
-        ? (nextDragPosition.top - bounds.minTop) /
-          (bounds.maxTop - bounds.minTop)
-        : DEFAULT_MAP_FAB_POSITION.yRatio;
-    const nextPosition: FloatingFabPosition = {
-      side: nextSide,
-      yRatio: clamp(nextYRatio, 0, 1),
-    };
-
-    setPosition(nextPosition);
-    saveMapFabPosition(nextPosition);
-    setDragPosition(null);
-    event.preventDefault();
-  };
-
-  const handlePointerCancel = () => {
-    pointerRef.current = null;
-    setDragPosition(null);
-  };
-
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
-    if (event.key !== 'Enter' && event.key !== ' ') {
-      return;
-    }
-    event.preventDefault();
-    onOpen();
-  };
-
-  return (
-    <Tooltip title="조사 지도 열기" placement={tooltipPlacement}>
-      <Box
-        component="button"
-        type="button"
-        aria-label="조사 지도 열기"
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerCancel}
-        onKeyDown={handleKeyDown}
-        sx={{
-          position: 'fixed',
-          left: dragPosition?.left ?? resolvedLeft ?? 'auto',
-          right:
-            dragPosition || resolvedLeft !== null
-              ? 'auto'
-              : FLOATING_FAB_EDGE_OFFSET,
-          top: dragPosition?.top ?? resolvedTop ?? 'auto',
-          bottom: dragPosition || resolvedTop !== null ? 'auto' : bottomOffset,
-          zIndex: 1695,
-          width: FLOATING_FAB_SIZE,
-          height: FLOATING_FAB_SIZE,
-          p: 0,
-          border: '2px solid rgba(142, 202, 230, 0.95)',
-          borderRadius: '50%',
-          overflow: 'hidden',
-          color: '#f8f1de',
-          backgroundColor: '#101720',
-          boxShadow:
-            '0 14px 34px rgba(0,0,0,0.44), 0 0 0 5px rgba(142,202,230,0.14)',
-          cursor: dragPosition ? 'grabbing' : 'grab',
-          pointerEvents: 'auto',
-          touchAction: 'none',
-          transition: dragPosition
-            ? 'none'
-            : 'left 190ms ease, right 190ms ease, top 190ms ease, transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease',
-          '&:hover': {
-            transform: dragPosition ? 'none' : 'translateY(-2px)',
-            borderColor: '#7dd3fc',
-            boxShadow:
-              '0 18px 40px rgba(0,0,0,0.5), 0 0 0 6px rgba(142,202,230,0.2)',
-          },
-          '&:focus-visible': {
-            outline: '3px solid rgba(125, 211, 252, 0.72)',
-            outlineOffset: 3,
-          },
-        }}
-      >
-        <Box
-          component="img"
-          src={scene.imageSrc}
-          alt=""
-          draggable={false}
-          sx={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            display: 'block',
-            filter: 'saturate(0.95) contrast(1.06)',
-            userSelect: 'none',
-            pointerEvents: 'none',
-          }}
-        />
-        <Box
-          sx={{
-            position: 'absolute',
-            inset: 0,
-            background:
-              'radial-gradient(circle at 48% 42%, transparent 38%, rgba(8,13,18,0.34) 76%)',
-            pointerEvents: 'none',
-          }}
-        />
-        <Box
-          sx={{
-            position: 'absolute',
-            right: -1,
-            bottom: -1,
-            width: 25,
-            height: 25,
-            display: 'grid',
-            placeItems: 'center',
-            borderRadius: '50%',
-            backgroundColor: '#0ea5e9',
-            color: '#f8fbff',
-            border: '2px solid #101720',
-            pointerEvents: 'none',
-          }}
-        >
-          <MapIcon sx={{ width: 15, height: 15 }} />
-        </Box>
-      </Box>
-    </Tooltip>
-  );
-};
+}) => (
+  <EdgePanelFab
+    ariaLabel="사건 맵 열기"
+    tooltip="사건 맵 열기"
+    bottomOffset={bottomOffset}
+    defaultPosition={DEFAULT_MAP_FAB_POSITION}
+    frameRef={frameRef}
+    storageKey={MAP_FAB_STORAGE_KEY}
+    zIndex={1695}
+    borderColor="rgba(142, 202, 230, 0.95)"
+    backgroundColor="#101720"
+    badgeColor="#0ea5e9"
+    badgeIcon={<MapIcon sx={{ width: 13, height: 13, color: '#f8fbff' }} />}
+    onOpen={onOpen}
+  >
+    <EdgePanelImage
+      src={scene.imageSrc}
+      alt=""
+      filter="saturate(0.95) contrast(1.06)"
+    />
+    <Box
+      sx={{
+        position: 'absolute',
+        inset: 0,
+        background:
+          'radial-gradient(circle at 48% 42%, transparent 38%, rgba(8,13,18,0.34) 76%)',
+        pointerEvents: 'none',
+      }}
+    />
+  </EdgePanelFab>
+);
 
 const EvidenceCardFace = ({
   card,
@@ -3658,6 +3518,7 @@ const RulebookModal = ({
   open,
   roleSheet,
   introText,
+  mapScene,
   fullScreen,
   specialEvents,
   onReportSpecialEvent,
@@ -3666,6 +3527,7 @@ const RulebookModal = ({
   open: boolean;
   roleSheet: MurderMysteryRoleSheetView | null;
   introText: string;
+  mapScene?: MurderMysteryInvestigationMapSceneScenario | null;
   fullScreen: boolean;
   specialEvents: MurderMysteryReportableSpecialEventView[];
   onReportSpecialEvent: (
@@ -3674,6 +3536,11 @@ const RulebookModal = ({
   ) => void;
   onClose: () => void;
 }) => {
+  const readerPageHeight = {
+    xs: fullScreen ? 'calc(100svh - 12px)' : 700,
+    sm: 820,
+  };
+
   useEffect(() => {
     if (!open) {
       return;
@@ -3746,11 +3613,21 @@ const RulebookModal = ({
           includePrologue={false}
           includeRolebookCover={false}
           showPageStatusFooter={false}
+          mapContent={
+            mapScene ? (
+              <InvestigationMapViewer
+                scene={mapScene}
+                pins={[]}
+                sx={{
+                  border: '1px solid rgba(255,255,255,0.18)',
+                  borderRadius: 2,
+                  boxShadow: '0 24px 70px rgba(0,0,0,0.35)',
+                }}
+              />
+            ) : null
+          }
           pageSx={{
-            height: {
-              xs: fullScreen ? 'calc(100svh - 12px)' : 700,
-              sm: 820,
-            },
+            height: readerPageHeight,
           }}
         />
       </DialogContent>
@@ -4793,20 +4670,20 @@ const CardDetailDialog = ({
   );
 };
 
-const MapFullscreenDialog = ({
-  open,
+const InvestigationMapViewer = ({
   scene,
   pins = [],
-  fullScreen,
   onSelectPin,
-  onClose,
+  toolbarEnd,
+  resetKey,
+  sx,
 }: {
-  open: boolean;
   scene: MurderMysteryInvestigationMapSceneScenario | null;
   pins?: InvestigationMapTargetPin[];
-  fullScreen: boolean;
   onSelectPin?: (targetId: string) => void;
-  onClose: () => void;
+  toolbarEnd?: React.ReactNode;
+  resetKey?: unknown;
+  sx?: SxProps<Theme>;
 }) => {
   const pointersRef = useRef(new Map<number, { x: number; y: number }>());
   const lastGestureRef = useRef<{
@@ -4826,10 +4703,8 @@ const MapFullscreenDialog = ({
   }, []);
 
   useEffect(() => {
-    if (open) {
-      resetView();
-    }
-  }, [open, resetView]);
+    resetView();
+  }, [resetKey, resetView, scene?.imageSrc]);
 
   const applyScale = useCallback((nextScale: number) => {
     setScale(clamp(nextScale, 1, 4));
@@ -4919,197 +4794,234 @@ const MapFullscreenDialog = ({
   };
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      fullScreen={fullScreen}
-      maxWidth={false}
-      PaperProps={{
-        sx: {
-          width: fullScreen ? '100%' : 'min(96vw, 980px)',
-          height: fullScreen ? '100%' : 'min(92vh, 760px)',
-          m: fullScreen ? 0 : 1.5,
+    <Stack
+      sx={[
+        {
+          height: '100%',
+          minHeight: 0,
           overflow: 'hidden',
           backgroundColor: '#0b1117',
           color: '#f8f1de',
         },
-      }}
+        ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
+      ]}
     >
-      <Stack sx={{ height: '100%' }}>
-        <Stack
-          direction="row"
-          spacing={1}
-          alignItems="center"
-          sx={{
-            p: 1,
-            borderBottom: '1px solid rgba(255,255,255,0.14)',
-            backgroundColor: 'rgba(11,17,23,0.96)',
-          }}
-        >
-          <MapIcon />
-          <Typography fontWeight={950} sx={{ flex: 1 }}>
-            사건 맵
-          </Typography>
-          <Tooltip title="축소">
-            <IconButton
-              onClick={() => applyScale(scale - 0.25)}
-              sx={{ color: '#f8f1de' }}
-            >
-              <ZoomOutIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="확대">
-            <IconButton
-              onClick={() => applyScale(scale + 0.25)}
-              sx={{ color: '#f8f1de' }}
-            >
-              <ZoomInIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="원래 크기">
-            <IconButton onClick={resetView} sx={{ color: '#f8f1de' }}>
-              <RestartAltIcon />
-            </IconButton>
-          </Tooltip>
-          <IconButton onClick={onClose} sx={{ color: '#f8f1de' }}>
-            <CloseIcon />
+      <Stack
+        direction="row"
+        spacing={1}
+        alignItems="center"
+        sx={{
+          p: 1,
+          borderBottom: '1px solid rgba(255,255,255,0.14)',
+          backgroundColor: 'rgba(11,17,23,0.96)',
+        }}
+      >
+        <MapIcon />
+        <Typography fontWeight={950} sx={{ flex: 1 }}>
+          사건 맵
+        </Typography>
+        <Tooltip title="축소">
+          <IconButton
+            onClick={() => applyScale(scale - 0.25)}
+            sx={{ color: '#f8f1de' }}
+          >
+            <ZoomOutIcon />
           </IconButton>
-        </Stack>
-        <Box
-          onWheel={(event) => {
-            event.preventDefault();
-            applyScale(scale + (event.deltaY < 0 ? 0.18 : -0.18));
-          }}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerEnd}
-          onPointerCancel={handlePointerEnd}
-          sx={{
-            position: 'relative',
-            flex: 1,
-            minHeight: 0,
-            overflow: 'hidden',
-            display: 'grid',
-            placeItems: 'center',
-            touchAction: 'none',
-            cursor: scale > 1 ? 'grab' : 'zoom-in',
-            backgroundColor: '#0b1117',
-          }}
-        >
-          {scene ? (
-            <Box
-              component="svg"
-              viewBox={`0 0 ${scene.width} ${scene.height}`}
-              role="img"
-              aria-label={scene.alt}
-              preserveAspectRatio="xMidYMid meet"
-              sx={{
-                width: '100%',
-                height: '100%',
-                transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
-                transformOrigin: 'center',
-                transition:
-                  pointersRef.current.size > 0
-                    ? 'none'
-                    : 'transform 120ms ease-out',
-                userSelect: 'none',
-              }}
-            >
-              <image
-                href={scene.imageSrc}
-                width={scene.width}
-                height={scene.height}
-                preserveAspectRatio="xMidYMid meet"
-              />
-              {pins.map(({ hotspot, matNumber, target }) => {
-                const cx =
-                  ((hotspot.xPct + hotspot.widthPct / 2) / 100) * scene.width;
-                const cy =
-                  ((hotspot.yPct + hotspot.heightPct / 2) / 100) * scene.height;
-
-                return (
-                  <Box
-                    key={hotspot.id}
-                    component="g"
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`${target.label} 단서로 이동`}
-                    onPointerDown={(event) => event.stopPropagation()}
-                    onPointerMove={(event) => event.stopPropagation()}
-                    onPointerUp={(event) => event.stopPropagation()}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onSelectPin?.(target.id);
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key !== 'Enter' && event.key !== ' ') {
-                        return;
-                      }
-                      event.preventDefault();
-                      onSelectPin?.(target.id);
-                    }}
-                    sx={{
-                      cursor: 'pointer',
-                      outline: 'none',
-                      '&:focus-visible circle': {
-                        stroke: '#ffffff',
-                        strokeWidth: pinRadius * 0.24,
-                      },
-                    }}
-                  >
-                    <title>{`${target.label} 단서로 이동`}</title>
-                    <circle
-                      cx={cx}
-                      cy={cy}
-                      r={pinRadius}
-                      fill={
-                        target.isExhausted
-                          ? 'rgba(71,85,105,0.94)'
-                          : 'rgba(245,197,66,0.96)'
-                      }
-                      stroke="rgba(255,248,230,0.92)"
-                      strokeWidth={pinRadius * 0.16}
-                    />
-                    <text
-                      x={cx}
-                      y={cy}
-                      textAnchor="middle"
-                      dominantBaseline="central"
-                      fill={target.isExhausted ? '#f8f1de' : '#2b2112'}
-                      fontSize={pinRadius * 0.95}
-                      fontWeight={950}
-                      pointerEvents="none"
-                    >
-                      {matNumber}
-                    </text>
-                  </Box>
-                );
-              })}
-            </Box>
-          ) : null}
-          <Typography
-            variant="caption"
+        </Tooltip>
+        <Tooltip title="확대">
+          <IconButton
+            onClick={() => applyScale(scale + 0.25)}
+            sx={{ color: '#f8f1de' }}
+          >
+            <ZoomInIcon />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="원래 크기">
+          <IconButton onClick={resetView} sx={{ color: '#f8f1de' }}>
+            <RestartAltIcon />
+          </IconButton>
+        </Tooltip>
+        {toolbarEnd}
+      </Stack>
+      <Box
+        onWheel={(event) => {
+          event.preventDefault();
+          applyScale(scale + (event.deltaY < 0 ? 0.18 : -0.18));
+        }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerEnd}
+        onPointerCancel={handlePointerEnd}
+        sx={{
+          position: 'relative',
+          flex: 1,
+          minHeight: 0,
+          overflow: 'hidden',
+          display: 'grid',
+          placeItems: 'center',
+          touchAction: 'none',
+          cursor: scale > 1 ? 'grab' : 'zoom-in',
+          backgroundColor: '#0b1117',
+        }}
+      >
+        {scene ? (
+          <Box
+            component="svg"
+            viewBox={`0 0 ${scene.width} ${scene.height}`}
+            role="img"
+            aria-label={scene.alt}
+            preserveAspectRatio="xMidYMid meet"
             sx={{
-              position: 'absolute',
-              left: '50%',
-              bottom: 12,
-              transform: 'translateX(-50%)',
-              px: 1.2,
-              py: 0.45,
-              borderRadius: 999,
-              backgroundColor: 'rgba(0,0,0,0.62)',
-              color: '#fff',
-              fontWeight: 850,
-              whiteSpace: 'nowrap',
+              width: '100%',
+              height: '100%',
+              transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+              transformOrigin: 'center',
+              transition:
+                pointersRef.current.size > 0
+                  ? 'none'
+                  : 'transform 120ms ease-out',
+              userSelect: 'none',
             }}
           >
-            드래그로 이동 · 핀치/휠로 확대
-          </Typography>
-        </Box>
-      </Stack>
-    </Dialog>
+            <image
+              href={scene.imageSrc}
+              width={scene.width}
+              height={scene.height}
+              preserveAspectRatio="xMidYMid meet"
+            />
+            {pins.map(({ hotspot, matNumber, target }) => {
+              const cx =
+                ((hotspot.xPct + hotspot.widthPct / 2) / 100) * scene.width;
+              const cy =
+                ((hotspot.yPct + hotspot.heightPct / 2) / 100) * scene.height;
+
+              return (
+                <Box
+                  key={hotspot.id}
+                  component="g"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${target.label} 단서로 이동`}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onPointerMove={(event) => event.stopPropagation()}
+                  onPointerUp={(event) => event.stopPropagation()}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onSelectPin?.(target.id);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key !== 'Enter' && event.key !== ' ') {
+                      return;
+                    }
+                    event.preventDefault();
+                    onSelectPin?.(target.id);
+                  }}
+                  sx={{
+                    cursor: 'pointer',
+                    outline: 'none',
+                    '&:focus-visible circle': {
+                      stroke: '#ffffff',
+                      strokeWidth: pinRadius * 0.24,
+                    },
+                  }}
+                >
+                  <title>{`${target.label} 단서로 이동`}</title>
+                  <circle
+                    cx={cx}
+                    cy={cy}
+                    r={pinRadius}
+                    fill={
+                      target.isExhausted
+                        ? 'rgba(71,85,105,0.94)'
+                        : 'rgba(245,197,66,0.96)'
+                    }
+                    stroke="rgba(255,248,230,0.92)"
+                    strokeWidth={pinRadius * 0.16}
+                  />
+                  <text
+                    x={cx}
+                    y={cy}
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    fill={target.isExhausted ? '#f8f1de' : '#2b2112'}
+                    fontSize={pinRadius * 0.95}
+                    fontWeight={950}
+                    pointerEvents="none"
+                  >
+                    {matNumber}
+                  </text>
+                </Box>
+              );
+            })}
+          </Box>
+        ) : null}
+        <Typography
+          variant="caption"
+          sx={{
+            position: 'absolute',
+            left: '50%',
+            bottom: 12,
+            transform: 'translateX(-50%)',
+            px: 1.2,
+            py: 0.45,
+            borderRadius: 999,
+            backgroundColor: 'rgba(0,0,0,0.62)',
+            color: '#fff',
+            fontWeight: 850,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          드래그로 이동 · 핀치/휠로 확대
+        </Typography>
+      </Box>
+    </Stack>
   );
 };
+
+const MapFullscreenDialog = ({
+  open,
+  scene,
+  pins = [],
+  fullScreen,
+  onSelectPin,
+  onClose,
+}: {
+  open: boolean;
+  scene: MurderMysteryInvestigationMapSceneScenario | null;
+  pins?: InvestigationMapTargetPin[];
+  fullScreen: boolean;
+  onSelectPin?: (targetId: string) => void;
+  onClose: () => void;
+}) => (
+  <Dialog
+    open={open}
+    onClose={onClose}
+    fullScreen={fullScreen}
+    maxWidth={false}
+    PaperProps={{
+      sx: {
+        width: fullScreen ? '100%' : 'min(96vw, 980px)',
+        height: fullScreen ? '100%' : 'min(92vh, 760px)',
+        m: fullScreen ? 0 : 1.5,
+        overflow: 'hidden',
+        backgroundColor: '#0b1117',
+        color: '#f8f1de',
+      },
+    }}
+  >
+    <InvestigationMapViewer
+      scene={scene}
+      pins={pins}
+      onSelectPin={onSelectPin}
+      resetKey={open}
+      toolbarEnd={
+        <IconButton onClick={onClose} sx={{ color: '#f8f1de' }}>
+          <CloseIcon />
+        </IconButton>
+      }
+    />
+  </Dialog>
+);
 
 const PrivateCardsDialog = ({
   open,
@@ -5242,6 +5154,7 @@ export default function MurderMysteryTableExperience({
 }: MurderMysteryTableExperienceProps) {
   const theme = useTheme();
   const isSmall = useMediaQuery(theme.breakpoints.down('md'));
+  const gameFrameRef = useRef<HTMLDivElement | null>(null);
   const phaseScrollRef = useRef<HTMLDivElement | null>(null);
   const investigationTargetTileRefs = useRef<
     Record<string, HTMLElement | null>
@@ -5389,6 +5302,10 @@ export default function MurderMysteryTableExperience({
   const isMapInvestigationPhase =
     phaseKind === 'investigate' &&
     Boolean(snapshot.investigation.map?.scene && activeRoundView);
+  const shouldShowInvestigationMapFab =
+    !isRulebookOpen &&
+    Boolean(snapshot.investigation.map?.scene) &&
+    (phaseKind === 'role_reading' || isMapInvestigationPhase);
   const turnOrderMarkers = useMemo(() => {
     const turn = snapshot.investigation.turn;
     if (
@@ -8281,6 +8198,7 @@ export default function MurderMysteryTableExperience({
 
   return (
     <Box
+      ref={gameFrameRef}
       sx={{
         height: '100dvh',
         minHeight: '100vh',
@@ -8566,12 +8484,11 @@ export default function MurderMysteryTableExperience({
           md: shouldShowMarkerRail ? 126 : 66,
         }}
       />
-      {isSmall &&
-      isMapInvestigationPhase &&
-      snapshot.investigation.map?.scene ? (
+      {shouldShowInvestigationMapFab && snapshot.investigation.map?.scene ? (
         <InvestigationMapFab
           scene={snapshot.investigation.map.scene}
           bottomOffset={floatingFabBottomOffset}
+          frameRef={gameFrameRef}
           onOpen={() => setIsMapDialogOpen(true)}
         />
       ) : null}
@@ -8579,6 +8496,7 @@ export default function MurderMysteryTableExperience({
         <PinnedClueFab
           card={pinnedCard}
           bottomOffset={floatingFabBottomOffset}
+          frameRef={gameFrameRef}
           onOpen={openPinnedClue}
         />
       ) : null}
@@ -8615,6 +8533,7 @@ export default function MurderMysteryTableExperience({
         open={isRulebookOpen}
         roleSheet={snapshot.roleSheet}
         introText={snapshot.scenario.intro.readAloud}
+        mapScene={snapshot.investigation.map?.scene ?? null}
         fullScreen={isSmall}
         specialEvents={snapshot.specialEvents}
         onReportSpecialEvent={requestSpecialEventReport}
