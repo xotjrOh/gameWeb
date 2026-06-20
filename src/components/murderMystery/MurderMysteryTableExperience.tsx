@@ -67,8 +67,8 @@ import {
 import {
   MurderMysteryCardScenario,
   MurderMysteryClueVaultCardView,
-  MurderMysteryEndbookEvidenceQnaScenario,
-  MurderMysteryEndbookEvidenceReferenceScenario,
+  MurderMysteryEndbookEvidenceQnaView,
+  MurderMysteryEndbookEvidenceReferenceView,
   MurderMysteryFinalVoteOptionScenario,
   MurderMysteryInvestigationBackCardView,
   MurderMysteryInvestigationMapHotspotView,
@@ -127,7 +127,7 @@ type RoleSelectionPublicCover =
   MurderMysteryStateSnapshot['roleSelection']['publicCovers'][number];
 type RoleSelectionRole =
   MurderMysteryStateSnapshot['roleSelection']['roles'][number];
-type EndbookEvidenceReference = MurderMysteryEndbookEvidenceReferenceScenario;
+type EndbookEvidenceReference = MurderMysteryEndbookEvidenceReferenceView;
 type InvestigationTargetGroup = {
   id: string;
   label: string;
@@ -5060,7 +5060,7 @@ const EndbookEvidenceQnaPanel = ({
   evidenceQna,
   onOpenEvidence,
 }: {
-  evidenceQna?: MurderMysteryEndbookEvidenceQnaScenario;
+  evidenceQna?: MurderMysteryEndbookEvidenceQnaView;
   onOpenEvidence: (reference: EndbookEvidenceReference) => void;
 }) => {
   if (!evidenceQna || evidenceQna.items.length === 0) {
@@ -5130,6 +5130,81 @@ const EndbookEvidenceQnaPanel = ({
   );
 };
 
+const ENDBOOK_EVIDENCE_HIGHLIGHT_MIN_LENGTH = 6;
+
+const splitEndbookEvidenceHighlightSentences = (value: string) =>
+  value.match(/[^.!?。！？]+[.!?。！？]?/g) ?? [value];
+
+const getEndbookEvidenceHighlightTerms = (
+  reference: EndbookEvidenceReference
+) => {
+  const normalized = reference.excerpt.replace(/\r\n/g, '\n').trim();
+  if (!normalized) {
+    return [];
+  }
+
+  const candidates = [normalized];
+  normalized
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .forEach((line) => {
+      candidates.push(line);
+      splitEndbookEvidenceHighlightSentences(line).forEach((sentence) => {
+        candidates.push(sentence);
+      });
+    });
+
+  return Array.from(
+    new Set(
+      candidates
+        .map((candidate) => candidate.trim())
+        .filter(
+          (candidate) =>
+            Array.from(candidate).length >=
+            ENDBOOK_EVIDENCE_HIGHLIGHT_MIN_LENGTH
+        )
+    )
+  );
+};
+
+const mergeEndbookEvidenceHighlights = (
+  ...highlightGroups: Array<string[] | undefined>
+) =>
+  Array.from(
+    new Set(
+      highlightGroups
+        .flatMap((highlights) => highlights ?? [])
+        .map((highlight) => highlight.trim())
+        .filter(Boolean)
+    )
+  );
+
+const EndbookEvidenceTextSection = ({
+  title,
+  text,
+  highlights,
+}: {
+  title: string;
+  text?: string;
+  highlights?: string[];
+}) => {
+  if (!text?.trim()) {
+    return null;
+  }
+
+  return (
+    <Box>
+      <Typography variant="subtitle2" fontWeight={950}>
+        {title}
+      </Typography>
+      <Typography sx={{ mt: 0.6, whiteSpace: 'pre-wrap', lineHeight: 1.72 }}>
+        <RulebookRichText text={text} highlights={highlights} />
+      </Typography>
+    </Box>
+  );
+};
+
 const EndbookEvidenceReferenceDialog = ({
   reference,
   fullScreen,
@@ -5143,18 +5218,36 @@ const EndbookEvidenceReferenceDialog = ({
     return null;
   }
 
+  const source = reference.originalSource;
+  const card = source?.kind === 'investigation_card' ? source.card : null;
+  const roleSheet = source?.kind === 'role_sheet' ? source.roleSheet : null;
+  const script = source?.kind === 'public_script' ? source.script : null;
+  const cardSourceDisplayText = card ? getCardSourceDisplayText(card) : '';
+  const cardDisplayText = card ? getDisplayCardText(card) : '';
+  const evidenceHighlights = getEndbookEvidenceHighlightTerms(reference);
+  const cardTextHighlights = mergeEndbookEvidenceHighlights(
+    card?.textHighlights,
+    evidenceHighlights
+  );
+  const roleSheetSecretHighlights = mergeEndbookEvidenceHighlights(
+    roleSheet?.secretTextHighlights,
+    evidenceHighlights
+  );
+  const maxWidth: false | 'md' = card ? false : 'md';
+
   return (
     <Dialog
       open
       onClose={onClose}
       fullScreen={fullScreen}
-      maxWidth="sm"
+      maxWidth={maxWidth}
       fullWidth
       PaperProps={{
         sx: {
           backgroundColor: '#f8f1de',
           color: '#20180f',
           borderRadius: fullScreen ? 0 : 2,
+          ...(card && !fullScreen ? { width: 'min(92vw, 520px)' } : {}),
         },
       }}
     >
@@ -5186,28 +5279,159 @@ const EndbookEvidenceReferenceDialog = ({
               {getEvidenceDetailLabel(reference.sourceType)}
             </Typography>
             <Typography fontWeight={950}>{reference.label}</Typography>
+            {evidenceHighlights.length > 0 ? (
+              <Typography
+                variant="caption"
+                fontWeight={800}
+                sx={{ color: 'rgba(32,24,15,0.62)' }}
+              >
+                노란 표시가 이 답변의 근거로 쓰인 원문입니다.
+              </Typography>
+            ) : null}
           </Box>
           <Divider sx={{ borderColor: 'rgba(32,24,15,0.18)' }} />
-          <Box>
-            <Typography variant="subtitle2" fontWeight={950}>
-              원문/발췌
-            </Typography>
-            <Typography
-              sx={{ mt: 0.6, whiteSpace: 'pre-wrap', lineHeight: 1.7 }}
+          {card ? (
+            <Box
+              sx={{
+                borderRadius: 2,
+                overflow: 'hidden',
+                border: '1px solid rgba(53,43,30,0.24)',
+                backgroundColor: '#f8f1de',
+                boxShadow: '0 14px 34px rgba(32,24,15,0.16)',
+              }}
             >
-              {reference.excerpt}
-            </Typography>
-          </Box>
-          <Box>
-            <Typography variant="subtitle2" fontWeight={950}>
-              판단 연결
-            </Typography>
-            <Typography
-              sx={{ mt: 0.6, whiteSpace: 'pre-wrap', lineHeight: 1.7 }}
-            >
-              {reference.inference}
-            </Typography>
-          </Box>
+              <Box
+                sx={{
+                  backgroundColor: card.imageSrc ? '#171c23' : '#f8f1de',
+                }}
+              >
+                {card.imageSrc ? (
+                  <Box
+                    component="img"
+                    src={card.imageSrc}
+                    alt={card.imageAlt ?? cardSourceDisplayText}
+                    draggable={false}
+                    sx={{
+                      width: '100%',
+                      maxHeight: { xs: 320, sm: 380 },
+                      objectFit: 'contain',
+                      display: 'block',
+                    }}
+                  />
+                ) : (
+                  <TextOnlyClueMedia detail />
+                )}
+              </Box>
+              <Stack spacing={1} sx={{ p: { xs: 1.4, sm: 1.8 } }}>
+                <Typography
+                  variant="h6"
+                  fontWeight={950}
+                  sx={{ color: '#2d2419', lineHeight: 1.25 }}
+                >
+                  {cardSourceDisplayText}
+                </Typography>
+                <Typography
+                  sx={{
+                    whiteSpace: 'pre-wrap',
+                    lineHeight: 1.75,
+                    color: '#2d2419',
+                  }}
+                >
+                  <RulebookRichText
+                    text={cardDisplayText}
+                    highlights={cardTextHighlights}
+                  />
+                </Typography>
+              </Stack>
+            </Box>
+          ) : null}
+          {roleSheet ? (
+            <Stack spacing={1.6}>
+              <Stack direction="row" spacing={1.4} alignItems="flex-start">
+                <CharacterPortraitFrame
+                  src={roleSheet.portraitSrc}
+                  alt={roleSheet.portraitAlt}
+                  label={roleSheet.displayName}
+                  variant="thumbnail"
+                  sx={{ width: 88 }}
+                />
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography variant="h6" fontWeight={950}>
+                    {roleSheet.displayName}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    실제 게임에서 배부된 역할 설정서 원문입니다.
+                  </Typography>
+                </Box>
+              </Stack>
+              <EndbookEvidenceTextSection
+                title="공개 정보"
+                text={roleSheet.publicText}
+                highlights={evidenceHighlights}
+              />
+              <EndbookEvidenceTextSection
+                title="개인 목표"
+                text={roleSheet.personalGoal}
+                highlights={evidenceHighlights}
+              />
+              <EndbookEvidenceTextSection
+                title="운영 규칙"
+                text={roleSheet.ruleText}
+                highlights={evidenceHighlights}
+              />
+              {roleSheet.belongingHints?.length ? (
+                <Box>
+                  <Typography variant="subtitle2" fontWeight={950}>
+                    소지품 힌트
+                  </Typography>
+                  <Stack spacing={0.8} sx={{ mt: 0.8 }}>
+                    {roleSheet.belongingHints.map((hint) => (
+                      <Box
+                        key={`${hint.label}:${hint.hint}`}
+                        sx={{
+                          p: 1,
+                          borderRadius: 1,
+                          backgroundColor: 'rgba(32,24,15,0.06)',
+                        }}
+                      >
+                        <Typography fontWeight={900}>{hint.label}</Typography>
+                        <Typography sx={{ whiteSpace: 'pre-wrap' }}>
+                          <RulebookRichText
+                            text={hint.hint}
+                            highlights={evidenceHighlights}
+                          />
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Stack>
+                </Box>
+              ) : null}
+              <EndbookEvidenceTextSection
+                title="비공개 룰지"
+                text={roleSheet.secretText}
+                highlights={roleSheetSecretHighlights}
+              />
+            </Stack>
+          ) : null}
+          {script ? (
+            <Stack spacing={1}>
+              <Typography variant="h6" fontWeight={950}>
+                {script.label}
+              </Typography>
+              <Typography sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.78 }}>
+                <RulebookRichText
+                  text={script.readAloud}
+                  highlights={evidenceHighlights}
+                />
+              </Typography>
+            </Stack>
+          ) : null}
+          {!source ? (
+            <EndbookEvidenceTextSection
+              title="원문/발췌"
+              text={reference.excerpt}
+            />
+          ) : null}
         </Stack>
       </DialogContent>
     </Dialog>

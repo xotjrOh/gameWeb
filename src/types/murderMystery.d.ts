@@ -280,6 +280,25 @@ export interface MurderMysteryEndbookEvidenceReferenceScenario {
   stepId?: string;
 }
 
+export type MurderMysteryEndbookEvidenceOriginalSourceView =
+  | {
+      kind: 'investigation_card';
+      card: MurderMysteryClueVaultCardView;
+    }
+  | {
+      kind: 'role_sheet';
+      roleSheet: MurderMysteryRoleSheetView;
+    }
+  | {
+      kind: 'public_script';
+      script: MurderMysteryPublicScriptView;
+    };
+
+export interface MurderMysteryEndbookEvidenceReferenceView
+  extends MurderMysteryEndbookEvidenceReferenceScenario {
+  originalSource?: MurderMysteryEndbookEvidenceOriginalSourceView;
+}
+
 export interface MurderMysteryEndbookEvidenceQnaItemScenario {
   id: string;
   question: string;
@@ -291,6 +310,16 @@ export interface MurderMysteryEndbookEvidenceQnaScenario {
   title?: string;
   description?: string;
   items: MurderMysteryEndbookEvidenceQnaItemScenario[];
+}
+
+export interface MurderMysteryEndbookEvidenceQnaItemView
+  extends Omit<MurderMysteryEndbookEvidenceQnaItemScenario, 'evidenceRefs'> {
+  evidenceRefs: MurderMysteryEndbookEvidenceReferenceView[];
+}
+
+export interface MurderMysteryEndbookEvidenceQnaView
+  extends Omit<MurderMysteryEndbookEvidenceQnaScenario, 'items'> {
+  items: MurderMysteryEndbookEvidenceQnaItemView[];
 }
 
 export interface MurderMysteryScenario {
@@ -639,7 +668,7 @@ export interface MurderMysteryEndbookView {
   id: string;
   title: string;
   body: string;
-  evidenceQna?: MurderMysteryEndbookEvidenceQnaScenario;
+  evidenceQna?: MurderMysteryEndbookEvidenceQnaView;
   choiceSummaries: MurderMysteryEndbookChoiceSummaryView[];
   alternateOutcomes: MurderMysteryEndbookAlternateOutcomeView[];
 }

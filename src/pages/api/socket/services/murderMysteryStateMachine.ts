@@ -4,6 +4,9 @@ import {
   MurderMysteryAnnouncement,
   MurderMysteryCardScenario,
   MurderMysteryClueVaultCardView,
+  MurderMysteryEndbookEvidenceOriginalSourceView,
+  MurderMysteryEndbookEvidenceQnaView,
+  MurderMysteryEndbookEvidenceReferenceScenario,
   MurderMysteryEndbookView,
   MurderMysteryFinalVoteResult,
   MurderMysteryGameData,
@@ -1832,11 +1835,137 @@ const resolveEndbookVariant = (
     doesEndbookConditionMatch(room, variant.when)
   ) ?? scenario.endbook.variants[0];
 
+const buildEvidenceCardSourceView = (
+  scenario: MurderMysteryScenario,
+  card: MurderMysteryCardScenario
+): MurderMysteryClueVaultCardView => {
+  const sourceTargets = scenario.investigations.rounds
+    .flatMap((roundConfig) => roundConfig.targets)
+    .filter((target) => target.cardPool.includes(card.id));
+
+  return {
+    ...card,
+    sourceTargetIds: sourceTargets.map((target) => target.id),
+    sourceTargetLabels: sourceTargets.map((target) => target.label),
+    sourceBackLabels: sourceTargets.map(
+      (target) => getCardBackStyle(scenario, target, card.id).shortLabel
+    ),
+    isPublic: true,
+    canRevealPublicly: false,
+  };
+};
+
+const buildEvidenceRoleSheetSourceView = (
+  scenario: MurderMysteryScenario,
+  roleId: string
+): MurderMysteryRoleSheetView | null => {
+  const role = getRoleById(scenario, roleId);
+  if (role) {
+    return {
+      roleId: role.id,
+      displayName: role.displayName,
+      publicText: role.publicText,
+      secretText: role.secretText,
+      ...(role.personalGoal ? { personalGoal: role.personalGoal } : {}),
+      ...(role.ruleText ? { ruleText: role.ruleText } : {}),
+      ...(role.belongingHints ? { belongingHints: role.belongingHints } : {}),
+      ...(role.secretTextHighlights
+        ? { secretTextHighlights: role.secretTextHighlights }
+        : {}),
+      ...(role.portraitSrc ? { portraitSrc: role.portraitSrc } : {}),
+      ...(role.portraitAlt ? { portraitAlt: role.portraitAlt } : {}),
+    };
+  }
+
+  const publicCover = scenario.publicCovers?.find(
+    (cover) => cover.id === roleId
+  );
+  if (!publicCover) {
+    return null;
+  }
+
+  return {
+    roleId: publicCover.id,
+    displayName: publicCover.displayName,
+    publicText: publicCover.publicText,
+    secretText: '',
+    ...(publicCover.portraitSrc
+      ? { portraitSrc: publicCover.portraitSrc }
+      : {}),
+    ...(publicCover.portraitAlt
+      ? { portraitAlt: publicCover.portraitAlt }
+      : {}),
+  };
+};
+
+const buildEndbookEvidenceOriginalSource = (
+  scenario: MurderMysteryScenario,
+  reference: MurderMysteryEndbookEvidenceReferenceScenario
+): MurderMysteryEndbookEvidenceOriginalSourceView | undefined => {
+  if (reference.sourceType === 'investigation_card' && reference.cardId) {
+    const card = getCardById(scenario, reference.cardId);
+    return card
+      ? {
+          kind: 'investigation_card',
+          card: buildEvidenceCardSourceView(scenario, card),
+        }
+      : undefined;
+  }
+
+  if (reference.sourceType === 'role_sheet' && reference.roleId) {
+    const roleSheet = buildEvidenceRoleSheetSourceView(
+      scenario,
+      reference.roleId
+    );
+    return roleSheet ? { kind: 'role_sheet', roleSheet } : undefined;
+  }
+
+  if (reference.sourceType === 'public_script' && reference.stepId) {
+    const step = getFlowStepByPhase(scenario, reference.stepId);
+    const readAloud = getFlowStepReadAloud(scenario, reference.stepId);
+    return step && readAloud.trim()
+      ? {
+          kind: 'public_script',
+          script: {
+            stepId: step.id,
+            label: step.label,
+            readAloud,
+            unlocked: true,
+            current: false,
+          },
+        }
+      : undefined;
+  }
+
+  return undefined;
+};
+
+const buildEndbookEvidenceQnaView = (
+  scenario: MurderMysteryScenario
+): MurderMysteryEndbookEvidenceQnaView | undefined => {
+  const evidenceQna = scenario.endbook.evidenceQna;
+  if (!evidenceQna) {
+    return undefined;
+  }
+
+  return {
+    ...evidenceQna,
+    items: evidenceQna.items.map((item) => ({
+      ...item,
+      evidenceRefs: item.evidenceRefs.map((reference) => ({
+        ...reference,
+        originalSource: buildEndbookEvidenceOriginalSource(scenario, reference),
+      })),
+    })),
+  };
+};
+
 const resolveEndbookView = (
   room: MurderMysteryRoom,
   scenario: MurderMysteryScenario
 ): MurderMysteryEndbookView => {
   const choiceSummaries = buildEndbookChoiceSummaries(room, scenario);
+  const evidenceQna = buildEndbookEvidenceQnaView(scenario);
 
   if (scenario.endbook.sections.length > 0) {
     const matchedSections = getMatchedEndbookSections(room, scenario);
@@ -1856,7 +1985,7 @@ const resolveEndbookView = (
           : 'composed_endbook',
       title,
       body,
-      evidenceQna: scenario.endbook.evidenceQna,
+      evidenceQna,
       choiceSummaries,
       alternateOutcomes: buildEndbookAlternateOutcomes(
         room,
@@ -1871,7 +2000,7 @@ const resolveEndbookView = (
     id: variant.id,
     title: variant.title,
     body: variant.body,
-    evidenceQna: scenario.endbook.evidenceQna,
+    evidenceQna,
     choiceSummaries,
     alternateOutcomes: [],
   };
