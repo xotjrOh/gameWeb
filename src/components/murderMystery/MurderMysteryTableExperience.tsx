@@ -2188,23 +2188,25 @@ const PlayerMarkerButton = ({
           border: isCurrentInvestigationPlayer
             ? '2px solid rgba(245, 197, 66, 0.98)'
             : isSelf
-              ? '2px solid rgba(245, 197, 66, 0.98)'
+              ? '2px solid rgba(251, 146, 60, 0.98)'
               : roleReadingReady
                 ? '2px solid rgba(74, 222, 128, 0.92)'
                 : isClueTakeHighlighted
                   ? '2px solid rgba(142, 202, 230, 0.98)'
                   : '1px solid rgba(255,255,255,0.28)',
           background: isSelf
-            ? 'linear-gradient(180deg, rgba(255,249,229,0.98), rgba(225,210,169,0.98))'
+            ? 'linear-gradient(180deg, rgba(255,245,216,1), rgba(251,214,132,0.98))'
             : 'linear-gradient(180deg, rgba(247,243,231,0.98), rgba(224,214,190,0.96))',
           color: '#2a231a',
           boxShadow: isCurrentInvestigationPlayer
             ? '0 0 0 4px rgba(245,197,66,0.24), 0 10px 24px rgba(0,0,0,0.34)'
-            : isClueTakeHighlighted
-              ? '0 0 0 4px rgba(142,202,230,0.18), 0 8px 20px rgba(0,0,0,0.3)'
-              : roleReadingReady
-                ? '0 0 0 3px rgba(74,222,128,0.16), 0 8px 20px rgba(0,0,0,0.28)'
-                : '0 6px 16px rgba(0,0,0,0.24)',
+            : isSelf
+              ? '0 0 0 4px rgba(251,146,60,0.28), 0 12px 28px rgba(0,0,0,0.36)'
+              : isClueTakeHighlighted
+                ? '0 0 0 4px rgba(142,202,230,0.18), 0 8px 20px rgba(0,0,0,0.3)'
+                : roleReadingReady
+                  ? '0 0 0 3px rgba(74,222,128,0.16), 0 8px 20px rgba(0,0,0,0.28)'
+                  : '0 6px 16px rgba(0,0,0,0.24)',
           cursor: 'pointer',
           userSelect: 'none',
           font: 'inherit',
@@ -2316,21 +2318,40 @@ const PlayerMarkerButton = ({
             {player.roleDisplayName ?? player.name}
           </Typography>
           <Stack direction="row" spacing={0.45} alignItems="center">
-            <Typography
-              component="span"
-              sx={{
-                minWidth: 0,
-                color: '#6f5635',
-                fontSize: 10.5,
-                fontWeight: 850,
-                lineHeight: 1.12,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-            >
-              {isSelf ? '나' : player.name}
-            </Typography>
+            {isSelf ? (
+              <Box
+                component="span"
+                sx={{
+                  px: 0.55,
+                  py: 0.12,
+                  borderRadius: 999,
+                  backgroundColor: '#ea580c',
+                  color: '#fff7ed',
+                  fontSize: 10,
+                  fontWeight: 950,
+                  lineHeight: 1.25,
+                  boxShadow: '0 2px 5px rgba(124,45,18,0.28)',
+                }}
+              >
+                나
+              </Box>
+            ) : (
+              <Typography
+                component="span"
+                sx={{
+                  minWidth: 0,
+                  color: '#6f5635',
+                  fontSize: 10.5,
+                  fontWeight: 850,
+                  lineHeight: 1.12,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {player.name}
+              </Typography>
+            )}
             {isClueTakeHighlighted ? (
               <Box
                 component="span"
