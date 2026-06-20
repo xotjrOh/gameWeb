@@ -6305,7 +6305,11 @@ export default function MurderMysteryTableExperience({
     shouldOverlayHostBriefingDock ||
     shouldShowFloatingActionDock ||
     shouldShowMobileDeskPanel;
-  const mobileDeskPanelBottomPadding = phaseKind === 'discuss' ? 8.5 : 22;
+  const shouldUseTightDeskPanelPadding =
+    phaseKind === 'discuss' || phaseKind === 'endbook';
+  const mobileDeskPanelBottomPadding = shouldUseTightDeskPanelPadding
+    ? 8.5
+    : 22;
   const mobileMainBottomPadding = shouldShowMobileDeskPanel
     ? mobileDeskPanelBottomPadding
     : shouldShowFloatingActionDock
@@ -6325,7 +6329,7 @@ export default function MurderMysteryTableExperience({
       ? { xs: 1.3, md: 2 }
       : phaseKind === 'role_reading'
         ? { xs: 1.3, md: 2 }
-        : phaseKind === 'discuss'
+        : shouldUseTightDeskPanelPadding
           ? { xs: 2, md: 2 }
           : {
               xs: shouldReserveBottomDockSpace ? 18 : 2,
