@@ -250,20 +250,16 @@ export default function MurderMysteryGameScreen({
           });
           return;
         }
-        enqueueSnackbar(response.message ?? '카드를 예약했습니다.', {
-          variant: 'success',
-        });
       }
     );
   };
 
   const handleClearInvestigationReservation = () => {
     setPendingReservationBackId(null);
-    emitWithAck(
-      'mm_clear_investigation_reservation',
-      { roomId, sessionId },
-      '예약을 해제했습니다.'
-    );
+    void emitWithAckResult('mm_clear_investigation_reservation', {
+      roomId,
+      sessionId,
+    });
   };
 
   const handleRevealMyClue = (cardId: string) => {

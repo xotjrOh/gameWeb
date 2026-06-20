@@ -50,6 +50,25 @@ const panelPaperSx = {
 } as const;
 
 const UNKNOWN_CARD_SOURCE_LABEL = '출처 미확인';
+const READ_REPEAT_BACK_HINT =
+  '이미 한 번 읽힌 반복조사 카드입니다. 다시 선택할 수 있습니다.';
+
+const ReadRepeatCornerMark = ({ size = 9 }: { size?: number }) => (
+  <Box
+    aria-hidden
+    sx={{
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      width: 0,
+      height: 0,
+      borderTop: `${size}px solid rgba(148, 163, 184, 0.92)`,
+      borderLeft: `${size}px solid transparent`,
+      pointerEvents: 'none',
+      zIndex: 3,
+    }}
+  />
+);
 
 const formatInvestigationCountText = ({
   remainingClues,
@@ -358,54 +377,61 @@ const CardBackFace = ({
   onPrimaryAction: () => void;
   primaryActionLabel: string;
   showPrimaryAction: boolean;
-}) => (
-  <Card
-    variant="outlined"
-    sx={{
-      borderRadius: 3,
-      overflow: 'hidden',
-      borderColor: back.isReservedByMe ? 'warning.main' : 'divider',
-    }}
-  >
-    <Box
+}) => {
+  const isReadRepeatBack = back.hasBeenRead;
+
+  return (
+    <Card
+      variant="outlined"
+      title={isReadRepeatBack ? READ_REPEAT_BACK_HINT : undefined}
       sx={{
-        minHeight: 184,
-        p: 1.2,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        background: back.imageSrc
-          ? `linear-gradient(rgba(15,23,42,0.18), rgba(15,23,42,0.62)), url(${back.imageSrc}) center / cover`
-          : 'linear-gradient(145deg, #082f49 0%, #0f766e 45%, #78350f 100%)',
-        color: '#f8fafc',
+        position: 'relative',
+        borderRadius: 3,
+        overflow: 'hidden',
+        borderColor: back.isReservedByMe ? 'warning.main' : 'divider',
       }}
     >
-      <Stack direction="row" spacing={0.8} justifyContent="space-between">
-        <Chip
-          size="small"
-          label={back.isReservedByMe ? '내 예약' : '카드 뒷면'}
-          color={back.isReservedByMe ? 'warning' : 'default'}
-        />
-        <Typography variant="caption">{back.targetLabel}</Typography>
-      </Stack>
-      <Stack spacing={0.5}>
-        <Typography variant="h6" fontWeight={900}>
-          {back.shortLabel ?? '단서'}
-        </Typography>
-        <Typography variant="body2" sx={{ opacity: 0.9 }}>
-          아직 앞면은 확인할 수 없습니다.
-        </Typography>
-      </Stack>
-    </Box>
-    {showPrimaryAction ? (
-      <CardContent sx={{ p: 1.2, '&:last-child': { pb: 1.2 } }}>
-        <Button fullWidth variant="contained" onClick={onPrimaryAction}>
-          {primaryActionLabel}
-        </Button>
-      </CardContent>
-    ) : null}
-  </Card>
-);
+      <Box
+        sx={{
+          minHeight: 184,
+          p: 1.2,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          background: back.imageSrc
+            ? `linear-gradient(rgba(15,23,42,0.18), rgba(15,23,42,0.62)), url(${back.imageSrc}) center / cover`
+            : 'linear-gradient(145deg, #082f49 0%, #0f766e 45%, #78350f 100%)',
+          color: '#f8fafc',
+        }}
+      >
+        <Stack direction="row" spacing={0.8} justifyContent="space-between">
+          <Chip
+            size="small"
+            label={back.isReservedByMe ? '내 예약' : '카드 뒷면'}
+            color={back.isReservedByMe ? 'warning' : 'default'}
+          />
+          <Typography variant="caption">{back.targetLabel}</Typography>
+        </Stack>
+        <Stack spacing={0.5}>
+          <Typography variant="h6" fontWeight={900}>
+            {back.shortLabel ?? '단서'}
+          </Typography>
+          <Typography variant="body2" sx={{ opacity: 0.9 }}>
+            아직 앞면은 확인할 수 없습니다.
+          </Typography>
+        </Stack>
+      </Box>
+      {showPrimaryAction ? (
+        <CardContent sx={{ p: 1.2, '&:last-child': { pb: 1.2 } }}>
+          <Button fullWidth variant="contained" onClick={onPrimaryAction}>
+            {primaryActionLabel}
+          </Button>
+        </CardContent>
+      ) : null}
+      {isReadRepeatBack ? <ReadRepeatCornerMark size={10} /> : null}
+    </Card>
+  );
+};
 
 const InvestigationBackDeckSheet = ({
   canActAsPlayer,

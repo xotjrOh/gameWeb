@@ -530,6 +530,8 @@ export interface MurderMysteryInvestigationBackCardView
   targetLabel: string;
   extraInvestigationOnReveal: boolean;
   isReservedByMe: boolean;
+  hasBeenRead: boolean;
+  readCount: number;
 }
 
 export interface MurderMysteryInvestigationTargetView

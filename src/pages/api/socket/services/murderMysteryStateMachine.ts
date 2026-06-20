@@ -532,6 +532,15 @@ const getBackIdForTargetCard = (
     buildTargetCardKey(targetId, cardId)
   ];
 
+const getCardReadCountForTarget = (
+  room: MurderMysteryRoom,
+  targetId: string,
+  cardId: string
+) =>
+  (room.gameData.revealedCardIdsByTargetId[targetId] ?? []).filter(
+    (revealedCardId) => revealedCardId === cardId
+  ).length;
+
 const getPhaseDurationSec = (
   scenario: MurderMysteryScenario,
   phase: MurderMysteryPhase
@@ -1296,6 +1305,7 @@ const buildBackCardView = (
   }
   const card = getCardById(scenario, cardId);
   const style = getCardBackStyle(scenario, target, cardId);
+  const readCount = getCardReadCountForTarget(room, target.id, cardId);
   return {
     backId,
     targetId: target.id,
@@ -1306,6 +1316,8 @@ const buildBackCardView = (
     isReservedByMe:
       room.gameData.investigationTurn.reservationByPlayerId[viewerId] ===
       backId,
+    hasBeenRead: target.repeatable === true && readCount > 0,
+    readCount,
   };
 };
 
@@ -1333,6 +1345,9 @@ const buildHeldCardBackViews = (
           return;
         }
         const style = getCardBackStyle(scenario, target, cardId);
+        const readCount = revealedForTarget.filter(
+          (revealedCardId) => revealedCardId === cardId
+        ).length;
         backsByCardId.set(cardId, {
           backId,
           targetId: target.id,
@@ -1341,6 +1356,8 @@ const buildHeldCardBackViews = (
           shortLabel: style.shortLabel,
           extraInvestigationOnReveal: Boolean(card.extraInvestigationOnReveal),
           isReservedByMe: false,
+          hasBeenRead: target.repeatable === true && readCount > 0,
+          readCount,
         });
       });
     });

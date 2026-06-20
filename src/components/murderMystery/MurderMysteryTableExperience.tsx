@@ -209,6 +209,8 @@ type BgmPlaybackState = {
 
 const CARD_BACK_LABEL = '조사 카드';
 const UNKNOWN_CARD_SOURCE_LABEL = '출처 미확인';
+const READ_REPEAT_BACK_HINT =
+  '이미 한 번 읽힌 반복조사 카드입니다. 다시 선택할 수 있습니다.';
 const MAX_VISIBLE_INVESTIGATION_PROGRESS_TOKENS = 5;
 const EXTRA_INVESTIGATION_LABEL = '전체공개 후 추가조사';
 const EXTRA_INVESTIGATION_DESCRIPTION =
@@ -229,6 +231,24 @@ const DEFAULT_MAP_FAB_POSITION: FloatingFabPosition = {
   side: 'right',
   yRatio: 0.46,
 };
+
+const ReadRepeatCornerMark = ({ size = 9 }: { size?: number }) => (
+  <Box
+    aria-hidden
+    sx={{
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      width: 0,
+      height: 0,
+      borderTop: `${size}px solid rgba(148, 163, 184, 0.92)`,
+      borderLeft: `${size}px solid transparent`,
+      pointerEvents: 'none',
+      zIndex: 3,
+    }}
+  />
+);
+
 const MURDER_MYSTERY_BGM_BY_SCENARIO: Record<
   string,
   {
@@ -1735,6 +1755,17 @@ const InvestigationCardBack = ({
   onClearReservation: () => void;
 }) => {
   const isReserved = back.isReservedByMe || isPendingReservation;
+  const readStateHint = back.hasBeenRead ? READ_REPEAT_BACK_HINT : '';
+  const actionTitle = disabled
+    ? (disabledReason ?? '지금은 선택할 수 없습니다.')
+    : isReserved
+      ? '예약 해제'
+      : canActNow
+        ? '내 조사 차례입니다. 이 카드를 가져옵니다.'
+        : '내 차례 전까지 이 카드를 예약합니다.';
+  const tooltipTitle = readStateHint
+    ? `${actionTitle} · ${readStateHint}`
+    : actionTitle;
   const handleClick = () => {
     if (disabled) {
       return;
@@ -1751,17 +1782,7 @@ const InvestigationCardBack = ({
   };
 
   return (
-    <Tooltip
-      title={
-        disabled
-          ? (disabledReason ?? '지금은 선택할 수 없습니다.')
-          : isReserved
-            ? '예약 해제'
-            : canActNow
-              ? '내 조사 차례입니다. 이 카드를 가져옵니다.'
-              : '내 차례 전까지 이 카드를 예약합니다.'
-      }
-    >
+    <Tooltip title={tooltipTitle}>
       <Box
         component="button"
         type="button"
@@ -1850,6 +1871,7 @@ const InvestigationCardBack = ({
                   : (back.shortLabel ?? CARD_BACK_LABEL)}
             </Typography>
           </Stack>
+          {back.hasBeenRead ? <ReadRepeatCornerMark size={10} /> : null}
         </Box>
       </Box>
     </Tooltip>
@@ -6161,6 +6183,9 @@ export default function MurderMysteryTableExperience({
         (back) =>
           back.isReservedByMe || pendingReservationBackId === back.backId
       );
+      const hasReadBack = target.availableBacks.some(
+        (back) => back.hasBeenRead
+      );
       const tileLabel = hasMultipleBacks
         ? target.label
         : (firstBack?.shortLabel ??
@@ -6198,10 +6223,12 @@ export default function MurderMysteryTableExperience({
         <PushPinIcon sx={{ width: 15, height: 15, color: '#f5c542' }} />
       ) : null;
       const compactTileSx = {
+        position: 'relative',
         width: '100%',
         minHeight: hasMultipleBacks ? 66 : 48,
         p: 0.65,
         borderRadius: 1.4,
+        overflow: 'hidden',
         border: '1px solid',
         borderColor: target.isExhausted
           ? 'rgba(148,163,184,0.28)'
@@ -6269,11 +6296,21 @@ export default function MurderMysteryTableExperience({
               sx={{ flex: '0 0 auto', minWidth: 0 }}
             >
               {target.repeatable ? (
-                <Tooltip title="해당 단서는 반복조사 가능합니다.">
+                <Tooltip
+                  title={
+                    hasReadBack
+                      ? READ_REPEAT_BACK_HINT
+                      : '해당 단서는 반복조사 가능합니다.'
+                  }
+                >
                   <Typography
                     aria-label="해당 단서는 반복조사 가능합니다."
                     fontWeight={950}
-                    sx={{ color: '#8ecae6', fontSize: 17, lineHeight: 1 }}
+                    sx={{
+                      color: '#8ecae6',
+                      fontSize: 17,
+                      lineHeight: 1,
+                    }}
                   >
                     ∞
                   </Typography>
@@ -6317,19 +6354,19 @@ export default function MurderMysteryTableExperience({
                 const isBackReserved =
                   back.isReservedByMe ||
                   pendingReservationBackId === back.backId;
+                const isBackRead = back.hasBeenRead;
+                const backActionTitle = targetDisabled
+                  ? (targetDisabledReason ?? '지금은 선택할 수 없습니다.')
+                  : isBackReserved
+                    ? '예약 해제'
+                    : canActNow
+                      ? '가져가기'
+                      : '예약하기';
+                const backTooltipTitle = isBackRead
+                  ? `${backActionTitle} · ${READ_REPEAT_BACK_HINT}`
+                  : backActionTitle;
                 return (
-                  <Tooltip
-                    key={back.backId}
-                    title={
-                      targetDisabled
-                        ? (targetDisabledReason ?? '지금은 선택할 수 없습니다.')
-                        : isBackReserved
-                          ? '예약 해제'
-                          : canActNow
-                            ? '가져가기'
-                            : '예약하기'
-                    }
-                  >
+                  <Tooltip key={back.backId} title={backTooltipTitle}>
                     <Box
                       component="button"
                       type="button"
@@ -6337,8 +6374,10 @@ export default function MurderMysteryTableExperience({
                       onClick={() => handleBackChoice(back)}
                       sx={{
                         minWidth: 0,
+                        position: 'relative',
                         height: 23,
                         borderRadius: 1,
+                        overflow: 'hidden',
                         border: '1px solid',
                         borderColor: isBackReserved
                           ? 'rgba(245,197,66,0.92)'
@@ -6350,7 +6389,6 @@ export default function MurderMysteryTableExperience({
                         cursor: targetDisabled ? 'not-allowed' : 'pointer',
                         fontSize: 10.5,
                         fontWeight: 900,
-                        overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
                         px: 0.55,
@@ -6359,6 +6397,7 @@ export default function MurderMysteryTableExperience({
                       {isBackReserved
                         ? '내 예약'
                         : (back.shortLabel ?? CARD_BACK_LABEL)}
+                      {isBackRead ? <ReadRepeatCornerMark size={7} /> : null}
                     </Box>
                   </Tooltip>
                 );
@@ -6372,20 +6411,19 @@ export default function MurderMysteryTableExperience({
         const isBackReserved =
           firstBack.isReservedByMe ||
           pendingReservationBackId === firstBack.backId;
+        const firstBackActionTitle = targetDisabled
+          ? (targetDisabledReason ?? '지금은 선택할 수 없습니다.')
+          : isBackReserved
+            ? '예약 해제'
+            : canActNow
+              ? '가져가기'
+              : '예약하기';
+        const firstBackTooltipTitle = firstBack.hasBeenRead
+          ? `${firstBackActionTitle} · ${READ_REPEAT_BACK_HINT}`
+          : firstBackActionTitle;
 
         return (
-          <Tooltip
-            key={target.id}
-            title={
-              targetDisabled
-                ? (targetDisabledReason ?? '지금은 선택할 수 없습니다.')
-                : isBackReserved
-                  ? '예약 해제'
-                  : canActNow
-                    ? '가져가기'
-                    : '예약하기'
-            }
-          >
+          <Tooltip key={target.id} title={firstBackTooltipTitle}>
             <Box
               component="button"
               type="button"
@@ -6402,6 +6440,7 @@ export default function MurderMysteryTableExperience({
               }}
             >
               {tileBody}
+              {firstBack.hasBeenRead ? <ReadRepeatCornerMark size={9} /> : null}
             </Box>
           </Tooltip>
         );
