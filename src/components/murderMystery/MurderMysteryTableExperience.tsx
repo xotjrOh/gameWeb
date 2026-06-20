@@ -3877,6 +3877,23 @@ const SpecialEventConfirmDialog = ({
   );
 };
 
+const getPublicScriptTabLabel = (label: string) => {
+  const normalized = label.trim().replace(/\s+/g, ' ');
+  const roundMatch = normalized.match(/^(\d+)\s*라운드\s*(.*)$/);
+  if (!roundMatch) {
+    return normalized.replace(/\s*지문$/, '').replace(/낭독문$/, '낭독');
+  }
+
+  const round = roundMatch[1];
+  const suffix = roundMatch[2]
+    .replace(/조사\s*전\s*지문/g, '조사전')
+    .replace(/\s*지문$/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return suffix ? `${round}R ${suffix}` : `${round}R`;
+};
+
 const PublicScriptsDialog = ({
   open,
   scripts,
@@ -3887,81 +3904,186 @@ const PublicScriptsDialog = ({
   scripts: MurderMysteryPublicScriptView[];
   fullScreen: boolean;
   onClose: () => void;
-}) => (
-  <Dialog
-    open={open}
-    onClose={onClose}
-    fullWidth
-    maxWidth="md"
-    fullScreen={fullScreen}
-  >
-    <DialogTitle
-      sx={{
-        backgroundColor: '#211b17',
-        color: '#f7f0df',
-        borderBottom: '1px solid rgba(255,255,255,0.12)',
+}) => {
+  const [selectedScriptId, setSelectedScriptId] = useState<string | null>(null);
+  const selectedScript =
+    scripts.find((script) => script.stepId === selectedScriptId) ??
+    scripts.find((script) => script.current) ??
+    scripts[0] ??
+    null;
+
+  useEffect(() => {
+    if (!open) {
+      setSelectedScriptId(null);
+      return;
+    }
+    setSelectedScriptId((current) =>
+      current && scripts.some((script) => script.stepId === current)
+        ? current
+        : (scripts.find((script) => script.current)?.stepId ??
+          scripts[0]?.stepId ??
+          null)
+    );
+  }, [open, scripts]);
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="md"
+      fullScreen={fullScreen}
+      PaperProps={{
+        sx: {
+          overflow: 'hidden',
+        },
       }}
     >
-      <Stack direction="row" alignItems="center" spacing={1}>
-        <ArticleIcon />
-        <Typography fontWeight={950} sx={{ flex: 1 }}>
-          공개 낭독문
-        </Typography>
-        <IconButton onClick={onClose} sx={{ color: '#f7f0df' }}>
-          <CloseIcon />
-        </IconButton>
-      </Stack>
-    </DialogTitle>
-    <DialogContent
-      sx={{
-        p: { xs: 1.4, sm: 2 },
-        background:
-          'linear-gradient(145deg, #201b18 0%, #3b3027 48%, #171c23 100%)',
-        color: '#f7f0df',
-      }}
-    >
-      {scripts.length > 0 ? (
-        <Stack spacing={1.4}>
-          {scripts.map((script) => (
+      <DialogTitle
+        sx={{
+          backgroundColor: '#211b17',
+          color: '#f7f0df',
+          borderBottom: '1px solid rgba(255,255,255,0.12)',
+        }}
+      >
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <ArticleIcon />
+          <Typography fontWeight={950} sx={{ flex: 1 }}>
+            공개 낭독문
+          </Typography>
+          <IconButton onClick={onClose} sx={{ color: '#f7f0df' }}>
+            <CloseIcon />
+          </IconButton>
+        </Stack>
+      </DialogTitle>
+      <DialogContent
+        sx={{
+          p: { xs: 1.4, sm: 2 },
+          background:
+            'linear-gradient(145deg, #201b18 0%, #3b3027 48%, #171c23 100%)',
+          color: '#f7f0df',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 1.2,
+          minHeight: 0,
+          maxHeight: fullScreen ? 'none' : 'min(72vh, 720px)',
+          overflow: 'hidden',
+        }}
+      >
+        {scripts.length > 0 && selectedScript ? (
+          <>
             <Box
-              key={script.stepId}
               sx={{
-                p: { xs: 1.2, md: 1.6 },
+                flex: '0 0 auto',
                 borderRadius: 2,
-                border: script.current
+                border: '1px solid rgba(255,255,255,0.14)',
+                backgroundColor: 'rgba(11, 15, 20, 0.94)',
+                boxShadow: '0 12px 28px rgba(0,0,0,0.24)',
+                overflow: 'hidden',
+              }}
+            >
+              <Tabs
+                value={selectedScript.stepId}
+                onChange={(_, nextStepId: string) =>
+                  setSelectedScriptId(nextStepId)
+                }
+                variant="fullWidth"
+                TabIndicatorProps={{ style: { display: 'none' } }}
+                sx={{
+                  p: 0.65,
+                  minHeight: 48,
+                  borderBottom: '1px solid rgba(255,255,255,0.12)',
+                  backgroundColor: 'rgba(255,255,255,0.045)',
+                  '& .MuiTabs-flexContainer': {
+                    gap: 0.75,
+                  },
+                  '& .MuiTab-root': {
+                    minWidth: 0,
+                    minHeight: 36,
+                    px: { xs: 0.4, sm: 1 },
+                    borderRadius: 1.4,
+                    color: '#cfc5ad',
+                    fontWeight: 950,
+                    fontSize: { xs: 13, sm: 14 },
+                    textTransform: 'none',
+                    border: '1px solid transparent',
+                  },
+                  '& .MuiTab-root.Mui-selected': {
+                    color: '#231604',
+                    backgroundColor: '#f5c542',
+                    borderColor: 'rgba(255,246,219,0.36)',
+                    boxShadow: '0 8px 18px rgba(0,0,0,0.22)',
+                  },
+                  '& .MuiTabs-scrollButtons': {
+                    color: '#f7f0df',
+                  },
+                }}
+              >
+                {scripts.map((script) => (
+                  <Tab
+                    key={script.stepId}
+                    value={script.stepId}
+                    label={getPublicScriptTabLabel(script.label)}
+                    aria-label={script.label}
+                    title={script.label}
+                    id={`public-script-tab-${script.stepId}`}
+                    aria-controls={`public-script-panel-${script.stepId}`}
+                  />
+                ))}
+              </Tabs>
+            </Box>
+
+            <Box
+              role="tabpanel"
+              id={`public-script-panel-${selectedScript.stepId}`}
+              aria-labelledby={`public-script-tab-${selectedScript.stepId}`}
+              sx={{
+                flex: 1,
+                minHeight: 0,
+                overflowY: 'auto',
+                p: { xs: 1.2, md: 1.6 },
+                pr: { xs: 1.7, md: 2.1 },
+                borderRadius: 2,
+                border: selectedScript.current
                   ? '1px solid rgba(245, 197, 66, 0.82)'
                   : '1px solid rgba(255,255,255,0.14)',
-                backgroundColor: script.current
+                backgroundColor: selectedScript.current
                   ? 'rgba(245, 197, 66, 0.1)'
                   : 'rgba(255,255,255,0.06)',
+                scrollbarWidth: 'thin',
+                '&::-webkit-scrollbar': { width: 6 },
+                '&::-webkit-scrollbar-thumb': {
+                  backgroundColor: 'rgba(248,241,222,0.24)',
+                  borderRadius: 999,
+                },
               }}
             >
               <Stack spacing={1}>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Typography fontWeight={950} sx={{ flex: 1 }}>
-                    {script.label}
+                    {selectedScript.label}
                   </Typography>
                   <Chip
                     size="small"
-                    color={script.current ? 'warning' : 'default'}
-                    label={script.current ? '현재 단계' : '공개됨'}
+                    color={selectedScript.current ? 'warning' : 'default'}
+                    label={selectedScript.current ? '현재 단계' : '공개됨'}
                   />
                 </Stack>
                 <Typography sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.78 }}>
-                  {script.readAloud}
+                  {selectedScript.readAloud}
                 </Typography>
               </Stack>
             </Box>
-          ))}
-        </Stack>
-      ) : (
-        <Typography sx={{ color: '#d8d0bd' }}>
-          아직 다시 읽을 수 있는 공개 낭독문이 없습니다.
-        </Typography>
-      )}
-    </DialogContent>
-  </Dialog>
-);
+          </>
+        ) : (
+          <Typography sx={{ color: '#d8d0bd' }}>
+            아직 다시 읽을 수 있는 공개 낭독문이 없습니다.
+          </Typography>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 const PublicCoverDialog = ({
   open,
