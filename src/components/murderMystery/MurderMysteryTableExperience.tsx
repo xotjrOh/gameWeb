@@ -399,6 +399,7 @@ const ExtraInvestigationFrontBadge = ({
         borderRadius: 999,
         display: 'grid',
         placeItems: 'center',
+        overflow: 'visible',
         background:
           'linear-gradient(135deg, rgba(14,165,233,0.96), rgba(37,99,235,0.96))',
         color: '#f8fbff',
@@ -408,6 +409,23 @@ const ExtraInvestigationFrontBadge = ({
       }}
     >
       <SearchIcon sx={{ fontSize: iconSize }} />
+      <Box
+        aria-hidden
+        component="span"
+        sx={{
+          position: 'absolute',
+          top: dense ? -4 : -5,
+          right: dense ? -2 : -3,
+          color: '#f8fbff',
+          fontSize: dense ? 13 : 15,
+          lineHeight: 1,
+          fontWeight: 950,
+          textShadow: '0 1px 3px rgba(15,23,42,0.68)',
+          pointerEvents: 'none',
+        }}
+      >
+        +
+      </Box>
     </Box>
   );
 
@@ -901,7 +919,7 @@ const FloatingActionDock = ({
                     boxShadow: '0 0 0 2px rgba(254, 215, 170, 0.25)',
                   }}
                 >
-                  <WarningAmberIcon sx={{ fontSize: 16 }} />
+                  <TimerIcon sx={{ fontSize: 16 }} />
                 </Box>
               ) : null}
               <Typography
@@ -5374,18 +5392,6 @@ export default function MurderMysteryTableExperience({
   const selfInvestigationProgress = shouldShowInvestigationProgress
     ? (investigationProgressByPlayerId[sessionId] ?? null)
     : null;
-  const currentTurnProgress =
-    shouldShowInvestigationProgress &&
-    snapshot.investigation.turn?.currentPlayerId
-      ? (investigationProgressByPlayerId[
-          snapshot.investigation.turn.currentPlayerId
-        ] ?? null)
-      : null;
-  const selfInvestigationProgressText = getInvestigationProgressShortLabel(
-    selfInvestigationProgress
-  );
-  const currentTurnProgressText =
-    getInvestigationProgressShortLabel(currentTurnProgress);
   const canUseHostTools = isHostView;
   const requiredPlayerCount =
     snapshot.roleSelection.requiredPlayerCount ||
@@ -6690,32 +6696,37 @@ export default function MurderMysteryTableExperience({
             alignItems={{ xs: 'stretch', md: 'center' }}
           >
             <Box sx={{ flex: 1 }}>
-              <Typography variant="h5" fontWeight={950}>
-                {activeRound ? `${activeRound}라운드 조사` : '조사 대기'}
-              </Typography>
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                justifyContent="space-between"
+              >
+                <Typography variant="h5" fontWeight={950}>
+                  {activeRound ? `${activeRound}라운드 조사` : '조사 대기'}
+                </Typography>
+                {selfInvestigationProgress ? (
+                  <Chip
+                    size="small"
+                    label={`${selfInvestigationProgress.completedCount}/${selfInvestigationProgress.requiredCount}`}
+                    aria-label={`내 조사 진행 ${selfInvestigationProgress.completedCount}/${selfInvestigationProgress.requiredCount}`}
+                    sx={{
+                      flex: '0 0 auto',
+                      height: 24,
+                      backgroundColor: 'rgba(255,255,255,0.12)',
+                      color: '#f8f1de',
+                      fontWeight: 950,
+                    }}
+                  />
+                ) : null}
+              </Stack>
               <Typography variant="body2" sx={{ color: '#d8d0bd' }}>
                 {canActNow &&
                 snapshot.investigation.turn?.extraInvestigationPending
-                  ? `전체 공개 단서를 확인했습니다. ${
-                      selfInvestigationProgressText
-                        ? `${selfInvestigationProgressText}. `
-                        : ''
-                    }한 번 더 조사할 수 있습니다.`
+                  ? '전체 공개 단서를 확인했습니다. 한 번 더 조사할 수 있습니다.'
                   : canActNow
-                    ? `내 차례입니다. ${
-                        selfInvestigationProgressText
-                          ? `${selfInvestigationProgressText}. `
-                          : ''
-                      }테이블 위 뒷면 카드 한 장을 가져가세요.`
-                    : snapshot.investigation.turn?.myReservation
-                      ? '예약 토큰이 꽂혀 있습니다. 내 차례가 오면 가져갈 수 있습니다.'
-                      : currentTurnLabel
-                        ? `${currentTurnLabel}의 단서 수집 차례입니다.${
-                            currentTurnProgressText
-                              ? ` ${currentTurnProgressText}.`
-                              : ''
-                          } 내 차례가 아니면 뒷면 카드를 눌러 예약할 수 있습니다.`
-                        : '내 차례가 아니면 뒷면 카드를 눌러 예약할 수 있습니다.'}
+                    ? '내 차례입니다. 테이블 위 뒷면 카드 한 장을 가져가세요.'
+                    : '내 차례가 아니면 뒷면 카드를 눌러 예약할 수 있습니다.'}
               </Typography>
             </Box>
           </Stack>
@@ -7592,28 +7603,13 @@ export default function MurderMysteryTableExperience({
         ? snapshot.investigation.turn?.extraInvestigationPending
           ? '지금 추가 조사해야 합니다'
           : '지금 조사해야 합니다'
-        : snapshot.investigation.turn?.myReservation
-          ? '예약한 카드가 있습니다'
-          : currentTurnLabel
-            ? `${currentTurnLabel} 조사 차례입니다`
-            : '다른 플레이어 조사 차례입니다';
-      description = canActNow
-        ? '룰지는 잠시 멈추고, 카드 한 장을 바로 선택하세요.'
-        : snapshot.investigation.turn?.myReservation
-          ? '내 차례가 오면 예약한 카드를 가져갈 수 있습니다.'
-          : currentTurnLabel
-            ? `${currentTurnLabel}이 단서를 가져갈 차례입니다. 필요하면 내 차례 전에 카드를 예약해둘 수 있습니다.`
-            : '필요하면 내 차례 전에 카드를 예약해둘 수 있습니다.';
-      chips = activeRound ? (
+        : currentTurnLabel
+          ? `${currentTurnLabel} 조사 차례입니다`
+          : '다른 플레이어 조사 차례입니다';
+      description = canActNow ? '카드 한 장을 바로 선택하세요.' : '';
+      chips = canActNow ? (
         <Stack direction="row" spacing={0.5} alignItems="center">
-          <Chip
-            size="small"
-            color={canActNow ? 'error' : 'default'}
-            label={`${activeRound}라운드`}
-          />
-          {canActNow ? (
-            <Chip size="small" color="error" label="즉시 행동" />
-          ) : null}
+          <Chip size="small" color="error" label="즉시 행동" />
         </Stack>
       ) : null;
       actions = (
@@ -7622,6 +7618,7 @@ export default function MurderMysteryTableExperience({
           variant={canActNow ? 'contained' : 'outlined'}
           color={canActNow ? 'warning' : 'inherit'}
           startIcon={canActNow ? <SearchIcon /> : undefined}
+          disabled={!canActNow}
           onClick={bringPhaseActionsIntoView}
           sx={
             canActNow
@@ -7631,10 +7628,23 @@ export default function MurderMysteryTableExperience({
                   border: '1px solid rgba(255,255,255,0.42)',
                   boxShadow: '0 10px 24px rgba(0,0,0,0.34)',
                 }
-              : undefined
+              : {
+                  minHeight: 38,
+                  px: 1.4,
+                  border: '1px solid rgba(148,163,184,0.28)',
+                  backgroundColor: 'rgba(148,163,184,0.08)',
+                  color: 'rgba(203,213,225,0.55)',
+                  boxShadow: 'none',
+                  '&.Mui-disabled': {
+                    border: '1px solid rgba(148,163,184,0.28)',
+                    backgroundColor: 'rgba(148,163,184,0.1)',
+                    color: 'rgba(203,213,225,0.5)',
+                    WebkitTextFillColor: 'rgba(203,213,225,0.5)',
+                  },
+                }
           }
         >
-          {canActNow ? '지금 조사하러 가기' : '조사하러 가기'}
+          조사하러 가기
         </Button>
       );
     } else if (phaseKind === 'final_vote') {
