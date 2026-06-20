@@ -901,10 +901,9 @@ const takeMapInvestigationBackForCurrentTurn = (
     cardId,
     round
   );
-  const canGrantExtraInvestigation =
-    Boolean(revealResult.card.extraInvestigationOnReveal) &&
-    room.gameData.investigationTurn.extraInvestigationPendingPlayerId !==
-      playerId;
+  const canGrantExtraInvestigation = Boolean(
+    revealResult.card.extraInvestigationOnReveal
+  );
 
   if (canGrantExtraInvestigation) {
     delete room.gameData.investigationTurn.reservationByPlayerId[playerId];

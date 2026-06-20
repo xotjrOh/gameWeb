@@ -1612,13 +1612,16 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       { completedCount: 0, isCurrent: true },
       'round 2 current player progress should start active at 0/N'
     );
-    const extraBack =
-      round2CurrentSnapshot?.investigation.rounds
+    const getRound2TakeableBacks = (snapshot) =>
+      snapshot?.investigation.rounds
         ?.find((round) => round.round === 2)
         ?.targets.flatMap((target) =>
           target.isOwnedByViewer ? [] : target.availableBacks
-        )
-        .find((back) => back.extraInvestigationOnReveal) ?? null;
+        ) ?? [];
+    const extraBack =
+      getRound2TakeableBacks(round2CurrentSnapshot).find(
+        (back) => back.extraInvestigationOnReveal
+      ) ?? null;
     assertCondition(
       Boolean(extraBack),
       'round 2 extra-investigation back missing'
@@ -1683,6 +1686,121 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
         }
       );
     });
+    assertCondition(
+      extraOwnerSnapshot?.investigation.turn?.currentPlayerId ===
+        round2CurrentPlayerId &&
+        extraOwnerSnapshot?.investigation.turn?.extraInvestigationPending ===
+          true,
+      'extra-investigation pick should keep the same player active with a pending extra action',
+      extraOwnerSnapshot?.investigation.turn
+    );
+
+    const secondExtraBack =
+      getRound2TakeableBacks(extraOwnerSnapshot).find(
+        (back) =>
+          back.extraInvestigationOnReveal && back.backId !== extraBack?.backId
+      ) ?? null;
+    assertCondition(
+      Boolean(secondExtraBack),
+      'second round 2 extra-investigation back missing for chain regression',
+      extraOwnerSnapshot?.investigation.rounds
+    );
+
+    const secondExtraPickResponse = await emitAck(
+      socketsBySession.get(round2CurrentPlayerId),
+      'mm_submit_investigation',
+      {
+        roomId,
+        sessionId: round2CurrentPlayerId,
+        backId: secondExtraBack?.backId,
+      }
+    );
+    assertCondition(
+      secondExtraPickResponse?.success &&
+        secondExtraPickResponse.extraInvestigation,
+      'second consecutive extra-investigation clue should grant another extra action',
+      secondExtraPickResponse
+    );
+
+    const chainedExtraSnapshots = await Promise.all(
+      sessionOrder.map(async (sessionId) => [
+        sessionId,
+        await requestMurderSnapshot(
+          socketsBySession.get(sessionId),
+          roomId,
+          sessionId
+        ),
+      ])
+    );
+    const chainedExtraOwnerSnapshot = chainedExtraSnapshots.find(
+      ([sessionId]) => sessionId === round2CurrentPlayerId
+    )?.[1];
+    assertInvestigationProgress(
+      chainedExtraOwnerSnapshot,
+      round2CurrentPlayerId,
+      {
+        completedCount: 0,
+        requiredCount: round2CurrentProgressBefore.requiredCount,
+        remainingCount: round2CurrentProgressBefore.requiredCount,
+        isCurrent: true,
+      },
+      'chained extra-investigation pick should still not complete the current investigation slot'
+    );
+    assertCondition(
+      chainedExtraOwnerSnapshot?.investigation.turn?.currentPlayerId ===
+        round2CurrentPlayerId &&
+        chainedExtraOwnerSnapshot?.investigation.turn
+          ?.extraInvestigationPending === true,
+      'chained extra-investigation pick should keep the same player active again',
+      chainedExtraOwnerSnapshot?.investigation.turn
+    );
+
+    const followUpBack =
+      getRound2TakeableBacks(chainedExtraOwnerSnapshot).find(
+        (back) => !back.extraInvestigationOnReveal
+      ) ?? null;
+    assertCondition(
+      Boolean(followUpBack),
+      'ordinary follow-up back missing after chained extra-investigation picks',
+      chainedExtraOwnerSnapshot?.investigation.rounds
+    );
+
+    const followUpPickResponse = await emitAck(
+      socketsBySession.get(round2CurrentPlayerId),
+      'mm_submit_investigation',
+      {
+        roomId,
+        sessionId: round2CurrentPlayerId,
+        backId: followUpBack?.backId,
+      }
+    );
+    assertCondition(
+      followUpPickResponse?.success &&
+        followUpPickResponse.extraInvestigation !== true,
+      'ordinary follow-up pick should complete the chained extra-investigation turn',
+      followUpPickResponse
+    );
+    const afterFollowUpSnapshot = await requestMurderSnapshot(
+      socketsBySession.get(round2CurrentPlayerId),
+      roomId,
+      round2CurrentPlayerId
+    );
+    assertInvestigationProgress(
+      afterFollowUpSnapshot,
+      round2CurrentPlayerId,
+      {
+        completedCount: 1,
+        requiredCount: round2CurrentProgressBefore.requiredCount,
+        remainingCount: round2CurrentProgressBefore.requiredCount - 1,
+      },
+      'ordinary follow-up pick should complete the investigation slot after chained extras'
+    );
+    assertCondition(
+      afterFollowUpSnapshot?.investigation.turn?.currentPlayerId !==
+        round2CurrentPlayerId,
+      'ordinary follow-up pick should advance away from the extra-investigation player',
+      afterFollowUpSnapshot?.investigation.turn
+    );
 
     const resetResponse = await emitAck(
       socketsBySession.get(hostSessionId),

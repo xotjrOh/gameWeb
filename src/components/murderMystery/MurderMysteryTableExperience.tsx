@@ -2608,7 +2608,9 @@ const RoleSelectionMarkerRail = ({
             );
           })}
         </Stack>
-        <Chip
+        <AnimatedProgressChip
+          animateOnMount
+          count={submittedCount}
           size="small"
           label={`선택 제출 ${submittedCount}/${requiredPlayerCount}`}
           color={submittedCount >= requiredPlayerCount ? 'success' : 'warning'}
