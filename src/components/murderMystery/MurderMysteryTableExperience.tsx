@@ -7496,8 +7496,8 @@ export default function MurderMysteryTableExperience({
             <Box
               sx={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                gap: 1.05,
+                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                gap: 0.65,
                 alignItems: 'start',
               }}
             >
@@ -7506,6 +7506,10 @@ export default function MurderMysteryTableExperience({
                   key={`discussion:public:${card.id}`}
                   card={card}
                   compactPreview
+                  previewLineClamp={1}
+                  previewMaxLength={36}
+                  cardMinHeight={132}
+                  mediaHeight={58}
                   onOpen={(openedCard) =>
                     openCardViewer(
                       'discussion:public',

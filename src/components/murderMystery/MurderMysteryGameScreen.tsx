@@ -56,12 +56,8 @@ export default function MurderMysteryGameScreen({
   useRedirectIfNotHost(roomId, isHostView, MURDER_MYSTERY_LOBBY_PATH);
   useRedirectIfInvalidRoom(roomId, !isHostView, MURDER_MYSTERY_LOBBY_PATH);
 
-  const {
-    snapshot,
-    requestErrorMessage,
-    latestAnnouncement,
-    latestPartReveal,
-  } = useMurderMysteryGameData(roomId, socket, sessionId);
+  const { snapshot, requestErrorMessage, latestAnnouncement } =
+    useMurderMysteryGameData(roomId, socket, sessionId);
 
   useEffect(() => {
     if (!requestErrorMessage) {
@@ -93,16 +89,6 @@ export default function MurderMysteryGameScreen({
       { variant: 'success' }
     );
   }, [latestAnnouncement, enqueueSnackbar]);
-
-  useEffect(() => {
-    if (!latestPartReveal) {
-      return;
-    }
-    enqueueSnackbar(
-      `공개 단서 진행: ${latestPartReveal.revealedCount}/${latestPartReveal.totalCount}`,
-      { variant: 'info' }
-    );
-  }, [latestPartReveal, enqueueSnackbar]);
 
   const emitWithAck = <T extends object>(
     eventName: string,
