@@ -23,7 +23,6 @@ import {
   Divider,
   IconButton,
   Stack,
-  SvgIcon,
   Tab,
   Tabs,
   Tooltip,
@@ -47,6 +46,7 @@ import {
   MusicNote as MusicNoteIcon,
   PushPin as PushPinIcon,
   RestartAlt as RestartAltIcon,
+  Search as SearchIcon,
   SkipNext as SkipNextIcon,
   Style as StyleIcon,
   TaskAlt as TaskAltIcon,
@@ -374,53 +374,6 @@ const TextOnlyClueMedia = ({
   </Stack>
 );
 
-const ExtraInvestigationGlyph = ({ fontSize }: { fontSize: number }) => (
-  <SvgIcon
-    className="extra-investigation-glyph"
-    viewBox="0 0 24 24"
-    sx={{ fontSize, overflow: 'visible' }}
-  >
-    <path
-      d="M8.6 8.7 6.2 7M12 7.8V5.2M15.4 8.7 17.8 7"
-      fill="none"
-      stroke="#bae6fd"
-      strokeWidth="1.3"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <circle cx="5.2" cy="6.2" r="1.7" fill="#fde68a" />
-    <circle cx="12" cy="4.2" r="1.75" fill="#fde68a" />
-    <circle cx="18.8" cy="6.2" r="1.7" fill="#fde68a" />
-    <path
-      d="M7.3 8.2h8.4c.7 0 1.25.55 1.25 1.25v6.1c0 .7-.55 1.25-1.25 1.25H7.3c-.7 0-1.25-.55-1.25-1.25v-6.1c0-.7.55-1.25 1.25-1.25Z"
-      fill="#f8fbff"
-    />
-    <path
-      d="M8.3 10.6h5.2M8.3 12.7h4.25"
-      fill="none"
-      stroke="#2563eb"
-      strokeWidth="1.1"
-      strokeLinecap="round"
-    />
-    <circle
-      cx="16.7"
-      cy="16.3"
-      r="3.45"
-      fill="#0f172a"
-      stroke="#f5c542"
-      strokeWidth="1.55"
-    />
-    <path
-      d="m19.05 18.75 2.05 2.05M16.7 14.65v3.3M15.05 16.3h3.3"
-      fill="none"
-      stroke="#fde68a"
-      strokeWidth="1.45"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </SvgIcon>
-);
-
 const ExtraInvestigationFrontBadge = ({
   dense = false,
   floating = false,
@@ -433,7 +386,7 @@ const ExtraInvestigationFrontBadge = ({
   sx?: Record<string, unknown>;
 }) => {
   const size = dense ? 28 : 34;
-  const iconSize = dense ? 22 : 27;
+  const iconSize = dense ? 19 : 23;
 
   const badge = (
     <Box
@@ -456,7 +409,7 @@ const ExtraInvestigationFrontBadge = ({
         ...sx,
       }}
     >
-      <ExtraInvestigationGlyph fontSize={iconSize} />
+      <SearchIcon sx={{ fontSize: iconSize }} />
     </Box>
   );
 
@@ -490,7 +443,7 @@ const ExtraInvestigationLegend = () => (
           width: 18,
           height: 18,
           boxShadow: 'none',
-          '& .extra-investigation-glyph': { fontSize: 15 },
+          '& svg': { fontSize: 14 },
         }}
       />
       <Typography
@@ -1741,8 +1694,8 @@ const EvidenceCardFace = ({
                   sx={{
                     width: dense ? 22 : 24,
                     height: dense ? 22 : 24,
-                    '& .extra-investigation-glyph': {
-                      fontSize: dense ? 18 : 20,
+                    '& svg': {
+                      fontSize: dense ? 15 : 17,
                     },
                   }}
                 />

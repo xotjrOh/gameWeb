@@ -50,13 +50,13 @@ flow:
     - id: ROLE_READING
       label: '비공개 룰지 읽기'
       kind: role_reading
-      durationSec: 900
+      durationSec: 1800
       description: '각자 비공개 룰지를 읽고, 준비가 되면 다 읽었어요를 눌러주세요. 권장 시간이 지나도 모두 준비될 때까지 다음 단계로 넘어가지 않습니다.'
       enterAnnouncement: '방장의 안내에 따라 각자 비공개 룰지를 읽는 시간입니다.'
     - id: ROUND1_BRIEFING
       label: '1라운드 조사 전 지문'
       kind: intro
-      durationSec: 180
+      durationSec: 120
       description: '의사들이 오완주의 사망 여부를 확인하는 동안, 네 사람은 서로의 소지품과 기억을 확인합니다.'
       readAloud: |
         재활수조실 쪽에서 비명이 터지자, 기자들이 한꺼번에 몰려들려 했습니다.
