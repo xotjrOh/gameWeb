@@ -17,6 +17,7 @@ import {
   Box,
   Button,
   Chip,
+  type ChipProps,
   Dialog,
   DialogActions,
   DialogContent,
@@ -232,6 +233,65 @@ const DEFAULT_PINNED_CLUE_FAB_POSITION: FloatingFabPosition = {
 const DEFAULT_MAP_FAB_POSITION: FloatingFabPosition = {
   side: 'right',
   yRatio: 0.46,
+};
+
+type AnimatedProgressChipProps = ChipProps & {
+  count: number;
+};
+
+const AnimatedProgressChip = ({
+  count,
+  sx,
+  ...chipProps
+}: AnimatedProgressChipProps) => {
+  const previousCountRef = useRef<number | null>(null);
+  const [animationSerial, setAnimationSerial] = useState(0);
+
+  useEffect(() => {
+    const previousCount = previousCountRef.current;
+    if (previousCount !== null && count > previousCount) {
+      setAnimationSerial((serial) => serial + 1);
+    }
+    previousCountRef.current = count;
+  }, [count]);
+
+  const sxList = Array.isArray(sx) ? sx : sx ? [sx] : [];
+
+  return (
+    <Chip
+      key={animationSerial}
+      {...chipProps}
+      sx={[
+        ...sxList,
+        animationSerial > 0
+          ? {
+              animation: 'mmProgressChipBump 420ms ease-out both',
+              transformOrigin: 'center',
+              willChange: 'transform, box-shadow',
+              '@keyframes mmProgressChipBump': {
+                '0%': {
+                  transform: 'scale(1)',
+                  boxShadow: '0 0 0 0 rgba(245, 197, 66, 0)',
+                },
+                '38%': {
+                  transform: 'scale(1.12)',
+                  boxShadow: '0 0 0 7px rgba(245, 197, 66, 0.3)',
+                },
+                '100%': {
+                  transform: 'scale(1)',
+                  boxShadow: '0 0 0 0 rgba(245, 197, 66, 0)',
+                },
+              },
+              '@media (prefers-reduced-motion: reduce)': {
+                animation: 'none',
+                transition: 'none',
+                willChange: 'auto',
+              },
+            }
+          : {},
+      ]}
+    />
+  );
 };
 
 const ReadRepeatCornerMark = ({ size = 9 }: { size?: number }) => (
@@ -1030,7 +1090,7 @@ const ClueTakeOverlay = ({
   const isReservationStolen = notice.kind === 'reservationStolen';
   const title = isReservationStolen
     ? `젠장! ${notice.playerLabel}에게 단서(${notice.backLabel})를 빼앗겼다. 단서를 다시 골라야겠어.`
-    : `${notice.playerLabel}이 ‘${notice.backLabel}’ 뒷면 단서를 가져갔습니다.`;
+    : `${notice.playerLabel}이 ‘${notice.backLabel}’를 가져갔습니다.`;
 
   return (
     <Box
@@ -2106,7 +2166,8 @@ const InvestigationProgressTokens = ({
 
   if (progress.requiredCount > MAX_VISIBLE_INVESTIGATION_PROGRESS_TOKENS) {
     return (
-      <Chip
+      <AnimatedProgressChip
+        count={completedCount}
         size="small"
         aria-label={getInvestigationProgressLabel(progress) ?? undefined}
         label={`${completedCount}/${progress.requiredCount}`}
@@ -6081,7 +6142,8 @@ export default function MurderMysteryTableExperience({
           >
             인물 설정서 읽기
           </Typography>
-          <Chip
+          <AnimatedProgressChip
+            count={snapshot.roleReading.readyCount}
             size="small"
             icon={<TaskAltIcon />}
             label={`${snapshot.roleReading.readyCount}/${snapshot.roleReading.totalCount} 읽음`}
@@ -7294,7 +7356,8 @@ export default function MurderMysteryTableExperience({
           </Typography>
         </Box>
         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-          <Chip
+          <AnimatedProgressChip
+            count={endingChoices.submittedCount}
             label={`제출 ${endingChoices.submittedCount} / ${endingChoices.totalCount}`}
             color={endingChoices.allSubmitted ? 'success' : 'warning'}
           />
@@ -7526,7 +7589,8 @@ export default function MurderMysteryTableExperience({
           : '다른 인물의 선택이 제출되기를 기다리는 중입니다.';
       chips = (
         <Stack direction="row" spacing={0.5}>
-          <Chip
+          <AnimatedProgressChip
+            count={endingChoices.submittedCount}
             size="small"
             label={`제출 ${endingChoices.submittedCount}/${endingChoices.totalCount}`}
             color={endingChoices.allSubmitted ? 'success' : 'warning'}
