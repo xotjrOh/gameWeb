@@ -188,6 +188,10 @@ type InvestigationMapTargetPin = {
   hotspot: MurderMysteryInvestigationMapHotspotView;
   matNumber: number;
 };
+type MapHighlightedInvestigationTarget = {
+  targetId: string;
+  serial: number;
+};
 type TurnOrderMarker = {
   rank: number;
   isCurrent: boolean;
@@ -5046,6 +5050,8 @@ export default function MurderMysteryTableExperience({
   const investigationTargetTileRefs = useRef<
     Record<string, HTMLElement | null>
   >({});
+  const mapTargetHighlightTimerRef = useRef<number | null>(null);
+  const mapTargetHighlightSerialRef = useRef(0);
   const previousHeldBackIdsByPlayerRef = useRef<Record<
     string,
     Set<string>
@@ -5077,6 +5083,8 @@ export default function MurderMysteryTableExperience({
   const [clueTakeNotice, setClueTakeNotice] = useState<ClueTakeNotice | null>(
     null
   );
+  const [mapHighlightedTarget, setMapHighlightedTarget] =
+    useState<MapHighlightedInvestigationTarget | null>(null);
   const [introTab, setIntroTab] = useState<IntroTab>('prologue');
   const [nowTick, setNowTick] = useState(Date.now());
   const selectedCard = cardViewer?.cards[cardViewer.index] ?? null;
@@ -5582,6 +5590,20 @@ export default function MurderMysteryTableExperience({
   );
   const selectInvestigationMapTarget = useCallback((targetId: string) => {
     setIsMapDialogOpen(false);
+    if (mapTargetHighlightTimerRef.current !== null) {
+      window.clearTimeout(mapTargetHighlightTimerRef.current);
+    }
+    mapTargetHighlightSerialRef.current += 1;
+    setMapHighlightedTarget({
+      targetId,
+      serial: mapTargetHighlightSerialRef.current,
+    });
+    mapTargetHighlightTimerRef.current = window.setTimeout(() => {
+      setMapHighlightedTarget((current) =>
+        current?.targetId === targetId ? null : current
+      );
+      mapTargetHighlightTimerRef.current = null;
+    }, 2600);
     window.setTimeout(() => {
       investigationTargetTileRefs.current[targetId]?.scrollIntoView({
         behavior: 'smooth',
@@ -5644,6 +5666,9 @@ export default function MurderMysteryTableExperience({
       }
       if (rulebookCoverResetTimerRef.current !== null) {
         window.clearTimeout(rulebookCoverResetTimerRef.current);
+      }
+      if (mapTargetHighlightTimerRef.current !== null) {
+        window.clearTimeout(mapTargetHighlightTimerRef.current);
       }
     },
     []
@@ -6264,6 +6289,13 @@ export default function MurderMysteryTableExperience({
       matNumber?: number;
       target: MurderMysteryInvestigationTargetView;
     }) => {
+      const mapTargetHighlight =
+        mapHighlightedTarget?.targetId === target.id
+          ? mapHighlightedTarget
+          : null;
+      const mapTargetHighlightAnimationName = mapTargetHighlight
+        ? `mmMapTargetHighlight${mapTargetHighlight.serial % 2}`
+        : null;
       const { disabled, disabledReason } = getTargetChoiceState(target);
       const isOwnedInvestigationBlocked =
         target.isOwnedByViewer &&
@@ -6332,26 +6364,70 @@ export default function MurderMysteryTableExperience({
         borderRadius: 1.4,
         overflow: 'hidden',
         border: '1px solid',
-        borderColor: target.isExhausted
-          ? 'rgba(148,163,184,0.28)'
-          : isOwnedInvestigationBlocked
+        borderColor: mapTargetHighlight
+          ? 'rgba(245,197,66,0.98)'
+          : target.isExhausted
             ? 'rgba(148,163,184,0.28)'
-            : isReserved
-              ? 'rgba(245,197,66,0.82)'
-              : 'rgba(142,202,230,0.34)',
+            : isOwnedInvestigationBlocked
+              ? 'rgba(148,163,184,0.28)'
+              : isReserved
+                ? 'rgba(245,197,66,0.82)'
+                : 'rgba(142,202,230,0.34)',
         borderStyle: isOwnedInvestigationBlocked ? 'dashed' : 'solid',
-        backgroundColor: target.isExhausted
-          ? 'rgba(15,23,42,0.5)'
-          : isOwnedInvestigationBlocked
-            ? 'rgba(15,23,42,0.38)'
-            : 'rgba(255,255,255,0.075)',
+        backgroundColor: mapTargetHighlight
+          ? 'rgba(245,197,66,0.16)'
+          : target.isExhausted
+            ? 'rgba(15,23,42,0.5)'
+            : isOwnedInvestigationBlocked
+              ? 'rgba(15,23,42,0.38)'
+              : 'rgba(255,255,255,0.075)',
         color: isOwnedInvestigationBlocked ? '#94a3b8' : '#f8f1de',
-        boxShadow: isOwnedInvestigationBlocked
-          ? 'none'
-          : isReserved
-            ? '0 0 0 1px rgba(245,197,66,0.26), 0 8px 18px rgba(0,0,0,0.26)'
-            : '0 8px 18px rgba(0,0,0,0.22)',
-        opacity: isOwnedInvestigationBlocked ? 0.72 : targetDisabled ? 0.6 : 1,
+        boxShadow: mapTargetHighlight
+          ? '0 0 0 2px rgba(245,197,66,0.34), 0 0 0 8px rgba(245,197,66,0.14), 0 12px 24px rgba(0,0,0,0.32)'
+          : isOwnedInvestigationBlocked
+            ? 'none'
+            : isReserved
+              ? '0 0 0 1px rgba(245,197,66,0.26), 0 8px 18px rgba(0,0,0,0.26)'
+              : '0 8px 18px rgba(0,0,0,0.22)',
+        opacity: mapTargetHighlight
+          ? 1
+          : isOwnedInvestigationBlocked
+            ? 0.72
+            : targetDisabled
+              ? 0.6
+              : 1,
+        scrollMarginBlock: '40vh',
+        transformOrigin: 'center',
+        animation: mapTargetHighlightAnimationName
+          ? `${mapTargetHighlightAnimationName} 1600ms ease-out`
+          : 'none',
+        transition:
+          'border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease, opacity 160ms ease',
+        '@media (prefers-reduced-motion: reduce)': {
+          animation: 'none',
+          transform: 'none',
+        },
+        ...(mapTargetHighlightAnimationName
+          ? {
+              [`@keyframes ${mapTargetHighlightAnimationName}`]: {
+                '0%': {
+                  transform: 'scale(0.985)',
+                  boxShadow:
+                    '0 0 0 0 rgba(245,197,66,0.52), 0 8px 18px rgba(0,0,0,0.22)',
+                },
+                '24%': {
+                  transform: 'scale(1.02)',
+                  boxShadow:
+                    '0 0 0 3px rgba(245,197,66,0.42), 0 0 0 12px rgba(245,197,66,0.2), 0 16px 30px rgba(0,0,0,0.34)',
+                },
+                '100%': {
+                  transform: 'scale(1)',
+                  boxShadow:
+                    '0 0 0 2px rgba(245,197,66,0.34), 0 0 0 8px rgba(245,197,66,0.14), 0 12px 24px rgba(0,0,0,0.32)',
+                },
+              },
+            }
+          : {}),
       };
       const tileBody = (
         <Stack spacing={0.45} sx={{ minWidth: 0 }}>
