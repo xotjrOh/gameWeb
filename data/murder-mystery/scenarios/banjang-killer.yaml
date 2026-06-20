@@ -170,7 +170,6 @@ investigations:
 
 cards:
   - id: card_ship_hint
-    title: "난파선의 흔적"
     text: "난파선 잔해 주변에서 금속 날을 뜯어낸 흔적과 금속가루가 눈에 띈다."
     effects:
       - type: addPart
@@ -181,7 +180,6 @@ cards:
         partId: part_drum
 
   - id: card_forest_hint
-    title: "숲의 흔적"
     text: "숲에서 대나무 장대와 송진을 구할 수 있다."
     effects:
       - type: addPart
@@ -190,31 +188,24 @@ cards:
         partId: part_resin
 
   - id: card_camp_hint
-    title: "야영지의 소문"
     text: "모닥불 주변에서 소문이 떠돈다. 누가 어떤 말을 했는지, 누구는 과하게 믿고 있는지 알 수 있다."
 
   - id: card_dodong_coat
-    title: "도둑의 고백"
     text: "도동노 미야: “나… 바메쥬저 류친 가방에서 겉옷(후드)을 슬쩍했어. 숨겨놨는데… 밤에 누가 가져갔더라.”"
 
   - id: card_dodong_server
-    title: "낯선 물증"
     text: "도동노 미야: “가므정겨 려돼 가방에서 ‘로그/전산실’ 같은 단어가 적힌 종이를 봤어. 숨기는 이유가 있는 물건 같았어.”"
 
   - id: card_dodong_metal
-    title: "금속가루"
     text: "도동노 미야: “누구 가방 안쪽에서 금속가루가 잔뜩 묻은 천을 봤어. 난파선 근처에서 뭘 한 거 아니냐?”"
 
   - id: card_misu_confess
-    title: "미수의 자백"
     text: "미수에 그쳐쓰: “나… 바메쥬 거요를 찌르긴 했어. 한 번. 근데 죽이려던 건 아니었어. 내가 들었던 말 때문에… 순간 화가 났어. 도망치고 나서… 그 뒤는 몰라.”"
 
   - id: card_note_fragment
-    title: "찢긴 메모"
     text: "반장 수첩에서 찢긴 조각이 나온다. ‘전산… 로그…’ 같은 단어가 흐릿하게 보인다."
 
   - id: card_dog_tag
-    title: "군인시절 명패(군번줄)"
     text: "녹슨 군번줄에 새겨진 이름: ‘연새사리 누도만쳐사라’. 뒷면 낙서: ‘이름을 들키면 도망칠 곳이 없다.’"
     effects:
       - type: revealRoleName
@@ -222,15 +213,12 @@ cards:
         newDisplayName: "연새사리 누도만쳐사라"
 
   - id: card_news_clips
-    title: "기사 스크랩"
     text: "낡은 기사 스크랩이 묶여 있다. 오래된 미제 사건들을 집요하게 모아둔 흔적이다."
 
   - id: card_torn_photo
-    title: "찢긴 사진"
     text: "오두막 구석에서 오래된 사진 조각이 나온다. 아이의 얼굴 부분이 의도적으로 뜯겨 있다."
 
   - id: card_guide_memo
-    title: "짧은 메모"
     text: "‘이름은 말하지 마. 딸이 다친다.’"
 
 finalVote:

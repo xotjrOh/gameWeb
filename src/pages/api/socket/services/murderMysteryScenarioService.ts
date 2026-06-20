@@ -1114,10 +1114,6 @@ const normalizeCards = ({
 
     return {
       id,
-      title: requireString(
-        cardRecord.title,
-        `${fileName}: card(${id}) title is required`
-      ),
       text,
       ...(textHighlights.length > 0 ? { textHighlights } : {}),
       imageSrc: asNonEmptyString(cardRecord.imageSrc),

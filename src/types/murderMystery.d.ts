@@ -92,7 +92,6 @@ export interface MurderMysteryCardBackStyle {
 
 export interface MurderMysteryCardScenario {
   id: string;
-  title: string;
   text: string;
   textHighlights?: string[];
   imageSrc?: string;
@@ -610,6 +609,7 @@ export interface MurderMysteryClueVaultCardView
   extends MurderMysteryCardScenario {
   sourceTargetIds: string[];
   sourceTargetLabels: string[];
+  sourceBackLabels: string[];
   isPublic: boolean;
   canRevealPublicly: boolean;
 }

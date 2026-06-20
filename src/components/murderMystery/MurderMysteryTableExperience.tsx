@@ -23,6 +23,7 @@ import {
   Divider,
   IconButton,
   Stack,
+  SvgIcon,
   Tab,
   Tabs,
   Tooltip,
@@ -199,9 +200,11 @@ type BgmPlaybackState = {
 };
 
 const CARD_BACK_LABEL = '조사 카드';
+const UNKNOWN_CARD_SOURCE_LABEL = '출처 미확인';
 const EXTRA_INVESTIGATION_LABEL = '전체공개 후 추가조사';
 const EXTRA_INVESTIGATION_DESCRIPTION =
   '이 표식이 있는 카드는 획득 즉시 전체 공개되고, 조사자가 같은 라운드에서 한 번 더 조사합니다.';
+const EXTRA_INVESTIGATION_TEXT_PATTERN = /\s*\[전체공개 후 추가조사\]\s*/g;
 const FLOATING_FAB_SIZE = 64;
 const FLOATING_FAB_EDGE_OFFSET = 12;
 const FLOATING_FAB_TOP_SAFE_OFFSET = 50;
@@ -277,11 +280,27 @@ const splitScenarioTitle = (title: string) => {
 
 const getCardSourceText = (card: AnyClueCard) => {
   const clueCard = card as MurderMysteryClueVaultCardView;
+  if (clueCard.sourceBackLabels?.length) {
+    return clueCard.sourceBackLabels.join(', ');
+  }
   if (clueCard.sourceTargetLabels?.length) {
     return clueCard.sourceTargetLabels.join(', ');
   }
   return '';
 };
+
+const getCardSourceDisplayText = (card: AnyClueCard) => {
+  const sourceText = getCardSourceText(card);
+  if (!sourceText) {
+    return UNKNOWN_CARD_SOURCE_LABEL;
+  }
+  return sourceText;
+};
+
+const getDisplayCardText = (card: AnyClueCard) =>
+  card.extraInvestigationOnReveal
+    ? card.text.replace(EXTRA_INVESTIGATION_TEXT_PATTERN, '').trimStart()
+    : card.text;
 
 const getClueVaultCardState = (card: AnyClueCard) => {
   const clueCard = card as MurderMysteryClueVaultCardView;
@@ -346,6 +365,136 @@ const TextOnlyClueMedia = ({
       </Typography>
     ) : null}
   </Stack>
+);
+
+const ExtraInvestigationGlyph = ({ fontSize }: { fontSize: number }) => (
+  <SvgIcon
+    className="extra-investigation-glyph"
+    viewBox="0 0 24 24"
+    sx={{ fontSize, overflow: 'visible' }}
+  >
+    <path
+      d="M8.6 8.7 6.2 7M12 7.8V5.2M15.4 8.7 17.8 7"
+      fill="none"
+      stroke="#bae6fd"
+      strokeWidth="1.3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <circle cx="5.2" cy="6.2" r="1.7" fill="#fde68a" />
+    <circle cx="12" cy="4.2" r="1.75" fill="#fde68a" />
+    <circle cx="18.8" cy="6.2" r="1.7" fill="#fde68a" />
+    <path
+      d="M7.3 8.2h8.4c.7 0 1.25.55 1.25 1.25v6.1c0 .7-.55 1.25-1.25 1.25H7.3c-.7 0-1.25-.55-1.25-1.25v-6.1c0-.7.55-1.25 1.25-1.25Z"
+      fill="#f8fbff"
+    />
+    <path
+      d="M8.3 10.6h5.2M8.3 12.7h4.25"
+      fill="none"
+      stroke="#2563eb"
+      strokeWidth="1.1"
+      strokeLinecap="round"
+    />
+    <circle
+      cx="16.7"
+      cy="16.3"
+      r="3.45"
+      fill="#0f172a"
+      stroke="#f5c542"
+      strokeWidth="1.55"
+    />
+    <path
+      d="m19.05 18.75 2.05 2.05M16.7 14.65v3.3M15.05 16.3h3.3"
+      fill="none"
+      stroke="#fde68a"
+      strokeWidth="1.45"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </SvgIcon>
+);
+
+const ExtraInvestigationFrontBadge = ({
+  dense = false,
+  floating = false,
+  withTooltip = true,
+  sx,
+}: {
+  dense?: boolean;
+  floating?: boolean;
+  withTooltip?: boolean;
+  sx?: Record<string, unknown>;
+}) => {
+  const size = dense ? 28 : 34;
+  const iconSize = dense ? 22 : 27;
+
+  const badge = (
+    <Box
+      aria-label={EXTRA_INVESTIGATION_LABEL}
+      sx={{
+        position: floating ? 'absolute' : 'relative',
+        ...(floating ? { top: dense ? 5 : 7, right: dense ? 5 : 7 } : {}),
+        flex: '0 0 auto',
+        zIndex: 2,
+        width: size,
+        height: size,
+        borderRadius: 999,
+        display: 'grid',
+        placeItems: 'center',
+        background:
+          'linear-gradient(135deg, rgba(14,165,233,0.96), rgba(37,99,235,0.96))',
+        color: '#f8fbff',
+        boxShadow:
+          '0 5px 14px rgba(15,23,42,0.42), inset 0 0 0 1px rgba(255,255,255,0.38)',
+        ...sx,
+      }}
+    >
+      <ExtraInvestigationGlyph fontSize={iconSize} />
+    </Box>
+  );
+
+  return withTooltip ? (
+    <Tooltip title={EXTRA_INVESTIGATION_DESCRIPTION}>{badge}</Tooltip>
+  ) : (
+    badge
+  );
+};
+
+const ExtraInvestigationLegend = () => (
+  <Tooltip title={EXTRA_INVESTIGATION_DESCRIPTION}>
+    <Stack
+      component="span"
+      direction="row"
+      spacing={0.45}
+      alignItems="center"
+      sx={{
+        height: 24,
+        px: 0.75,
+        borderRadius: 999,
+        backgroundColor: 'rgba(14,165,233,0.16)',
+        color: '#7dd3fc',
+        border: '1px solid rgba(125,211,252,0.24)',
+      }}
+    >
+      <ExtraInvestigationFrontBadge
+        dense
+        withTooltip={false}
+        sx={{
+          width: 18,
+          height: 18,
+          boxShadow: 'none',
+          '& .extra-investigation-glyph': { fontSize: 15 },
+        }}
+      />
+      <Typography
+        variant="caption"
+        fontWeight={900}
+        sx={{ lineHeight: 1, whiteSpace: 'nowrap' }}
+      >
+        {EXTRA_INVESTIGATION_LABEL}
+      </Typography>
+    </Stack>
+  </Tooltip>
 );
 
 const formatParticipantLabel = (player?: ParticipantLabelSource | null) => {
@@ -1119,7 +1268,7 @@ const PinnedClueFab = ({
       <Box
         component="button"
         type="button"
-        aria-label={`고정한 단서 열기: ${card.title}`}
+        aria-label={`고정한 단서 열기: ${getCardSourceDisplayText(card)}`}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -1480,15 +1629,18 @@ const EvidenceCardFace = ({
   dense = false,
   onOpen,
   showPublicRevealControl = false,
+  publicRevealDisabled = false,
   onRevealPublicly,
 }: {
   card: AnyClueCard;
   dense?: boolean;
   onOpen: (card: AnyClueCard) => void;
   showPublicRevealControl?: boolean;
+  publicRevealDisabled?: boolean;
   onRevealPublicly?: (cardId: string) => void;
 }) => {
-  const sourceText = getCardSourceText(card);
+  const sourceDisplayText = getCardSourceDisplayText(card);
+  const displayText = getDisplayCardText(card);
   const { isPublic, canRevealPublicly } = getClueVaultCardState(card);
 
   return (
@@ -1527,33 +1679,11 @@ const EvidenceCardFace = ({
             },
           }}
         >
-          {card.extraInvestigationOnReveal ? (
-            <Chip
-              size="small"
-              label={EXTRA_INVESTIGATION_LABEL}
-              color="info"
-              sx={{
-                position: 'absolute',
-                top: 6,
-                right: 6,
-                zIndex: 1,
-                height: 20,
-                maxWidth: dense ? 102 : 150,
-                fontSize: dense ? 9.5 : 10,
-                fontWeight: 900,
-                '& .MuiChip-label': {
-                  px: 0.65,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                },
-              }}
-            />
-          ) : null}
           {card.imageSrc ? (
             <Box
               component="img"
               src={card.imageSrc}
-              alt={card.imageAlt ?? card.title}
+              alt={card.imageAlt ?? sourceDisplayText}
               sx={{
                 width: '100%',
                 height: dense ? 70 : 108,
@@ -1572,21 +1702,33 @@ const EvidenceCardFace = ({
                 color: '#2d2419',
                 lineHeight: 1.25,
                 wordBreak: 'keep-all',
+                display: '-webkit-box',
+                WebkitBoxOrient: 'vertical',
+                WebkitLineClamp: 2,
+                overflow: 'hidden',
               }}
             >
-              {card.title}
+              {sourceDisplayText}
             </Typography>
-            {sourceText ? (
-              <Typography
-                variant="caption"
-                sx={{
-                  color: '#7a3324',
-                  fontWeight: 700,
-                  lineHeight: 1.2,
-                }}
+            {card.extraInvestigationOnReveal ? (
+              <Stack
+                direction="row"
+                spacing={0.55}
+                alignItems="center"
+                sx={{ minWidth: 0 }}
               >
-                {sourceText}
-              </Typography>
+                <Box sx={{ flex: 1, minWidth: 0 }} />
+                <ExtraInvestigationFrontBadge
+                  dense
+                  sx={{
+                    width: dense ? 22 : 24,
+                    height: dense ? 22 : 24,
+                    '& .extra-investigation-glyph': {
+                      fontSize: dense ? 18 : 20,
+                    },
+                  }}
+                />
+              </Stack>
             ) : null}
             {!dense ? (
               <Typography
@@ -1601,7 +1743,7 @@ const EvidenceCardFace = ({
                 }}
               >
                 <RulebookRichText
-                  text={card.text}
+                  text={displayText}
                   highlights={card.textHighlights}
                 />
               </Typography>
@@ -1615,8 +1757,16 @@ const EvidenceCardFace = ({
             size="small"
             variant="contained"
             color="warning"
+            disabled={publicRevealDisabled}
             onClick={() => onRevealPublicly?.(card.id)}
-            sx={{ fontWeight: 900 }}
+            sx={{
+              fontWeight: 900,
+              '&.Mui-disabled': {
+                color: 'rgba(45, 36, 25, 0.48)',
+                backgroundColor: 'rgba(45, 36, 25, 0.16)',
+                boxShadow: 'none',
+              },
+            }}
           >
             전체공개하기
           </Button>
@@ -1671,12 +1821,8 @@ const InvestigationCardBack = ({
           : isReserved
             ? '예약 해제'
             : canActNow
-              ? back.extraInvestigationOnReveal
-                ? `내 조사 차례입니다. 이 카드를 가져오면 ${EXTRA_INVESTIGATION_DESCRIPTION}`
-                : '내 조사 차례입니다. 이 카드를 가져옵니다.'
-              : back.extraInvestigationOnReveal
-                ? `내 차례 전까지 이 카드를 예약합니다. ${EXTRA_INVESTIGATION_DESCRIPTION}`
-                : '내 차례 전까지 이 카드를 예약합니다.'
+              ? '내 조사 차례입니다. 이 카드를 가져옵니다.'
+              : '내 차례 전까지 이 카드를 예약합니다.'
       }
     >
       <Box
@@ -1721,28 +1867,6 @@ const InvestigationCardBack = ({
                 },
           }}
         >
-          {back.extraInvestigationOnReveal ? (
-            <Box
-              aria-label={EXTRA_INVESTIGATION_LABEL}
-              sx={{
-                position: 'absolute',
-                top: 5,
-                right: 5,
-                zIndex: 2,
-                px: 0.45,
-                py: 0.1,
-                borderRadius: 999,
-                backgroundColor: '#0ea5e9',
-                color: '#f8fbff',
-                fontSize: 10,
-                fontWeight: 950,
-                lineHeight: 1.35,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.34)',
-              }}
-            >
-              공개+1
-            </Box>
-          ) : null}
           {back.imageSrc ? (
             <Box
               component="img"
@@ -4039,6 +4163,216 @@ const EndbookEvidenceReferenceDialog = ({
   );
 };
 
+type ClueImageZoomView = {
+  src: string;
+  alt: string;
+  title: string;
+};
+
+const ClueImageZoomDialog = ({
+  image,
+  onClose,
+}: {
+  image: ClueImageZoomView | null;
+  onClose: () => void;
+}) => {
+  const pointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const lastGestureRef = useRef<{
+    centerX: number;
+    centerY: number;
+    distance: number | null;
+  } | null>(null);
+  const [scale, setScale] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+
+  const resetView = useCallback(() => {
+    setScale(1);
+    setOffset({ x: 0, y: 0 });
+    pointersRef.current.clear();
+    lastGestureRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    if (image) {
+      resetView();
+    }
+  }, [image, resetView]);
+
+  const applyScale = useCallback((nextScale: number) => {
+    const safeScale = clamp(nextScale, 1, 8);
+    setScale(safeScale);
+    if (safeScale === 1) {
+      setOffset({ x: 0, y: 0 });
+    }
+  }, []);
+
+  const updateGesture = useCallback(() => {
+    const pointers = [...pointersRef.current.values()];
+    if (pointers.length === 0) {
+      lastGestureRef.current = null;
+      return;
+    }
+
+    const centerX =
+      pointers.reduce((sum, pointer) => sum + pointer.x, 0) / pointers.length;
+    const centerY =
+      pointers.reduce((sum, pointer) => sum + pointer.y, 0) / pointers.length;
+    const distance =
+      pointers.length >= 2
+        ? Math.hypot(
+            pointers[0].x - pointers[1].x,
+            pointers[0].y - pointers[1].y
+          )
+        : null;
+    const lastGesture = lastGestureRef.current;
+
+    if (lastGesture) {
+      const dx = centerX - lastGesture.centerX;
+      const dy = centerY - lastGesture.centerY;
+      if (scale > 1) {
+        setOffset((current) => ({
+          x: current.x + dx,
+          y: current.y + dy,
+        }));
+      }
+      if (distance && lastGesture.distance) {
+        applyScale(scale * (distance / lastGesture.distance));
+      }
+    }
+
+    lastGestureRef.current = { centerX, centerY, distance };
+  }, [applyScale, scale]);
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    event.currentTarget.setPointerCapture(event.pointerId);
+    pointersRef.current.set(event.pointerId, {
+      x: event.clientX,
+      y: event.clientY,
+    });
+    updateGesture();
+  };
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!pointersRef.current.has(event.pointerId)) {
+      return;
+    }
+    pointersRef.current.set(event.pointerId, {
+      x: event.clientX,
+      y: event.clientY,
+    });
+    updateGesture();
+  };
+
+  const handlePointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    pointersRef.current.delete(event.pointerId);
+    updateGesture();
+  };
+
+  return (
+    <Dialog
+      open={Boolean(image)}
+      onClose={onClose}
+      maxWidth={false}
+      PaperProps={{
+        sx: {
+          width: '100vw',
+          height: '100dvh',
+          maxWidth: '100vw',
+          maxHeight: '100dvh',
+          m: 0,
+          borderRadius: 0,
+          overflow: 'hidden',
+          backgroundColor: '#0b1117',
+          color: '#f8f1de',
+        },
+      }}
+    >
+      <Stack sx={{ height: '100%' }}>
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          sx={{
+            p: 1,
+            borderBottom: '1px solid rgba(255,255,255,0.14)',
+            backgroundColor: 'rgba(11,17,23,0.96)',
+          }}
+        >
+          <ArticleIcon />
+          <Typography fontWeight={950} sx={{ flex: 1, minWidth: 0 }}>
+            {image?.title ?? '단서 이미지'}
+          </Typography>
+          <Tooltip title="축소">
+            <IconButton
+              onClick={() => applyScale(scale - 0.5)}
+              sx={{ color: '#f8f1de' }}
+            >
+              <ZoomOutIcon />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="확대">
+            <IconButton
+              onClick={() => applyScale(scale + 0.5)}
+              sx={{ color: '#f8f1de' }}
+            >
+              <ZoomInIcon />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="원래 크기">
+            <IconButton onClick={resetView} sx={{ color: '#f8f1de' }}>
+              <RestartAltIcon />
+            </IconButton>
+          </Tooltip>
+          <IconButton onClick={onClose} sx={{ color: '#f8f1de' }}>
+            <CloseIcon />
+          </IconButton>
+        </Stack>
+        <Box
+          onWheel={(event) => {
+            event.preventDefault();
+            applyScale(scale + (event.deltaY < 0 ? 0.35 : -0.35));
+          }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerEnd}
+          onPointerCancel={handlePointerEnd}
+          onDoubleClick={() => applyScale(scale > 1 ? 1 : 3)}
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            overflow: 'hidden',
+            display: 'grid',
+            placeItems: 'center',
+            touchAction: 'none',
+            cursor: scale > 1 ? 'grab' : 'zoom-in',
+            backgroundColor: '#0b1117',
+          }}
+        >
+          {image ? (
+            <Box
+              component="img"
+              src={image.src}
+              alt={image.alt}
+              draggable={false}
+              sx={{
+                maxWidth: '100%',
+                maxHeight: '100%',
+                transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+                transformOrigin: 'center',
+                transition:
+                  pointersRef.current.size > 0
+                    ? 'none'
+                    : 'transform 120ms ease-out',
+                userSelect: 'none',
+              }}
+            />
+          ) : null}
+        </Box>
+      </Stack>
+    </Dialog>
+  );
+};
+
 const CardDetailDialog = ({
   card,
   isPinned = false,
@@ -4060,8 +4394,22 @@ const CardDetailDialog = ({
 }) => {
   const mediaRef = useRef<HTMLDivElement | null>(null);
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
+  const [zoomImage, setZoomImage] = useState<ClueImageZoomView | null>(null);
   const canNavigate = totalCount > 1;
   const hasImage = Boolean(card?.imageSrc);
+  const sourceDisplayText = card ? getCardSourceDisplayText(card) : '';
+  const displayText = card ? getDisplayCardText(card) : '';
+  const zoomImageView = card?.imageSrc
+    ? {
+        src: card.imageSrc,
+        alt: card.imageAlt ?? sourceDisplayText,
+        title: sourceDisplayText,
+      }
+    : null;
+
+  useEffect(() => {
+    setZoomImage(null);
+  }, [card?.id]);
 
   useEffect(() => {
     if (!card || !canNavigate) {
@@ -4125,203 +4473,211 @@ const CardDetailDialog = ({
   };
 
   return (
-    <Dialog
-      open={Boolean(card)}
-      onClose={onClose}
-      maxWidth={false}
-      PaperProps={{
-        sx: {
-          width: 'min(92vw, 520px)',
-          m: 1.5,
-          borderRadius: 2,
-          overflow: 'hidden',
-          backgroundColor: '#f8f1de',
-        },
-      }}
-    >
-      <Box sx={{ position: 'relative' }}>
-        <Tooltip title={isPinned ? '단서 핀 해제' : '단서 핀 고정'}>
-          <span>
-            <IconButton
-              disabled={!card}
-              aria-label={isPinned ? '단서 핀 해제' : '단서 핀 고정'}
-              onClick={onTogglePin}
-              sx={{
-                position: 'absolute',
-                top: 8,
-                right: 56,
-                zIndex: 4,
-                backgroundColor: isPinned
-                  ? 'rgba(245, 158, 11, 0.92)'
-                  : 'rgba(0,0,0,0.46)',
-                color: isPinned ? '#241706' : '#fff',
-                '&:hover': {
+    <Fragment>
+      <Dialog
+        open={Boolean(card)}
+        onClose={onClose}
+        maxWidth={false}
+        PaperProps={{
+          sx: {
+            width: 'min(92vw, 520px)',
+            m: 1.5,
+            borderRadius: 2,
+            overflow: 'hidden',
+            backgroundColor: '#f8f1de',
+          },
+        }}
+      >
+        <Box sx={{ position: 'relative' }}>
+          <Tooltip title={isPinned ? '단서 핀 해제' : '단서 핀 고정'}>
+            <span>
+              <IconButton
+                disabled={!card}
+                aria-label={isPinned ? '단서 핀 해제' : '단서 핀 고정'}
+                onClick={onTogglePin}
+                sx={{
+                  position: 'absolute',
+                  top: 8,
+                  right: 56,
+                  zIndex: 4,
                   backgroundColor: isPinned
-                    ? 'rgba(245, 158, 11, 1)'
-                    : 'rgba(0,0,0,0.62)',
-                },
-                '&.Mui-disabled': {
-                  backgroundColor: 'rgba(0,0,0,0.28)',
-                  color: 'rgba(255,255,255,0.42)',
-                },
-              }}
-            >
-              <PushPinIcon />
-            </IconButton>
-          </span>
-        </Tooltip>
-        <IconButton
-          onClick={onClose}
-          sx={{
-            position: 'absolute',
-            top: 8,
-            right: 8,
-            zIndex: 4,
-            backgroundColor: 'rgba(0,0,0,0.46)',
-            color: '#fff',
-            '&:hover': { backgroundColor: 'rgba(0,0,0,0.62)' },
-          }}
-        >
-          <CloseIcon />
-        </IconButton>
-        <Box
-          ref={mediaRef}
-          onPointerDown={handleMediaPointerDown}
-          onPointerUp={handleMediaPointerUp}
-          onPointerCancel={() => {
-            pointerStartRef.current = null;
-          }}
-          sx={{
-            position: 'relative',
-            cursor: canNavigate ? 'ew-resize' : 'default',
-            touchAction: canNavigate ? 'pan-y' : 'auto',
-            backgroundColor: hasImage ? '#171c23' : '#f8f1de',
-            userSelect: 'none',
-          }}
-        >
-          {card?.imageSrc ? (
-            <Box
-              component="img"
-              src={card.imageSrc}
-              alt={card.imageAlt ?? card.title}
-              draggable={false}
-              sx={{
-                width: '100%',
-                maxHeight: { xs: 320, sm: 380 },
-                objectFit: 'contain',
-                display: 'block',
-              }}
-            />
-          ) : (
-            <TextOnlyClueMedia detail />
-          )}
-          {canNavigate ? (
-            <>
-              <Chip
-                size="small"
-                label={`${currentIndex + 1} / ${totalCount}`}
-                sx={{
-                  position: 'absolute',
-                  left: 10,
-                  top: 10,
-                  zIndex: 2,
-                  fontWeight: 950,
-                  backgroundColor: 'rgba(0,0,0,0.58)',
-                  color: '#fff',
-                }}
-              />
-              <IconButton
-                aria-label="이전 단서"
-                onPointerDown={(event) => event.stopPropagation()}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onPrevious();
-                }}
-                sx={{
-                  position: 'absolute',
-                  left: 10,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  zIndex: 3,
-                  color: '#fff',
-                  backgroundColor: 'rgba(0,0,0,0.46)',
-                  '&:hover': { backgroundColor: 'rgba(0,0,0,0.62)' },
+                    ? 'rgba(245, 158, 11, 0.92)'
+                    : 'rgba(0,0,0,0.46)',
+                  color: isPinned ? '#241706' : '#fff',
+                  '&:hover': {
+                    backgroundColor: isPinned
+                      ? 'rgba(245, 158, 11, 1)'
+                      : 'rgba(0,0,0,0.62)',
+                  },
+                  '&.Mui-disabled': {
+                    backgroundColor: 'rgba(0,0,0,0.28)',
+                    color: 'rgba(255,255,255,0.42)',
+                  },
                 }}
               >
-                <ChevronLeftIcon />
+                <PushPinIcon />
               </IconButton>
-              <IconButton
-                aria-label="다음 단서"
-                onPointerDown={(event) => event.stopPropagation()}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onNext();
-                }}
-                sx={{
-                  position: 'absolute',
-                  right: 10,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  zIndex: 3,
-                  color: '#fff',
-                  backgroundColor: 'rgba(0,0,0,0.46)',
-                  '&:hover': { backgroundColor: 'rgba(0,0,0,0.62)' },
-                }}
-              >
-                <ChevronRightIcon />
-              </IconButton>
-              <Typography
-                variant="caption"
-                sx={{
-                  position: 'absolute',
-                  left: '50%',
-                  bottom: 10,
-                  transform: 'translateX(-50%)',
-                  zIndex: 2,
-                  px: 1,
-                  py: 0.35,
-                  borderRadius: 999,
-                  backgroundColor: 'rgba(0,0,0,0.54)',
-                  color: '#fff',
-                  fontWeight: 850,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                좌우 클릭 또는 드래그로 넘기기
-              </Typography>
-            </>
-          ) : null}
-        </Box>
-        <Stack spacing={1} sx={{ p: { xs: 1.4, sm: 1.8 } }}>
-          <Typography variant="h6" fontWeight={950} sx={{ color: '#2d2419' }}>
-            {card?.title}
-          </Typography>
-          {card && getCardSourceText(card) ? (
-            <Typography
-              variant="caption"
-              fontWeight={900}
-              sx={{ color: '#7a3324' }}
-            >
-              {getCardSourceText(card)}
-            </Typography>
-          ) : null}
-          <Typography
+            </span>
+          </Tooltip>
+          <IconButton
+            onClick={onClose}
             sx={{
-              whiteSpace: 'pre-wrap',
-              lineHeight: 1.75,
-              color: '#2d2419',
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              zIndex: 4,
+              backgroundColor: 'rgba(0,0,0,0.46)',
+              color: '#fff',
+              '&:hover': { backgroundColor: 'rgba(0,0,0,0.62)' },
             }}
           >
-            {card ? (
-              <RulebookRichText
-                text={card.text}
-                highlights={card.textHighlights}
+            <CloseIcon />
+          </IconButton>
+          <Box
+            ref={mediaRef}
+            onPointerDown={handleMediaPointerDown}
+            onPointerUp={handleMediaPointerUp}
+            onPointerCancel={() => {
+              pointerStartRef.current = null;
+            }}
+            sx={{
+              position: 'relative',
+              cursor: canNavigate ? 'ew-resize' : 'default',
+              touchAction: canNavigate ? 'pan-y' : 'auto',
+              backgroundColor: hasImage ? '#171c23' : '#f8f1de',
+              userSelect: 'none',
+            }}
+          >
+            {card?.imageSrc ? (
+              <Box
+                component="img"
+                src={card.imageSrc}
+                alt={card.imageAlt ?? sourceDisplayText}
+                draggable={false}
+                sx={{
+                  width: '100%',
+                  maxHeight: { xs: 320, sm: 380 },
+                  objectFit: 'contain',
+                  display: 'block',
+                }}
               />
+            ) : (
+              <TextOnlyClueMedia detail />
+            )}
+            {canNavigate ? (
+              <>
+                <Chip
+                  size="small"
+                  label={`${currentIndex + 1} / ${totalCount}`}
+                  sx={{
+                    position: 'absolute',
+                    left: 10,
+                    top: 10,
+                    zIndex: 2,
+                    fontWeight: 950,
+                    backgroundColor: 'rgba(0,0,0,0.58)',
+                    color: '#fff',
+                  }}
+                />
+                <IconButton
+                  aria-label="이전 단서"
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onPrevious();
+                  }}
+                  sx={{
+                    position: 'absolute',
+                    left: 10,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    zIndex: 3,
+                    color: '#fff',
+                    backgroundColor: 'rgba(0,0,0,0.46)',
+                    '&:hover': { backgroundColor: 'rgba(0,0,0,0.62)' },
+                  }}
+                >
+                  <ChevronLeftIcon />
+                </IconButton>
+                <IconButton
+                  aria-label="다음 단서"
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onNext();
+                  }}
+                  sx={{
+                    position: 'absolute',
+                    right: 10,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    zIndex: 3,
+                    color: '#fff',
+                    backgroundColor: 'rgba(0,0,0,0.46)',
+                    '&:hover': { backgroundColor: 'rgba(0,0,0,0.62)' },
+                  }}
+                >
+                  <ChevronRightIcon />
+                </IconButton>
+              </>
             ) : null}
-          </Typography>
-        </Stack>
-      </Box>
-    </Dialog>
+          </Box>
+          <Stack spacing={1} sx={{ p: { xs: 1.4, sm: 1.8 } }}>
+            <Stack direction="row" spacing={0.8} alignItems="flex-start">
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography
+                  variant="h6"
+                  fontWeight={950}
+                  sx={{ color: '#2d2419', lineHeight: 1.25 }}
+                >
+                  {sourceDisplayText}
+                </Typography>
+              </Box>
+              {card?.extraInvestigationOnReveal ? (
+                <ExtraInvestigationFrontBadge />
+              ) : null}
+              {zoomImageView ? (
+                <Tooltip title="이미지 확대">
+                  <IconButton
+                    aria-label="이미지 확대"
+                    onClick={() => setZoomImage(zoomImageView)}
+                    sx={{
+                      width: 34,
+                      height: 34,
+                      backgroundColor: 'rgba(45,36,25,0.1)',
+                      color: '#2d2419',
+                      '&:hover': {
+                        backgroundColor: 'rgba(45,36,25,0.18)',
+                      },
+                    }}
+                  >
+                    <ZoomInIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              ) : null}
+            </Stack>
+            <Typography
+              sx={{
+                whiteSpace: 'pre-wrap',
+                lineHeight: 1.75,
+                color: '#2d2419',
+              }}
+            >
+              {card ? (
+                <RulebookRichText
+                  text={displayText}
+                  highlights={card.textHighlights}
+                />
+              ) : null}
+            </Typography>
+          </Stack>
+        </Box>
+      </Dialog>
+      <ClueImageZoomDialog
+        image={zoomImage}
+        onClose={() => setZoomImage(null)}
+      />
+    </Fragment>
   );
 };
 
@@ -4647,6 +5003,9 @@ const PrivateCardsDialog = ({
   open,
   cards,
   fullScreen,
+  canRevealPubliclyNow,
+  publicRevealNotice,
+  publicRevealNoticeSeverity,
   onClose,
   onOpenCard,
   onRevealPublicly,
@@ -4654,6 +5013,9 @@ const PrivateCardsDialog = ({
   open: boolean;
   cards: MurderMysteryClueVaultCardView[];
   fullScreen: boolean;
+  canRevealPubliclyNow: boolean;
+  publicRevealNotice: string;
+  publicRevealNoticeSeverity: 'info' | 'success' | 'warning';
   onClose: () => void;
   onOpenCard: (card: AnyClueCard) => void;
   onRevealPublicly: (cardId: string) => void;
@@ -4678,28 +5040,39 @@ const PrivateCardsDialog = ({
     </DialogTitle>
     <DialogContent>
       {cards.length === 0 ? (
-        <Typography color="text.secondary">
-          아직 개인 카드가 없습니다.
-        </Typography>
+        <Stack spacing={1.25}>
+          <Alert severity={publicRevealNoticeSeverity} variant="outlined">
+            {publicRevealNotice}
+          </Alert>
+          <Typography color="text.secondary">
+            아직 개인 카드가 없습니다.
+          </Typography>
+        </Stack>
       ) : (
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(156px, 174px))',
-            gap: 1.4,
-            alignItems: 'start',
-          }}
-        >
-          {cards.map((card) => (
-            <EvidenceCardFace
-              key={card.id}
-              card={card}
-              onOpen={onOpenCard}
-              showPublicRevealControl
-              onRevealPublicly={onRevealPublicly}
-            />
-          ))}
-        </Box>
+        <Stack spacing={1.25}>
+          <Alert severity={publicRevealNoticeSeverity} variant="outlined">
+            {publicRevealNotice}
+          </Alert>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(156px, 174px))',
+              gap: 1.4,
+              alignItems: 'start',
+            }}
+          >
+            {cards.map((card) => (
+              <EvidenceCardFace
+                key={card.id}
+                card={card}
+                onOpen={onOpenCard}
+                showPublicRevealControl
+                publicRevealDisabled={!canRevealPubliclyNow}
+                onRevealPublicly={onRevealPublicly}
+              />
+            ))}
+          </Box>
+        </Stack>
       )}
     </DialogContent>
   </Dialog>
@@ -5055,6 +5428,18 @@ export default function MurderMysteryTableExperience({
   const shouldShowMobileDeskPanel = isSmall && shouldShowDeskPanel;
   const privateCardCount = snapshot.clueVault.myClues.length;
   const canOpenPrivateCards = privateCardCount > 0 && isDeskPanelPhase;
+  const canRevealPrivateCardsPublicly = phaseKind === 'discuss';
+  const privateCardRevealNoticeSeverity: 'info' | 'success' | 'warning' =
+    canRevealPrivateCardsPublicly
+      ? 'success'
+      : phaseKind === 'investigate'
+        ? 'warning'
+        : 'info';
+  const privateCardRevealNotice = canRevealPrivateCardsPublicly
+    ? '회의 단계입니다. 필요한 개인 카드는 전체공개하기로 테이블에 올려 토론에 사용할 수 있습니다.'
+    : phaseKind === 'investigate'
+      ? '조사 단계에서는 개인 카드를 전체 공개할 수 없습니다. 회의 단계로 넘어가면 전체공개하기 버튼을 사용할 수 있습니다.'
+      : '개인 카드 전체공개는 회의 단계에서 사용할 수 있습니다.';
   const shouldShowPublicClues =
     phaseKind === 'investigate' ||
     phaseKind === 'ending_choice' ||
@@ -5886,9 +6271,6 @@ export default function MurderMysteryTableExperience({
           : disabledReason;
       const hasMultipleBacks = target.availableBacks.length > 1;
       const firstBack = target.availableBacks[0] ?? null;
-      const hasExtraInvestigationBack = target.availableBacks.some(
-        (back) => back.extraInvestigationOnReveal
-      );
       const isReserved = target.availableBacks.some(
         (back) =>
           back.isReservedByMe || pendingReservationBackId === back.backId
@@ -6009,23 +6391,6 @@ export default function MurderMysteryTableExperience({
                   >
                     ∞
                   </Typography>
-                </Tooltip>
-              ) : null}
-              {hasExtraInvestigationBack ? (
-                <Tooltip title={EXTRA_INVESTIGATION_DESCRIPTION}>
-                  <Chip
-                    size="small"
-                    aria-label={EXTRA_INVESTIGATION_LABEL}
-                    label="공개+1"
-                    sx={{
-                      height: 18,
-                      backgroundColor: 'rgba(14,165,233,0.18)',
-                      color: '#7dd3fc',
-                      fontSize: 10,
-                      fontWeight: 950,
-                      '& .MuiChip-label': { px: 0.55 },
-                    }}
-                  />
                 </Tooltip>
               ) : null}
               {isOwnedInvestigationBlocked ? (
@@ -6170,461 +6535,462 @@ export default function MurderMysteryTableExperience({
     };
 
     return (
-      <Stack spacing={{ xs: 0.95, md: 1.6 }}>
-        <Stack
-          direction={{ xs: 'column', md: 'row' }}
-          spacing={{ xs: 0.75, md: 1.4 }}
-          alignItems={{ xs: 'stretch', md: 'center' }}
-        >
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="h5" fontWeight={950}>
-              {activeRound ? `${activeRound}라운드 조사` : '조사 대기'}
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#d8d0bd' }}>
-              {canActNow &&
-              snapshot.investigation.turn?.extraInvestigationPending
-                ? '전체 공개 단서를 확인했습니다. 한 번 더 조사할 수 있습니다.'
-                : canActNow
-                  ? '내 차례입니다. 테이블 위 뒷면 카드 한 장을 가져가세요.'
-                  : snapshot.investigation.turn?.myReservation
-                    ? '예약 토큰이 꽂혀 있습니다. 내 차례가 오면 가져갈 수 있습니다.'
-                    : currentTurnLabel
-                      ? `${currentTurnLabel}의 단서 수집 차례입니다. 내 차례가 아니면 뒷면 카드를 눌러 예약할 수 있습니다.`
-                      : '내 차례가 아니면 뒷면 카드를 눌러 예약할 수 있습니다.'}
-            </Typography>
-          </Box>
-          <Chip
-            color={canActNow ? 'warning' : 'default'}
-            label={
-              snapshot.investigation.turn?.currentPlayerId
-                ? canActNow
-                  ? '내 조사 차례'
-                  : `${currentTurnLabel ?? '다른 플레이어'} 차례`
-                : '조사 차례 종료'
-            }
-          />
-        </Stack>
-
-        {reservationView ? (
-          <Box
-            sx={{
-              position: 'relative',
-              zIndex: 2,
-              p: { xs: 1.15, md: 1.25 },
-              borderRadius: 2,
-              backgroundColor: isReservationPending ? '#17263a' : '#2b2112',
-              border: isReservationPending
-                ? '1px solid rgba(96, 165, 250, 0.58)'
-                : '1px solid rgba(245, 197, 66, 0.72)',
-              boxShadow: '0 12px 26px rgba(0,0,0,0.3)',
-            }}
+      <Box
+        sx={{
+          p: { xs: 1, md: 1.2 },
+          borderRadius: 2.4,
+          border: '1px solid',
+          borderColor: canActNow ? 'rgba(74, 222, 128, 0.9)' : 'transparent',
+          backgroundColor: canActNow
+            ? 'rgba(22, 101, 52, 0.08)'
+            : 'transparent',
+          boxShadow: canActNow
+            ? '0 0 0 1px rgba(74, 222, 128, 0.18), 0 18px 42px rgba(0,0,0,0.28)'
+            : 'none',
+          transition:
+            'border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease',
+        }}
+      >
+        <Stack spacing={{ xs: 0.95, md: 1.6 }}>
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={{ xs: 0.75, md: 1.4 }}
+            alignItems={{ xs: 'stretch', md: 'center' }}
           >
-            <Stack
-              direction={{ xs: 'column', sm: 'row' }}
-              spacing={1}
-              alignItems={{ xs: 'stretch', sm: 'center' }}
-            >
-              <PushPinIcon
-                sx={{
-                  color: isReservationPending ? '#93c5fd' : '#f5c542',
-                  alignSelf: { xs: 'flex-start', sm: 'center' },
-                }}
-              />
-              <Box sx={{ minWidth: 0, flex: 1 }}>
-                <Typography fontWeight={950}>
-                  {isReservationPending ? '예약 처리 중' : '예약 완료'}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: '#fff8e6',
-                    lineHeight: 1.45,
-                    fontWeight: 850,
-                    wordBreak: 'keep-all',
-                  }}
-                >
-                  {reservationView.targetLabel} ·{' '}
-                  {reservationView.shortLabel ?? CARD_BACK_LABEL}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    display: 'block',
-                    color: isReservationPending ? '#c7ddff' : '#f5d27b',
-                    lineHeight: 1.45,
-                  }}
-                >
-                  내 차례가 오면 자동 획득됩니다.
-                </Typography>
-              </Box>
-              <Button
-                size="small"
-                variant="outlined"
-                color="warning"
-                onClick={onClearReservation}
-              >
-                예약 해제
-              </Button>
-            </Stack>
-          </Box>
-        ) : null}
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="h5" fontWeight={950}>
+                {activeRound ? `${activeRound}라운드 조사` : '조사 대기'}
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#d8d0bd' }}>
+                {canActNow &&
+                snapshot.investigation.turn?.extraInvestigationPending
+                  ? '전체 공개 단서를 확인했습니다. 한 번 더 조사할 수 있습니다.'
+                  : canActNow
+                    ? '내 차례입니다. 테이블 위 뒷면 카드 한 장을 가져가세요.'
+                    : snapshot.investigation.turn?.myReservation
+                      ? '예약 토큰이 꽂혀 있습니다. 내 차례가 오면 가져갈 수 있습니다.'
+                      : currentTurnLabel
+                        ? `${currentTurnLabel}의 단서 수집 차례입니다. 내 차례가 아니면 뒷면 카드를 눌러 예약할 수 있습니다.`
+                        : '내 차례가 아니면 뒷면 카드를 눌러 예약할 수 있습니다.'}
+              </Typography>
+            </Box>
+          </Stack>
 
-        {mapView?.scene && activeRoundView ? (
-          <Stack spacing={{ xs: 0.75, md: 1.1 }}>
+          {reservationView ? (
             <Box
               sx={{
-                display: { xs: 'none', md: 'block' },
                 position: 'relative',
-                p: 0.7,
-                borderRadius: 2.2,
-                border: '1px solid rgba(255,255,255,0.18)',
-                background:
-                  'radial-gradient(circle at 50% 0%, rgba(245,197,66,0.12), transparent 38%), #0b1117',
-                boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.04)',
+                zIndex: 2,
+                p: { xs: 1.15, md: 1.25 },
+                borderRadius: 2,
+                backgroundColor: isReservationPending ? '#17263a' : '#2b2112',
+                border: isReservationPending
+                  ? '1px solid rgba(96, 165, 250, 0.58)'
+                  : '1px solid rgba(245, 197, 66, 0.72)',
+                boxShadow: '0 12px 26px rgba(0,0,0,0.3)',
               }}
             >
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={1}
+                alignItems={{ xs: 'stretch', sm: 'center' }}
+              >
+                <PushPinIcon
+                  sx={{
+                    color: isReservationPending ? '#93c5fd' : '#f5c542',
+                    alignSelf: { xs: 'flex-start', sm: 'center' },
+                  }}
+                />
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography fontWeight={950}>
+                    {isReservationPending ? '예약 처리 중' : '예약 완료'}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: '#fff8e6',
+                      lineHeight: 1.45,
+                      fontWeight: 850,
+                      wordBreak: 'keep-all',
+                    }}
+                  >
+                    {reservationView.targetLabel} ·{' '}
+                    {reservationView.shortLabel ?? CARD_BACK_LABEL}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      display: 'block',
+                      color: isReservationPending ? '#c7ddff' : '#f5d27b',
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    내 차례가 오면 자동 획득됩니다.
+                  </Typography>
+                </Box>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="warning"
+                  onClick={onClearReservation}
+                >
+                  예약 해제
+                </Button>
+              </Stack>
+            </Box>
+          ) : null}
+
+          {mapView?.scene && activeRoundView ? (
+            <Stack spacing={{ xs: 0.75, md: 1.1 }}>
               <Box
                 sx={{
+                  display: { xs: 'none', md: 'block' },
                   position: 'relative',
-                  width: '100%',
-                  aspectRatio: `${mapView.scene.width} / ${mapView.scene.height}`,
-                  overflow: 'hidden',
-                  borderRadius: 1.5,
-                  backgroundColor: '#0b1117',
+                  p: 0.7,
+                  borderRadius: 2.2,
+                  border: '1px solid rgba(255,255,255,0.18)',
+                  background:
+                    'radial-gradient(circle at 50% 0%, rgba(245,197,66,0.12), transparent 38%), #0b1117',
+                  boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.04)',
                 }}
               >
                 <Box
-                  component="img"
-                  src={mapView.scene.imageSrc}
-                  alt={mapView.scene.alt}
-                  draggable={false}
                   sx={{
-                    position: 'absolute',
-                    inset: 0,
-                    display: 'block',
+                    position: 'relative',
                     width: '100%',
-                    height: '100%',
-                    objectFit: 'contain',
-                    userSelect: 'none',
+                    aspectRatio: `${mapView.scene.width} / ${mapView.scene.height}`,
+                    overflow: 'hidden',
+                    borderRadius: 1.5,
+                    backgroundColor: '#0b1117',
                   }}
-                />
-
-                <Tooltip title="맵 크게 보기">
-                  <IconButton
-                    aria-label="맵 크게 보기"
-                    size="small"
-                    onClick={() => setIsMapDialogOpen(true)}
-                    sx={{
-                      position: 'absolute',
-                      top: 8,
-                      right: 8,
-                      zIndex: 5,
-                      backgroundColor: 'rgba(8,13,18,0.7)',
-                      color: '#f8f1de',
-                      backdropFilter: 'blur(10px)',
-                      '&:hover': {
-                        backgroundColor: 'rgba(8,13,18,0.9)',
-                      },
-                    }}
-                  >
-                    <MapIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-
-                {mapMatTargets.map(({ hotspot, matNumber, target }) => (
-                  <Box
-                    key={hotspot.id}
-                    aria-hidden="true"
-                    sx={{
-                      position: 'absolute',
-                      left: `calc(${
-                        hotspot.xPct + hotspot.widthPct / 2
-                      }% - 12px)`,
-                      top: `calc(${
-                        hotspot.yPct + hotspot.heightPct / 2
-                      }% - 12px)`,
-                      width: 24,
-                      height: 24,
-                      borderRadius: 999,
-                      display: 'grid',
-                      placeItems: 'center',
-                      border: '2px solid rgba(255,248,230,0.9)',
-                      backgroundColor: target.isExhausted
-                        ? 'rgba(71,85,105,0.92)'
-                        : 'rgba(245,197,66,0.96)',
-                      color: target.isExhausted ? '#f8f1de' : '#2b2112',
-                      fontSize: 12,
-                      fontWeight: 950,
-                      boxShadow: '0 8px 16px rgba(0,0,0,0.36)',
-                    }}
-                  >
-                    {matNumber}
-                  </Box>
-                ))}
-              </Box>
-            </Box>
-
-            <Box
-              sx={{
-                p: { xs: 0.65, md: 0.85 },
-                borderRadius: { xs: 1.6, md: 2.2 },
-                border: '1px solid rgba(245,197,66,0.28)',
-                background:
-                  'linear-gradient(180deg, rgba(24, 31, 29, 0.96), rgba(8, 13, 15, 0.98))',
-                boxShadow: '0 18px 42px rgba(0,0,0,0.3)',
-              }}
-            >
-              <Stack spacing={0.75}>
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  alignItems="center"
-                  flexWrap="wrap"
                 >
-                  <StyleIcon fontSize="small" />
-                  <Typography fontWeight={950} sx={{ flex: 1, minWidth: 120 }}>
-                    조사 카드 매트
-                  </Typography>
-                  <Stack
-                    direction="row"
-                    spacing={0.55}
-                    alignItems="center"
-                    flexWrap="wrap"
-                    justifyContent="flex-end"
-                  >
-                    <Tooltip title="해당 단서는 반복조사 가능합니다.">
-                      <Chip
-                        size="small"
-                        aria-label="해당 단서는 반복조사 가능합니다."
-                        label="∞ 반복조사 가능"
-                        sx={{
-                          backgroundColor: 'rgba(142,202,230,0.16)',
-                          color: '#8ecae6',
-                          fontWeight: 900,
-                        }}
-                      />
-                    </Tooltip>
-                    <Tooltip title={EXTRA_INVESTIGATION_DESCRIPTION}>
-                      <Chip
-                        size="small"
-                        aria-label={EXTRA_INVESTIGATION_LABEL}
-                        label={EXTRA_INVESTIGATION_LABEL}
-                        sx={{
-                          backgroundColor: 'rgba(14,165,233,0.18)',
-                          color: '#7dd3fc',
-                          fontWeight: 900,
-                        }}
-                      />
-                    </Tooltip>
-                    <Chip
+                  <Box
+                    component="img"
+                    src={mapView.scene.imageSrc}
+                    alt={mapView.scene.alt}
+                    draggable={false}
+                    sx={{
+                      position: 'absolute',
+                      inset: 0,
+                      display: 'block',
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain',
+                      userSelect: 'none',
+                    }}
+                  />
+
+                  <Tooltip title="맵 크게 보기">
+                    <IconButton
+                      aria-label="맵 크게 보기"
                       size="small"
-                      label={`${activeRoundView.targets.length}곳`}
+                      onClick={() => setIsMapDialogOpen(true)}
                       sx={{
-                        backgroundColor: 'rgba(255,255,255,0.12)',
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        zIndex: 5,
+                        backgroundColor: 'rgba(8,13,18,0.7)',
                         color: '#f8f1de',
-                        fontWeight: 900,
+                        backdropFilter: 'blur(10px)',
+                        '&:hover': {
+                          backgroundColor: 'rgba(8,13,18,0.9)',
+                        },
                       }}
-                    />
-                  </Stack>
-                </Stack>
+                    >
+                      <MapIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
 
-                {cardMatGroups.map((group, index) => (
-                  <Fragment key={group.id}>
-                    {index > 0 ? (
-                      <Divider sx={{ borderColor: 'rgba(255,255,255,0.12)' }} />
-                    ) : null}
-                    <Stack spacing={0.5}>
-                      <Typography
-                        variant="caption"
-                        fontWeight={900}
-                        sx={{ color: '#cfc5ad', lineHeight: 1 }}
-                      >
-                        {group.label}
-                      </Typography>
-                      <Box
-                        sx={{
-                          display: 'grid',
-                          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                          gap: { xs: 0.45, md: 0.55 },
-                        }}
-                      >
-                        {group.targets.map(({ matNumber, target }) =>
-                          renderInvestigationCardMatTarget({
-                            matNumber,
-                            target,
-                          })
-                        )}
-                      </Box>
-                    </Stack>
-                  </Fragment>
-                ))}
-              </Stack>
-            </Box>
-          </Stack>
-        ) : null}
+                  {mapMatTargets.map(({ hotspot, matNumber, target }) => (
+                    <Box
+                      key={hotspot.id}
+                      aria-hidden="true"
+                      sx={{
+                        position: 'absolute',
+                        left: `calc(${
+                          hotspot.xPct + hotspot.widthPct / 2
+                        }% - 12px)`,
+                        top: `calc(${
+                          hotspot.yPct + hotspot.heightPct / 2
+                        }% - 12px)`,
+                        width: 24,
+                        height: 24,
+                        borderRadius: 999,
+                        display: 'grid',
+                        placeItems: 'center',
+                        border: '2px solid rgba(255,248,230,0.9)',
+                        backgroundColor: target.isExhausted
+                          ? 'rgba(71,85,105,0.92)'
+                          : 'rgba(245,197,66,0.96)',
+                        color: target.isExhausted ? '#f8f1de' : '#2b2112',
+                        fontSize: 12,
+                        fontWeight: 950,
+                        boxShadow: '0 8px 16px rgba(0,0,0,0.36)',
+                      }}
+                    >
+                      {matNumber}
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
 
-        {activeRoundView && !canUseMapBoard ? (
-          <Stack spacing={1.2}>
-            {targetGroups.map((group) => (
               <Box
-                key={group.id}
                 sx={{
-                  p: 1.2,
-                  borderRadius: 2,
-                  backgroundColor: group.isOwnedByViewer
-                    ? 'rgba(80, 68, 55, 0.42)'
-                    : 'rgba(255,255,255,0.07)',
-                  border: group.isOwnedByViewer
-                    ? '1px solid rgba(245, 197, 66, 0.36)'
-                    : '1px solid rgba(255,255,255,0.14)',
+                  p: { xs: 0.65, md: 0.85 },
+                  borderRadius: { xs: 1.6, md: 2.2 },
+                  border: '1px solid rgba(245,197,66,0.28)',
+                  background:
+                    'linear-gradient(180deg, rgba(24, 31, 29, 0.96), rgba(8, 13, 15, 0.98))',
+                  boxShadow: '0 18px 42px rgba(0,0,0,0.3)',
                 }}
               >
-                <Stack spacing={1}>
+                <Stack spacing={0.75}>
                   <Stack
-                    direction={{ xs: 'column', md: 'row' }}
+                    direction="row"
                     spacing={1}
-                    alignItems={{ xs: 'stretch', md: 'center' }}
-                    justifyContent="space-between"
+                    alignItems="center"
+                    flexWrap="wrap"
                   >
-                    <Box>
-                      <Typography fontWeight={950}>{group.label}</Typography>
-                      <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
-                        {formatInvestigationCountText(group)}
-                      </Typography>
-                    </Box>
-                    <Stack direction="row" spacing={0.6} flexWrap="wrap">
-                      {group.isOwnedByViewer ? (
+                    <StyleIcon fontSize="small" />
+                    <Typography
+                      fontWeight={950}
+                      sx={{ flex: 1, minWidth: 120 }}
+                    >
+                      조사 카드 매트
+                    </Typography>
+                    <Stack
+                      direction="row"
+                      spacing={0.55}
+                      alignItems="center"
+                      flexWrap="wrap"
+                      justifyContent="flex-end"
+                    >
+                      <Tooltip title="해당 단서는 반복조사 가능합니다.">
                         <Chip
                           size="small"
-                          color={
-                            group.isOwnedFallbackForViewer
-                              ? 'success'
-                              : 'warning'
-                          }
-                          label={
-                            group.isOwnedFallbackForViewer
-                              ? '내 소지품 · 마지막 선택 가능'
-                              : '내 소지품 · 조사 불가'
-                          }
-                        />
-                      ) : null}
-                      {group.targets.length > 1 ? (
-                        <Chip
-                          size="small"
-                          label={`묶음 ${group.targets.length}개`}
+                          aria-label="해당 단서는 반복조사 가능합니다."
+                          label="∞ 반복조사 가능"
                           sx={{
-                            backgroundColor: 'rgba(255,255,255,0.12)',
-                            color: '#f8f1de',
+                            backgroundColor: 'rgba(142,202,230,0.16)',
+                            color: '#8ecae6',
+                            fontWeight: 900,
                           }}
                         />
-                      ) : null}
+                      </Tooltip>
+                      <ExtraInvestigationLegend />
+                      <Chip
+                        size="small"
+                        label={`${activeRoundView.targets.length}곳`}
+                        sx={{
+                          backgroundColor: 'rgba(255,255,255,0.12)',
+                          color: '#f8f1de',
+                          fontWeight: 900,
+                        }}
+                      />
                     </Stack>
                   </Stack>
 
-                  {group.targets.map((target) => {
-                    const isTurnClosed =
-                      !snapshot.investigation.turn?.currentPlayerId ||
-                      Boolean(snapshot.investigation.turn?.allPlayersDone);
-                    const targetDisabled =
-                      !target.canInvestigateByViewer ||
-                      isTurnClosed ||
-                      snapshot.investigation.used;
-                    const disabledReason = !target.canInvestigateByViewer
-                      ? (target.investigationRestrictionReason ??
-                        '본인의 소지품은 조사할 수 없습니다.')
-                      : isTurnClosed
-                        ? '현재 조사 가능한 차례가 없습니다.'
-                        : snapshot.investigation.used
-                          ? '이번 라운드 조사 기회를 이미 사용했습니다.'
-                          : undefined;
-
-                    return (
-                      <Box
-                        key={target.id}
-                        sx={{
-                          p: 1,
-                          borderRadius: 1.5,
-                          backgroundColor: 'rgba(0,0,0,0.14)',
-                          border: '1px solid rgba(255,255,255,0.1)',
-                        }}
-                      >
-                        <Stack
-                          direction={{ xs: 'column', md: 'row' }}
-                          spacing={1.2}
-                          alignItems={{ xs: 'stretch', md: 'center' }}
+                  {cardMatGroups.map((group, index) => (
+                    <Fragment key={group.id}>
+                      {index > 0 ? (
+                        <Divider
+                          sx={{ borderColor: 'rgba(255,255,255,0.12)' }}
+                        />
+                      ) : null}
+                      <Stack spacing={0.5}>
+                        <Typography
+                          variant="caption"
+                          fontWeight={900}
+                          sx={{ color: '#cfc5ad', lineHeight: 1 }}
                         >
-                          <Box
-                            sx={{
-                              minWidth: { md: 170 },
-                              flex: { xs: 1, md: 0 },
-                            }}
-                          >
-                            <Typography fontWeight={900}>
-                              {target.label}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              sx={{ color: '#cfc5ad' }}
-                            >
-                              {formatInvestigationCountText(target)}
-                            </Typography>
-                          </Box>
-                          {target.availableBacks.length > 0 ? (
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                gap: 0.9,
-                                flexWrap: 'wrap',
-                                minWidth: 0,
-                              }}
-                            >
-                              {target.availableBacks.map((back) => (
-                                <InvestigationCardBack
-                                  key={back.backId}
-                                  back={back}
-                                  canActNow={canActNow}
-                                  disabled={targetDisabled}
-                                  disabledReason={disabledReason}
-                                  isPendingReservation={
-                                    pendingReservationBackId === back.backId
-                                  }
-                                  onTake={onSubmitInvestigationByBack}
-                                  onReserve={onSetReservation}
-                                  onClearReservation={onClearReservation}
-                                />
-                              ))}
-                            </Box>
-                          ) : (
-                            <Button
-                              disabled={target.isExhausted || targetDisabled}
-                              variant="outlined"
-                              color="inherit"
-                              onClick={() =>
-                                onSubmitInvestigationByTarget(target.id)
-                              }
-                            >
-                              {target.isExhausted
-                                ? '소진됨'
-                                : target.isOwnedByViewer &&
-                                    !target.isOwnedFallbackForViewer
-                                  ? '내 소지품 조사 불가'
-                                  : '조사하기'}
-                            </Button>
+                          {group.label}
+                        </Typography>
+                        <Box
+                          sx={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                            gap: { xs: 0.45, md: 0.55 },
+                          }}
+                        >
+                          {group.targets.map(({ matNumber, target }) =>
+                            renderInvestigationCardMatTarget({
+                              matNumber,
+                              target,
+                            })
                           )}
-                        </Stack>
-                      </Box>
-                    );
-                  })}
+                        </Box>
+                      </Stack>
+                    </Fragment>
+                  ))}
                 </Stack>
               </Box>
-            ))}
-          </Stack>
-        ) : !activeRoundView ? (
-          <Typography sx={{ color: '#d8d0bd' }}>
-            현재 라운드에 배치된 조사 카드가 없습니다.
-          </Typography>
-        ) : null}
-      </Stack>
+            </Stack>
+          ) : null}
+
+          {activeRoundView && !canUseMapBoard ? (
+            <Stack spacing={1.2}>
+              {targetGroups.map((group) => (
+                <Box
+                  key={group.id}
+                  sx={{
+                    p: 1.2,
+                    borderRadius: 2,
+                    backgroundColor: group.isOwnedByViewer
+                      ? 'rgba(80, 68, 55, 0.42)'
+                      : 'rgba(255,255,255,0.07)',
+                    border: group.isOwnedByViewer
+                      ? '1px solid rgba(245, 197, 66, 0.36)'
+                      : '1px solid rgba(255,255,255,0.14)',
+                  }}
+                >
+                  <Stack spacing={1}>
+                    <Stack
+                      direction={{ xs: 'column', md: 'row' }}
+                      spacing={1}
+                      alignItems={{ xs: 'stretch', md: 'center' }}
+                      justifyContent="space-between"
+                    >
+                      <Box>
+                        <Typography fontWeight={950}>{group.label}</Typography>
+                        <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
+                          {formatInvestigationCountText(group)}
+                        </Typography>
+                      </Box>
+                      <Stack direction="row" spacing={0.6} flexWrap="wrap">
+                        {group.isOwnedByViewer ? (
+                          <Chip
+                            size="small"
+                            color={
+                              group.isOwnedFallbackForViewer
+                                ? 'success'
+                                : 'warning'
+                            }
+                            label={
+                              group.isOwnedFallbackForViewer
+                                ? '내 소지품 · 마지막 선택 가능'
+                                : '내 소지품 · 조사 불가'
+                            }
+                          />
+                        ) : null}
+                        {group.targets.length > 1 ? (
+                          <Chip
+                            size="small"
+                            label={`묶음 ${group.targets.length}개`}
+                            sx={{
+                              backgroundColor: 'rgba(255,255,255,0.12)',
+                              color: '#f8f1de',
+                            }}
+                          />
+                        ) : null}
+                      </Stack>
+                    </Stack>
+
+                    {group.targets.map((target) => {
+                      const isTurnClosed =
+                        !snapshot.investigation.turn?.currentPlayerId ||
+                        Boolean(snapshot.investigation.turn?.allPlayersDone);
+                      const targetDisabled =
+                        !target.canInvestigateByViewer ||
+                        isTurnClosed ||
+                        snapshot.investigation.used;
+                      const disabledReason = !target.canInvestigateByViewer
+                        ? (target.investigationRestrictionReason ??
+                          '본인의 소지품은 조사할 수 없습니다.')
+                        : isTurnClosed
+                          ? '현재 조사 가능한 차례가 없습니다.'
+                          : snapshot.investigation.used
+                            ? '이번 라운드 조사 기회를 이미 사용했습니다.'
+                            : undefined;
+
+                      return (
+                        <Box
+                          key={target.id}
+                          sx={{
+                            p: 1,
+                            borderRadius: 1.5,
+                            backgroundColor: 'rgba(0,0,0,0.14)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                          }}
+                        >
+                          <Stack
+                            direction={{ xs: 'column', md: 'row' }}
+                            spacing={1.2}
+                            alignItems={{ xs: 'stretch', md: 'center' }}
+                          >
+                            <Box
+                              sx={{
+                                minWidth: { md: 170 },
+                                flex: { xs: 1, md: 0 },
+                              }}
+                            >
+                              <Typography fontWeight={900}>
+                                {target.label}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                sx={{ color: '#cfc5ad' }}
+                              >
+                                {formatInvestigationCountText(target)}
+                              </Typography>
+                            </Box>
+                            {target.availableBacks.length > 0 ? (
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  gap: 0.9,
+                                  flexWrap: 'wrap',
+                                  minWidth: 0,
+                                }}
+                              >
+                                {target.availableBacks.map((back) => (
+                                  <InvestigationCardBack
+                                    key={back.backId}
+                                    back={back}
+                                    canActNow={canActNow}
+                                    disabled={targetDisabled}
+                                    disabledReason={disabledReason}
+                                    isPendingReservation={
+                                      pendingReservationBackId === back.backId
+                                    }
+                                    onTake={onSubmitInvestigationByBack}
+                                    onReserve={onSetReservation}
+                                    onClearReservation={onClearReservation}
+                                  />
+                                ))}
+                              </Box>
+                            ) : (
+                              <Button
+                                disabled={target.isExhausted || targetDisabled}
+                                variant="outlined"
+                                color="inherit"
+                                onClick={() =>
+                                  onSubmitInvestigationByTarget(target.id)
+                                }
+                              >
+                                {target.isExhausted
+                                  ? '소진됨'
+                                  : target.isOwnedByViewer &&
+                                      !target.isOwnedFallbackForViewer
+                                    ? '내 소지품 조사 불가'
+                                    : '조사하기'}
+                              </Button>
+                            )}
+                          </Stack>
+                        </Box>
+                      );
+                    })}
+                  </Stack>
+                </Box>
+              ))}
+            </Stack>
+          ) : !activeRoundView ? (
+            <Typography sx={{ color: '#d8d0bd' }}>
+              현재 라운드에 배치된 조사 카드가 없습니다.
+            </Typography>
+          ) : null}
+        </Stack>
+      </Box>
     );
   };
 
@@ -8021,6 +8387,9 @@ export default function MurderMysteryTableExperience({
         open={isPrivateCardsOpen}
         cards={snapshot.clueVault.myClues}
         fullScreen={isSmall}
+        canRevealPubliclyNow={canRevealPrivateCardsPublicly}
+        publicRevealNotice={privateCardRevealNotice}
+        publicRevealNoticeSeverity={privateCardRevealNoticeSeverity}
         onClose={() => setIsPrivateCardsOpen(false)}
         onOpenCard={(card) =>
           openCardViewer('my-clues', snapshot.clueVault.myClues, card)

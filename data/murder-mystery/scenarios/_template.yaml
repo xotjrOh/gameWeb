@@ -87,7 +87,6 @@ investigations:
 
 cards:
   - id: card_a
-    title: "카드 제목"
     text: "카드 본문"
 
 finalVote:

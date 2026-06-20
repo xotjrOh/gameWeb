@@ -49,26 +49,49 @@ const panelPaperSx = {
   borderRadius: 3,
 } as const;
 
+const UNKNOWN_CARD_SOURCE_LABEL = '출처 미확인';
+
 const formatInvestigationCountText = ({
   remainingClues,
 }: {
   remainingClues: number;
 }) => (remainingClues > 0 ? '조사 가능' : '조사 완료');
 
+const getClueCardSourceLabels = (
+  card: Pick<
+    MurderMysteryClueVaultCardView,
+    'sourceBackLabels' | 'sourceTargetLabels'
+  >
+) => {
+  if (card.sourceBackLabels.length > 0) {
+    return card.sourceBackLabels;
+  }
+  if (card.sourceTargetLabels.length > 0) {
+    return card.sourceTargetLabels;
+  }
+  return [UNKNOWN_CARD_SOURCE_LABEL];
+};
+
+const getClueCardDisplayLabel = (
+  card: Pick<
+    MurderMysteryClueVaultCardView,
+    'sourceBackLabels' | 'sourceTargetLabels'
+  >
+) => getClueCardSourceLabels(card).join(', ');
+
 const ClueCardImage = ({
   card,
 }: {
-  card: {
-    title: string;
-    imageSrc?: string;
-    imageAlt?: string;
-  };
+  card: Pick<
+    MurderMysteryClueVaultCardView,
+    'sourceBackLabels' | 'sourceTargetLabels' | 'imageSrc' | 'imageAlt'
+  >;
 }) =>
   card.imageSrc ? (
     <Box
       component="img"
       src={card.imageSrc}
-      alt={card.imageAlt ?? card.title}
+      alt={card.imageAlt ?? getClueCardDisplayLabel(card)}
       sx={{
         width: '100%',
         maxHeight: 360,
@@ -987,13 +1010,12 @@ const LegacyInvestigatePanel = ({
                 <Card key={card.id} variant="outlined">
                   <CardContent>
                     <Stack spacing={0.8}>
-                      <Typography fontWeight={700}>{card.title}</Typography>
+                      <Typography fontWeight={700}>
+                        {getClueCardDisplayLabel(card)}
+                      </Typography>
                       <ClueCardImage card={card} />
                       <Stack direction="row" spacing={0.8} flexWrap="wrap">
-                        {(card.sourceTargetLabels.length > 0
-                          ? card.sourceTargetLabels
-                          : ['출처 미확인']
-                        ).map((label) => (
+                        {getClueCardSourceLabels(card).map((label) => (
                           <Chip
                             key={`${card.id}:${label}`}
                             size="small"
@@ -1179,13 +1201,12 @@ export default function MurderMysteryInvestigationPanel({
                 <Card key={card.id} variant="outlined">
                   <CardContent>
                     <Stack spacing={0.8}>
-                      <Typography fontWeight={700}>{card.title}</Typography>
+                      <Typography fontWeight={700}>
+                        {getClueCardDisplayLabel(card)}
+                      </Typography>
                       <ClueCardImage card={card} />
                       <Stack direction="row" spacing={0.8} flexWrap="wrap">
-                        {(card.sourceTargetLabels.length > 0
-                          ? card.sourceTargetLabels
-                          : ['출처 미확인']
-                        ).map((label) => (
+                        {getClueCardSourceLabels(card).map((label) => (
                           <Chip
                             key={`${card.id}:${label}`}
                             size="small"

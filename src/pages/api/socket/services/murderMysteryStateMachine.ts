@@ -1871,16 +1871,23 @@ const buildHostControls = (
   };
 };
 
+type MurderMysteryCardSourceView = {
+  sourceTargetIds: string[];
+  sourceTargetLabels: string[];
+  sourceBackLabels: string[];
+};
+
 const buildCardSourceMap = (
   room: MurderMysteryRoom,
   scenario: MurderMysteryScenario
-): Record<
-  string,
-  { sourceTargetIds: string[]; sourceTargetLabels: string[] }
-> => {
+): Record<string, MurderMysteryCardSourceView> => {
   const sourceSetByCardId: Record<
     string,
-    { targetIdSet: Set<string>; targetLabelSet: Set<string> }
+    {
+      targetIdSet: Set<string>;
+      targetLabelSet: Set<string>;
+      backLabelSet: Set<string>;
+    }
   > = {};
 
   scenario.investigations.rounds.forEach((roundConfig) => {
@@ -1891,9 +1898,13 @@ const buildCardSourceMap = (
         sourceSetByCardId[cardId] ??= {
           targetIdSet: new Set<string>(),
           targetLabelSet: new Set<string>(),
+          backLabelSet: new Set<string>(),
         };
         sourceSetByCardId[cardId].targetIdSet.add(target.id);
         sourceSetByCardId[cardId].targetLabelSet.add(target.label);
+        sourceSetByCardId[cardId].backLabelSet.add(
+          getCardBackStyle(scenario, target, cardId).shortLabel
+        );
       });
     });
   });
@@ -1908,9 +1919,13 @@ const buildCardSourceMap = (
           sourceSetByCardId[cardId] ??= {
             targetIdSet: new Set<string>(),
             targetLabelSet: new Set<string>(),
+            backLabelSet: new Set<string>(),
           };
           sourceSetByCardId[cardId].targetIdSet.add(target.id);
           sourceSetByCardId[cardId].targetLabelSet.add(target.label);
+          sourceSetByCardId[cardId].backLabelSet.add(
+            getCardBackStyle(scenario, target, cardId).shortLabel
+          );
         });
       });
     });
@@ -1924,9 +1939,11 @@ const buildCardSourceMap = (
     sourceSetByCardId[event.revealCardId] ??= {
       targetIdSet: new Set<string>(),
       targetLabelSet: new Set<string>(),
+      backLabelSet: new Set<string>(),
     };
     sourceSetByCardId[event.revealCardId].targetIdSet.add(event.id);
     sourceSetByCardId[event.revealCardId].targetLabelSet.add(event.label);
+    sourceSetByCardId[event.revealCardId].backLabelSet.add(event.label);
   });
 
   return Object.fromEntries(
@@ -1935,6 +1952,7 @@ const buildCardSourceMap = (
       {
         sourceTargetIds: [...source.targetIdSet],
         sourceTargetLabels: [...source.targetLabelSet],
+        sourceBackLabels: [...source.backLabelSet],
       },
     ])
   );
@@ -1961,10 +1979,7 @@ const buildPrivateCardSourceLabelMap = (
 const buildClueVaultCards = (
   scenario: MurderMysteryScenario,
   cardIds: string[],
-  cardSourceMap: Record<
-    string,
-    { sourceTargetIds: string[]; sourceTargetLabels: string[] }
-  >,
+  cardSourceMap: Record<string, MurderMysteryCardSourceView>,
   fallbackSourceLabelByCardId: Record<string, string> = {},
   options: {
     publicCardIds?: Set<string>;
@@ -1981,6 +1996,7 @@ const buildClueVaultCards = (
       const source = cardSourceMap[cardId] ?? {
         sourceTargetIds: [],
         sourceTargetLabels: [],
+        sourceBackLabels: [],
       };
       const fallbackSourceLabel = fallbackSourceLabelByCardId[cardId];
       const sourceTargetLabels =
@@ -1994,6 +2010,7 @@ const buildClueVaultCards = (
         ...card,
         sourceTargetIds: source.sourceTargetIds,
         sourceTargetLabels,
+        sourceBackLabels: source.sourceBackLabels,
         isPublic: Boolean(options.publicCardIds?.has(cardId)),
         canRevealPublicly: Boolean(
           options.publiclyRevealableCardIds?.has(cardId) &&

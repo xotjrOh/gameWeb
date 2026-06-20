@@ -1152,7 +1152,6 @@ investigations:
 
 cards:
   - id: card_turtle_body
-    title: '사체'
     text: |
       목을 조른 흔적이나 둔기 외상도 없다. 
       등껍질 한쪽에 얕은 긁힌 흔적만 있다.
@@ -1166,7 +1165,6 @@ cards:
       - type: addPart
         partId: part_turtle_body
   - id: card_rubber_ring
-    title: '아내토끼 소지품 1'
     text: |
       작고 하얀 고무링이 나왔다.
       표면이 살짝 젖어 있고, 씁쓸한 냄새가 희미하게 난다.
@@ -1178,7 +1176,6 @@ cards:
       - type: addPart
         partId: part_rubber_ring
   - id: card_black_thermos
-    title: '윤유성 소지품 1'
     text: |
       보온병에 고무패킹이 빠져 있다.
       보온병 안쪽에는 씁쓸한 냄새가 희미하게 남아 있다.
@@ -1188,7 +1185,6 @@ cards:
       - type: addPart
         partId: part_black_thermos
   - id: card_turtle_envelope
-    title: '윤유성 소지품 2'
     text: |
       오완주의 자필 고백문이다.
       20XX년 육상 국가대표 선발전 결승을 앞두고, 대기실에서 윤유성의 물병에 수면유도제를 넣었다고 적혀 있다.
@@ -1202,7 +1198,6 @@ cards:
       - type: addPart
         partId: part_turtle_envelope
   - id: card_rabbit_family
-    title: '아내토끼 소지품 2'
     text: |
       가족사진이다.
       사진 뒷면에는 "내 딸 윤슬. 수술 끝나면 학교 가자."라고 적혀 있다.
@@ -1214,7 +1209,6 @@ cards:
       - type: addPart
         partId: part_rabbit_family
   - id: card_wife_note
-    title: '아내토끼 소지품 3'
     text: |
       한다정의 메모
 
@@ -1233,7 +1227,6 @@ cards:
       - type: addPart
         partId: part_wife_note
   - id: card_medical_wing_rumor
-    title: '의료동에서 도는 소문1'
     text: |
       의료동에서는 윤유성이 선발전에서 이겼다면 윤슬이 수술을 받을 수 있었을 거라는 말이 돈다.
       경기 우승으로 수술을 받았으면 살 확률이 높았을 텐데..
@@ -1243,7 +1236,6 @@ cards:
       - type: addPart
         partId: part_medical_wing_rumor
   - id: card_medical_wing_rumor_2
-    title: '의료동에서 도는 소문2'
     text: |
       본행사 전에 조희수가 서기준의 간이책상으로 와 대기하다가 본행사 직전에 돌아갔고, 그 뒤 조희수의 비명까지 네 명 중 출입자는 없었다.
     publicRevealDisabled: true
@@ -1252,7 +1244,6 @@ cards:
       - type: addPart
         partId: part_medical_wing_rumor_2
   - id: card_medical_shoe_cabinet_1
-    title: '의료동 입구 신발장 1'
     text: |
       의료동 입구에는 환자들이 신고 온 신발을 벗고 병원 슬리퍼로 갈아 신는 신발장이 있다.
       신발장 안에는 환자들의 신발과 비치된 병원 슬리퍼가 함께 놓여 있다.
@@ -1263,7 +1254,6 @@ cards:
       - type: addPart
         partId: part_medical_shoe_cabinet_1
   - id: card_medical_shoe_cabinet_2
-    title: '의료동 입구 신발장 2'
     text: |
       병원 슬리퍼를 신은 환자 한 명이 의료동 입구에서 본인이 신고 왔던 운동화가 없어졌다며 찾고 있다.
       환자는 진료를 보러 들어가기 전 신발장에 운동화를 넣어 두었고, 나오고 보니 사라졌다고 말한다.
@@ -1272,7 +1262,6 @@ cards:
       - type: addPart
         partId: part_medical_shoe_cabinet_2
   - id: card_jara_belongings
-    title: '서기준의 소지품'
     text: |
       서기준의 소지품은 손수건, 행사 진행표, 평범한 필기구뿐이다.
       행사 진행표 아래쪽에는 개인 메모처럼 보이는 작은 일정이 적혀 있다.
@@ -1283,7 +1272,6 @@ cards:
       - type: addPart
         partId: part_jara_belongings
   - id: card_syringe_trace
-    title: '조희수 소지품 1'
     text: |
       조희수의 품 속에서 손수건에 감긴 일회용 주사기와 빈 약병이 함께 나왔다.
       주사기 안에는 투명한 액체가 차 있다.
@@ -1293,7 +1281,6 @@ cards:
       - type: addPart
         partId: part_syringe_trace
   - id: card_fox_press_kit
-    title: '조희수의 소지품2'
     text: |
       후원선수 복귀 기자간담회 자료집이다.
 
@@ -1306,7 +1293,6 @@ cards:
       - type: addPart
         partId: part_fox_press_kit
   - id: card_fox_rumor
-    title: '조희수에 대한 소문'
     text: |
       조희수는 남의 추락을 가장 잘 파는 기자로 통한다.
 
@@ -1319,7 +1305,6 @@ cards:
       - type: addPart
         partId: part_fox_rumor
   - id: card_rubber_hose
-    title: '호스'
     text: |
       [전체공개 후 추가조사]
 
@@ -1333,7 +1318,6 @@ cards:
       - type: addPart
         partId: part_rubber_hose
   - id: card_towel_bin
-    title: '파란통'
     text: |
       [전체공개 후 추가조사]
 
@@ -1345,7 +1329,6 @@ cards:
       - type: addPart
         partId: part_towel_bin
   - id: card_medical_desk_photo
-    title: '의료동 간이책상 1'
     text: |
       덜 닫혀 있는 간이책상의 맨 아래 서랍을 열자 이상한 철판 하나와 빈 봉투 몇 개, 그리고 다음과 같은 폴라로이드 사진이 발견되었다.
     imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/clue/past-killing-photo.png'
@@ -1355,7 +1338,6 @@ cards:
       - type: addPart
         partId: part_past_killing_photo
   - id: card_medical_desk_records
-    title: '의료동 간이책상 2'
     text: |
       맨 아래 서랍의 더 안쪽을 살피니 이러한 "건강기록 비교 발췌" 자료가 있었다.
     imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/clue/liver-compatibility.png'
@@ -1365,7 +1347,6 @@ cards:
       - type: addPart
         partId: part_liver_compatibility
   - id: card_siphon_guide
-    title: '세탁실에 붙어있는 안내문'
     text: |
       [전체공개 후 추가조사]
 
@@ -1378,7 +1359,6 @@ cards:
       - type: addPart
         partId: part_siphon_guide
   - id: card_child_tank_waterline
-    title: '어린이용 수조'
     text: |
       [전체공개 후 추가조사]
 
@@ -1390,7 +1370,6 @@ cards:
       - type: addPart
         partId: part_child_tank_waterline
   - id: card_adult_tank_specs
-    title: '성인용 수조'
     text: |
       [전체공개 후 추가조사]
 
@@ -1402,7 +1381,6 @@ cards:
       - type: addPart
         partId: part_adult_tank_specs
   - id: card_glass_scratches
-    title: '통유리 외벽'
     text: |
       통유리 외벽 한쪽에 살짝 금이 가 있다.
     backId: back_glass_scratches
@@ -1410,7 +1388,6 @@ cards:
       - type: addPart
         partId: part_glass_scratches
   - id: card_dragon_king_rumor_1
-    title: '용왕에 대한 소문1'
     text: |
       용왕이 이름을 알린 뒤 가난한 자들도 병원 진단을 받을 수 있게 되었다.
       굶는 아이들이 줄어들어, 용왕은 세간에서 구세주로 불린다.
@@ -1420,7 +1397,6 @@ cards:
       - type: addPart
         partId: part_dragon_king_rumor_1
   - id: card_dragon_king_rumor_2
-    title: '용왕에 대한 소문2'
     text: |
       10년쯤 전부터 용왕이 아프다는 소문이 돌었다.
       용왕이 업무를 돌보지 못하게 되니, 길거리에는 다시 굶는 아이들이 늘어나기 시작했다.
@@ -1430,7 +1406,6 @@ cards:
       - type: addPart
         partId: part_dragon_king_rumor_2
   - id: card_dragon_king_rumor_3
-    title: '용궁섬에 대한 소문3'
     text: |
       용궁섬은 밖으로 나가려면 선착장 배편을 이용해야 한다.
 
@@ -1440,7 +1415,6 @@ cards:
       - type: addPart
         partId: part_dragon_king_rumor_3
   - id: card_wet_shoeprints
-    title: '젖은 구두 자국'
     text: |
       재활수조실 바닥 곳곳에 젖은 구두 자국이 흐리게 남아 있다.
       어린이용 수조 턱 아래에는 발자국과 겹치지 않는 작고 둥근 물자국도 하나 남아 있다.
@@ -1452,11 +1426,9 @@ cards:
       - type: addPart
         partId: part_wet_shoeprints
   - id: card_start_wife_pact
-    title: '아내토끼가 여우에게 건넨 카드'
     text: |
       저도 당신과 마주친걸 숨길테니까, 당신도 저와 마주친걸 비밀로 해줘요. 당신이 절 의심하지않는다면 저도 당신과 마주친걸 비밀로 할게요
   - id: card_locked_wife_accuses_fox
-    title: '아내토끼의 잠금 증언'
     text: |
       제가 봤어요! 비품 정리실에서 마주쳤는데 여우가 재활수조실쪽을 보며 품 속에 손을 넣은채 살기를 띄고있었어요!!
 
