@@ -217,11 +217,7 @@ export default function MurderMysteryGameScreen({
   };
 
   const handleSubmitInvestigationByBack = (backId: string) => {
-    emitWithAck(
-      'mm_submit_investigation',
-      { roomId, sessionId, backId },
-      '카드를 가져왔습니다.'
-    );
+    emitWithAck('mm_submit_investigation', { roomId, sessionId, backId });
   };
 
   const handleSetInvestigationReservation = (backId: string) => {
