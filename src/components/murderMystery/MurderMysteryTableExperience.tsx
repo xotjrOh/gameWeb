@@ -5445,6 +5445,8 @@ export default function MurderMysteryTableExperience({
   const submittedRoleSelectionCount = snapshot.roleSelection.players.filter(
     (player) => player.submitted
   ).length;
+  const allRoleSelectionsSubmitted =
+    submittedRoleSelectionCount >= requiredPlayerCount;
   const selectableRoleCovers = snapshot.roleSelection.publicCovers.filter(
     (cover) => cover.selectable
   );
@@ -5988,7 +5990,9 @@ export default function MurderMysteryTableExperience({
     const playerStatusText = isRoleSelectionLocked
       ? '캐릭터 배정이 완료되었습니다.'
       : preferredRoleId
-        ? '선택을 제출했습니다. 다른 참가자의 선택을 기다려주세요.'
+        ? allRoleSelectionsSubmitted
+          ? '전원이 선택을 마쳤습니다. 방장에게 캐릭터 배정을 확정해 달라고 요청해주세요.'
+          : '선택을 제출했습니다. 다른 참가자의 선택을 기다려주세요.'
         : '캐릭터 선택 탭에서 원하는 캐릭터를 선택하고 제출해주세요.';
     const playerStatusColor =
       !isRoleSelectionLocked && !preferredRoleId ? '#ffcf6a' : '#d8d0bd';
