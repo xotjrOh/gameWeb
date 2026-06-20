@@ -816,6 +816,7 @@ const FloatingActionDock = ({
   actions,
   auxiliaryActions,
   bottomOffset,
+  tone = 'default',
 }: {
   title: string;
   description?: string;
@@ -823,89 +824,139 @@ const FloatingActionDock = ({
   actions?: React.ReactNode;
   auxiliaryActions?: React.ReactNode;
   bottomOffset: { xs: number; md: number };
-}) => (
-  <Box
-    sx={{
-      position: 'fixed',
-      left: { xs: 10, md: '50%' },
-      right: { xs: 10, md: 'auto' },
-      bottom: { xs: bottomOffset.xs, md: bottomOffset.md },
-      transform: { xs: 'none', md: 'translateX(-50%)' },
-      zIndex: 1500,
-      width: { xs: 'auto', md: 'min(760px, calc(100vw - 320px))' },
-      maxWidth: { md: 760 },
-      pointerEvents: 'auto',
-    }}
-  >
+  tone?: 'default' | 'urgent';
+}) => {
+  const isUrgent = tone === 'urgent';
+
+  return (
     <Box
       sx={{
-        p: { xs: 1.05, md: 1.2 },
-        borderRadius: 2,
-        border: '1px solid rgba(245, 197, 66, 0.48)',
-        background:
-          'linear-gradient(180deg, rgba(38, 31, 23, 0.97), rgba(18, 22, 25, 0.97))',
-        color: '#f8f1de',
-        boxShadow: '0 18px 44px rgba(0,0,0,0.46)',
-        backdropFilter: 'blur(14px)',
+        position: 'fixed',
+        left: { xs: 10, md: '50%' },
+        right: { xs: 10, md: 'auto' },
+        bottom: { xs: bottomOffset.xs, md: bottomOffset.md },
+        transform: { xs: 'none', md: 'translateX(-50%)' },
+        zIndex: 1500,
+        width: { xs: 'auto', md: 'min(760px, calc(100vw - 320px))' },
+        maxWidth: { md: 760 },
+        pointerEvents: 'auto',
       }}
     >
-      <Stack
-        direction={{ xs: 'column', md: 'row' }}
-        spacing={1}
-        alignItems={{ xs: 'stretch', md: 'center' }}
+      <Box
+        sx={{
+          p: { xs: 1.05, md: 1.2 },
+          borderRadius: 2,
+          border: isUrgent
+            ? '2px solid rgba(251, 146, 60, 0.96)'
+            : '1px solid rgba(245, 197, 66, 0.48)',
+          background: isUrgent
+            ? 'linear-gradient(180deg, rgba(124, 45, 18, 0.98), rgba(48, 18, 9, 0.98))'
+            : 'linear-gradient(180deg, rgba(38, 31, 23, 0.97), rgba(18, 22, 25, 0.97))',
+          color: '#f8f1de',
+          boxShadow: isUrgent
+            ? '0 0 0 3px rgba(251, 146, 60, 0.22), 0 22px 54px rgba(124, 45, 18, 0.52)'
+            : '0 18px 44px rgba(0,0,0,0.46)',
+          backdropFilter: 'blur(14px)',
+          animation: isUrgent
+            ? 'mmUrgentDockPulse 1.15s ease-in-out infinite'
+            : 'none',
+          '@keyframes mmUrgentDockPulse': {
+            '0%, 100%': {
+              boxShadow:
+                '0 0 0 3px rgba(251, 146, 60, 0.22), 0 22px 54px rgba(124, 45, 18, 0.52)',
+            },
+            '50%': {
+              boxShadow:
+                '0 0 0 7px rgba(251, 146, 60, 0.34), 0 26px 62px rgba(124, 45, 18, 0.62)',
+            },
+          },
+          '@media (prefers-reduced-motion: reduce)': {
+            animation: 'none',
+          },
+        }}
       >
-        <Box sx={{ minWidth: 0, flex: 1 }}>
-          <Stack direction="row" spacing={0.7} alignItems="center" useFlexGap>
-            <Typography
-              fontWeight={950}
+        <Stack
+          direction={{ xs: 'column', md: 'row' }}
+          spacing={1}
+          alignItems={{ xs: 'stretch', md: 'center' }}
+        >
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Stack
+              direction="row"
+              spacing={0.7}
+              alignItems="center"
+              useFlexGap
+              sx={{ flexWrap: 'wrap' }}
+            >
+              {isUrgent ? (
+                <Box
+                  aria-hidden
+                  sx={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: '50%',
+                    display: 'grid',
+                    placeItems: 'center',
+                    flex: '0 0 auto',
+                    backgroundColor: '#fed7aa',
+                    color: '#7c2d12',
+                    boxShadow: '0 0 0 2px rgba(254, 215, 170, 0.25)',
+                  }}
+                >
+                  <WarningAmberIcon sx={{ fontSize: 16 }} />
+                </Box>
+              ) : null}
+              <Typography
+                fontWeight={950}
+                sx={{
+                  fontSize: isUrgent ? { xs: 15, md: 16 } : { xs: 14, md: 15 },
+                  lineHeight: 1.25,
+                  wordBreak: 'keep-all',
+                }}
+              >
+                {title}
+              </Typography>
+              {chips}
+            </Stack>
+            {description ? (
+              <Typography
+                variant="caption"
+                sx={{
+                  display: 'block',
+                  mt: 0.2,
+                  color: isUrgent ? '#fff7ed' : '#d8d0bd',
+                  lineHeight: 1.35,
+                  wordBreak: 'keep-all',
+                }}
+              >
+                {description}
+              </Typography>
+            ) : null}
+          </Box>
+          {actions || auxiliaryActions ? (
+            <Stack
+              direction="row"
+              spacing={0.7}
+              alignItems="center"
+              justifyContent={{ xs: 'stretch', md: 'flex-end' }}
+              flexWrap="wrap"
+              useFlexGap
               sx={{
-                fontSize: { xs: 14, md: 15 },
-                lineHeight: 1.25,
-                wordBreak: 'keep-all',
+                '& > .MuiButton-root': {
+                  flex: { xs: '1 1 auto', md: '0 0 auto' },
+                  fontWeight: 900,
+                },
               }}
             >
-              {title}
-            </Typography>
-            {chips}
-          </Stack>
-          {description ? (
-            <Typography
-              variant="caption"
-              sx={{
-                display: 'block',
-                mt: 0.2,
-                color: '#d8d0bd',
-                lineHeight: 1.35,
-                wordBreak: 'keep-all',
-              }}
-            >
-              {description}
-            </Typography>
+              {actions}
+              {auxiliaryActions}
+            </Stack>
           ) : null}
-        </Box>
-        {actions || auxiliaryActions ? (
-          <Stack
-            direction="row"
-            spacing={0.7}
-            alignItems="center"
-            justifyContent={{ xs: 'stretch', md: 'flex-end' }}
-            flexWrap="wrap"
-            useFlexGap
-            sx={{
-              '& > .MuiButton-root': {
-                flex: { xs: '1 1 auto', md: '0 0 auto' },
-                fontWeight: 900,
-              },
-            }}
-          >
-            {actions}
-            {auxiliaryActions}
-          </Stack>
-        ) : null}
-      </Stack>
+        </Stack>
+      </Box>
     </Box>
-  </Box>
-);
+  );
+};
 
 const ClueTakeOverlay = ({
   notice,
@@ -1949,14 +2000,12 @@ const HeldCardBackFace = ({
 
 const PlayerHeldCardBackStack = ({
   backs,
-  publicCount,
   isHighlighted,
 }: {
   backs: MurderMysteryInvestigationBackCardView[];
-  publicCount: number;
   isHighlighted: boolean;
 }) => {
-  if (backs.length === 0 && publicCount === 0) {
+  if (backs.length === 0) {
     return null;
   }
 
@@ -2079,27 +2128,6 @@ const PlayerHeldCardBackStack = ({
             ) : null}
           </Box>
         </Tooltip>
-      ) : null}
-      {publicCount > 0 ? (
-        <Chip
-          size="small"
-          icon={<IosShareIcon />}
-          label={publicCount}
-          sx={{
-            height: 18,
-            minWidth: 30,
-            backgroundColor: 'rgba(236, 253, 245, 0.96)',
-            color: '#166534',
-            fontWeight: 950,
-            '& .MuiChip-icon': {
-              width: 11,
-              height: 11,
-              ml: 0.45,
-              color: '#166534',
-            },
-            '& .MuiChip-label': { px: 0.5, fontSize: 10 },
-          }}
-        />
       ) : null}
     </Stack>
   );
@@ -2437,7 +2465,6 @@ const PlayerMarkerButton = ({
           </Stack>
           <PlayerHeldCardBackStack
             backs={privateCardBacks}
-            publicCount={player.publicRevealedClues.length}
             isHighlighted={isClueTakeHighlighted}
           />
           <InvestigationProgressTokens progress={investigationProgress} />
@@ -7604,46 +7631,51 @@ export default function MurderMysteryTableExperience({
     if (phaseKind === 'investigate') {
       title = canActNow
         ? snapshot.investigation.turn?.extraInvestigationPending
-          ? '추가 조사 가능'
-          : '내 조사 차례입니다'
+          ? '지금 추가 조사해야 합니다'
+          : '지금 조사해야 합니다'
         : snapshot.investigation.turn?.myReservation
           ? '예약한 카드가 있습니다'
           : currentTurnLabel
             ? `${currentTurnLabel} 조사 차례입니다`
             : '다른 플레이어 조사 차례입니다';
       description = canActNow
-        ? `${selfInvestigationProgressText ? `${selfInvestigationProgressText}. ` : ''}테이블의 뒷면 카드 중 하나를 선택하세요.`
+        ? '룰지는 잠시 멈추고, 카드 한 장을 바로 선택하세요.'
         : snapshot.investigation.turn?.myReservation
           ? '내 차례가 오면 예약한 카드를 가져갈 수 있습니다.'
           : currentTurnLabel
-            ? `${currentTurnLabel}이 단서를 가져갈 차례입니다.${currentTurnProgressText ? ` ${currentTurnProgressText}.` : ''} 필요하면 내 차례 전에 카드를 예약해둘 수 있습니다.`
+            ? `${currentTurnLabel}이 단서를 가져갈 차례입니다. 필요하면 내 차례 전에 카드를 예약해둘 수 있습니다.`
             : '필요하면 내 차례 전에 카드를 예약해둘 수 있습니다.';
       chips = activeRound ? (
         <Stack direction="row" spacing={0.5} alignItems="center">
           <Chip
             size="small"
-            color={canActNow ? 'warning' : 'default'}
+            color={canActNow ? 'error' : 'default'}
             label={`${activeRound}라운드`}
           />
-          {canActNow && selfInvestigationProgressText ? (
-            <Chip
-              size="small"
-              color="warning"
-              label={selfInvestigationProgressText}
-            />
-          ) : !canActNow && currentTurnProgressText ? (
-            <Chip size="small" label={currentTurnProgressText} />
+          {canActNow ? (
+            <Chip size="small" color="error" label="즉시 행동" />
           ) : null}
         </Stack>
       ) : null;
       actions = (
         <Button
-          size="small"
+          size={canActNow ? 'medium' : 'small'}
           variant={canActNow ? 'contained' : 'outlined'}
           color={canActNow ? 'warning' : 'inherit'}
+          startIcon={canActNow ? <SearchIcon /> : undefined}
           onClick={bringPhaseActionsIntoView}
+          sx={
+            canActNow
+              ? {
+                  minHeight: 40,
+                  px: 1.6,
+                  border: '1px solid rgba(255,255,255,0.42)',
+                  boxShadow: '0 10px 24px rgba(0,0,0,0.34)',
+                }
+              : undefined
+          }
         >
-          조사하러 가기
+          {canActNow ? '지금 조사하러 가기' : '조사하러 가기'}
         </Button>
       );
     } else if (phaseKind === 'final_vote') {
@@ -7734,6 +7766,7 @@ export default function MurderMysteryTableExperience({
         description={description}
         chips={chips}
         actions={actions}
+        tone={phaseKind === 'investigate' && canActNow ? 'urgent' : 'default'}
         bottomOffset={{
           xs: isSmall ? 74 : 16,
           md: 18,
