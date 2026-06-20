@@ -4966,7 +4966,7 @@ const PrivateCardsDialog = ({
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(132px, 1fr))',
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
               gap: 1.1,
               alignItems: 'start',
             }}
@@ -7274,7 +7274,7 @@ export default function MurderMysteryTableExperience({
             <Box
               sx={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(132px, 1fr))',
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
                 gap: 1.05,
                 alignItems: 'start',
               }}
