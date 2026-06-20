@@ -4839,6 +4839,12 @@ export default function MurderMysteryTableExperience({
         ) ?? null);
   const phaseKind: PhaseKind =
     snapshot.phase === 'LOBBY' ? 'lobby' : (currentStep?.kind ?? 'lobby');
+  const firstIntroStepId =
+    snapshot.scenario.flow.steps.find((step) => step.kind === 'intro')?.id ??
+    null;
+  const isPrimaryIntroStep =
+    phaseKind === 'intro' && currentStep?.id === firstIntroStepId;
+  const isPreRoundBriefingStep = phaseKind === 'intro' && !isPrimaryIntroStep;
   const phaseRemainingSec =
     snapshot.phaseTimer.durationSec && snapshot.phaseTimer.startedAt
       ? Math.max(
@@ -4985,13 +4991,12 @@ export default function MurderMysteryTableExperience({
         }
       : null);
   const shouldShowRoleSelectionMarkerRail =
-    (phaseKind === 'intro' || phaseKind === 'role_selection') &&
+    (isPrimaryIntroStep || phaseKind === 'role_selection') &&
     !isRoleSelectionLocked;
   const shouldShowPlayerMarkerRail = isRoleSelectionLocked;
   const shouldShowMarkerRail =
     shouldShowRoleSelectionMarkerRail || shouldShowPlayerMarkerRail;
-  const isIntroRoleSelectionOpen =
-    phaseKind === 'intro' && !isRoleSelectionLocked;
+  const isIntroRoleSelectionOpen = isPrimaryIntroStep && !isRoleSelectionLocked;
   const showNextPhaseTool =
     canUseHostTools &&
     phaseKind !== 'lobby' &&
@@ -5029,13 +5034,15 @@ export default function MurderMysteryTableExperience({
     Number(Boolean(selectedEvidenceRef)) +
     Number(Boolean(selectedPlayer));
   const hasOpenModal = openModalCount > 0;
-  const isIntroPrologueTab = phaseKind === 'intro' && introTab === 'prologue';
+  const isIntroPrologueTab = isPrimaryIntroStep && introTab === 'prologue';
+  const isScriptReadingLayout = isIntroPrologueTab || isPreRoundBriefingStep;
   const shouldShowHostRoleSelectionDock =
     canUseHostTools &&
     (phaseKind === 'lobby' ||
-      phaseKind === 'intro' ||
+      isPrimaryIntroStep ||
       phaseKind === 'role_selection') &&
     !isRoleSelectionLocked;
+  const shouldShowHostBriefingDock = canUseHostTools && isPreRoundBriefingStep;
   const shouldShowFloatingActionDock =
     isFloatingActionDockPhase &&
     (!hasOpenModal || (phaseKind === 'investigate' && canActNow));
@@ -5054,8 +5061,10 @@ export default function MurderMysteryTableExperience({
     phaseKind === 'endbook';
   const shouldOverlayHostRoleSelectionDock =
     shouldShowHostRoleSelectionDock && !isSmall;
+  const shouldOverlayHostBriefingDock = shouldShowHostBriefingDock && !isSmall;
   const shouldReserveBottomDockSpace =
     shouldOverlayHostRoleSelectionDock ||
+    shouldOverlayHostBriefingDock ||
     shouldShowFloatingActionDock ||
     shouldShowMobileDeskPanel;
   const mobileMainBottomPadding = shouldShowMobileDeskPanel
@@ -5073,7 +5082,7 @@ export default function MurderMysteryTableExperience({
         };
   const phasePanelBottomPadding = hasOpenModal
     ? { xs: 8.5, lg: 2 }
-    : isIntroPrologueTab
+    : isScriptReadingLayout
       ? { xs: 1.3, md: 2 }
       : phaseKind === 'role_reading'
         ? { xs: 1.3, md: 2 }
@@ -5636,6 +5645,90 @@ export default function MurderMysteryTableExperience({
             {playerStatusText}
           </Typography>
         ) : null}
+      </Stack>
+    );
+  };
+
+  const renderIntroBriefingArea = () => {
+    const briefingText =
+      snapshot.publicScripts.find((script) => script.current)?.readAloud ??
+      currentStep?.readAloud ??
+      snapshot.scenario.intro.readAloud;
+    const isHostReading = canUseHostTools;
+
+    return (
+      <Stack
+        spacing={1.3}
+        sx={{ height: '100%', minHeight: 0, display: 'flex' }}
+      >
+        <Box
+          sx={{
+            flex: '0 0 auto',
+            p: { xs: 1.6, md: 2.2 },
+            borderRadius: 3,
+            border: isHostReading
+              ? '1px solid rgba(245, 197, 66, 0.72)'
+              : '1px solid rgba(255,255,255,0.16)',
+            backgroundColor: isHostReading
+              ? 'rgba(245, 197, 66, 0.12)'
+              : 'rgba(255,255,255,0.06)',
+            boxShadow: isHostReading ? '0 18px 42px rgba(0,0,0,0.28)' : 'none',
+          }}
+        >
+          <Stack spacing={1.4}>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              <Chip
+                icon={<ArticleIcon />}
+                label={currentStep?.label ?? '조사 전 지문'}
+                color="warning"
+              />
+            </Stack>
+
+            <Box>
+              <Typography
+                variant="h4"
+                fontWeight={950}
+                sx={{
+                  fontSize: { xs: 26, md: 34 },
+                  lineHeight: 1.15,
+                  wordBreak: 'keep-all',
+                }}
+              >
+                {isHostReading
+                  ? '방장이 소리 내어 읽어주세요'
+                  : '방장이 지문을 낭독 중입니다'}
+              </Typography>
+              <Typography sx={{ mt: 0.8, color: '#d8d0bd', lineHeight: 1.65 }}>
+                {isHostReading
+                  ? '지문을 모두 읽은 뒤 아래 버튼으로 다음 단계로 진행하세요.'
+                  : '낭독이 끝나면 방장이 다음 단계로 진행합니다.'}
+              </Typography>
+            </Box>
+          </Stack>
+        </Box>
+
+        <Box
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: 'auto',
+            p: { xs: 1.4, md: 2 },
+            pr: { xs: 1.85, md: 2.7 },
+            scrollbarWidth: 'thin',
+            '&::-webkit-scrollbar': { width: 6 },
+            '&::-webkit-scrollbar-thumb': {
+              backgroundColor: 'rgba(248,241,222,0.24)',
+              borderRadius: 999,
+            },
+            borderRadius: 2,
+            border: '1px solid rgba(255,255,255,0.14)',
+            backgroundColor: 'rgba(11, 15, 20, 0.58)',
+          }}
+        >
+          <Typography sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.78 }}>
+            {briefingText}
+          </Typography>
+        </Box>
       </Stack>
     );
   };
@@ -7114,6 +7207,89 @@ export default function MurderMysteryTableExperience({
     );
   };
 
+  const renderHostBriefingDock = () => {
+    if (!shouldShowHostBriefingDock) {
+      return null;
+    }
+
+    const currentStepIndex = snapshot.scenario.flow.steps.findIndex(
+      (step) => step.id === snapshot.phase
+    );
+    const nextStep =
+      currentStepIndex >= 0
+        ? (snapshot.scenario.flow.steps[currentStepIndex + 1] ?? null)
+        : null;
+    const buttonLabel =
+      nextStep?.kind === 'investigate'
+        ? `${nextStep.label} 시작`
+        : '다 읽고 다음 단계로';
+
+    return (
+      <Box
+        sx={{
+          position: { xs: 'relative', md: 'fixed' },
+          left: { xs: 'auto', md: '50%' },
+          right: { xs: 'auto', md: 'auto' },
+          bottom: { xs: 'auto', md: 18 },
+          transform: { xs: 'none', md: 'translateX(-50%)' },
+          zIndex: 1200,
+          width: { xs: 'auto', md: 'min(640px, calc(100vw - 320px))' },
+          maxWidth: { md: 640 },
+          mx: { xs: 1.25, md: 0 },
+          mb: { xs: 1, md: 0 },
+          flexShrink: 0,
+          pointerEvents: 'auto',
+        }}
+      >
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={0.9}
+          alignItems={{ xs: 'stretch', sm: 'center' }}
+          sx={{
+            p: 1,
+            borderRadius: 2,
+            border: '1px solid rgba(74, 222, 128, 0.42)',
+            backgroundColor: 'rgba(15, 38, 25, 0.96)',
+            boxShadow: '0 18px 38px rgba(0,0,0,0.32)',
+          }}
+        >
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Typography fontWeight={950} sx={{ color: '#f8f1de' }}>
+              지문 낭독
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                color: '#cfc5ad',
+                display: 'block',
+                mt: 0.25,
+                wordBreak: 'keep-all',
+              }}
+            >
+              지문을 모두 읽었다면 다음 단계로 진행하세요.
+            </Typography>
+          </Box>
+          <Button
+            disableElevation
+            variant="contained"
+            color="success"
+            startIcon={<TaskAltIcon />}
+            onClick={onNextPhase}
+            sx={{
+              minHeight: 38,
+              px: 1.5,
+              borderRadius: 1.4,
+              fontWeight: 950,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {buttonLabel}
+          </Button>
+        </Stack>
+      </Box>
+    );
+  };
+
   const renderHostRoleSelectionDock = () => {
     if (!shouldShowHostRoleSelectionDock) {
       return null;
@@ -7470,6 +7646,9 @@ export default function MurderMysteryTableExperience({
     }
 
     if (phaseKind === 'intro') {
+      if (isPreRoundBriefingStep) {
+        return renderIntroBriefingArea();
+      }
       return renderIntroArea();
     }
 
@@ -7693,7 +7872,7 @@ export default function MurderMysteryTableExperience({
             p: { xs: 1.3, md: 2 },
             pb: phasePanelBottomPadding,
             overflow:
-              isIntroPrologueTab || phaseKind === 'role_reading'
+              isScriptReadingLayout || phaseKind === 'role_reading'
                 ? 'hidden'
                 : 'auto',
             touchAction: phaseKind === 'role_reading' ? 'none' : undefined,
@@ -7704,7 +7883,7 @@ export default function MurderMysteryTableExperience({
           <Stack
             spacing={1.8}
             sx={
-              isIntroPrologueTab || phaseKind === 'role_reading'
+              isScriptReadingLayout || phaseKind === 'role_reading'
                 ? { height: '100%', minHeight: 0 }
                 : undefined
             }
@@ -7769,6 +7948,7 @@ export default function MurderMysteryTableExperience({
       ) : null}
 
       {renderHostRoleSelectionDock()}
+      {renderHostBriefingDock()}
       {renderFloatingActionDock()}
       <ClueTakeOverlay
         notice={clueTakeNotice}
