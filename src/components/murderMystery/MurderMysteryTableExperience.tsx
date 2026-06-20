@@ -236,10 +236,12 @@ const DEFAULT_MAP_FAB_POSITION: FloatingFabPosition = {
 };
 
 type AnimatedProgressChipProps = ChipProps & {
+  animateOnMount?: boolean;
   count: number;
 };
 
 const AnimatedProgressChip = ({
+  animateOnMount = false,
   count,
   sx,
   ...chipProps
@@ -249,11 +251,14 @@ const AnimatedProgressChip = ({
 
   useEffect(() => {
     const previousCount = previousCountRef.current;
-    if (previousCount !== null && count > previousCount) {
+    if (
+      (previousCount === null && animateOnMount && count > 0) ||
+      (previousCount !== null && count > previousCount)
+    ) {
       setAnimationSerial((serial) => serial + 1);
     }
     previousCountRef.current = count;
-  }, [count]);
+  }, [animateOnMount, count]);
 
   const sxList = Array.isArray(sx) ? sx : sx ? [sx] : [];
 
@@ -7981,7 +7986,9 @@ export default function MurderMysteryTableExperience({
             <Typography variant="h5" fontWeight={950} sx={{ flex: 1 }}>
               참가 현황
             </Typography>
-            <Chip
+            <AnimatedProgressChip
+              animateOnMount
+              count={connectedPlayerCount}
               label={`접속 ${connectedPlayerCount}/${requiredPlayerCount}`}
               color={allConnected ? 'success' : 'warning'}
               sx={{ fontWeight: 900 }}
