@@ -2,7 +2,10 @@
 
 import {
   Fragment,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
   type RefObject,
+  type ReactNode,
   useCallback,
   useEffect,
   useMemo,
@@ -113,6 +116,8 @@ interface MurderMysteryTableExperienceProps {
 type PhaseKind = MurderMysteryStepKind | 'lobby';
 type IntroTab = 'prologue' | 'public-info';
 type AnyClueCard = MurderMysteryClueVaultCardView | MurderMysteryCardScenario;
+type CardOrderBucket = 'public-clues' | 'my-clues';
+type StoredCardOrder = Partial<Record<CardOrderBucket, string[]>>;
 type ParticipantLabelSource = {
   name?: string | null;
   displayName?: string | null;
@@ -138,6 +143,44 @@ type InvestigationTargetGroup = {
 type InvestigationCardMatEntry = {
   target: MurderMysteryInvestigationTargetView;
   matNumber?: number;
+};
+type SortableCardGesture = {
+  pointerId: number;
+  cardId: string;
+  startX: number;
+  startY: number;
+  startTarget: HTMLElement;
+  isDragging: boolean;
+};
+type ActiveSortableCardDrag = {
+  cardId: string;
+  overCardId: string | null;
+  pointerX: number;
+  pointerY: number;
+  offsetX: number;
+  offsetY: number;
+  width: number;
+  height: number;
+};
+type SortableClientRect = {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+  width: number;
+  height: number;
+};
+type SortableGridLayoutSnapshot = {
+  gridRect: SortableClientRect;
+  cardIdsByIndex: string[];
+  columns: number;
+  columnCenters: number[];
+  rowCenters: number[];
+};
+type SortableClueCardGridProps<TCard extends AnyClueCard> = {
+  cards: TCard[];
+  onReorder: (cards: TCard[]) => void;
+  renderCard: (card: TCard) => ReactNode;
 };
 type InvestigationCardMatGroup = {
   id: string;
@@ -230,6 +273,10 @@ const EDGE_PANEL_FAB_TOP_SAFE_OFFSET = 50;
 const EDGE_PANEL_FAB_DRAG_THRESHOLD = 5;
 const PINNED_CLUE_FAB_STORAGE_KEY = 'murderMystery:pinnedClueFabPosition:v1';
 const MAP_FAB_STORAGE_KEY = 'murderMystery:mapFabPosition:v1';
+const CARD_ORDER_STORAGE_PREFIX = 'murderMystery:cardOrder:v1';
+const CARD_ORDER_BUCKETS: CardOrderBucket[] = ['public-clues', 'my-clues'];
+const CARD_SORT_LONG_PRESS_MS = 450;
+const CARD_SORT_CANCEL_DISTANCE = 10;
 const DEFAULT_PINNED_CLUE_FAB_POSITION: FloatingFabPosition = {
   side: 'right',
   yRatio: 1,
@@ -456,6 +503,249 @@ const getPrivateOnlyClueCards = (
       !(card.backId && publicBackIds.has(card.backId))
   );
 };
+
+const readStoredCardOrder = (storageKey: string): StoredCardOrder => {
+  if (typeof window === 'undefined') {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(
+      window.localStorage.getItem(storageKey) ?? '{}'
+    ) as Record<string, unknown>;
+    return CARD_ORDER_BUCKETS.reduce<StoredCardOrder>((acc, bucket) => {
+      const value = parsed[bucket];
+      if (Array.isArray(value)) {
+        acc[bucket] = value.filter(
+          (cardId): cardId is string => typeof cardId === 'string'
+        );
+      }
+      return acc;
+    }, {});
+  } catch {
+    return {};
+  }
+};
+
+const writeStoredCardOrder = (
+  storageKey: string,
+  cardOrder: StoredCardOrder
+) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(storageKey, JSON.stringify(cardOrder));
+  } catch {
+    // Some browsers block localStorage; in-memory order still works.
+  }
+};
+
+const orderCardsByStoredIds = <TCard extends { id: string }>(
+  cards: TCard[],
+  orderedIds?: string[]
+) => {
+  if (!orderedIds?.length) {
+    return cards;
+  }
+
+  const cardById = new Map(cards.map((card) => [card.id, card] as const));
+  const orderedCards: TCard[] = [];
+  const seenCardIds = new Set<string>();
+
+  orderedIds.forEach((cardId) => {
+    const card = cardById.get(cardId);
+    if (card && !seenCardIds.has(cardId)) {
+      orderedCards.push(card);
+      seenCardIds.add(cardId);
+    }
+  });
+
+  cards.forEach((card) => {
+    if (!seenCardIds.has(card.id)) {
+      orderedCards.push(card);
+    }
+  });
+
+  return orderedCards;
+};
+
+const reorderCards = <TCard,>(
+  cards: TCard[],
+  fromIndex: number,
+  toIndex: number
+) => {
+  const nextCards = [...cards];
+  const [movedCard] = nextCards.splice(fromIndex, 1);
+  if (!movedCard) {
+    return cards;
+  }
+  nextCards.splice(toIndex, 0, movedCard);
+  return nextCards;
+};
+
+const getActiveSortableCardRect = (
+  drag: ActiveSortableCardDrag,
+  pointerX = drag.pointerX,
+  pointerY = drag.pointerY
+): SortableClientRect => {
+  const left = pointerX - drag.offsetX;
+  const top = pointerY - drag.offsetY;
+  return {
+    left,
+    top,
+    right: left + drag.width,
+    bottom: top + drag.height,
+    width: drag.width,
+    height: drag.height,
+  };
+};
+
+const toSortableClientRect = (rect: DOMRect): SortableClientRect => ({
+  left: rect.left,
+  top: rect.top,
+  right: rect.right,
+  bottom: rect.bottom,
+  width: rect.width,
+  height: rect.height,
+});
+
+const getComputedGridColumnCount = (gridElement: HTMLElement) => {
+  const templateColumns = window
+    .getComputedStyle(gridElement)
+    .gridTemplateColumns.split(' ')
+    .filter((track) => track.trim() && track !== 'none');
+  return templateColumns.length;
+};
+
+const getAxisIndexFromCenters = (value: number, centers: number[]) => {
+  if (centers.length <= 1) {
+    return 0;
+  }
+
+  let low = 0;
+  let high = centers.length - 1;
+  while (low < high) {
+    const mid = Math.floor((low + high) / 2);
+    const boundary = (centers[mid] + centers[mid + 1]) / 2;
+    if (value < boundary) {
+      high = mid;
+    } else {
+      low = mid + 1;
+    }
+  }
+  return low;
+};
+
+const getSortableGridLayoutSnapshot = (
+  gridElement: HTMLElement | null
+): SortableGridLayoutSnapshot | null => {
+  if (!gridElement) {
+    return null;
+  }
+
+  const sortableElements = Array.from(
+    gridElement.querySelectorAll<HTMLElement>('[data-sortable-card-id]')
+  );
+  if (!sortableElements.length) {
+    return null;
+  }
+
+  const measuredCards = sortableElements.map((element) => ({
+    cardId: element.dataset.sortableCardId ?? '',
+    rect: toSortableClientRect(element.getBoundingClientRect()),
+  }));
+  const validMeasuredCards = measuredCards.filter(
+    ({ cardId, rect }) => cardId && rect.width > 0 && rect.height > 0
+  );
+  if (!validMeasuredCards.length) {
+    return null;
+  }
+
+  const gridRect = toSortableClientRect(gridElement.getBoundingClientRect());
+  const columns = Math.max(
+    1,
+    getComputedGridColumnCount(gridElement) ||
+      Math.min(validMeasuredCards.length, 3)
+  );
+  const rowCount = Math.max(1, Math.ceil(validMeasuredCards.length / columns));
+  const fallbackColumnWidth = gridRect.width / columns;
+  const fallbackRowHeight = gridRect.height / rowCount;
+  const columnCenters = Array.from({ length: columns }, (_, columnIndex) => {
+    const measuredCard = validMeasuredCards.find(
+      (_, cardIndex) => cardIndex % columns === columnIndex
+    );
+    return measuredCard
+      ? measuredCard.rect.left + measuredCard.rect.width / 2
+      : gridRect.left + fallbackColumnWidth * (columnIndex + 0.5);
+  });
+  const rowCenters = Array.from({ length: rowCount }, (_, rowIndex) => {
+    const rowCards = validMeasuredCards.filter(
+      (_, cardIndex) => Math.floor(cardIndex / columns) === rowIndex
+    );
+    if (rowCards.length) {
+      const rowTop = Math.min(...rowCards.map(({ rect }) => rect.top));
+      const rowBottom = Math.max(...rowCards.map(({ rect }) => rect.bottom));
+      return (rowTop + rowBottom) / 2;
+    }
+    return gridRect.top + fallbackRowHeight * (rowIndex + 0.5);
+  });
+
+  return {
+    gridRect,
+    cardIdsByIndex: validMeasuredCards.map(({ cardId }) => cardId),
+    columns,
+    columnCenters,
+    rowCenters,
+  };
+};
+
+const getSortableCardDropTargetId = (
+  layoutSnapshot: SortableGridLayoutSnapshot | null,
+  activeCardId: string,
+  dragRect: SortableClientRect
+) => {
+  if (!layoutSnapshot) {
+    return null;
+  }
+
+  const { cardIdsByIndex, columnCenters, columns, gridRect, rowCenters } =
+    layoutSnapshot;
+  if (!cardIdsByIndex.length || !columnCenters.length || !rowCenters.length) {
+    return null;
+  }
+
+  const dragCenterX = dragRect.left + dragRect.width / 2;
+  const dragCenterY = dragRect.top + dragRect.height / 2;
+  const horizontalTolerance = Math.max(36, dragRect.width * 0.45);
+  const verticalTolerance = Math.max(36, dragRect.height * 0.45);
+
+  if (
+    dragCenterX < gridRect.left - horizontalTolerance ||
+    dragCenterX > gridRect.right + horizontalTolerance ||
+    dragCenterY < gridRect.top - verticalTolerance ||
+    dragCenterY > gridRect.bottom + verticalTolerance
+  ) {
+    return null;
+  }
+
+  const rowIndex = getAxisIndexFromCenters(dragCenterY, rowCenters);
+  const columnIndex = getAxisIndexFromCenters(dragCenterX, columnCenters);
+  const targetIndex = clamp(
+    rowIndex * columns + columnIndex,
+    0,
+    cardIdsByIndex.length - 1
+  );
+  const targetCardId = cardIdsByIndex[targetIndex];
+  return targetCardId && targetCardId !== activeCardId
+    ? targetCardId
+    : activeCardId;
+};
+
+const isCardDragExcludedTarget = (target: EventTarget | null) =>
+  target instanceof Element &&
+  Boolean(target.closest('[data-card-drag-excluded="true"]'));
 
 const TextOnlyClueMedia = ({
   dense = false,
@@ -1674,6 +1964,329 @@ const InvestigationMapFab = ({
   </EdgePanelFab>
 );
 
+function SortableClueCardGrid<TCard extends AnyClueCard>({
+  cards,
+  onReorder,
+  renderCard,
+}: SortableClueCardGridProps<TCard>) {
+  const gridRef = useRef<HTMLDivElement | null>(null);
+  const layoutSnapshotRef = useRef<SortableGridLayoutSnapshot | null>(null);
+  const longPressTimerRef = useRef<number | null>(null);
+  const gestureRef = useRef<SortableCardGesture | null>(null);
+  const suppressNextClickRef = useRef(false);
+  const [activeDrag, setActiveDrag] = useState<ActiveSortableCardDrag | null>(
+    null
+  );
+
+  const clearLongPressTimer = useCallback(() => {
+    if (longPressTimerRef.current !== null) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
+
+  const resetGesture = useCallback(() => {
+    clearLongPressTimer();
+    layoutSnapshotRef.current = null;
+    gestureRef.current = null;
+    setActiveDrag(null);
+  }, [clearLongPressTimer]);
+
+  const beginDrag = useCallback((cardId: string) => {
+    const gesture = gestureRef.current;
+    if (!gesture || gesture.cardId !== cardId) {
+      return;
+    }
+
+    gesture.isDragging = true;
+    suppressNextClickRef.current = true;
+    try {
+      gesture.startTarget.setPointerCapture(gesture.pointerId);
+    } catch {
+      // The pointer may already be released on slower devices.
+    }
+    layoutSnapshotRef.current = getSortableGridLayoutSnapshot(gridRef.current);
+    const dragRect = gesture.startTarget.getBoundingClientRect();
+    setActiveDrag({
+      cardId,
+      overCardId: cardId,
+      pointerX: gesture.startX,
+      pointerY: gesture.startY,
+      offsetX: gesture.startX - dragRect.left,
+      offsetY: gesture.startY - dragRect.top,
+      width: dragRect.width,
+      height: dragRect.height,
+    });
+  }, []);
+
+  const handlePointerDown = useCallback(
+    (cardId: string, event: ReactPointerEvent<HTMLElement>) => {
+      if (
+        (event.pointerType === 'mouse' && event.button !== 0) ||
+        isCardDragExcludedTarget(event.target)
+      ) {
+        return;
+      }
+
+      resetGesture();
+      gestureRef.current = {
+        pointerId: event.pointerId,
+        cardId,
+        startX: event.clientX,
+        startY: event.clientY,
+        startTarget: event.currentTarget,
+        isDragging: false,
+      };
+      longPressTimerRef.current = window.setTimeout(
+        () => beginDrag(cardId),
+        CARD_SORT_LONG_PRESS_MS
+      );
+    },
+    [beginDrag, resetGesture]
+  );
+
+  const handlePointerMove = useCallback(
+    (event: ReactPointerEvent<HTMLElement>) => {
+      const gesture = gestureRef.current;
+      if (!gesture || gesture.pointerId !== event.pointerId) {
+        return;
+      }
+
+      const distance = Math.hypot(
+        event.clientX - gesture.startX,
+        event.clientY - gesture.startY
+      );
+      if (!gesture.isDragging) {
+        if (distance > CARD_SORT_CANCEL_DISTANCE) {
+          resetGesture();
+        }
+        return;
+      }
+
+      event.preventDefault();
+      setActiveDrag((current) =>
+        current && current.cardId === gesture.cardId
+          ? (() => {
+              const nextDrag = {
+                ...current,
+                pointerX: event.clientX,
+                pointerY: event.clientY,
+              };
+              const resolvedOverCardId = getSortableCardDropTargetId(
+                layoutSnapshotRef.current,
+                gesture.cardId,
+                getActiveSortableCardRect(nextDrag)
+              );
+
+              return {
+                ...nextDrag,
+                overCardId: resolvedOverCardId ?? current.overCardId,
+              };
+            })()
+          : current
+      );
+    },
+    [resetGesture]
+  );
+
+  const handlePointerEnd = useCallback(
+    (event: ReactPointerEvent<HTMLElement>) => {
+      const gesture = gestureRef.current;
+      if (!gesture || gesture.pointerId !== event.pointerId) {
+        return;
+      }
+
+      clearLongPressTimer();
+
+      if (!gesture.isDragging) {
+        gestureRef.current = null;
+        return;
+      }
+
+      event.preventDefault();
+      try {
+        gesture.startTarget.releasePointerCapture(gesture.pointerId);
+      } catch {
+        // Ignore stale pointer capture state.
+      }
+
+      const resolvedOverCardId = activeDrag
+        ? getSortableCardDropTargetId(
+            layoutSnapshotRef.current,
+            gesture.cardId,
+            getActiveSortableCardRect(activeDrag, event.clientX, event.clientY)
+          )
+        : null;
+      const overCardId =
+        resolvedOverCardId ?? activeDrag?.overCardId ?? gesture.cardId;
+      const fromIndex = cards.findIndex((card) => card.id === gesture.cardId);
+      const toIndex = cards.findIndex((card) => card.id === overCardId);
+      if (fromIndex >= 0 && toIndex >= 0 && fromIndex !== toIndex) {
+        onReorder(reorderCards(cards, fromIndex, toIndex));
+      }
+
+      gestureRef.current = null;
+      layoutSnapshotRef.current = null;
+      setActiveDrag(null);
+    },
+    [activeDrag, cards, clearLongPressTimer, onReorder]
+  );
+
+  const handleClickCapture = useCallback((event: ReactMouseEvent) => {
+    if (!suppressNextClickRef.current) {
+      return;
+    }
+    suppressNextClickRef.current = false;
+    event.preventDefault();
+    event.stopPropagation();
+  }, []);
+
+  const handlePointerCancel = useCallback(() => {
+    resetGesture();
+    suppressNextClickRef.current = false;
+  }, [resetGesture]);
+
+  useEffect(
+    () => () => {
+      clearLongPressTimer();
+    },
+    [clearLongPressTimer]
+  );
+
+  const previewCards = useMemo(() => {
+    if (!activeDrag?.overCardId) {
+      return cards;
+    }
+
+    const fromIndex = cards.findIndex((card) => card.id === activeDrag.cardId);
+    const toIndex = cards.findIndex(
+      (card) => card.id === activeDrag.overCardId
+    );
+    if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) {
+      return cards;
+    }
+
+    return reorderCards(cards, fromIndex, toIndex);
+  }, [activeDrag?.cardId, activeDrag?.overCardId, cards]);
+
+  const activeCard = useMemo(
+    () =>
+      activeDrag
+        ? cards.find((card) => card.id === activeDrag.cardId)
+        : undefined,
+    [activeDrag?.cardId, cards]
+  );
+
+  return (
+    <Fragment>
+      <Box
+        ref={gridRef}
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+          gap: 0.65,
+          alignItems: 'start',
+        }}
+      >
+        {previewCards.map((card) => {
+          const isDragging = activeDrag?.cardId === card.id;
+
+          return (
+            <Box
+              key={card.id}
+              data-sortable-card-id={card.id}
+              onPointerDown={(event) => handlePointerDown(card.id, event)}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerEnd}
+              onPointerCancel={handlePointerCancel}
+              onPointerLeave={(event) => {
+                const gesture = gestureRef.current;
+                if (
+                  gesture &&
+                  !gesture.isDragging &&
+                  gesture.pointerId === event.pointerId
+                ) {
+                  resetGesture();
+                }
+              }}
+              onClickCapture={handleClickCapture}
+              onContextMenu={(event) => {
+                if (isDragging || suppressNextClickRef.current) {
+                  event.preventDefault();
+                }
+              }}
+              sx={{
+                position: 'relative',
+                minWidth: 0,
+                borderRadius: 1,
+                cursor: isDragging ? 'grabbing' : 'grab',
+                touchAction: activeDrag ? 'none' : 'pan-y',
+                userSelect: isDragging ? 'none' : 'auto',
+                opacity: activeDrag && !isDragging ? 0.88 : 1,
+                filter: activeDrag && !isDragging ? 'saturate(0.9)' : 'none',
+                transition: 'opacity 150ms ease, filter 150ms ease',
+                '@media (prefers-reduced-motion: reduce)': {
+                  transition: 'none',
+                },
+              }}
+            >
+              {isDragging && activeDrag ? (
+                <Box
+                  sx={{
+                    minHeight: Math.max(activeDrag.height, 96),
+                    height: activeDrag.height,
+                    borderRadius: 1,
+                    border: '2px dashed rgba(245, 197, 66, 0.92)',
+                    background:
+                      'linear-gradient(135deg, rgba(245,197,66,0.18), rgba(245,197,66,0.06))',
+                    boxShadow:
+                      'inset 0 0 0 1px rgba(255,255,255,0.32), 0 0 0 4px rgba(245,197,66,0.12)',
+                    display: 'grid',
+                    placeItems: 'center',
+                    color: '#fff2b8',
+                    fontSize: 11,
+                    fontWeight: 950,
+                    lineHeight: 1.1,
+                    textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  여기에 놓기
+                </Box>
+              ) : (
+                renderCard(card)
+              )}
+            </Box>
+          );
+        })}
+      </Box>
+      {activeDrag && activeCard ? (
+        <Box
+          sx={{
+            position: 'fixed',
+            left: activeDrag.pointerX - activeDrag.offsetX,
+            top: activeDrag.pointerY - activeDrag.offsetY,
+            width: activeDrag.width,
+            zIndex: 2300,
+            pointerEvents: 'none',
+            cursor: 'grabbing',
+            opacity: 0.98,
+            transform: 'rotate(-1.5deg) scale(1.04)',
+            transformOrigin: 'center',
+            filter: 'drop-shadow(0 22px 30px rgba(0,0,0,0.46))',
+            willChange: 'left, top, transform',
+            '@media (prefers-reduced-motion: reduce)': {
+              transform: 'none',
+            },
+          }}
+        >
+          {renderCard(activeCard)}
+        </Box>
+      ) : null}
+    </Fragment>
+  );
+}
+
 const EvidenceCardFace = ({
   card,
   dense = false,
@@ -1891,6 +2504,7 @@ const EvidenceCardFace = ({
       </Box>
       {showPublicRevealControl ? (
         <Button
+          data-card-drag-excluded="true"
           size="small"
           variant="contained"
           color={isPublic ? 'success' : 'warning'}
@@ -5169,6 +5783,7 @@ const PrivateCardsDialog = ({
   publicRevealNoticeSeverity,
   onClose,
   onOpenCard,
+  onReorderCards,
   onRevealPublicly,
 }: {
   open: boolean;
@@ -5179,6 +5794,7 @@ const PrivateCardsDialog = ({
   publicRevealNoticeSeverity: 'info' | 'success' | 'warning';
   onClose: () => void;
   onOpenCard: (card: AnyClueCard) => void;
+  onReorderCards: (cards: MurderMysteryClueVaultCardView[]) => void;
   onRevealPublicly: (cardId: string) => void;
 }) => (
   <Dialog
@@ -5214,15 +5830,10 @@ const PrivateCardsDialog = ({
           <Alert severity={publicRevealNoticeSeverity} variant="outlined">
             {publicRevealNotice}
           </Alert>
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-              gap: 0.65,
-              alignItems: 'start',
-            }}
-          >
-            {cards.map((card) => (
+          <SortableClueCardGrid
+            cards={cards}
+            onReorder={onReorderCards}
+            renderCard={(card) => (
               <EvidenceCardFace
                 key={card.id}
                 card={card}
@@ -5236,8 +5847,8 @@ const PrivateCardsDialog = ({
                 publicRevealDisabled={!canRevealPubliclyNow}
                 onRevealPublicly={onRevealPublicly}
               />
-            ))}
-          </Box>
+            )}
+          />
         </Stack>
       )}
     </DialogContent>
@@ -5331,6 +5942,7 @@ export default function MurderMysteryTableExperience({
   );
   const [pendingSpecialEventAction, setPendingSpecialEventAction] =
     useState<SpecialEventActionRequest | null>(null);
+  const [cardOrder, setCardOrder] = useState<StoredCardOrder>({});
   const [clueTakeNotice, setClueTakeNotice] = useState<ClueTakeNotice | null>(
     null
   );
@@ -5340,6 +5952,11 @@ export default function MurderMysteryTableExperience({
   const [nowTick, setNowTick] = useState(Date.now());
   const selectedCard = cardViewer?.cards[cardViewer.index] ?? null;
   const activeRound = snapshot.investigation.round;
+  const cardOrderStorageKey = useMemo(
+    () =>
+      `${CARD_ORDER_STORAGE_PREFIX}:${snapshot.roomId}:${snapshot.scenario.id}:${sessionId}`,
+    [sessionId, snapshot.roomId, snapshot.scenario.id]
+  );
 
   const selfPlayer =
     snapshot.players.find((player) => player.id === sessionId) ?? null;
@@ -5361,6 +5978,24 @@ export default function MurderMysteryTableExperience({
       ]),
     [snapshot.clueVault.publicClues, snapshot.players]
   );
+  const orderedPublicClues = useMemo(
+    () =>
+      orderCardsByStoredIds(
+        snapshot.clueVault.publicClues,
+        cardOrder['public-clues']
+      ),
+    [cardOrder, snapshot.clueVault.publicClues]
+  );
+  const orderedDiscussionPublicClues = useMemo(
+    () =>
+      orderCardsByStoredIds(discussionPublicClues, cardOrder['public-clues']),
+    [cardOrder, discussionPublicClues]
+  );
+  const orderedMyClues = useMemo(
+    () =>
+      orderCardsByStoredIds(snapshot.clueVault.myClues, cardOrder['my-clues']),
+    [cardOrder, snapshot.clueVault.myClues]
+  );
   const investigationTargetIds = useMemo(
     () =>
       new Set(
@@ -5372,19 +6007,19 @@ export default function MurderMysteryTableExperience({
   );
   const cardViewerSources = useMemo(() => {
     const sources: Record<string, AnyClueCard[]> = {
-      'my-clues': snapshot.clueVault.myClues,
+      'my-clues': orderedMyClues,
       'my-private-clues': selfPrivateOnlyClues,
-      'public-clues': snapshot.clueVault.publicClues,
-      'discussion:public': discussionPublicClues,
+      'public-clues': orderedPublicClues,
+      'discussion:public': orderedDiscussionPublicClues,
     };
     snapshot.players.forEach((player) => {
       sources[`player:${player.id}:public`] = player.publicRevealedClues;
     });
     return sources;
   }, [
-    discussionPublicClues,
-    snapshot.clueVault.myClues,
-    snapshot.clueVault.publicClues,
+    orderedDiscussionPublicClues,
+    orderedMyClues,
+    orderedPublicClues,
     snapshot.players,
     selfPrivateOnlyClues,
   ]);
@@ -5741,6 +6376,31 @@ export default function MurderMysteryTableExperience({
     }
     setIsPrivateCardsOpen(true);
   };
+  useEffect(() => {
+    setCardOrder(readStoredCardOrder(cardOrderStorageKey));
+  }, [cardOrderStorageKey]);
+  const updateCardOrder = useCallback(
+    (bucket: CardOrderBucket, nextCards: { id: string }[]) => {
+      setCardOrder((current) => {
+        const nextOrder = {
+          ...current,
+          [bucket]: nextCards.map((card) => card.id),
+        };
+        writeStoredCardOrder(cardOrderStorageKey, nextOrder);
+        return nextOrder;
+      });
+    },
+    [cardOrderStorageKey]
+  );
+  const updatePublicCardOrder = useCallback(
+    (nextCards: AnyClueCard[]) => updateCardOrder('public-clues', nextCards),
+    [updateCardOrder]
+  );
+  const updateMyCardOrder = useCallback(
+    (nextCards: MurderMysteryClueVaultCardView[]) =>
+      updateCardOrder('my-clues', nextCards),
+    [updateCardOrder]
+  );
   const openCardViewer = useCallback(
     (sourceId: string, cards: AnyClueCard[], card: AnyClueCard) => {
       if (cards.length === 0) {
@@ -5845,9 +6505,15 @@ export default function MurderMysteryTableExperience({
       !autoOpenedInvestigationCardIdsRef.current.has(latestAddedCard.id)
     ) {
       autoOpenedInvestigationCardIdsRef.current.add(latestAddedCard.id);
-      openCardViewer('my-clues', snapshot.clueVault.myClues, latestAddedCard);
+      openCardViewer('my-clues', orderedMyClues, latestAddedCard);
     }
-  }, [activeRound, openCardViewer, phaseKind, snapshot.clueVault.myClues]);
+  }, [
+    activeRound,
+    openCardViewer,
+    orderedMyClues,
+    phaseKind,
+    snapshot.clueVault.myClues,
+  ]);
 
   const setInvestigationTargetTileRef = useCallback(
     (targetId: string, element: HTMLElement | null) => {
@@ -7390,21 +8056,13 @@ export default function MurderMysteryTableExperience({
       <Stack direction="row" spacing={1} alignItems="center">
         <StyleIcon fontSize="small" />
         <Typography fontWeight={950}>공개된 단서</Typography>
-        <Chip
-          size="small"
-          label={`${snapshot.clueVault.publicClues.length}장`}
-        />
+        <Chip size="small" label={`${orderedPublicClues.length}장`} />
       </Stack>
-      {snapshot.clueVault.publicClues.length > 0 ? (
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-            gap: 0.65,
-            alignItems: 'start',
-          }}
-        >
-          {snapshot.clueVault.publicClues.map((card) => (
+      {orderedPublicClues.length > 0 ? (
+        <SortableClueCardGrid
+          cards={orderedPublicClues}
+          onReorder={updatePublicCardOrder}
+          renderCard={(card) => (
             <EvidenceCardFace
               key={`public:${card.id}`}
               card={card}
@@ -7414,15 +8072,11 @@ export default function MurderMysteryTableExperience({
               cardMinHeight={132}
               mediaHeight={58}
               onOpen={(openedCard) =>
-                openCardViewer(
-                  'public-clues',
-                  snapshot.clueVault.publicClues,
-                  openedCard
-                )
+                openCardViewer('public-clues', orderedPublicClues, openedCard)
               }
             />
-          ))}
-        </Box>
+          )}
+        />
       ) : (
         <Typography variant="body2" sx={{ color: '#d8d0bd' }}>
           아직 테이블 중앙에 공개된 단서가 없습니다.
@@ -7432,7 +8086,7 @@ export default function MurderMysteryTableExperience({
   );
 
   const renderDiscussionArea = () => {
-    const hasAnyPublicCard = discussionPublicClues.length > 0;
+    const hasAnyPublicCard = orderedDiscussionPublicClues.length > 0;
     const reportableSpecialEvents = snapshot.specialEvents;
 
     return (
@@ -7603,7 +8257,7 @@ export default function MurderMysteryTableExperience({
             <Typography fontWeight={950}>회의 공개 카드</Typography>
             <Chip
               size="small"
-              label={`${discussionPublicClues.length}장`}
+              label={`${orderedDiscussionPublicClues.length}장`}
               sx={{
                 height: 24,
                 backgroundColor: 'rgba(245, 197, 66, 0.24)',
@@ -7622,15 +8276,10 @@ export default function MurderMysteryTableExperience({
           ) : null}
 
           {hasAnyPublicCard ? (
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                gap: 0.65,
-                alignItems: 'start',
-              }}
-            >
-              {discussionPublicClues.map((card) => {
+            <SortableClueCardGrid
+              cards={orderedDiscussionPublicClues}
+              onReorder={updatePublicCardOrder}
+              renderCard={(card) => {
                 const specialEventSourceLabel = getSpecialEventSourceLabel(
                   card,
                   investigationTargetIds
@@ -7656,14 +8305,14 @@ export default function MurderMysteryTableExperience({
                     onOpen={(openedCard) =>
                       openCardViewer(
                         'discussion:public',
-                        discussionPublicClues,
+                        orderedDiscussionPublicClues,
                         openedCard
                       )
                     }
                   />
                 );
-              })}
-            </Box>
+              }}
+            />
           ) : null}
         </Stack>
       </Stack>
@@ -8825,15 +9474,14 @@ export default function MurderMysteryTableExperience({
       />
       <PrivateCardsDialog
         open={isPrivateCardsOpen}
-        cards={snapshot.clueVault.myClues}
+        cards={orderedMyClues}
         fullScreen={isSmall}
         canRevealPubliclyNow={canRevealPrivateCardsPublicly}
         publicRevealNotice={privateCardRevealNotice}
         publicRevealNoticeSeverity={privateCardRevealNoticeSeverity}
         onClose={() => setIsPrivateCardsOpen(false)}
-        onOpenCard={(card) =>
-          openCardViewer('my-clues', snapshot.clueVault.myClues, card)
-        }
+        onOpenCard={(card) => openCardViewer('my-clues', orderedMyClues, card)}
+        onReorderCards={updateMyCardOrder}
         onRevealPublicly={onRevealMyClue}
       />
       <CardDetailDialog
