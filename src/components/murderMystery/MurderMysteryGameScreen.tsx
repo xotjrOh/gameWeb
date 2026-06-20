@@ -350,13 +350,10 @@ export default function MurderMysteryGameScreen({
       snapshot={snapshot}
       onLeaveRoom={handleLeaveRoom}
       onNextPhase={() =>
-        emitWithAck(
-          'mm_host_next_phase',
-          { roomId, sessionId },
-          snapshot.phase === 'LOBBY'
-            ? '캐릭터를 배정하고 게임을 시작했습니다.'
-            : '다음 단계로 진행했습니다.'
-        )
+        emitWithAck('mm_host_next_phase', {
+          roomId,
+          sessionId,
+        })
       }
       onMarkRoleSheetRead={() =>
         emitWithAck('mm_mark_phase_read', {

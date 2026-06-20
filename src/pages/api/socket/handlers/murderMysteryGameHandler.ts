@@ -260,21 +260,11 @@ const murderMysteryGameHandler = (
         validatePlayer(room, sessionId);
         const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
 
-        const result = submitMurderMysteryRolePreferences(
-          room,
-          scenario,
-          sessionId,
-          roleIds
-        );
+        submitMurderMysteryRolePreferences(room, scenario, sessionId, roleIds);
 
         emitMurderMysterySnapshotsWithTimerSync(room, scenario);
         io.emit('room-updated', rooms);
-        return callback({
-          success: true,
-          message: result.allSubmitted
-            ? '모든 캐릭터 선택이 제출되었습니다. 방장이 확인 후 배정합니다.'
-            : '캐릭터 선택을 제출했습니다.',
-        });
+        return callback({ success: true });
       } catch (error) {
         return callback({ success: false, message: (error as Error).message });
       }
@@ -345,12 +335,7 @@ const murderMysteryGameHandler = (
       if (result.advanced) {
         io.emit('room-updated', rooms);
       }
-      return callback({
-        success: true,
-        message: result.advanced
-          ? '모두 읽음 완료. 다음 단계로 진행합니다.'
-          : '읽음 완료로 표시했습니다.',
-      });
+      return callback({ success: true });
     } catch (error) {
       return callback({ success: false, message: (error as Error).message });
     }
@@ -371,12 +356,7 @@ const murderMysteryGameHandler = (
       if (result.advanced) {
         io.emit('room-updated', rooms);
       }
-      return callback({
-        success: true,
-        message: result.advanced
-          ? '모두 읽음 완료. 다음 단계로 진행합니다.'
-          : '읽음 완료로 표시했습니다.',
-      });
+      return callback({ success: true });
     } catch (error) {
       return callback({ success: false, message: (error as Error).message });
     }
