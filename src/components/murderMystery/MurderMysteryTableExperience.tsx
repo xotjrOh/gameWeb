@@ -4620,7 +4620,7 @@ const CardDetailDialog = ({
   const handleMediaPointerDown = (
     event: React.PointerEvent<HTMLDivElement>
   ) => {
-    if (!canNavigate) {
+    if (!canNavigate && !zoomImageView) {
       return;
     }
     pointerStartRef.current = { x: event.clientX, y: event.clientY };
@@ -4628,7 +4628,7 @@ const CardDetailDialog = ({
   };
 
   const handleMediaPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!canNavigate || !pointerStartRef.current) {
+    if (!pointerStartRef.current) {
       return;
     }
 
@@ -4637,8 +4637,13 @@ const CardDetailDialog = ({
     event.currentTarget.releasePointerCapture(event.pointerId);
     const deltaX = event.clientX - start.x;
     const deltaY = event.clientY - start.y;
+    const isTap = Math.abs(deltaX) <= 10 && Math.abs(deltaY) <= 10;
 
-    if (Math.abs(deltaX) >= 48 && Math.abs(deltaX) > Math.abs(deltaY)) {
+    if (
+      canNavigate &&
+      Math.abs(deltaX) >= 48 &&
+      Math.abs(deltaX) > Math.abs(deltaY)
+    ) {
       if (deltaX < 0) {
         onNext();
       } else {
@@ -4647,14 +4652,25 @@ const CardDetailDialog = ({
       return;
     }
 
+    if (!isTap) {
+      return;
+    }
+
     const rect = mediaRef.current?.getBoundingClientRect();
     if (!rect) {
       return;
     }
-    if (event.clientX < rect.left + rect.width / 2) {
+    const edgeTapWidth = Math.min(56, rect.width * 0.14);
+    if (canNavigate && event.clientX <= rect.left + edgeTapWidth) {
       onPrevious();
-    } else {
+      return;
+    }
+    if (canNavigate && event.clientX >= rect.right - edgeTapWidth) {
       onNext();
+      return;
+    }
+    if (zoomImageView) {
+      setZoomImage(zoomImageView);
     }
   };
 
@@ -4728,8 +4744,8 @@ const CardDetailDialog = ({
             }}
             sx={{
               position: 'relative',
-              cursor: canNavigate ? 'ew-resize' : 'default',
-              touchAction: canNavigate ? 'pan-y' : 'auto',
+              cursor: hasImage ? 'zoom-in' : 'default',
+              touchAction: canNavigate || hasImage ? 'pan-y' : 'auto',
               backgroundColor: hasImage ? '#171c23' : '#f8f1de',
               userSelect: 'none',
             }}
@@ -4821,25 +4837,6 @@ const CardDetailDialog = ({
               </Box>
               {card?.extraInvestigationOnReveal ? (
                 <ExtraInvestigationFrontBadge />
-              ) : null}
-              {zoomImageView ? (
-                <Tooltip title="이미지 확대">
-                  <IconButton
-                    aria-label="이미지 확대"
-                    onClick={() => setZoomImage(zoomImageView)}
-                    sx={{
-                      width: 34,
-                      height: 34,
-                      backgroundColor: 'rgba(45,36,25,0.1)',
-                      color: '#2d2419',
-                      '&:hover': {
-                        backgroundColor: 'rgba(45,36,25,0.18)',
-                      },
-                    }}
-                  >
-                    <ZoomInIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
               ) : null}
             </Stack>
             <Typography
@@ -5767,6 +5764,10 @@ export default function MurderMysteryTableExperience({
         (back) => !previousBackIds.has(back.backId)
       );
       if (addedBacks.length === 0) {
+        return;
+      }
+
+      if (player.id === sessionId) {
         return;
       }
 
