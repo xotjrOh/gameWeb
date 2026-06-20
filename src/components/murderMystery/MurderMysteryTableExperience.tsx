@@ -53,6 +53,7 @@ import {
   Timer as TimerIcon,
   VolumeOff as VolumeOffIcon,
   VolumeUp as VolumeUpIcon,
+  WarningAmber as WarningAmberIcon,
   ZoomIn as ZoomInIcon,
   ZoomOut as ZoomOutIcon,
 } from '@mui/icons-material';
@@ -141,6 +142,7 @@ type InvestigationCardMatGroup = {
 };
 type ClueTakeNotice = {
   id: string;
+  kind: 'take' | 'reservationStolen';
   playerId: string;
   playerLabel: string;
   backLabel: string;
@@ -153,6 +155,8 @@ type CardViewerState = {
 };
 const ROLE_SELECTION_GUIDE_TEXT =
   '캐릭터 1명 선택 · 겹치면 1명 확정, 나머지 랜덤';
+const CLUE_TAKE_NOTICE_DURATION_MS = 5200;
+const RESERVATION_STOLEN_NOTICE_DURATION_MS = 9000;
 type PinnedClueReference = {
   sourceId: string;
   cardId: string;
@@ -183,6 +187,8 @@ type TurnOrderMarker = {
   rank: number;
   isCurrent: boolean;
 };
+type InvestigationPlayerProgress =
+  MurderMysteryStateSnapshot['investigation']['playerProgress'][number];
 type SpecialEventActionRequest = {
   eventId: string;
   label: string;
@@ -201,6 +207,7 @@ type BgmPlaybackState = {
 
 const CARD_BACK_LABEL = '조사 카드';
 const UNKNOWN_CARD_SOURCE_LABEL = '출처 미확인';
+const MAX_VISIBLE_INVESTIGATION_PROGRESS_TOKENS = 5;
 const EXTRA_INVESTIGATION_LABEL = '전체공개 후 추가조사';
 const EXTRA_INVESTIGATION_DESCRIPTION =
   '이 표식이 있는 카드는 획득 즉시 전체 공개되고, 조사자가 같은 라운드에서 한 번 더 조사합니다.';
@@ -958,6 +965,11 @@ const ClueTakeOverlay = ({
     return null;
   }
 
+  const isReservationStolen = notice.kind === 'reservationStolen';
+  const title = isReservationStolen
+    ? `젠장! ${notice.playerLabel}에게 단서(${notice.backLabel})를 빼앗겼다. 단서를 다시 골라야겠어.`
+    : `${notice.playerLabel}이 ‘${notice.backLabel}’ 뒷면 단서를 가져갔습니다.`;
+
   return (
     <Box
       sx={{
@@ -975,23 +987,29 @@ const ClueTakeOverlay = ({
         sx={{
           p: { xs: 1.1, md: 1.25 },
           borderRadius: 2,
-          border: '1px solid rgba(142, 202, 230, 0.78)',
-          background:
-            'linear-gradient(180deg, rgba(10, 18, 24, 0.98), rgba(31, 43, 47, 0.98))',
+          border: isReservationStolen
+            ? '1px solid rgba(251, 146, 60, 0.9)'
+            : '1px solid rgba(142, 202, 230, 0.78)',
+          background: isReservationStolen
+            ? 'linear-gradient(180deg, rgba(73, 23, 18, 0.98), rgba(111, 39, 24, 0.98))'
+            : 'linear-gradient(180deg, rgba(10, 18, 24, 0.98), rgba(31, 43, 47, 0.98))',
           color: '#f8f1de',
           boxShadow: '0 18px 44px rgba(0,0,0,0.48)',
           backdropFilter: 'blur(14px)',
         }}
       >
         <Stack direction="row" spacing={1} alignItems="center">
-          <StyleIcon sx={{ color: '#8ecae6', flex: '0 0 auto' }} />
+          {isReservationStolen ? (
+            <WarningAmberIcon sx={{ color: '#fb923c', flex: '0 0 auto' }} />
+          ) : (
+            <StyleIcon sx={{ color: '#8ecae6', flex: '0 0 auto' }} />
+          )}
           <Box sx={{ minWidth: 0 }}>
             <Typography
               fontWeight={950}
               sx={{ fontSize: { xs: 14, md: 16 }, lineHeight: 1.35 }}
             >
-              {notice.playerLabel}이 ‘{notice.backLabel}’ 뒷면 단서를
-              가져갔습니다.
+              {title}
             </Typography>
             <Typography
               variant="caption"
@@ -2134,10 +2152,100 @@ const PlayerHeldCardBackStack = ({
   );
 };
 
+const getInvestigationProgressLabel = (
+  progress?: InvestigationPlayerProgress | null
+) => {
+  if (!progress || progress.requiredCount <= 0) {
+    return null;
+  }
+  return `이번 라운드 조사 ${progress.completedCount}/${progress.requiredCount} · 남은 ${progress.remainingCount}개`;
+};
+
+const getInvestigationProgressShortLabel = (
+  progress?: InvestigationPlayerProgress | null
+) => {
+  if (!progress || progress.requiredCount <= 0) {
+    return null;
+  }
+  return `이번 라운드 ${progress.completedCount}/${progress.requiredCount}`;
+};
+
+const InvestigationProgressTokens = ({
+  progress,
+}: {
+  progress?: InvestigationPlayerProgress;
+}) => {
+  if (!progress || progress.requiredCount <= 0) {
+    return null;
+  }
+
+  const completedCount = Math.min(
+    Math.max(progress.completedCount, 0),
+    progress.requiredCount
+  );
+
+  if (progress.requiredCount > MAX_VISIBLE_INVESTIGATION_PROGRESS_TOKENS) {
+    return (
+      <Chip
+        size="small"
+        aria-label={getInvestigationProgressLabel(progress) ?? undefined}
+        label={`${completedCount}/${progress.requiredCount}`}
+        sx={{
+          mt: 0.25,
+          height: 15,
+          alignSelf: 'flex-start',
+          backgroundColor: progress.isCurrent ? '#f5c542' : '#efe0bd',
+          color: '#2a231a',
+          fontSize: 9,
+          fontWeight: 950,
+          '& .MuiChip-label': { px: 0.5 },
+        }}
+      />
+    );
+  }
+
+  return (
+    <Stack
+      component="span"
+      direction="row"
+      spacing={0.35}
+      alignItems="center"
+      aria-label={getInvestigationProgressLabel(progress) ?? undefined}
+      sx={{ mt: 0.25, minHeight: 8 }}
+    >
+      {Array.from({ length: progress.requiredCount }, (_, index) => {
+        const isCompleted = index < completedCount;
+        return (
+          <Box
+            key={index}
+            component="span"
+            sx={{
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              backgroundColor: isCompleted
+                ? '#f5c542'
+                : 'rgba(42, 35, 26, 0.22)',
+              border: isCompleted
+                ? '1px solid rgba(42,35,26,0.24)'
+                : '1px solid rgba(42,35,26,0.18)',
+              boxShadow:
+                progress.isCurrent && !isCompleted
+                  ? '0 0 0 2px rgba(245,197,66,0.16)'
+                  : 'none',
+            }}
+          />
+        );
+      })}
+    </Stack>
+  );
+};
+
 const PlayerMarkerButton = ({
   player,
   isSelf,
   isClueTakeHighlighted,
+  investigationProgress,
   roleReadingReady,
   turnOrderMarker,
   onSelect,
@@ -2145,6 +2253,7 @@ const PlayerMarkerButton = ({
   player: MurderMysteryPublicPlayerView;
   isSelf: boolean;
   isClueTakeHighlighted: boolean;
+  investigationProgress?: InvestigationPlayerProgress;
   roleReadingReady?: boolean;
   turnOrderMarker?: TurnOrderMarker;
   onSelect: (playerId: string) => void;
@@ -2165,6 +2274,19 @@ const PlayerMarkerButton = ({
       : roleReadingReady
         ? '룰지 확인됨'
         : '룰지 확인 전';
+  const investigationProgressLabel = getInvestigationProgressLabel(
+    investigationProgress
+  );
+  const isCurrentInvestigationPlayer =
+    investigationProgress?.isCurrent === true;
+  const hasInvestigationProgress = Boolean(investigationProgressLabel);
+  const playerMarkerAriaLabel = [
+    `${displayLabel} 플레이어 단서 열기`,
+    roleReadingStateLabel,
+    investigationProgressLabel,
+  ]
+    .filter(Boolean)
+    .join(', ');
 
   return (
     <Tooltip
@@ -2172,6 +2294,7 @@ const PlayerMarkerButton = ({
         displayLabel,
         connectionLabel,
         roleReadingStateLabel,
+        investigationProgressLabel,
         `공개 ${player.publicRevealedClues.length}장`,
         `비공개 ${privateCardBacks.length}장`,
       ]
@@ -2181,37 +2304,41 @@ const PlayerMarkerButton = ({
       <Box
         component="button"
         type="button"
-        aria-label={`${displayLabel} 플레이어 단서 열기${
-          roleReadingStateLabel ? `, ${roleReadingStateLabel}` : ''
-        }`}
+        aria-label={playerMarkerAriaLabel}
         onClick={() => onSelect(player.id)}
         sx={{
           position: 'relative',
           width: { xs: 132, md: 148 },
           minWidth: { xs: 132, md: 148 },
-          height: { xs: 50, md: 54 },
+          height: hasInvestigationProgress
+            ? { xs: 61, md: 64 }
+            : { xs: 50, md: 54 },
           display: 'flex',
           alignItems: 'center',
           gap: 0.65,
           px: 0.65,
           py: 0.45,
           borderRadius: 999,
-          border: isSelf
+          border: isCurrentInvestigationPlayer
             ? '2px solid rgba(245, 197, 66, 0.98)'
-            : roleReadingReady
-              ? '2px solid rgba(74, 222, 128, 0.92)'
-              : isClueTakeHighlighted
-                ? '2px solid rgba(142, 202, 230, 0.98)'
-                : '1px solid rgba(255,255,255,0.28)',
+            : isSelf
+              ? '2px solid rgba(245, 197, 66, 0.98)'
+              : roleReadingReady
+                ? '2px solid rgba(74, 222, 128, 0.92)'
+                : isClueTakeHighlighted
+                  ? '2px solid rgba(142, 202, 230, 0.98)'
+                  : '1px solid rgba(255,255,255,0.28)',
           background: isSelf
             ? 'linear-gradient(180deg, rgba(255,249,229,0.98), rgba(225,210,169,0.98))'
             : 'linear-gradient(180deg, rgba(247,243,231,0.98), rgba(224,214,190,0.96))',
           color: '#2a231a',
-          boxShadow: isClueTakeHighlighted
-            ? '0 0 0 4px rgba(142,202,230,0.18), 0 8px 20px rgba(0,0,0,0.3)'
-            : roleReadingReady
-              ? '0 0 0 3px rgba(74,222,128,0.16), 0 8px 20px rgba(0,0,0,0.28)'
-              : '0 6px 16px rgba(0,0,0,0.24)',
+          boxShadow: isCurrentInvestigationPlayer
+            ? '0 0 0 4px rgba(245,197,66,0.24), 0 10px 24px rgba(0,0,0,0.34)'
+            : isClueTakeHighlighted
+              ? '0 0 0 4px rgba(142,202,230,0.18), 0 8px 20px rgba(0,0,0,0.3)'
+              : roleReadingReady
+                ? '0 0 0 3px rgba(74,222,128,0.16), 0 8px 20px rgba(0,0,0,0.28)'
+                : '0 6px 16px rgba(0,0,0,0.24)',
           cursor: 'pointer',
           userSelect: 'none',
           font: 'inherit',
@@ -2360,6 +2487,7 @@ const PlayerMarkerButton = ({
             publicCount={player.publicRevealedClues.length}
             isHighlighted={isClueTakeHighlighted}
           />
+          <InvestigationProgressTokens progress={investigationProgress} />
         </Box>
       </Box>
     </Tooltip>
@@ -2470,6 +2598,7 @@ const PlayerMarkerRail = ({
   players,
   sessionId,
   clueTakeHighlightPlayerId,
+  investigationProgressByPlayerId,
   roleReadingReadyByPlayerId,
   turnOrderMarkers,
   onSelectPlayer,
@@ -2477,6 +2606,7 @@ const PlayerMarkerRail = ({
   players: MurderMysteryPublicPlayerView[];
   sessionId: string;
   clueTakeHighlightPlayerId: string | null;
+  investigationProgressByPlayerId?: Record<string, InvestigationPlayerProgress>;
   roleReadingReadyByPlayerId?: Record<string, boolean>;
   turnOrderMarkers: Record<string, TurnOrderMarker>;
   onSelectPlayer: (playerId: string) => void;
@@ -2515,6 +2645,7 @@ const PlayerMarkerRail = ({
           player={player}
           isSelf={player.id === sessionId}
           isClueTakeHighlighted={clueTakeHighlightPlayerId === player.id}
+          investigationProgress={investigationProgressByPlayerId?.[player.id]}
           roleReadingReady={roleReadingReadyByPlayerId?.[player.id]}
           turnOrderMarker={turnOrderMarkers[player.id]}
           onSelect={onSelectPlayer}
@@ -5138,6 +5269,8 @@ export default function MurderMysteryTableExperience({
     string,
     Set<string>
   > | null>(null);
+  const previousReservationRef =
+    useRef<MurderMysteryInvestigationBackCardView | null>(null);
   const modalHistoryDepthRef = useRef(0);
   const openModalCountRef = useRef(0);
   const suppressModalPopCountRef = useRef(0);
@@ -5248,6 +5381,19 @@ export default function MurderMysteryTableExperience({
     snapshot.investigation.rounds.find(
       (round) => round.round === activeRound
     ) ?? null;
+  const shouldShowInvestigationProgress =
+    phaseKind === 'investigate' &&
+    snapshot.investigation.playerProgress.length > 0;
+  const investigationProgressByPlayerId = useMemo(
+    () =>
+      Object.fromEntries(
+        snapshot.investigation.playerProgress.map((progress) => [
+          progress.playerId,
+          progress,
+        ])
+      ) as Record<string, InvestigationPlayerProgress>,
+    [snapshot.investigation.playerProgress]
+  );
   const mapTargetPins = useMemo(
     () =>
       buildInvestigationMapTargetPins(
@@ -5319,6 +5465,21 @@ export default function MurderMysteryTableExperience({
   const currentTurnLabel = getPlayerLabelById(
     snapshot.investigation.turn?.currentPlayerId
   );
+  const selfInvestigationProgress = shouldShowInvestigationProgress
+    ? (investigationProgressByPlayerId[sessionId] ?? null)
+    : null;
+  const currentTurnProgress =
+    shouldShowInvestigationProgress &&
+    snapshot.investigation.turn?.currentPlayerId
+      ? (investigationProgressByPlayerId[
+          snapshot.investigation.turn.currentPlayerId
+        ] ?? null)
+      : null;
+  const selfInvestigationProgressText = getInvestigationProgressShortLabel(
+    selfInvestigationProgress
+  );
+  const currentTurnProgressText =
+    getInvestigationProgressShortLabel(currentTurnProgress);
   const canUseHostTools = isHostView;
   const requiredPlayerCount =
     snapshot.roleSelection.requiredPlayerCount ||
@@ -5770,6 +5931,7 @@ export default function MurderMysteryTableExperience({
 
   useEffect(() => {
     const previous = previousHeldBackIdsByPlayerRef.current;
+    const previousReservation = previousReservationRef.current;
     const current: Record<string, Set<string>> = {};
     let nextNotice: ClueTakeNotice | null = null;
 
@@ -5784,38 +5946,65 @@ export default function MurderMysteryTableExperience({
         return;
       }
 
-      const addedBack = player.heldCardBacks.find(
+      const addedBacks = player.heldCardBacks.filter(
         (back) => !previousBackIds.has(back.backId)
       );
-      if (!addedBack) {
+      if (addedBacks.length === 0) {
         return;
       }
 
-      nextNotice = {
+      const stolenReservedBack =
+        previousReservation && player.id !== sessionId
+          ? (addedBacks.find(
+              (back) => back.backId === previousReservation.backId
+            ) ?? null)
+          : null;
+      const addedBack = stolenReservedBack ?? addedBacks[0];
+      if (!addedBack) {
+        return;
+      }
+      const isReservationStolen = Boolean(stolenReservedBack);
+
+      const notice: ClueTakeNotice = {
         id: `${player.id}:${addedBack.backId}:${Date.now()}`,
+        kind: isReservationStolen ? 'reservationStolen' : 'take',
         playerId: player.id,
         playerLabel: formatParticipantLabel(player),
-        backLabel: addedBack.shortLabel ?? addedBack.targetLabel,
+        backLabel:
+          isReservationStolen && previousReservation
+            ? (previousReservation.shortLabel ??
+              previousReservation.targetLabel)
+            : (addedBack.shortLabel ?? addedBack.targetLabel),
         targetLabel: addedBack.targetLabel,
       };
+
+      if (isReservationStolen || !nextNotice) {
+        nextNotice = notice;
+      }
     });
 
     previousHeldBackIdsByPlayerRef.current = current;
+    previousReservationRef.current =
+      snapshot.investigation.turn?.myReservation ?? null;
     if (nextNotice) {
       setClueTakeNotice(nextNotice);
     }
-  }, [snapshot.players]);
+  }, [sessionId, snapshot.investigation.turn?.myReservation, snapshot.players]);
 
   useEffect(() => {
     if (!clueTakeNotice) {
       return;
     }
 
+    const duration =
+      clueTakeNotice.kind === 'reservationStolen'
+        ? RESERVATION_STOLEN_NOTICE_DURATION_MS
+        : CLUE_TAKE_NOTICE_DURATION_MS;
     const timer = window.setTimeout(() => {
       setClueTakeNotice((current) =>
         current?.id === clueTakeNotice.id ? null : current
       );
-    }, 5200);
+    }, duration);
 
     return () => window.clearTimeout(timer);
   }, [clueTakeNotice]);
@@ -6564,13 +6753,25 @@ export default function MurderMysteryTableExperience({
               <Typography variant="body2" sx={{ color: '#d8d0bd' }}>
                 {canActNow &&
                 snapshot.investigation.turn?.extraInvestigationPending
-                  ? '전체 공개 단서를 확인했습니다. 한 번 더 조사할 수 있습니다.'
+                  ? `전체 공개 단서를 확인했습니다. ${
+                      selfInvestigationProgressText
+                        ? `${selfInvestigationProgressText}. `
+                        : ''
+                    }한 번 더 조사할 수 있습니다.`
                   : canActNow
-                    ? '내 차례입니다. 테이블 위 뒷면 카드 한 장을 가져가세요.'
+                    ? `내 차례입니다. ${
+                        selfInvestigationProgressText
+                          ? `${selfInvestigationProgressText}. `
+                          : ''
+                      }테이블 위 뒷면 카드 한 장을 가져가세요.`
                     : snapshot.investigation.turn?.myReservation
                       ? '예약 토큰이 꽂혀 있습니다. 내 차례가 오면 가져갈 수 있습니다.'
                       : currentTurnLabel
-                        ? `${currentTurnLabel}의 단서 수집 차례입니다. 내 차례가 아니면 뒷면 카드를 눌러 예약할 수 있습니다.`
+                        ? `${currentTurnLabel}의 단서 수집 차례입니다.${
+                            currentTurnProgressText
+                              ? ` ${currentTurnProgressText}.`
+                              : ''
+                          } 내 차례가 아니면 뒷면 카드를 눌러 예약할 수 있습니다.`
                         : '내 차례가 아니면 뒷면 카드를 눌러 예약할 수 있습니다.'}
               </Typography>
             </Box>
@@ -7454,18 +7655,29 @@ export default function MurderMysteryTableExperience({
             ? `${currentTurnLabel} 조사 차례입니다`
             : '다른 플레이어 조사 차례입니다';
       description = canActNow
-        ? '테이블의 뒷면 카드 중 하나를 선택하세요.'
+        ? `${selfInvestigationProgressText ? `${selfInvestigationProgressText}. ` : ''}테이블의 뒷면 카드 중 하나를 선택하세요.`
         : snapshot.investigation.turn?.myReservation
           ? '내 차례가 오면 예약한 카드를 가져갈 수 있습니다.'
           : currentTurnLabel
-            ? `${currentTurnLabel}이 단서를 가져갈 차례입니다. 필요하면 내 차례 전에 카드를 예약해둘 수 있습니다.`
+            ? `${currentTurnLabel}이 단서를 가져갈 차례입니다.${currentTurnProgressText ? ` ${currentTurnProgressText}.` : ''} 필요하면 내 차례 전에 카드를 예약해둘 수 있습니다.`
             : '필요하면 내 차례 전에 카드를 예약해둘 수 있습니다.';
       chips = activeRound ? (
-        <Chip
-          size="small"
-          color={canActNow ? 'warning' : 'default'}
-          label={`${activeRound}라운드`}
-        />
+        <Stack direction="row" spacing={0.5} alignItems="center">
+          <Chip
+            size="small"
+            color={canActNow ? 'warning' : 'default'}
+            label={`${activeRound}라운드`}
+          />
+          {canActNow && selfInvestigationProgressText ? (
+            <Chip
+              size="small"
+              color="warning"
+              label={selfInvestigationProgressText}
+            />
+          ) : !canActNow && currentTurnProgressText ? (
+            <Chip size="small" label={currentTurnProgressText} />
+          ) : null}
+        </Stack>
       ) : null;
       actions = (
         <Button
@@ -8191,6 +8403,11 @@ export default function MurderMysteryTableExperience({
           players={snapshot.players}
           sessionId={sessionId}
           clueTakeHighlightPlayerId={clueTakeNotice?.playerId ?? null}
+          investigationProgressByPlayerId={
+            shouldShowInvestigationProgress
+              ? investigationProgressByPlayerId
+              : undefined
+          }
           roleReadingReadyByPlayerId={
             phaseKind === 'role_reading'
               ? roleReadingReadyByPlayerId

@@ -577,6 +577,14 @@ export interface MurderMysteryInvestigationTurnView {
   myReservation: MurderMysteryInvestigationBackCardView | null;
 }
 
+export interface MurderMysteryInvestigationPlayerProgressView {
+  playerId: string;
+  completedCount: number;
+  requiredCount: number;
+  remainingCount: number;
+  isCurrent: boolean;
+}
+
 export interface MurderMysteryInvestigationMapHotspotView
   extends MurderMysteryInvestigationMapHotspotScenario {
   targetLabel: string;
@@ -602,6 +610,7 @@ export interface MurderMysteryInvestigationView {
   mode: 'legacy' | 'map';
   rounds: MurderMysteryInvestigationRoundView[];
   turn: MurderMysteryInvestigationTurnView | null;
+  playerProgress: MurderMysteryInvestigationPlayerProgressView[];
   map: MurderMysteryInvestigationMapView | null;
 }
 

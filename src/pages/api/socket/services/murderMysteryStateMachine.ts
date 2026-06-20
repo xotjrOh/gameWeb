@@ -10,6 +10,7 @@ import {
   MurderMysteryHostControlsView,
   MurderMysteryInvestigationBackCardView,
   MurderMysteryInvestigationMapView,
+  MurderMysteryInvestigationPlayerProgressView,
   MurderMysteryInvestigationRound,
   MurderMysteryInvestigationRoundView,
   MurderMysteryInvestigationTargetView,
@@ -1551,6 +1552,78 @@ const buildInvestigationTurnView = (
       currentPlayerId === null && turn.orderedPlayerIds.length > 0,
     myReservation,
   };
+};
+
+const buildInvestigationPlayerProgressView = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  round: MurderMysteryInvestigationRound | null
+): MurderMysteryInvestigationPlayerProgressView[] => {
+  if (!round) {
+    return [];
+  }
+
+  if (isMapInvestigationMode(scenario)) {
+    const turn = room.gameData.investigationTurn;
+    const isActiveTurnRound = turn.round === round;
+    const orderedPlayerIds =
+      isActiveTurnRound && turn.orderedPlayerIds.length > 0
+        ? turn.orderedPlayerIds
+        : getOrderedPlayerIdsForRound(room, scenario, round);
+    const currentPlayerId = isActiveTurnRound
+      ? getCurrentTurnPlayerId(room)
+      : null;
+
+    return room.players.map((player) => {
+      const usage = room.gameData.investigationUsedByPlayerId[player.id] ?? {};
+      const usageCount = getInvestigationUseCount(
+        usage as Record<number, number | boolean | undefined>,
+        round,
+        scenario
+      );
+      const turnCompletedCount = isActiveTurnRound
+        ? turn.completedPlayerIds.filter((playerId) => playerId === player.id)
+            .length
+        : 0;
+      const requiredCount = orderedPlayerIds.filter(
+        (playerId) => playerId === player.id
+      ).length;
+      const completedCount = Math.min(
+        isActiveTurnRound ? turnCompletedCount : usageCount,
+        requiredCount
+      );
+
+      return {
+        playerId: player.id,
+        completedCount,
+        requiredCount,
+        remainingCount: Math.max(requiredCount - completedCount, 0),
+        isCurrent: currentPlayerId === player.id,
+      };
+    });
+  }
+
+  const requiredCount = getInvestigationsPerRound(scenario, round);
+
+  return room.players.map((player) => {
+    const usage = room.gameData.investigationUsedByPlayerId[player.id] ?? {};
+    const completedCount = Math.min(
+      getInvestigationUseCount(
+        usage as Record<number, number | boolean | undefined>,
+        round,
+        scenario
+      ),
+      requiredCount
+    );
+
+    return {
+      playerId: player.id,
+      completedCount,
+      requiredCount,
+      remainingCount: Math.max(requiredCount - completedCount, 0),
+      isCurrent: false,
+    };
+  });
 };
 
 const buildEndingChoicesView = (
@@ -3400,6 +3473,11 @@ export const buildMurderMysterySnapshot = (
       mode: mapView ? 'map' : 'legacy',
       rounds: roundViews,
       turn: turnView,
+      playerProgress: buildInvestigationPlayerProgressView(
+        room,
+        scenario,
+        round
+      ),
       map: mapView,
     },
     finalVote: {

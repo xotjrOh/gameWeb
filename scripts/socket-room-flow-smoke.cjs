@@ -249,6 +249,29 @@ const assertCondition = (condition, message, payload) => {
   throw new Error(message);
 };
 
+const getInvestigationProgress = (snapshot, playerId) =>
+  snapshot?.investigation?.playerProgress?.find(
+    (progress) => progress.playerId === playerId
+  ) ?? null;
+
+const assertInvestigationProgress = (snapshot, playerId, expected, message) => {
+  const progress = getInvestigationProgress(snapshot, playerId);
+  assertCondition(Boolean(progress), message, {
+    playerId,
+    playerProgress: snapshot?.investigation?.playerProgress,
+  });
+  Object.entries(expected).forEach(([key, value]) => {
+    assertCondition(progress?.[key] === value, message, {
+      playerId,
+      key,
+      expected: value,
+      actual: progress?.[key],
+      progress,
+    });
+  });
+  return progress;
+};
+
 const requestRoomList = async (socket) => {
   const roomUpdatedPromise = waitForEvent(socket, 'room-updated');
   socket.emit('get-room-list');
@@ -271,8 +294,18 @@ const disconnectSocket = (socket) => {
   socket.close();
 };
 
+const waitForProcessExit = (child, timeoutMs = 5000) => {
+  if (!child || child.exitCode !== null || child.signalCode !== null) {
+    return Promise.resolve();
+  }
+  return Promise.race([
+    new Promise((resolve) => child.once('exit', resolve)),
+    delay(timeoutMs),
+  ]);
+};
+
 const terminateProcess = async (child) => {
-  if (!child || child.killed) {
+  if (!child || child.exitCode !== null || child.signalCode !== null) {
     return;
   }
 
@@ -291,14 +324,13 @@ const terminateProcess = async (child) => {
       killer.once('exit', resolve);
       killer.once('error', resolve);
     });
+    await waitForProcessExit(child);
+    await delay(1000);
     return;
   }
 
   child.kill();
-  await Promise.race([
-    new Promise((resolve) => child.once('exit', resolve)),
-    delay(5000),
-  ]);
+  await waitForProcessExit(child);
 };
 
 const cleanupRoom = async ({ baseUrl, roomId, hostSessionId, hostSockets }) => {
@@ -917,6 +949,29 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       'investigation turn order should be jara -> fox -> rabbit_husband',
       turnRoleSequence
     );
+    const expectedRound1RequiredCount =
+      getInvestigationProgress(currentPlayerSnapshot, currentPlayerId)
+        ?.requiredCount ?? 0;
+    assertCondition(
+      expectedRound1RequiredCount > 0,
+      'round 1 investigation progress required count missing',
+      currentPlayerSnapshot?.investigation.playerProgress
+    );
+    currentPlayerSnapshot?.investigation.playerProgress.forEach((progress) => {
+      assertCondition(
+        progress.completedCount === 0 &&
+          progress.requiredCount === expectedRound1RequiredCount &&
+          progress.remainingCount === expectedRound1RequiredCount,
+        'round 1 investigation progress should start at 0/N',
+        progress
+      );
+    });
+    assertInvestigationProgress(
+      currentPlayerSnapshot,
+      currentPlayerId,
+      { isCurrent: true },
+      'round 1 first player should be marked current in progress'
+    );
 
     const nonCurrentPlayerId =
       currentPlayerSnapshot?.investigation.turn?.players?.[1]?.playerId ??
@@ -1155,6 +1210,26 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
     const refreshedCurrentSnapshot = snapshotsBySession.get(currentPlayerId);
     const refreshedReservedSnapshot =
       snapshotsBySession.get(nonCurrentPlayerId);
+    assertInvestigationProgress(
+      refreshedCurrentSnapshot,
+      currentPlayerId,
+      {
+        completedCount: 1,
+        requiredCount: expectedRound1RequiredCount,
+        remainingCount: expectedRound1RequiredCount - 1,
+      },
+      'current player investigation progress should increment after pick'
+    );
+    assertInvestigationProgress(
+      refreshedCurrentSnapshot,
+      nonCurrentPlayerId,
+      {
+        completedCount: 1,
+        requiredCount: expectedRound1RequiredCount,
+        remainingCount: expectedRound1RequiredCount - 1,
+      },
+      'reserved player investigation progress should increment after automatic pickup'
+    );
     assertCondition(
       refreshedCurrentSnapshot?.clueVault?.myClues?.length === 1,
       'picked card did not reach the current player clue vault'
@@ -1426,6 +1501,14 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
         maxAutoAdvancePickCount,
       }
     );
+    autoDiscussSnapshot.investigation.playerProgress.forEach((progress) => {
+      assertCondition(
+        progress.completedCount === progress.requiredCount &&
+          progress.remainingCount === 0,
+        'round 1 investigation progress should complete for every player',
+        progress
+      );
+    });
     assertCondition(
       autoDiscussSnapshot.phaseTimer?.durationSec === 600,
       'round 1 discussion should expose the scenario time limit',
@@ -1523,6 +1606,12 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
     const round2CurrentSnapshot = round2SnapshotsBySession.get(
       round2CurrentPlayerId
     );
+    const round2CurrentProgressBefore = assertInvestigationProgress(
+      round2CurrentSnapshot,
+      round2CurrentPlayerId,
+      { completedCount: 0, isCurrent: true },
+      'round 2 current player progress should start active at 0/N'
+    );
     const extraBack =
       round2CurrentSnapshot?.investigation.rounds
         ?.find((round) => round.round === 2)
@@ -1563,6 +1652,17 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
     const extraOwnerSnapshot = extraRevealSnapshots.find(
       ([sessionId]) => sessionId === round2CurrentPlayerId
     )?.[1];
+    assertInvestigationProgress(
+      extraOwnerSnapshot,
+      round2CurrentPlayerId,
+      {
+        completedCount: 0,
+        requiredCount: round2CurrentProgressBefore.requiredCount,
+        remainingCount: round2CurrentProgressBefore.requiredCount,
+        isCurrent: true,
+      },
+      'extra-investigation pick should not complete the current investigation slot'
+    );
     const extraPublicCard = extraOwnerSnapshot?.clueVault.myClues.find(
       (card) => card.extraInvestigationOnReveal && card.isPublic
     );

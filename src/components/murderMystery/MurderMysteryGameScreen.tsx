@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -46,8 +46,6 @@ export default function MurderMysteryGameScreen({
   const dispatch = useAppDispatch();
   const { enqueueSnackbar } = useCustomSnackbar();
   const sessionId = session?.user.id ?? '';
-  const reservationChangeSourceRef = useRef<'self' | null>(null);
-  const previousReservationBackIdRef = useRef<string | null>(null);
   const [pendingReservationBackId, setPendingReservationBackId] = useState<
     string | null
   >(null);
@@ -105,39 +103,6 @@ export default function MurderMysteryGameScreen({
       { variant: 'info' }
     );
   }, [latestPartReveal, enqueueSnackbar]);
-
-  useEffect(() => {
-    const currentReservationBackId =
-      snapshot?.investigation.turn?.myReservation?.backId ?? null;
-    const previousReservationBackId = previousReservationBackIdRef.current;
-    const myHeldBackIds = new Set(
-      snapshot?.players
-        .find((player) => player.id === sessionId)
-        ?.heldCardBacks.map((back) => back.backId) ?? []
-    );
-    const isInvestigationTurnActive = Boolean(
-      snapshot?.investigation.round && snapshot.investigation.turn?.enabled
-    );
-
-    if (previousReservationBackId && !currentReservationBackId) {
-      if (reservationChangeSourceRef.current === 'self') {
-        reservationChangeSourceRef.current = null;
-      } else if (
-        isInvestigationTurnActive &&
-        !myHeldBackIds.has(previousReservationBackId)
-      ) {
-        enqueueSnackbar(
-          '예약한 카드가 다른 플레이어에게 먼저 가져가졌습니다. 새 카드를 다시 골라주세요.',
-          { variant: 'warning' }
-        );
-      }
-    }
-
-    if (currentReservationBackId) {
-      reservationChangeSourceRef.current = null;
-    }
-    previousReservationBackIdRef.current = currentReservationBackId;
-  }, [snapshot, sessionId, enqueueSnackbar]);
 
   const emitWithAck = <T extends object>(
     eventName: string,
@@ -252,7 +217,6 @@ export default function MurderMysteryGameScreen({
   };
 
   const handleSubmitInvestigationByBack = (backId: string) => {
-    reservationChangeSourceRef.current = 'self';
     emitWithAck(
       'mm_submit_investigation',
       { roomId, sessionId, backId },
@@ -294,7 +258,6 @@ export default function MurderMysteryGameScreen({
   };
 
   const handleClearInvestigationReservation = () => {
-    reservationChangeSourceRef.current = 'self';
     setPendingReservationBackId(null);
     emitWithAck(
       'mm_clear_investigation_reservation',
