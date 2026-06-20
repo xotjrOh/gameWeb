@@ -427,6 +427,36 @@ const getClueVaultCardState = (card: AnyClueCard) => {
   };
 };
 
+const getSpecialEventSourceLabel = (
+  card: AnyClueCard,
+  investigationTargetIds: Set<string>
+) => {
+  const clueCard = card as MurderMysteryClueVaultCardView;
+  const sourceTargetIds = clueCard.sourceTargetIds ?? [];
+  const hasSpecialEventSource = sourceTargetIds.some(
+    (sourceId) => !investigationTargetIds.has(sourceId)
+  );
+
+  return hasSpecialEventSource ? getCardSourceText(card) || '잠금 증언' : null;
+};
+
+const getPrivateOnlyClueCards = (
+  cards: MurderMysteryClueVaultCardView[],
+  publicCards: MurderMysteryClueVaultCardView[]
+) => {
+  const publicCardIds = new Set(publicCards.map((card) => card.id));
+  const publicBackIds = new Set(
+    publicCards.map((card) => card.backId).filter(Boolean) as string[]
+  );
+
+  return cards.filter(
+    (card) =>
+      !card.isPublic &&
+      !publicCardIds.has(card.id) &&
+      !(card.backId && publicBackIds.has(card.backId))
+  );
+};
+
 const TextOnlyClueMedia = ({
   dense = false,
   detail = false,
@@ -1652,6 +1682,8 @@ const EvidenceCardFace = ({
   previewMaxLength = 52,
   cardMinHeight: cardMinHeightOverride,
   mediaHeight: mediaHeightOverride,
+  highlightLabel,
+  highlightTooltip,
   onOpen,
   showPublicRevealControl = false,
   publicRevealDisabled = false,
@@ -1664,6 +1696,8 @@ const EvidenceCardFace = ({
   previewMaxLength?: number;
   cardMinHeight?: number;
   mediaHeight?: number;
+  highlightLabel?: string;
+  highlightTooltip?: string;
   onOpen: (card: AnyClueCard) => void;
   showPublicRevealControl?: boolean;
   publicRevealDisabled?: boolean;
@@ -1690,6 +1724,7 @@ const EvidenceCardFace = ({
   const mediaHeight = mediaHeightOverride ?? (mediaIsCompact ? 70 : 108);
   const previewClamp = previewLineClamp ?? (compactPreview ? 2 : 4);
   const showPreviewText = compactPreview || !dense;
+  const shouldHighlight = Boolean(highlightLabel);
 
   return (
     <Stack spacing={0.8} sx={{ width: cardWidth, flex: '0 0 auto' }}>
@@ -1716,17 +1751,86 @@ const EvidenceCardFace = ({
             borderRadius: 1,
             overflow: 'hidden',
             backgroundColor: '#f8f1de',
-            border: '1px solid rgba(53, 43, 30, 0.35)',
-            boxShadow: '0 12px 24px rgba(0,0,0,0.28)',
+            border: shouldHighlight
+              ? '1px solid rgba(245, 197, 66, 0.96)'
+              : '1px solid rgba(53, 43, 30, 0.35)',
+            boxShadow: shouldHighlight
+              ? '0 0 0 2px rgba(245,197,66,0.38), 0 0 0 7px rgba(245,197,66,0.16), 0 16px 34px rgba(0,0,0,0.36)'
+              : '0 12px 24px rgba(0,0,0,0.28)',
             display: 'flex',
             flexDirection: 'column',
             transition: 'transform 140ms ease, box-shadow 140ms ease',
+            transformOrigin: 'center',
+            animation: shouldHighlight
+              ? 'mmSpecialEventCardPulse 1800ms ease-out both'
+              : 'none',
             '&:hover': {
               transform: 'translateY(-4px) rotate(-1deg)',
-              boxShadow: '0 18px 32px rgba(0,0,0,0.36)',
+              boxShadow: shouldHighlight
+                ? '0 0 0 2px rgba(245,197,66,0.5), 0 0 0 9px rgba(245,197,66,0.2), 0 20px 38px rgba(0,0,0,0.4)'
+                : '0 18px 32px rgba(0,0,0,0.36)',
+            },
+            '@keyframes mmSpecialEventCardPulse': {
+              '0%': {
+                transform: 'scale(0.98)',
+                boxShadow:
+                  '0 0 0 0 rgba(245,197,66,0), 0 12px 24px rgba(0,0,0,0.28)',
+              },
+              '32%': {
+                transform: 'scale(1.025)',
+                boxShadow:
+                  '0 0 0 4px rgba(245,197,66,0.46), 0 0 0 13px rgba(245,197,66,0.22), 0 18px 36px rgba(0,0,0,0.38)',
+              },
+              '100%': {
+                transform: 'scale(1)',
+                boxShadow:
+                  '0 0 0 2px rgba(245,197,66,0.38), 0 0 0 7px rgba(245,197,66,0.16), 0 16px 34px rgba(0,0,0,0.36)',
+              },
+            },
+            '@media (prefers-reduced-motion: reduce)': {
+              animation: 'none',
             },
           }}
         >
+          {highlightLabel ? (
+            <Tooltip title={highlightTooltip ?? highlightLabel}>
+              <Stack
+                direction="row"
+                spacing={0.25}
+                alignItems="center"
+                sx={{
+                  position: 'absolute',
+                  top: 5,
+                  right: 5,
+                  zIndex: 3,
+                  maxWidth: 'calc(100% - 10px)',
+                  px: 0.55,
+                  py: 0.25,
+                  borderRadius: 999,
+                  backgroundColor: 'rgba(92, 55, 0, 0.92)',
+                  color: '#fff7d6',
+                  border: '1px solid rgba(255,255,255,0.38)',
+                  boxShadow: '0 4px 10px rgba(0,0,0,0.34)',
+                }}
+              >
+                <LockIcon sx={{ fontSize: 12, flex: '0 0 auto' }} />
+                <Typography
+                  variant="caption"
+                  fontWeight={950}
+                  sx={{
+                    maxWidth: '100%',
+                    fontSize: 10,
+                    lineHeight: 1,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {highlightLabel}
+                </Typography>
+              </Stack>
+            </Tooltip>
+          ) : null}
           {card.imageSrc ? (
             <Box
               component="img"
@@ -5235,6 +5339,14 @@ export default function MurderMysteryTableExperience({
     snapshot.players.find((player) => player.id === sessionId) ?? null;
   const selectedPlayer =
     snapshot.players.find((player) => player.id === selectedPlayerId) ?? null;
+  const selfPrivateOnlyClues = useMemo(
+    () =>
+      getPrivateOnlyClueCards(
+        snapshot.clueVault.myClues,
+        selfPlayer?.publicRevealedClues ?? []
+      ),
+    [selfPlayer?.publicRevealedClues, snapshot.clueVault.myClues]
+  );
   const discussionPublicClues = useMemo(
     () =>
       getUniqueClueCards([
@@ -5243,9 +5355,19 @@ export default function MurderMysteryTableExperience({
       ]),
     [snapshot.clueVault.publicClues, snapshot.players]
   );
+  const investigationTargetIds = useMemo(
+    () =>
+      new Set(
+        snapshot.scenario.investigations.rounds.flatMap((round) =>
+          round.targets.map((target) => target.id)
+        )
+      ),
+    [snapshot.scenario.investigations.rounds]
+  );
   const cardViewerSources = useMemo(() => {
     const sources: Record<string, AnyClueCard[]> = {
       'my-clues': snapshot.clueVault.myClues,
+      'my-private-clues': selfPrivateOnlyClues,
       'public-clues': snapshot.clueVault.publicClues,
       'discussion:public': discussionPublicClues,
     };
@@ -5258,6 +5380,7 @@ export default function MurderMysteryTableExperience({
     snapshot.clueVault.myClues,
     snapshot.clueVault.publicClues,
     snapshot.players,
+    selfPrivateOnlyClues,
   ]);
   const pinnedClueCards = pinnedClue
     ? (cardViewerSources[pinnedClue.sourceId] ?? [])
@@ -7501,24 +7624,39 @@ export default function MurderMysteryTableExperience({
                 alignItems: 'start',
               }}
             >
-              {discussionPublicClues.map((card) => (
-                <EvidenceCardFace
-                  key={`discussion:public:${card.id}`}
-                  card={card}
-                  compactPreview
-                  previewLineClamp={1}
-                  previewMaxLength={36}
-                  cardMinHeight={132}
-                  mediaHeight={58}
-                  onOpen={(openedCard) =>
-                    openCardViewer(
-                      'discussion:public',
-                      discussionPublicClues,
-                      openedCard
-                    )
-                  }
-                />
-              ))}
+              {discussionPublicClues.map((card) => {
+                const specialEventSourceLabel = getSpecialEventSourceLabel(
+                  card,
+                  investigationTargetIds
+                );
+
+                return (
+                  <EvidenceCardFace
+                    key={`discussion:public:${card.id}`}
+                    card={card}
+                    compactPreview
+                    previewLineClamp={1}
+                    previewMaxLength={36}
+                    cardMinHeight={132}
+                    mediaHeight={58}
+                    highlightLabel={
+                      specialEventSourceLabel ? '잠금 증언 공개' : undefined
+                    }
+                    highlightTooltip={
+                      specialEventSourceLabel
+                        ? `${specialEventSourceLabel}로 공개된 카드입니다.`
+                        : undefined
+                    }
+                    onOpen={(openedCard) =>
+                      openCardViewer(
+                        'discussion:public',
+                        discussionPublicClues,
+                        openedCard
+                      )
+                    }
+                  />
+                );
+              })}
             </Box>
           ) : null}
         </Stack>
@@ -8642,7 +8780,7 @@ export default function MurderMysteryTableExperience({
         canOpenRulebook={Boolean(snapshot.roleSheet)}
         canOpenPrivateCards={canOpenPrivateCards}
         fullScreen={isSmall}
-        selfPrivateCards={snapshot.clueVault.myClues}
+        selfPrivateCards={selfPrivateOnlyClues}
         onClose={() => setSelectedPlayerId(null)}
         onOpenRulebook={() => {
           setSelectedPlayerId(null);
@@ -8660,7 +8798,7 @@ export default function MurderMysteryTableExperience({
           )
         }
         onOpenSelfPrivateCard={(card) =>
-          openCardViewer('my-clues', snapshot.clueVault.myClues, card)
+          openCardViewer('my-private-clues', selfPrivateOnlyClues, card)
         }
       />
       <RulebookModal

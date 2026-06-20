@@ -691,7 +691,7 @@ investigations:
           order: 75
           icon: '📷'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-desk.svg'
             shortLabel: '의료동 간이책상 1'
           cardPool:
             - card_medical_desk_photo
@@ -703,7 +703,7 @@ investigations:
           order: 80
           icon: '🩺'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-desk.svg'
             shortLabel: '의료동 간이책상 2'
           cardPool:
             - card_medical_desk_records
@@ -716,7 +716,7 @@ investigations:
           icon: '🏥'
           repeatable: true
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-rumor.svg'
             shortLabel: '의료동에서 도는 소문1'
           cardPool:
             - card_medical_wing_rumor
@@ -729,7 +729,7 @@ investigations:
           icon: '🏥'
           repeatable: true
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-rumor.svg'
             shortLabel: '의료동에서 도는 소문2'
           cardPool:
             - card_medical_wing_rumor_2
@@ -741,7 +741,7 @@ investigations:
           order: 87
           icon: '👞'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-shoe-cabinet.svg'
             shortLabel: '의료동 입구 신발장 1'
           cardPool:
             - card_medical_shoe_cabinet_1
@@ -753,7 +753,7 @@ investigations:
           order: 88
           icon: '👞'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-shoe-cabinet.svg'
             shortLabel: '의료동 입구 신발장 2'
           cardPool:
             - card_medical_shoe_cabinet_2
@@ -948,7 +948,7 @@ investigations:
           order: 75
           icon: '📷'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-desk.svg'
             shortLabel: '의료동 간이책상 1'
           cardPool:
             - card_medical_desk_photo
@@ -960,7 +960,7 @@ investigations:
           order: 80
           icon: '🩺'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-desk.svg'
             shortLabel: '의료동 간이책상 2'
           cardPool:
             - card_medical_desk_records
@@ -973,7 +973,7 @@ investigations:
           icon: '🏥'
           repeatable: true
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-rumor.svg'
             shortLabel: '의료동에서 도는 소문1'
           cardPool:
             - card_medical_wing_rumor
@@ -986,7 +986,7 @@ investigations:
           icon: '🏥'
           repeatable: true
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-rumor.svg'
             shortLabel: '의료동에서 도는 소문2'
           cardPool:
             - card_medical_wing_rumor_2
@@ -998,7 +998,7 @@ investigations:
           order: 87
           icon: '👞'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-shoe-cabinet.svg'
             shortLabel: '의료동 입구 신발장 1'
           cardPool:
             - card_medical_shoe_cabinet_1
@@ -1010,7 +1010,7 @@ investigations:
           order: 88
           icon: '👞'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-records.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-shoe-cabinet.svg'
             shortLabel: '의료동 입구 신발장 2'
           cardPool:
             - card_medical_shoe_cabinet_2
