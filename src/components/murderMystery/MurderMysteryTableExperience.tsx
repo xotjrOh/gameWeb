@@ -176,7 +176,7 @@ type FloatingFabViewport = {
   frameBottom: number;
 };
 type FloatingFabDragPosition = {
-  left: number;
+  side: FloatingFabDockSide;
   top: number;
 };
 type InvestigationMapTargetPin = {
@@ -1067,8 +1067,15 @@ const getEdgePanelFabLeft = (
   position: FloatingFabPosition,
   viewport: FloatingFabViewport
 ) => {
+  return getEdgePanelFabLeftForSide(position.side, viewport);
+};
+
+const getEdgePanelFabLeftForSide = (
+  side: FloatingFabDockSide,
+  viewport: FloatingFabViewport
+) => {
   const bounds = getEdgePanelFabBounds(viewport, 0);
-  return position.side === 'left' ? bounds.minLeft : bounds.maxLeft;
+  return side === 'left' ? bounds.minLeft : bounds.maxLeft;
 };
 
 const readEdgePanelFabPosition = (
@@ -1133,10 +1140,9 @@ const EdgePanelFab = ({
 }) => {
   const pointerRef = useRef<{
     pointerId: number;
-    startX: number;
     startY: number;
-    startLeft: number;
     startTop: number;
+    startSide: FloatingFabDockSide;
     moved: boolean;
   } | null>(null);
   const suppressClickUntilRef = useRef(0);
@@ -1145,15 +1151,19 @@ const EdgePanelFab = ({
   const [viewport, setViewport] = useState<FloatingFabViewport | null>(null);
   const [dragPosition, setDragPosition] =
     useState<FloatingFabDragPosition | null>(null);
+  const activeSide = dragPosition?.side ?? position.side;
   const resolvedTop =
     viewport && !dragPosition
       ? getEdgePanelFabTop(position, viewport, bottomOffset)
       : null;
   const resolvedLeft =
     viewport && !dragPosition ? getEdgePanelFabLeft(position, viewport) : null;
-  const tooltipPlacement = position.side === 'left' ? 'right' : 'left';
+  const activeLeft = viewport
+    ? getEdgePanelFabLeftForSide(activeSide, viewport)
+    : resolvedLeft;
+  const tooltipPlacement = activeSide === 'left' ? 'right' : 'left';
   const borderRadius =
-    position.side === 'left' ? '0 999px 999px 0' : '999px 0 0 999px';
+    activeSide === 'left' ? '0 999px 999px 0' : '999px 0 0 999px';
 
   useEffect(() => {
     setPosition(readEdgePanelFabPosition(storageKey, defaultPosition));
@@ -1205,18 +1215,16 @@ const EdgePanelFab = ({
     }
 
     const bounds = getEdgePanelFabBounds(viewport, bottomOffset);
-    const nextLeft = clamp(
-      pointerRef.current.startLeft + event.clientX - pointerRef.current.startX,
-      bounds.minLeft,
-      bounds.maxLeft
-    );
+    const frameCenterX = (viewport.frameLeft + viewport.frameRight) / 2;
+    const nextSide: FloatingFabDockSide =
+      event.clientX < frameCenterX ? 'left' : 'right';
     const nextTop = clamp(
       pointerRef.current.startTop + event.clientY - pointerRef.current.startY,
       bounds.minTop,
       bounds.maxTop
     );
 
-    return { left: nextLeft, top: nextTop };
+    return { side: nextSide, top: nextTop };
   };
 
   const handlePointerDown = (event: React.PointerEvent<HTMLElement>) => {
@@ -1227,10 +1235,9 @@ const EdgePanelFab = ({
     const rect = event.currentTarget.getBoundingClientRect();
     pointerRef.current = {
       pointerId: event.pointerId,
-      startX: event.clientX,
       startY: event.clientY,
-      startLeft: rect.left,
       startTop: rect.top,
+      startSide: activeSide,
       moved: false,
     };
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -1242,19 +1249,23 @@ const EdgePanelFab = ({
       return;
     }
 
-    const distance = Math.hypot(
-      event.clientX - pointer.startX,
-      event.clientY - pointer.startY
-    );
-    if (distance < EDGE_PANEL_FAB_DRAG_THRESHOLD && !pointer.moved) {
+    const nextDragPosition = getDragPosition(event);
+    if (!nextDragPosition) {
+      return;
+    }
+
+    const yDistance = Math.abs(event.clientY - pointer.startY);
+    const crossedCenter = nextDragPosition.side !== pointer.startSide;
+    if (
+      yDistance < EDGE_PANEL_FAB_DRAG_THRESHOLD &&
+      !crossedCenter &&
+      !pointer.moved
+    ) {
       return;
     }
 
     pointer.moved = true;
-    const nextDragPosition = getDragPosition(event);
-    if (nextDragPosition) {
-      setDragPosition(nextDragPosition);
-    }
+    setDragPosition(nextDragPosition);
     event.preventDefault();
   };
 
@@ -1283,18 +1294,13 @@ const EdgePanelFab = ({
     }
 
     const bounds = getEdgePanelFabBounds(viewport, bottomOffset);
-    const frameCenterX = (viewport.frameLeft + viewport.frameRight) / 2;
-    const nextSide: FloatingFabDockSide =
-      nextDragPosition.left + EDGE_PANEL_FAB_WIDTH / 2 < frameCenterX
-        ? 'left'
-        : 'right';
     const nextYRatio =
       bounds.maxTop > bounds.minTop
         ? (nextDragPosition.top - bounds.minTop) /
           (bounds.maxTop - bounds.minTop)
         : defaultPosition.yRatio;
     const nextPosition: FloatingFabPosition = {
-      side: nextSide,
+      side: nextDragPosition.side,
       yRatio: clamp(nextYRatio, 0, 1),
     };
 
@@ -1331,8 +1337,8 @@ const EdgePanelFab = ({
         onClick={handleClick}
         sx={{
           position: 'fixed',
-          left: dragPosition?.left ?? resolvedLeft ?? 'auto',
-          right: dragPosition || resolvedLeft !== null ? 'auto' : 0,
+          left: activeLeft ?? 'auto',
+          right: activeLeft !== null ? 'auto' : 0,
           top: dragPosition?.top ?? resolvedTop ?? 'auto',
           bottom: dragPosition || resolvedTop !== null ? 'auto' : bottomOffset,
           zIndex,
@@ -1340,8 +1346,8 @@ const EdgePanelFab = ({
           height: EDGE_PANEL_FAB_HEIGHT,
           p: 0,
           border: `2px solid ${borderColor}`,
-          borderLeftWidth: position.side === 'left' ? 0 : 2,
-          borderRightWidth: position.side === 'right' ? 0 : 2,
+          borderLeftWidth: activeSide === 'left' ? 0 : 2,
+          borderRightWidth: activeSide === 'right' ? 0 : 2,
           borderRadius,
           overflow: 'hidden',
           color: '#f8f1de',
@@ -1357,7 +1363,7 @@ const EdgePanelFab = ({
           '&:hover': {
             transform: dragPosition
               ? 'none'
-              : `translateX(${position.side === 'left' ? 3 : -3}px)`,
+              : `translateX(${activeSide === 'left' ? 3 : -3}px)`,
             borderColor,
             boxShadow:
               '0 18px 40px rgba(0,0,0,0.52), 0 0 0 6px rgba(255,255,255,0.11)',
@@ -1372,8 +1378,8 @@ const EdgePanelFab = ({
         <Box
           sx={{
             position: 'absolute',
-            left: position.side === 'right' ? 5 : 'auto',
-            right: position.side === 'left' ? 5 : 'auto',
+            left: activeSide === 'right' ? 5 : 'auto',
+            right: activeSide === 'left' ? 5 : 'auto',
             bottom: 6,
             width: 22,
             height: 22,
