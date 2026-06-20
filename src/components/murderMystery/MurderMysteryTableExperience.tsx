@@ -46,6 +46,8 @@ import {
   Map as MapIcon,
   MusicNote as MusicNoteIcon,
   PushPin as PushPinIcon,
+  RadioButtonChecked as RadioButtonCheckedIcon,
+  RadioButtonUnchecked as RadioButtonUncheckedIcon,
   RestartAlt as RestartAltIcon,
   Search as SearchIcon,
   SkipNext as SkipNextIcon,
@@ -2597,7 +2599,6 @@ const RolePublicCoverCard = ({
   cover,
   isSelectedChoice = false,
   isSubmittedChoice = false,
-  chooseActionLabel = '선택하기',
   showChoiceControl = true,
   showPreferenceSummary = true,
   preferredPlayerNames,
@@ -2608,7 +2609,6 @@ const RolePublicCoverCard = ({
   cover: RoleSelectionPublicCover;
   isSelectedChoice?: boolean;
   isSubmittedChoice?: boolean;
-  chooseActionLabel?: string;
   showChoiceControl?: boolean;
   showPreferenceSummary?: boolean;
   preferredPlayerNames: string[];
@@ -2633,10 +2633,23 @@ const RolePublicCoverCard = ({
     : isNpcCover
       ? 'NPC'
       : null;
+  const handleChooseRole = () => {
+    if (!canChoose || isSelectedChoice) {
+      return;
+    }
+    onChooseRole?.();
+  };
 
   return (
     <Box
+      component={canChoose ? 'button' : 'div'}
+      type={canChoose ? 'button' : undefined}
+      aria-pressed={canChoose ? isSelectedChoice : undefined}
+      aria-label={canChoose ? `${cover.displayName} 선택` : undefined}
+      onClick={canChoose ? handleChooseRole : undefined}
       sx={{
+        display: 'block',
+        width: '100%',
         p: 1.1,
         borderRadius: 1.5,
         backgroundColor: isSelectedChoice
@@ -2651,6 +2664,33 @@ const RolePublicCoverCard = ({
             : cover.selectable
               ? '1px solid rgba(247,241,222,0.15)'
               : '1px dashed rgba(247,241,222,0.28)',
+        color: 'inherit',
+        font: 'inherit',
+        textAlign: 'left',
+        ...(canChoose
+          ? {
+              appearance: 'none',
+              cursor: isSelectedChoice ? 'default' : 'pointer',
+              transition:
+                'background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease',
+              '&:hover': isSelectedChoice
+                ? {
+                    borderColor: 'rgba(245, 158, 11, 0.7)',
+                    backgroundColor: 'rgba(245, 158, 11, 0.16)',
+                  }
+                : {
+                    borderColor: 'rgba(245, 197, 66, 0.58)',
+                    backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                    boxShadow: '0 12px 24px rgba(0,0,0,0.22)',
+                    transform: 'translateY(-1px)',
+                  },
+              '&:focus-visible': {
+                outline: '2px solid #f5c542',
+                outlineOffset: 3,
+                borderColor: 'rgba(245, 197, 66, 0.72)',
+              },
+            }
+          : {}),
       }}
     >
       <Stack spacing={0.8}>
@@ -2678,7 +2718,10 @@ const RolePublicCoverCard = ({
                     <IconButton
                       size="small"
                       aria-label={`${shareDisplayName} 룰지 공유`}
-                      onClick={onRequestShareRoleSheet}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onRequestShareRoleSheet?.();
+                      }}
                       sx={{
                         width: 28,
                         height: 28,
@@ -2695,6 +2738,33 @@ const RolePublicCoverCard = ({
                       <IosShareIcon sx={{ fontSize: 16 }} />
                     </IconButton>
                   </Tooltip>
+                ) : null}
+                {canChoose ? (
+                  <Box
+                    component="span"
+                    aria-hidden
+                    sx={{
+                      width: 28,
+                      height: 28,
+                      display: 'grid',
+                      placeItems: 'center',
+                      flex: '0 0 auto',
+                      borderRadius: '50%',
+                      color: isSelectedChoice ? '#f5c542' : '#d8d0bd',
+                      backgroundColor: isSelectedChoice
+                        ? 'rgba(245, 197, 66, 0.16)'
+                        : 'rgba(248, 241, 222, 0.06)',
+                      border: isSelectedChoice
+                        ? '1px solid rgba(245, 197, 66, 0.42)'
+                        : '1px solid rgba(248, 241, 222, 0.2)',
+                    }}
+                  >
+                    {isSelectedChoice ? (
+                      <RadioButtonCheckedIcon sx={{ fontSize: 18 }} />
+                    ) : (
+                      <RadioButtonUncheckedIcon sx={{ fontSize: 18 }} />
+                    )}
+                  </Box>
                 ) : null}
                 {statusLabel ? (
                   <Chip
@@ -2756,39 +2826,6 @@ const RolePublicCoverCard = ({
             ) : (
               <Box sx={{ flex: 1 }} />
             )}
-            <Stack direction="row" spacing={0.7} justifyContent="flex-end">
-              {canChoose ? (
-                <Button
-                  size="small"
-                  variant={isSelectedChoice ? 'contained' : 'outlined'}
-                  color={isSelectedChoice ? 'warning' : 'inherit'}
-                  aria-pressed={isSelectedChoice}
-                  aria-label={`${cover.displayName} 선택`}
-                  disabled={isSelectedChoice}
-                  onClick={onChooseRole}
-                  sx={{
-                    minWidth: 86,
-                    flex: '0 0 auto',
-                    fontWeight: 900,
-                    color: isSelectedChoice ? undefined : '#e8dec4',
-                    borderColor: isSelectedChoice
-                      ? undefined
-                      : 'rgba(248, 241, 222, 0.32)',
-                    ...(isSelectedChoice
-                      ? {
-                          '&.Mui-disabled': {
-                            color: '#2a1d0d',
-                            backgroundColor: '#f59e0b',
-                            opacity: 1,
-                          },
-                        }
-                      : {}),
-                  }}
-                >
-                  {isSelectedChoice ? '선택됨' : chooseActionLabel}
-                </Button>
-              ) : null}
-            </Stack>
           </Stack>
         ) : null}
       </Stack>
@@ -2913,9 +2950,6 @@ const RoleSelectionPanel = ({
                     cover={cover}
                     isSelectedChoice={submittedRoleId === cover.id}
                     isSubmittedChoice={submittedRoleId === cover.id}
-                    chooseActionLabel={
-                      hasSubmittedRolePreferences ? '변경하기' : '선택하기'
-                    }
                     showChoiceControl={allowRoleChoice}
                     showPreferenceSummary={allowRoleChoice}
                     preferredPlayerNames={getPreferredPlayerNames(cover)}
