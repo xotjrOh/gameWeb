@@ -399,12 +399,12 @@ const getDisplayCardText = (card: AnyClueCard) =>
     ? card.text.replace(EXTRA_INVESTIGATION_TEXT_PATTERN, '').trimStart()
     : card.text;
 
-const getCompactCardPreviewText = (card: AnyClueCard) => {
+const getCompactCardPreviewText = (card: AnyClueCard, maxLength = 52) => {
   const normalizedText = getDisplayCardText(card).replace(/\s+/g, ' ').trim();
-  if (normalizedText.length <= 52) {
+  if (normalizedText.length <= maxLength) {
     return normalizedText;
   }
-  return `${normalizedText.slice(0, 52).trimEnd()}...`;
+  return `${normalizedText.slice(0, maxLength).trimEnd()}...`;
 };
 
 const getUniqueClueCards = (cards: MurderMysteryClueVaultCardView[]) => {
@@ -430,9 +430,11 @@ const getClueVaultCardState = (card: AnyClueCard) => {
 const TextOnlyClueMedia = ({
   dense = false,
   detail = false,
+  mediaHeight,
 }: {
   dense?: boolean;
   detail?: boolean;
+  mediaHeight?: number;
 }) => (
   <Stack
     spacing={detail ? 0.8 : 0.35}
@@ -440,7 +442,7 @@ const TextOnlyClueMedia = ({
     justifyContent="center"
     sx={{
       position: 'relative',
-      height: detail ? { xs: 124, sm: 144 } : dense ? 70 : 108,
+      height: mediaHeight ?? (detail ? { xs: 124, sm: 144 } : dense ? 70 : 108),
       overflow: 'hidden',
       background:
         'linear-gradient(135deg, #e8dcc2 0%, #f8f1de 52%, #d4c29f 100%)',
@@ -1646,6 +1648,10 @@ const EvidenceCardFace = ({
   card,
   dense = false,
   compactPreview = false,
+  previewLineClamp,
+  previewMaxLength = 52,
+  cardMinHeight: cardMinHeightOverride,
+  mediaHeight: mediaHeightOverride,
   onOpen,
   showPublicRevealControl = false,
   publicRevealDisabled = false,
@@ -1654,6 +1660,10 @@ const EvidenceCardFace = ({
   card: AnyClueCard;
   dense?: boolean;
   compactPreview?: boolean;
+  previewLineClamp?: number;
+  previewMaxLength?: number;
+  cardMinHeight?: number;
+  mediaHeight?: number;
   onOpen: (card: AnyClueCard) => void;
   showPublicRevealControl?: boolean;
   publicRevealDisabled?: boolean;
@@ -1661,7 +1671,7 @@ const EvidenceCardFace = ({
 }) => {
   const sourceDisplayText = getCardSourceDisplayText(card);
   const displayText = compactPreview
-    ? getCompactCardPreviewText(card)
+    ? getCompactCardPreviewText(card, previewMaxLength)
     : getDisplayCardText(card);
   const { isPublic, canRevealPublicly } = getClueVaultCardState(card);
   const canUsePublicRevealButton = canRevealPublicly && !publicRevealDisabled;
@@ -1675,8 +1685,10 @@ const EvidenceCardFace = ({
         : '전체공개 불가';
   const mediaIsCompact = dense || compactPreview;
   const cardWidth = dense ? 112 : compactPreview ? '100%' : 174;
-  const cardMinHeight = dense ? 146 : compactPreview ? 176 : 224;
-  const mediaHeight = mediaIsCompact ? 70 : 108;
+  const cardMinHeight =
+    cardMinHeightOverride ?? (dense ? 146 : compactPreview ? 176 : 224);
+  const mediaHeight = mediaHeightOverride ?? (mediaIsCompact ? 70 : 108);
+  const previewClamp = previewLineClamp ?? (compactPreview ? 2 : 4);
   const showPreviewText = compactPreview || !dense;
 
   return (
@@ -1728,7 +1740,10 @@ const EvidenceCardFace = ({
               }}
             />
           ) : (
-            <TextOnlyClueMedia dense={mediaIsCompact} />
+            <TextOnlyClueMedia
+              dense={mediaIsCompact}
+              mediaHeight={mediaHeight}
+            />
           )}
           <Stack
             spacing={compactPreview ? 0.35 : 0.55}
@@ -1757,7 +1772,7 @@ const EvidenceCardFace = ({
                   lineHeight: compactPreview ? 1.35 : 1.45,
                   display: '-webkit-box',
                   WebkitBoxOrient: 'vertical',
-                  WebkitLineClamp: compactPreview ? 2 : 4,
+                  WebkitLineClamp: previewClamp,
                   overflow: 'hidden',
                 }}
               >
@@ -5102,6 +5117,8 @@ const PrivateCardsDialog = ({
                 key={card.id}
                 card={card}
                 compactPreview
+                previewLineClamp={3}
+                previewMaxLength={84}
                 onOpen={onOpenCard}
                 showPublicRevealControl
                 publicRevealDisabled={!canRevealPubliclyNow}
@@ -7250,8 +7267,8 @@ export default function MurderMysteryTableExperience({
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(156px, 174px))',
-            gap: 1.25,
+            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+            gap: 0.65,
             alignItems: 'start',
           }}
         >
@@ -7259,6 +7276,11 @@ export default function MurderMysteryTableExperience({
             <EvidenceCardFace
               key={`public:${card.id}`}
               card={card}
+              compactPreview
+              previewLineClamp={1}
+              previewMaxLength={36}
+              cardMinHeight={132}
+              mediaHeight={58}
               onOpen={(openedCard) =>
                 openCardViewer(
                   'public-clues',
