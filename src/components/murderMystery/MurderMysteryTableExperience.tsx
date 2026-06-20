@@ -1140,6 +1140,7 @@ const PinnedClueFab = ({
     startTop: number;
     moved: boolean;
   } | null>(null);
+  const suppressClickUntilRef = useRef(0);
   const [position, setPosition] = useState<PinnedClueFabPosition>(
     DEFAULT_PINNED_CLUE_FAB_POSITION
   );
@@ -1241,7 +1242,6 @@ const PinnedClueFab = ({
 
     if (!pointer.moved || !viewport) {
       setDragPosition(null);
-      onOpen();
       return;
     }
 
@@ -1269,6 +1269,7 @@ const PinnedClueFab = ({
     setPosition(nextPosition);
     savePinnedClueFabPosition(nextPosition);
     setDragPosition(null);
+    suppressClickUntilRef.current = Date.now() + 180;
     event.preventDefault();
   };
 
@@ -1277,8 +1278,8 @@ const PinnedClueFab = ({
     setDragPosition(null);
   };
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
-    if (event.key !== 'Enter' && event.key !== ' ') {
+  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+    if (Date.now() < suppressClickUntilRef.current) {
       return;
     }
     event.preventDefault();
@@ -1295,7 +1296,7 @@ const PinnedClueFab = ({
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}
-        onKeyDown={handleKeyDown}
+        onClick={handleClick}
         sx={{
           position: 'fixed',
           left: dragPosition?.left ?? resolvedLeft ?? 'auto',
@@ -1316,7 +1317,7 @@ const PinnedClueFab = ({
           backgroundColor: '#201b18',
           boxShadow:
             '0 14px 34px rgba(0,0,0,0.46), 0 0 0 5px rgba(245,197,66,0.15)',
-          cursor: dragPosition ? 'grabbing' : 'grab',
+          cursor: dragPosition ? 'grabbing' : 'pointer',
           pointerEvents: 'auto',
           touchAction: 'none',
           transition: dragPosition
@@ -5249,6 +5250,8 @@ export default function MurderMysteryTableExperience({
     string,
     Set<string>
   > | null>(null);
+  const previousMyClueIdsRef = useRef<Set<string> | null>(null);
+  const autoOpenedInvestigationCardIdsRef = useRef<Set<string>>(new Set());
   const previousReservationRef =
     useRef<MurderMysteryInvestigationBackCardView | null>(null);
   const modalHistoryDepthRef = useRef(0);
@@ -5277,6 +5280,7 @@ export default function MurderMysteryTableExperience({
   const [introTab, setIntroTab] = useState<IntroTab>('prologue');
   const [nowTick, setNowTick] = useState(Date.now());
   const selectedCard = cardViewer?.cards[cardViewer.index] ?? null;
+  const activeRound = snapshot.investigation.round;
 
   const selfPlayer =
     snapshot.players.find((player) => player.id === sessionId) ?? null;
@@ -5356,7 +5360,6 @@ export default function MurderMysteryTableExperience({
       ),
     [snapshot.roleReading.players]
   );
-  const activeRound = snapshot.investigation.round;
   const activeRoundView =
     snapshot.investigation.rounds.find(
       (round) => round.round === activeRound
@@ -5738,6 +5741,39 @@ export default function MurderMysteryTableExperience({
     }
     openCardViewer(pinnedClue.sourceId, pinnedClueCards, pinnedCard);
   }, [openCardViewer, pinnedCard, pinnedClue, pinnedClueCards]);
+
+  useEffect(() => {
+    const currentIds = new Set(
+      snapshot.clueVault.myClues.map((card) => card.id)
+    );
+    const previousIds = previousMyClueIdsRef.current;
+    previousMyClueIdsRef.current = currentIds;
+
+    if (!previousIds) {
+      return;
+    }
+
+    const addedCards = snapshot.clueVault.myClues.filter(
+      (card) => !previousIds.has(card.id)
+    );
+    if (
+      addedCards.length === 0 ||
+      phaseKind !== 'investigate' ||
+      activeRound === null
+    ) {
+      return;
+    }
+
+    const latestAddedCard = addedCards[addedCards.length - 1];
+    if (
+      latestAddedCard &&
+      !autoOpenedInvestigationCardIdsRef.current.has(latestAddedCard.id)
+    ) {
+      autoOpenedInvestigationCardIdsRef.current.add(latestAddedCard.id);
+      openCardViewer('my-clues', snapshot.clueVault.myClues, latestAddedCard);
+    }
+  }, [activeRound, openCardViewer, phaseKind, snapshot.clueVault.myClues]);
+
   const setInvestigationTargetTileRef = useCallback(
     (targetId: string, element: HTMLElement | null) => {
       if (element) {
@@ -8539,7 +8575,7 @@ export default function MurderMysteryTableExperience({
           onOpen={() => setIsMapDialogOpen(true)}
         />
       ) : null}
-      {isSmall && pinnedCard && !selectedCard ? (
+      {pinnedCard && !selectedCard ? (
         <PinnedClueFab
           card={pinnedCard}
           bottomOffset={floatingFabBottomOffset}
