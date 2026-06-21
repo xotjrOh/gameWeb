@@ -479,6 +479,13 @@ investigations:
           yPct: 5
           widthPct: 8
           heightPct: 9
+        - id: map_r1_medical_wing_witness
+          targetId: r1_medical_wing_rumor_2
+          label: '의료동 목격담'
+          xPct: 28
+          yPct: 5
+          widthPct: 8
+          heightPct: 9
         - id: map_r1_medical_shoe_cabinet_1
           targetId: r1_medical_shoe_cabinet_1
           label: '의료동 입구 신발장 1'
@@ -722,7 +729,7 @@ investigations:
             - card_medical_wing_rumor
         - id: r1_medical_wing_rumor_2
           label: '의료동 목격담'
-          targetType: item
+          targetType: location
           entityKey: medical_wing_rumor_2
           sectionId: pre_scene
           order: 86
@@ -978,7 +985,7 @@ investigations:
             - card_medical_wing_rumor
         - id: r1_medical_wing_rumor_2
           label: '의료동 목격담'
-          targetType: item
+          targetType: location
           entityKey: medical_wing_rumor_2
           sectionId: pre_scene
           order: 86
