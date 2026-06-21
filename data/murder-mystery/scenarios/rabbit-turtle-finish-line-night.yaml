@@ -727,7 +727,6 @@ investigations:
           sectionId: pre_scene
           order: 86
           icon: '🏥'
-          repeatable: true
           cardBack:
             imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-wing.svg'
             shortLabel: '의료동 목격담'
@@ -984,7 +983,6 @@ investigations:
           sectionId: pre_scene
           order: 86
           icon: '🏥'
-          repeatable: true
           cardBack:
             imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-wing.svg'
             shortLabel: '의료동 목격담'
@@ -1234,7 +1232,6 @@ cards:
   - id: card_medical_wing_rumor_2
     text: |
       본행사 전에 조희수가 서기준의 간이책상으로 와 대기하다가 본행사 직전에 돌아갔고, 그 뒤 조희수의 비명까지 네 명 중 출입자는 없었다.
-    publicRevealDisabled: true
     backId: back_medical_wing_rumor_2
     effects:
       - type: addPart
