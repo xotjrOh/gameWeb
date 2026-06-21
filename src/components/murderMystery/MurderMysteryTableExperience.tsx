@@ -5768,9 +5768,6 @@ const CardDetailDialog = ({
       return;
     }
     const navigationControlsVisible = areNavigationControlsVisible;
-    if (!navigationControlsVisible) {
-      revealNavigationControls();
-    }
     pointerStartRef.current = {
       x: event.clientX,
       y: event.clientY,
@@ -5798,7 +5795,6 @@ const CardDetailDialog = ({
       Math.abs(deltaX) >= 48 &&
       Math.abs(deltaX) > Math.abs(deltaY)
     ) {
-      revealNavigationControls();
       if (deltaX < 0) {
         onNext();
       } else {
@@ -5825,12 +5821,10 @@ const CardDetailDialog = ({
     if (isMediaTap && mediaRect) {
       const edgeTapWidth = Math.min(56, mediaRect.width * 0.14);
       if (canNavigate && event.clientX <= mediaRect.left + edgeTapWidth) {
-        revealNavigationControls();
         onPrevious();
         return;
       }
       if (canNavigate && event.clientX >= mediaRect.right - edgeTapWidth) {
-        revealNavigationControls();
         onNext();
         return;
       }
@@ -5847,12 +5841,10 @@ const CardDetailDialog = ({
 
     const xRatio = (event.clientX - dialogRect.left) / dialogRect.width;
     if (xRatio < 0.42) {
-      revealNavigationControls();
       onPrevious();
       return;
     }
     if (xRatio > 0.58) {
-      revealNavigationControls();
       onNext();
       return;
     }
@@ -5895,11 +5887,16 @@ const CardDetailDialog = ({
           }}
         >
           <Tooltip title={isPinned ? '단서 핀 해제' : '단서 핀 고정'}>
-            <span>
+            <span data-card-detail-navigation-skip="true">
               <IconButton
                 disabled={!card}
                 aria-label={isPinned ? '단서 핀 해제' : '단서 핀 고정'}
-                onClick={onTogglePin}
+                onPointerDown={(event) => event.stopPropagation()}
+                onPointerUp={(event) => event.stopPropagation()}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onTogglePin?.();
+                }}
                 sx={{
                   position: 'absolute',
                   top: 8,
@@ -5925,7 +5922,14 @@ const CardDetailDialog = ({
             </span>
           </Tooltip>
           <IconButton
-            onClick={onClose}
+            aria-label="단서 창 닫기"
+            data-card-detail-navigation-skip="true"
+            onPointerDown={(event) => event.stopPropagation()}
+            onPointerUp={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.stopPropagation();
+              onClose();
+            }}
             sx={{
               position: 'absolute',
               top: 8,

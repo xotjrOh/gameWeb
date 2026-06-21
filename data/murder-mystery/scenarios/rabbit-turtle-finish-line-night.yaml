@@ -119,7 +119,7 @@ flow:
       label: '2라운드 토론'
       kind: discuss
       round: 2
-      durationSec: 600
+      durationSec: 1800
       description: '윤유성, 조희수, 서기준, 한다정의 거짓말과 실제 사망 원인을 분리하세요. 범인이 없다는 결론까지 포함해 최종 지목을 정리하세요.'
     - id: FINAL_VOTE
       label: '최종 투표'
@@ -247,8 +247,8 @@ parts:
     name: '용왕에 대한 소문2'
     source: '행사장 소문'
     note: '용왕이 병환으로 업무를 돌보지 못하게 되자 길거리에는 다시 굶는 아이들이 늘어났다는 소문이다.'
-  - id: part_dragon_king_rumor_3
-    name: '용궁섬에 대한 소문3'
+  - id: part_dragon_palace_island_rumor
+    name: '용궁섬에 대한 소문'
     source: '용궁섬 소문'
     note: '용궁섬 밖으로 나가려면 선착장 배편을 이용해야 하며, 섬 안에서 사망자가 나오거나 태풍·해일 같은 자연재해가 발생하면 선착장 배편이 한동안 멈춘다는 소문이다.'
   - id: part_wet_shoeprints
@@ -442,7 +442,7 @@ investigations:
           - r1_medical_shoe_cabinet_2
           - r1_dragon_king_rumor_1
           - r1_dragon_king_rumor_2
-          - r1_dragon_king_rumor_3
+          - r1_dragon_palace_island_rumor
           - r1_siphon_guide
         order: 10
         icon: '📄'
@@ -789,19 +789,19 @@ investigations:
             shortLabel: '용왕에 대한 소문2'
           cardPool:
             - card_dragon_king_rumor_2
-        - id: r1_dragon_king_rumor_3
-          label: '용궁섬에 대한 소문3'
+        - id: r1_dragon_palace_island_rumor
+          label: '용궁섬에 대한 소문'
           targetType: item
-          entityKey: dragon_king_rumor_3
+          entityKey: dragon_palace_island_rumor
           sectionId: pre_scene
           order: 94
           icon: '👑'
           repeatable: true
           cardBack:
             imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/dragon-king.png'
-            shortLabel: '용궁섬에 대한 소문3'
+            shortLabel: '용궁섬에 대한 소문'
           cardPool:
-            - card_dragon_king_rumor_3
+            - card_dragon_palace_island_rumor
         - id: r1_siphon_guide
           label: '세탁실에 붙어있는 안내문'
           targetType: location
@@ -1045,19 +1045,19 @@ investigations:
             shortLabel: '용왕에 대한 소문2'
           cardPool:
             - card_dragon_king_rumor_2
-        - id: r1_dragon_king_rumor_3
-          label: '용궁섬에 대한 소문3'
+        - id: r1_dragon_palace_island_rumor
+          label: '용궁섬에 대한 소문'
           targetType: item
-          entityKey: dragon_king_rumor_3
+          entityKey: dragon_palace_island_rumor
           sectionId: pre_scene
           order: 94
           icon: '👑'
           repeatable: true
           cardBack:
             imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/dragon-king.png'
-            shortLabel: '용궁섬에 대한 소문3'
+            shortLabel: '용궁섬에 대한 소문'
           cardPool:
-            - card_dragon_king_rumor_3
+            - card_dragon_palace_island_rumor
         - id: r1_siphon_guide
           label: '세탁실에 붙어있는 안내문'
           targetType: location
@@ -1405,15 +1405,16 @@ cards:
     effects:
       - type: addPart
         partId: part_dragon_king_rumor_2
-  - id: card_dragon_king_rumor_3
+  - id: card_dragon_palace_island_rumor
     text: |
       용궁섬은 밖으로 나가려면 선착장 배편을 이용해야 한다.
 
       다만 섬 안에서 사망자가 나오거나, 태풍·해일 같은 자연재해가 발생하면 선착장 배편이 한동안 멈춘다는 말이 있다.
-    backId: back_dragon_king_rumor_3
+    publicRevealDisabled: true
+    backId: back_dragon_palace_island_rumor
     effects:
       - type: addPart
-        partId: part_dragon_king_rumor_3
+        partId: part_dragon_palace_island_rumor
   - id: card_wet_shoeprints
     text: |
       재활수조실 바닥 곳곳에 젖은 구두 자국이 흐리게 남아 있다.
@@ -1758,7 +1759,7 @@ endbook:
       - id: qna_jara_motive
         question: '서기준은 왜 이런 일을 벌였나?'
         answer: |
-          「서기준의 소지품」에는 행사 뒤 의료동 일정과 회복 음료 확인 메모가 있고, 「의료동 간이책상 2」에는 윤유성과 윤슬의 건강기록 비교 자료가 있다. 여기에 「용왕에 대한 소문2」의 병환과 「용궁섬에 대한 소문3」의 사망자 발생 시 배편 정지 조건을 합치면, 서기준은 윤유성을 섬과 의료동에 묶어 둘 필요가 있었다. 오완주가 죽으면 윤유성은 강한 용의자가 되므로, 살인은 윤유성을 움직이지 못하게 만드는 명분이 된다.
+          「서기준의 소지품」에는 행사 뒤 의료동 일정과 회복 음료 확인 메모가 있고, 「의료동 간이책상 2」에는 윤유성과 윤슬의 건강기록 비교 자료가 있다. 여기에 「용왕에 대한 소문2」의 병환과 「용궁섬에 대한 소문」의 사망자 발생 시 배편 정지 조건을 합치면, 서기준은 윤유성을 섬과 의료동에 묶어 둘 필요가 있었다. 오완주가 죽으면 윤유성은 강한 용의자가 되므로, 살인은 윤유성을 움직이지 못하게 만드는 명분이 된다.
         evidenceRefs:
           - id: jara_belongings
             sourceType: investigation_card
@@ -1787,11 +1788,11 @@ endbook:
               10년쯤 전부터 용왕이 아프다는 소문이 돌었다. 용왕이 업무를 돌보지 못하게 되니, 길거리에는 다시 굶는 아이들이 늘어나기 시작했다.
             inference: |
               용왕의 병환은 서기준이 장기 이식과 의료동 계획을 서두를 이유가 된다.
-          - id: dragon_king_rumor_3
+          - id: dragon_palace_island_rumor
             sourceType: investigation_card
-            cardId: card_dragon_king_rumor_3
-            label: '용궁섬에 대한 소문3'
-            sourceName: '조사 카드 · 용궁섬에 대한 소문3'
+            cardId: card_dragon_palace_island_rumor
+            label: '용궁섬에 대한 소문'
+            sourceName: '조사 카드 · 용궁섬에 대한 소문'
             excerpt: |
               섬 안에서 사망자가 나오거나, 태풍·해일 같은 자연재해가 발생하면 선착장 배편이 한동안 멈춘다는 말이 있다.
             inference: |
