@@ -256,6 +256,14 @@ export default function MurderMysteryGameScreen({
     );
   };
 
+  const handleStartPresentationTimer = () => {
+    emitWithAck('mm_start_presentation_timer', { roomId, sessionId });
+  };
+
+  const handleEndPresentationTimer = () => {
+    emitWithAck('mm_end_presentation_timer', { roomId, sessionId });
+  };
+
   const handleSubmitEndingChoice = (choiceId: string, optionId: string) => {
     emitWithAck(
       'mm_submit_ending_choice',
@@ -354,6 +362,8 @@ export default function MurderMysteryGameScreen({
       onClearReservation={handleClearInvestigationReservation}
       pendingReservationBackId={pendingReservationBackId}
       onRevealMyClue={handleRevealMyClue}
+      onStartPresentationTimer={handleStartPresentationTimer}
+      onEndPresentationTimer={handleEndPresentationTimer}
       onSubmitVote={handleSubmitVote}
       onSubmitEndingChoice={handleSubmitEndingChoice}
       onReportSpecialEvent={handleReportSpecialEvent}

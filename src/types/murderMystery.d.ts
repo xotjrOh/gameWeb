@@ -7,6 +7,7 @@ export type MurderMysteryStepKind =
   | 'role_reading'
   | 'investigate'
   | 'discuss'
+  | 'presentation'
   | 'final_vote'
   | 'ending_choice'
   | 'endbook';
@@ -400,6 +401,19 @@ export interface MurderMysteryFinalVoteResult {
   tally: Record<string, number>;
 }
 
+export interface MurderMysteryFinalVoteReveal {
+  votes: Record<string, string>;
+  tally: Record<string, number>;
+  requiresRevote: boolean;
+  result: MurderMysteryFinalVoteResult;
+}
+
+export interface MurderMysteryPresentationState {
+  activeSpeakerPlayerId: string | null;
+  speakerStartedAtByPlayerId: Record<string, number>;
+  speakerEndedAtByPlayerId: Record<string, number>;
+}
+
 export interface MurderMysterySeatPosition {
   x: number;
   y: number;
@@ -493,6 +507,8 @@ export interface MurderMysteryGameData {
   specialEventStatusById: Record<string, MurderMysterySpecialEventStatus>;
   voteByPlayerId: Record<string, string>;
   finalVoteResult: MurderMysteryFinalVoteResult | null;
+  finalVoteReveal: MurderMysteryFinalVoteReveal | null;
+  presentation: MurderMysteryPresentationState;
   endingChoiceById: Record<string, string>;
   announcements: MurderMysteryAnnouncement[];
   appliedDynamicRuleIds: Record<string, true>;
@@ -662,6 +678,35 @@ export interface MurderMysteryFinalVoteView {
   yourVote: string | null;
   votes: Record<string, string>;
   result: MurderMysteryFinalVoteResult | null;
+  reveal: MurderMysteryFinalVoteReveal | null;
+}
+
+export type MurderMysteryPresentationSpeakerStatus =
+  | 'waiting'
+  | 'speaking'
+  | 'done';
+
+export interface MurderMysteryPresentationSpeakerView {
+  playerId: string;
+  playerName: string;
+  roleDisplayName: string | null;
+  startedAt: number | null;
+  endedAt: number | null;
+  status: MurderMysteryPresentationSpeakerStatus;
+}
+
+export interface MurderMysteryPresentationView {
+  durationSec: number;
+  activeSpeakerPlayerId: string | null;
+  activeSpeakerStartedAt: number | null;
+  activeSpeakerRemainingSec: number | null;
+  completedCount: number;
+  totalCount: number;
+  allCompleted: boolean;
+  yourStatus: MurderMysteryPresentationSpeakerStatus;
+  canStart: boolean;
+  canEnd: boolean;
+  speakers: MurderMysteryPresentationSpeakerView[];
 }
 
 export interface MurderMysteryEndbookView {
@@ -775,6 +820,7 @@ export interface MurderMysteryStateSnapshot {
     isExpired: boolean;
   };
   investigation: MurderMysteryInvestigationView;
+  presentation: MurderMysteryPresentationView;
   finalVote: MurderMysteryFinalVoteView;
   endingChoices: MurderMysteryEndingChoicesView;
   endbook: MurderMysteryEndbookView | null;
@@ -893,6 +939,20 @@ export interface MurderMysteryClientToServerEvents {
     callback: (response: CommonResponse) => void
   ) => void;
   mm_clear_investigation_reservation: (
+    data: {
+      roomId: string;
+      sessionId: string;
+    },
+    callback: (response: CommonResponse) => void
+  ) => void;
+  mm_start_presentation_timer: (
+    data: {
+      roomId: string;
+      sessionId: string;
+    },
+    callback: (response: CommonResponse) => void
+  ) => void;
+  mm_end_presentation_timer: (
     data: {
       roomId: string;
       sessionId: string;

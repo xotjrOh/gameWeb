@@ -100,6 +100,7 @@ const toStepKind = (value: unknown): MurderMysteryStepKind | undefined => {
     value === 'role_reading' ||
     value === 'investigate' ||
     value === 'discuss' ||
+    value === 'presentation' ||
     value === 'final_vote' ||
     value === 'ending_choice' ||
     value === 'endbook'

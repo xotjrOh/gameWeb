@@ -206,12 +206,16 @@ const connectSocket = (baseUrl, label) =>
   });
 
 const waitForEvent = (socket, eventName, options = {}) => {
-  const { timeoutMs = EVENT_TIMEOUT_MS, filter } = options;
+  const { timeoutMs = EVENT_TIMEOUT_MS, filter, label } = options;
 
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       socket.off(eventName, handleEvent);
-      reject(new Error(`timeout while waiting for ${eventName}`));
+      reject(
+        new Error(
+          `timeout while waiting for ${eventName}${label ? ` (${label})` : ''}`
+        )
+      );
     }, timeoutMs);
 
     const handleEvent = (payload) => {
@@ -304,28 +308,71 @@ const waitForProcessExit = (child, timeoutMs = 5000) => {
   ]);
 };
 
-const terminateProcess = async (child) => {
-  if (!child || child.exitCode !== null || child.signalCode !== null) {
+const runUtilityProcess = (command, args) =>
+  new Promise((resolve) => {
+    const child = spawn(command, args, { stdio: 'ignore' });
+    child.once('exit', resolve);
+    child.once('error', resolve);
+  });
+
+const escapePowerShellSingleQuotedString = (value) =>
+  String(value).replace(/'/g, "''");
+
+const killWindowsSpawnedDevServers = async () => {
+  if (process.platform !== 'win32') {
     return;
   }
 
-  expectedExitChildren.add(child.pid);
+  const workspace = escapePowerShellSingleQuotedString(process.cwd());
+  const port = escapePowerShellSingleQuotedString(String(SPAWN_PORT));
+  const script = `
+$workspace = '${workspace}'
+$port = '${port}'
+$matches = Get-CimInstance Win32_Process | Where-Object {
+  $_.CommandLine -and
+  $_.CommandLine.Contains($workspace) -and
+  $_.CommandLine.Contains('--port') -and
+  $_.CommandLine.Contains($port) -and
+  ($_.CommandLine.Contains('next') -or $_.CommandLine.Contains('yarn'))
+}
+foreach ($process in $matches) {
+  taskkill /PID $process.ProcessId /T /F | Out-Null
+}
+`;
+
+  await runUtilityProcess('powershell.exe', [
+    '-NoProfile',
+    '-NonInteractive',
+    '-Command',
+    script,
+  ]);
+};
+
+const terminateProcess = async (child) => {
+  if (!child) {
+    return;
+  }
+
+  if (child.pid) {
+    expectedExitChildren.add(child.pid);
+  }
 
   if (process.platform === 'win32') {
-    await new Promise((resolve) => {
-      const killer = spawn(
-        'taskkill',
-        ['/PID', String(child.pid), '/T', '/F'],
-        {
-          stdio: 'ignore',
-        }
-      );
-
-      killer.once('exit', resolve);
-      killer.once('error', resolve);
-    });
-    await waitForProcessExit(child);
+    if (child.exitCode === null && child.signalCode === null && child.pid) {
+      await runUtilityProcess('taskkill', [
+        '/PID',
+        String(child.pid),
+        '/T',
+        '/F',
+      ]);
+      await waitForProcessExit(child);
+    }
+    await killWindowsSpawnedDevServers();
     await delay(1000);
+    return;
+  }
+
+  if (child.exitCode !== null || child.signalCode !== null) {
     return;
   }
 
@@ -368,13 +415,26 @@ const cleanupRoom = async ({ baseUrl, roomId, hostSessionId, hostSockets }) => {
   }
 };
 
+let murderSnapshotRequestCount = 0;
+
 const requestMurderSnapshot = async (socket, roomId, sessionId) => {
-  const snapshotPromise = waitForEvent(socket, 'mm_state_snapshot');
+  murderSnapshotRequestCount += 1;
+  const requestNumber = murderSnapshotRequestCount;
+  const snapshotPromise = waitForEvent(socket, 'mm_state_snapshot', {
+    label: `murder snapshot #${requestNumber}, session ${sessionId}`,
+  });
   const response = await emitAck(socket, 'mm_get_state', {
     roomId,
     sessionId,
   });
-  assertCondition(response?.success, 'mm_get_state failed', response);
+  if (!response?.success) {
+    snapshotPromise.catch(() => {});
+    assertCondition(false, 'mm_get_state failed', {
+      requestNumber,
+      sessionId,
+      response,
+    });
+  }
   return snapshotPromise;
 };
 
@@ -1509,10 +1569,17 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
         progress
       );
     });
+    const round1DiscussDurationSec =
+      autoDiscussSnapshot.scenario.flow.steps.find(
+        (step) => step.id === 'ROUND1_DISCUSS'
+      )?.durationSec;
     assertCondition(
-      autoDiscussSnapshot.phaseTimer?.durationSec === 600,
+      autoDiscussSnapshot.phaseTimer?.durationSec === round1DiscussDurationSec,
       'round 1 discussion should expose the scenario time limit',
-      autoDiscussSnapshot.phaseTimer
+      {
+        expectedDurationSec: round1DiscussDurationSec,
+        phaseTimer: autoDiscussSnapshot.phaseTimer,
+      }
     );
 
     const discussToRound2BriefingResponse = await emitAck(
@@ -1800,6 +1867,301 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
         round2CurrentPlayerId,
       'ordinary follow-up pick should advance away from the extra-investigation player',
       afterFollowUpSnapshot?.investigation.turn
+    );
+
+    let round2DiscussSnapshot = await requestMurderSnapshot(
+      hostSocket,
+      roomId,
+      hostSessionId
+    );
+    let round2AutoAdvancePickCount = 0;
+    const maxRound2AutoAdvancePickCount = 30;
+    while (
+      round2DiscussSnapshot.phase === 'ROUND2_INVESTIGATE' &&
+      round2AutoAdvancePickCount < maxRound2AutoAdvancePickCount
+    ) {
+      const activePlayerId =
+        round2DiscussSnapshot.investigation.turn?.currentPlayerId;
+      assertCondition(
+        Boolean(activePlayerId),
+        'round 2 auto-advance active player missing',
+        round2DiscussSnapshot.investigation.turn
+      );
+
+      const activeSnapshot = await requestMurderSnapshot(
+        socketsBySession.get(activePlayerId),
+        roomId,
+        activePlayerId
+      );
+      const nextBack =
+        getRound2TakeableBacks(activeSnapshot).find(
+          (back) => !back.extraInvestigationOnReveal
+        ) ??
+        getRound2TakeableBacks(activeSnapshot)[0] ??
+        null;
+      assertCondition(
+        Boolean(nextBack?.backId),
+        'round 2 auto-advance card back missing',
+        activeSnapshot.investigation.rounds
+      );
+
+      const autoPickResponse = await emitAck(
+        socketsBySession.get(activePlayerId),
+        'mm_submit_investigation',
+        {
+          roomId,
+          sessionId: activePlayerId,
+          backId: nextBack.backId,
+        }
+      );
+      assertCondition(
+        autoPickResponse?.success,
+        'round 2 auto-advance pick failed',
+        autoPickResponse
+      );
+      round2AutoAdvancePickCount += 1;
+      round2DiscussSnapshot = await requestMurderSnapshot(
+        hostSocket,
+        roomId,
+        hostSessionId
+      );
+    }
+    assertCondition(
+      round2DiscussSnapshot.phase === 'ROUND2_DISCUSS',
+      'round 2 investigation should auto-advance to discussion after all turns',
+      {
+        phase: round2DiscussSnapshot.phase,
+        turn: round2DiscussSnapshot.investigation.turn,
+        round2AutoAdvancePickCount,
+        maxRound2AutoAdvancePickCount,
+      }
+    );
+    const round2DiscussStep = round2DiscussSnapshot.scenario.flow.steps.find(
+      (step) => step.id === 'ROUND2_DISCUSS'
+    );
+    assertCondition(
+      round2DiscussStep?.description?.includes('개인 발표') &&
+        round2DiscussStep?.description?.includes('최종 투표') &&
+        round2DiscussStep?.enterAnnouncement?.includes('개인 발표') &&
+        round2DiscussStep?.enterAnnouncement?.includes('최종 투표'),
+      'round 2 discussion should announce presentation before final vote',
+      round2DiscussStep
+    );
+
+    const discussToPresentationResponse = await emitAck(
+      socketsBySession.get(hostSessionId),
+      'mm_host_next_phase',
+      {
+        roomId,
+        sessionId: hostSessionId,
+      }
+    );
+    assertCondition(
+      discussToPresentationResponse?.success,
+      'host should advance from round 2 discussion to presentation',
+      discussToPresentationResponse
+    );
+
+    const presentationEntrySnapshot = await requestMurderSnapshot(
+      hostSocket,
+      roomId,
+      hostSessionId
+    );
+    assertCondition(
+      presentationEntrySnapshot.phase === 'FINAL_PRESENTATION' &&
+        presentationEntrySnapshot.presentation.durationSec === 120 &&
+        presentationEntrySnapshot.presentation.totalCount === maxPlayers &&
+        presentationEntrySnapshot.presentation.completedCount === 0 &&
+        presentationEntrySnapshot.presentation.activeSpeakerPlayerId === null,
+      'presentation phase should initialize per-player speaker state',
+      {
+        phase: presentationEntrySnapshot.phase,
+        presentation: presentationEntrySnapshot.presentation,
+      }
+    );
+
+    const blockedPresentationNextResponse = await emitAck(
+      socketsBySession.get(hostSessionId),
+      'mm_host_next_phase',
+      {
+        roomId,
+        sessionId: hostSessionId,
+      }
+    );
+    assertCondition(
+      blockedPresentationNextResponse?.success === false,
+      'presentation phase should block host next before every speaker finishes',
+      blockedPresentationNextResponse
+    );
+
+    const [firstSpeakerId, secondSpeakerId] = playerSessionIds;
+    const firstStartResponse = await emitAck(
+      socketsBySession.get(firstSpeakerId),
+      'mm_start_presentation_timer',
+      {
+        roomId,
+        sessionId: firstSpeakerId,
+      }
+    );
+    assertCondition(
+      firstStartResponse?.success,
+      'player should start their own presentation timer',
+      firstStartResponse
+    );
+
+    const firstSpeakingSnapshot = await requestMurderSnapshot(
+      hostSocket,
+      roomId,
+      hostSessionId
+    );
+    assertCondition(
+      firstSpeakingSnapshot.presentation.activeSpeakerPlayerId ===
+        firstSpeakerId &&
+        firstSpeakingSnapshot.presentation.speakers.find(
+          (speaker) => speaker.playerId === firstSpeakerId
+        )?.status === 'speaking',
+      'presentation snapshot should expose the active speaker',
+      firstSpeakingSnapshot.presentation
+    );
+
+    const blockedOverlapResponse = await emitAck(
+      socketsBySession.get(secondSpeakerId),
+      'mm_start_presentation_timer',
+      {
+        roomId,
+        sessionId: secondSpeakerId,
+      }
+    );
+    assertCondition(
+      blockedOverlapResponse?.success === false,
+      'presentation should reject overlapping speaker timers',
+      blockedOverlapResponse
+    );
+
+    const firstEndResponse = await emitAck(
+      socketsBySession.get(firstSpeakerId),
+      'mm_end_presentation_timer',
+      {
+        roomId,
+        sessionId: firstSpeakerId,
+      }
+    );
+    assertCondition(
+      firstEndResponse?.success,
+      'active speaker should end their presentation early',
+      firstEndResponse
+    );
+
+    const firstCompletedSnapshot = await requestMurderSnapshot(
+      hostSocket,
+      roomId,
+      hostSessionId
+    );
+    assertCondition(
+      firstCompletedSnapshot.presentation.activeSpeakerPlayerId === null &&
+        firstCompletedSnapshot.presentation.speakers.find(
+          (speaker) => speaker.playerId === firstSpeakerId
+        )?.status === 'done',
+      'ending a presentation should free the next speaker slot',
+      firstCompletedSnapshot.presentation
+    );
+
+    const duplicateStartResponse = await emitAck(
+      socketsBySession.get(firstSpeakerId),
+      'mm_start_presentation_timer',
+      {
+        roomId,
+        sessionId: firstSpeakerId,
+      }
+    );
+    assertCondition(
+      duplicateStartResponse?.success === false,
+      'finished speaker should not restart presentation',
+      duplicateStartResponse
+    );
+
+    for (const speakerId of [hostSessionId, secondSpeakerId]) {
+      const startResponse = await emitAck(
+        socketsBySession.get(speakerId),
+        'mm_start_presentation_timer',
+        {
+          roomId,
+          sessionId: speakerId,
+        }
+      );
+      assertCondition(
+        startResponse?.success,
+        'remaining player should start presentation in arbitrary order',
+        { speakerId, startResponse }
+      );
+
+      const speakingSnapshot = await requestMurderSnapshot(
+        hostSocket,
+        roomId,
+        hostSessionId
+      );
+      assertCondition(
+        speakingSnapshot.presentation.activeSpeakerPlayerId === speakerId,
+        'presentation should track the current arbitrary-order speaker',
+        { speakerId, presentation: speakingSnapshot.presentation }
+      );
+
+      const endResponse = await emitAck(
+        socketsBySession.get(speakerId),
+        'mm_end_presentation_timer',
+        {
+          roomId,
+          sessionId: speakerId,
+        }
+      );
+      assertCondition(
+        endResponse?.success,
+        'remaining player should end presentation early',
+        { speakerId, endResponse }
+      );
+    }
+
+    const completedPresentationSnapshot = await requestMurderSnapshot(
+      hostSocket,
+      roomId,
+      hostSessionId
+    );
+    assertCondition(
+      completedPresentationSnapshot.presentation.allCompleted &&
+        completedPresentationSnapshot.presentation.completedCount ===
+          maxPlayers &&
+        completedPresentationSnapshot.presentation.activeSpeakerPlayerId ===
+          null,
+      'presentation phase should complete only after every player speaks',
+      completedPresentationSnapshot.presentation
+    );
+
+    const presentationToVoteResponse = await emitAck(
+      socketsBySession.get(hostSessionId),
+      'mm_host_next_phase',
+      {
+        roomId,
+        sessionId: hostSessionId,
+      }
+    );
+    assertCondition(
+      presentationToVoteResponse?.success,
+      'host should advance from completed presentation to final vote',
+      presentationToVoteResponse
+    );
+
+    const finalVoteSnapshot = await requestMurderSnapshot(
+      hostSocket,
+      roomId,
+      hostSessionId
+    );
+    assertCondition(
+      finalVoteSnapshot.phase === 'FINAL_VOTE',
+      'completed presentation should advance to final vote',
+      {
+        phase: finalVoteSnapshot.phase,
+        presentation: finalVoteSnapshot.presentation,
+      }
     );
 
     const resetResponse = await emitAck(

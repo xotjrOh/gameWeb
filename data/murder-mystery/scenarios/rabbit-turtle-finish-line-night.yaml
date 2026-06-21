@@ -120,7 +120,13 @@ flow:
       kind: discuss
       round: 2
       durationSec: 1800
-      description: '윤유성, 조희수, 서기준, 한다정의 거짓말과 실제 사망 원인을 분리하세요. 범인이 없다는 결론까지 포함해 최종 지목을 정리하세요.'
+      description: '윤유성, 조희수, 서기준, 한다정의 거짓말과 실제 사망 원인을 분리하세요. 이 회의가 끝나면 각자 2분 개인 발표로 사건의 전말을 정리하고, 그 뒤 최종 투표로 넘어갑니다.'
+      enterAnnouncement: '2라운드 토론입니다. 다음 단계에서는 각자 2분씩 개인 발표를 진행하고, 모두 발표한 뒤 최종 투표로 넘어갑니다.'
+    - id: FINAL_PRESENTATION
+      label: '개인 발표'
+      kind: presentation
+      description: '원하는 순서대로 본인 발표 타이머를 시작하고, 사건의 전말과 최종 지목 근거를 2분 안에 설명하세요. 발표를 일찍 마치면 직접 종료할 수 있습니다.'
+      enterAnnouncement: '개인 발표 단계입니다. 원하는 순서대로 본인 발표 타이머를 시작하고, 사건의 전말을 2분 안에 설명하세요. 모두 발표하면 최종 투표로 진행합니다.'
     - id: FINAL_VOTE
       label: '최종 투표'
       kind: final_vote

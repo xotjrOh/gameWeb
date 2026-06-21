@@ -156,6 +156,12 @@ export const DEFAULT_GAME_DATA: {
     specialEventStatusById: {},
     voteByPlayerId: {},
     finalVoteResult: null,
+    finalVoteReveal: null,
+    presentation: {
+      activeSpeakerPlayerId: null,
+      speakerStartedAtByPlayerId: {},
+      speakerEndedAtByPlayerId: {},
+    },
     endingChoiceById: {},
     announcements: [],
     appliedDynamicRuleIds: {},

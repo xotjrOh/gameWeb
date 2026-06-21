@@ -2,14 +2,18 @@ import { Server } from 'socket.io';
 import { rooms, timers } from '../state/gameState';
 import { validatePlayer, validateRoom } from '../utils/validation';
 import {
+  advanceExpiredMurderMysteryPresentationIfNeeded,
   advanceExpiredMurderMysteryDiscussionIfNeeded,
   appendMurderMysteryAnnouncement,
   buildMurderMysteryEndbookText,
   buildMurderMysteryRoleShareText,
   buildMurderMysterySnapshot,
   clearMurderMysteryRolePreferences,
+  endMurderMysteryPresentationTimer,
   finalizeMurderMysteryVote,
+  getMurderMysteryPresentationTimerRemainingMs,
   markMurderMysteryPhaseRead,
+  MURDER_MYSTERY_PRESENTATION_DURATION_SEC,
   moveMurderMysteryToNextPhase,
   reportMurderMysterySpecialEvent,
   resetMurderMysteryGame,
@@ -19,6 +23,7 @@ import {
   clearMurderMysteryInvestigationReservation,
   setMurderMysteryInvestigationReservation,
   startMurderMysteryGame,
+  startMurderMysteryPresentationTimer,
   submitMurderMysteryEndingChoice,
   submitMurderMysteryInvestigation,
   submitMurderMysteryRolePreferences,
@@ -96,34 +101,50 @@ const murderMysteryGameHandler = (
 
     const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
     const announcementStartIndex = room.gameData.announcements.length;
-    const advanced = advanceExpiredMurderMysteryDiscussionIfNeeded(
+    const advancedDiscussion = advanceExpiredMurderMysteryDiscussionIfNeeded(
       room,
       scenario
     );
-    if (advanced) {
+    const advancedPresentation =
+      advanceExpiredMurderMysteryPresentationIfNeeded(room, scenario);
+    if (advancedDiscussion || advancedPresentation) {
       emitMurderMysteryAnnouncementsSince(room, announcementStartIndex);
       emitMurderMysterySnapshots(room, io);
+    }
+    if (advancedDiscussion) {
       io.emit('room-updated', rooms);
     }
 
     const currentStep = getFlowStepByPhase(scenario, room.gameData.phase);
-    if (currentStep?.kind !== 'discuss') {
+    if (currentStep?.kind === 'presentation') {
+      const remainingMs = getMurderMysteryPresentationTimerRemainingMs(
+        room,
+        scenario
+      );
+      if (remainingMs === null) {
+        return;
+      }
+      timers[roomId] = setTimeout(() => {
+        scheduleMurderMysteryPhaseTimer(roomId);
+      }, remainingMs + 50);
       return;
     }
 
-    const durationSec = room.gameData.phaseDurationSec;
-    const startedAt = room.gameData.phaseStartedAt;
-    if (!durationSec || !startedAt) {
-      return;
-    }
+    if (currentStep?.kind === 'discuss') {
+      const durationSec = room.gameData.phaseDurationSec;
+      const startedAt = room.gameData.phaseStartedAt;
+      if (!durationSec || !startedAt) {
+        return;
+      }
 
-    const remainingMs = Math.max(
-      durationSec * 1000 - (Date.now() - startedAt),
-      0
-    );
-    timers[roomId] = setTimeout(() => {
-      scheduleMurderMysteryPhaseTimer(roomId);
-    }, remainingMs + 50);
+      const remainingMs = Math.max(
+        durationSec * 1000 - (Date.now() - startedAt),
+        0
+      );
+      timers[roomId] = setTimeout(() => {
+        scheduleMurderMysteryPhaseTimer(roomId);
+      }, remainingMs + 50);
+    }
   };
 
   const emitMurderMysterySnapshotsWithTimerSync = (
@@ -133,17 +154,19 @@ const murderMysteryGameHandler = (
   ) => {
     const announcementStartIndex =
       options.announcementStartIndex ?? room.gameData.announcements.length;
-    const advanced = advanceExpiredMurderMysteryDiscussionIfNeeded(
+    const advancedDiscussion = advanceExpiredMurderMysteryDiscussionIfNeeded(
       room,
       scenario
     );
+    const advancedPresentation =
+      advanceExpiredMurderMysteryPresentationIfNeeded(room, scenario);
     emitMurderMysteryAnnouncementsSince(room, announcementStartIndex);
     emitMurderMysterySnapshots(room, io);
     scheduleMurderMysteryPhaseTimer(room.roomId);
-    if (advanced) {
+    if (advancedDiscussion) {
       io.emit('room-updated', rooms);
     }
-    return advanced;
+    return advancedDiscussion || advancedPresentation;
   };
 
   socket.on('mm_get_state', ({ roomId, sessionId }, callback) => {
@@ -158,11 +181,13 @@ const murderMysteryGameHandler = (
       socket.join(roomId);
       const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
       const announcementStartIndex = room.gameData.announcements.length;
-      const advanced = advanceExpiredMurderMysteryDiscussionIfNeeded(
+      const advancedDiscussion = advanceExpiredMurderMysteryDiscussionIfNeeded(
         room,
         scenario
       );
-      if (advanced) {
+      const advancedPresentation =
+        advanceExpiredMurderMysteryPresentationIfNeeded(room, scenario);
+      if (advancedDiscussion || advancedPresentation) {
         emitMurderMysterySnapshotsWithTimerSync(room, scenario, {
           announcementStartIndex,
         });
@@ -452,6 +477,43 @@ const murderMysteryGameHandler = (
       }
     }
   );
+
+  socket.on(
+    'mm_start_presentation_timer',
+    ({ roomId, sessionId }, callback) => {
+      try {
+        const room = toMurderMysteryRoom(validateRoom(roomId));
+        validatePlayer(room, sessionId);
+        const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
+
+        startMurderMysteryPresentationTimer(room, scenario, sessionId);
+        emitMurderMysterySnapshotsWithTimerSync(room, scenario);
+        return callback({
+          success: true,
+          message: `${MURDER_MYSTERY_PRESENTATION_DURATION_SEC}초 개인 발표를 시작했습니다.`,
+        });
+      } catch (error) {
+        return callback({ success: false, message: (error as Error).message });
+      }
+    }
+  );
+
+  socket.on('mm_end_presentation_timer', ({ roomId, sessionId }, callback) => {
+    try {
+      const room = toMurderMysteryRoom(validateRoom(roomId));
+      validatePlayer(room, sessionId);
+      const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
+
+      endMurderMysteryPresentationTimer(room, scenario, sessionId);
+      emitMurderMysterySnapshotsWithTimerSync(room, scenario);
+      return callback({
+        success: true,
+        message: '개인 발표를 종료했습니다.',
+      });
+    } catch (error) {
+      return callback({ success: false, message: (error as Error).message });
+    }
+  });
 
   socket.on('mm_reveal_my_clue', ({ roomId, sessionId, cardId }, callback) => {
     try {

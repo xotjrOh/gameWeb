@@ -8,6 +8,7 @@ import {
   MurderMysteryEndbookEvidenceQnaView,
   MurderMysteryEndbookEvidenceReferenceScenario,
   MurderMysteryEndbookView,
+  MurderMysteryFinalVoteReveal,
   MurderMysteryFinalVoteResult,
   MurderMysteryGameData,
   MurderMysteryHostControlsView,
@@ -22,6 +23,7 @@ import {
   MurderMysteryPhase,
   MurderMysteryPartScenario,
   MurderMysteryPendingInvestigation,
+  MurderMysteryPresentationSpeakerStatus,
   MurderMysteryPublicScriptView,
   MurderMysteryRoleSheetView,
   MurderMysteryScenario,
@@ -37,6 +39,8 @@ import {
 } from './murderMysteryValidation';
 import { getMurderMysteryScenario } from './murderMysteryScenarioService';
 import { createMurderMysteryPreReadToken } from '@/lib/murderMysteryPreReadToken';
+
+export const MURDER_MYSTERY_PRESENTATION_DURATION_SEC = 120;
 
 const pickRandom = <T>(items: T[]): T =>
   items[Math.floor(Math.random() * items.length)];
@@ -146,6 +150,81 @@ const areAllRoleSheetsRead = (room: MurderMysteryRoom) => {
   return (
     room.players.length > 0 &&
     room.players.every((player) => Boolean(readyByPlayerId[player.id]))
+  );
+};
+
+const createPresentationState = (): MurderMysteryGameData['presentation'] => ({
+  activeSpeakerPlayerId: null,
+  speakerStartedAtByPlayerId: {},
+  speakerEndedAtByPlayerId: {},
+});
+
+const ensurePresentationState = (room: MurderMysteryRoom) => {
+  room.gameData.presentation ??= createPresentationState();
+  room.gameData.presentation.activeSpeakerPlayerId ??= null;
+  room.gameData.presentation.speakerStartedAtByPlayerId ??= {};
+  room.gameData.presentation.speakerEndedAtByPlayerId ??= {};
+
+  const activePlayerIds = new Set(room.players.map((player) => player.id));
+  Object.keys(room.gameData.presentation.speakerStartedAtByPlayerId).forEach(
+    (playerId) => {
+      if (!activePlayerIds.has(playerId)) {
+        delete room.gameData.presentation.speakerStartedAtByPlayerId[playerId];
+      }
+    }
+  );
+  Object.keys(room.gameData.presentation.speakerEndedAtByPlayerId).forEach(
+    (playerId) => {
+      if (!activePlayerIds.has(playerId)) {
+        delete room.gameData.presentation.speakerEndedAtByPlayerId[playerId];
+      }
+    }
+  );
+  if (
+    room.gameData.presentation.activeSpeakerPlayerId &&
+    !activePlayerIds.has(room.gameData.presentation.activeSpeakerPlayerId)
+  ) {
+    room.gameData.presentation.activeSpeakerPlayerId = null;
+  }
+
+  return room.gameData.presentation;
+};
+
+const resetPresentationState = (room: MurderMysteryRoom) => {
+  room.gameData.presentation = createPresentationState();
+};
+
+const areAllPresentationsComplete = (room: MurderMysteryRoom) => {
+  const presentation = ensurePresentationState(room);
+  return (
+    room.players.length > 0 &&
+    room.players.every((player) =>
+      Boolean(presentation.speakerEndedAtByPlayerId[player.id])
+    )
+  );
+};
+
+export const getMurderMysteryPresentationTimerRemainingMs = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario
+) => {
+  const currentStep = getFlowStepByPhase(scenario, room.gameData.phase);
+  if (currentStep?.kind !== 'presentation') {
+    return null;
+  }
+
+  const presentation = ensurePresentationState(room);
+  const activeSpeakerPlayerId = presentation.activeSpeakerPlayerId;
+  const startedAt = activeSpeakerPlayerId
+    ? presentation.speakerStartedAtByPlayerId[activeSpeakerPlayerId]
+    : null;
+  if (!activeSpeakerPlayerId || !startedAt) {
+    return null;
+  }
+
+  return Math.max(
+    MURDER_MYSTERY_PRESENTATION_DURATION_SEC * 1000 - (Date.now() - startedAt),
+    0
   );
 };
 
@@ -593,10 +672,14 @@ const enterMurderMysteryPhase = (
   if (nextStep?.kind === 'final_vote') {
     room.gameData.voteByPlayerId = {};
     room.gameData.finalVoteResult = null;
+    room.gameData.finalVoteReveal = null;
     room.gameData.endingChoiceById = {};
   }
   if (nextStep?.kind === 'ending_choice') {
     room.gameData.endingChoiceById = {};
+  }
+  if (nextStep?.kind === 'presentation') {
+    resetPresentationState(room);
   }
   if (nextStep?.kind === 'investigate' && nextStep.round) {
     grantInitialRoleCards(room, scenario);
@@ -650,6 +733,8 @@ const createInitialStateWithScenario = (
   specialEventStatusById: buildSpecialEventStatusTemplate(scenario),
   voteByPlayerId: {},
   finalVoteResult: null,
+  finalVoteReveal: null,
+  presentation: createPresentationState(),
   endingChoiceById: {},
   announcements: [],
   appliedDynamicRuleIds: {},
@@ -2636,6 +2721,8 @@ export const startMurderMysteryGame = (
     buildSpecialEventStatusTemplate(scenario);
   room.gameData.voteByPlayerId = {};
   room.gameData.finalVoteResult = null;
+  room.gameData.finalVoteReveal = null;
+  resetPresentationState(room);
   room.gameData.endingChoiceById = {};
   room.gameData.appliedDynamicRuleIds = {};
   room.gameData.announcements = [];
@@ -2757,6 +2844,14 @@ export const moveMurderMysteryToNextPhase = (
       '모든 엔딩 선택이 제출되어야 엔딩 단계로 이동할 수 있습니다.'
     );
   }
+  if (currentStep.kind === 'presentation') {
+    advanceExpiredMurderMysteryPresentationIfNeeded(room, scenario);
+    if (!areAllPresentationsComplete(room)) {
+      throw new Error(
+        '모든 플레이어의 개인 발표가 끝나야 최종 투표로 이동할 수 있습니다.'
+      );
+    }
+  }
 
   let resolvedPending: ReturnType<typeof resolveAllPendingInvestigations> = [];
   if (
@@ -2800,6 +2895,35 @@ export const advanceExpiredMurderMysteryDiscussionIfNeeded = (
   }
 
   enterMurderMysteryPhase(room, scenario, nextPhase);
+  return true;
+};
+
+export const advanceExpiredMurderMysteryPresentationIfNeeded = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario
+) => {
+  const currentStep = getFlowStepByPhase(scenario, room.gameData.phase);
+  if (currentStep?.kind !== 'presentation') {
+    return false;
+  }
+
+  const presentation = ensurePresentationState(room);
+  const activeSpeakerPlayerId = presentation.activeSpeakerPlayerId;
+  const startedAt = activeSpeakerPlayerId
+    ? presentation.speakerStartedAtByPlayerId[activeSpeakerPlayerId]
+    : null;
+  if (!activeSpeakerPlayerId || !startedAt) {
+    return false;
+  }
+
+  const remainingMs =
+    MURDER_MYSTERY_PRESENTATION_DURATION_SEC * 1000 - (Date.now() - startedAt);
+  if (remainingMs > 0) {
+    return false;
+  }
+
+  presentation.speakerEndedAtByPlayerId[activeSpeakerPlayerId] = Date.now();
+  presentation.activeSpeakerPlayerId = null;
   return true;
 };
 
@@ -3197,6 +3321,57 @@ export const submitMurderMysteryVote = (
   room.gameData.voteByPlayerId[playerId] = voteOptionId;
 };
 
+export const startMurderMysteryPresentationTimer = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  playerId: string
+) => {
+  const step = getFlowStepByPhase(scenario, room.gameData.phase);
+  if (step?.kind !== 'presentation') {
+    throw new Error('지금은 개인 발표 단계가 아닙니다.');
+  }
+  if (!room.players.some((player) => player.id === playerId)) {
+    throw new Error('참가자만 개인 발표를 시작할 수 있습니다.');
+  }
+
+  advanceExpiredMurderMysteryPresentationIfNeeded(room, scenario);
+
+  const presentation = ensurePresentationState(room);
+  if (presentation.activeSpeakerPlayerId) {
+    throw new Error('다른 플레이어가 발표 중입니다.');
+  }
+  if (
+    presentation.speakerStartedAtByPlayerId[playerId] ||
+    presentation.speakerEndedAtByPlayerId[playerId]
+  ) {
+    throw new Error('이미 개인 발표를 진행했습니다.');
+  }
+
+  presentation.activeSpeakerPlayerId = playerId;
+  presentation.speakerStartedAtByPlayerId[playerId] = Date.now();
+};
+
+export const endMurderMysteryPresentationTimer = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  playerId: string
+) => {
+  const step = getFlowStepByPhase(scenario, room.gameData.phase);
+  if (step?.kind !== 'presentation') {
+    throw new Error('지금은 개인 발표 단계가 아닙니다.');
+  }
+
+  advanceExpiredMurderMysteryPresentationIfNeeded(room, scenario);
+
+  const presentation = ensurePresentationState(room);
+  if (presentation.activeSpeakerPlayerId !== playerId) {
+    throw new Error('본인 발표 중일 때만 종료할 수 있습니다.');
+  }
+
+  presentation.speakerEndedAtByPlayerId[playerId] = Date.now();
+  presentation.activeSpeakerPlayerId = null;
+};
+
 export const submitMurderMysteryEndingChoice = (
   room: MurderMysteryRoom,
   scenario: MurderMysteryScenario,
@@ -3283,6 +3458,20 @@ const getVoteOptionPlayerId = (
   );
 };
 
+const buildFinalVoteReveal = (
+  result: MurderMysteryFinalVoteResult,
+  votes: Record<string, string>,
+  requiresRevote: boolean
+): MurderMysteryFinalVoteReveal => ({
+  votes: { ...votes },
+  tally: { ...result.tally },
+  requiresRevote,
+  result: {
+    ...result,
+    tally: { ...result.tally },
+  },
+});
+
 export const finalizeMurderMysteryVote = (
   room: MurderMysteryRoom,
   scenario: MurderMysteryScenario
@@ -3292,15 +3481,19 @@ export const finalizeMurderMysteryVote = (
     throw new Error('최종 투표 단계에서만 집계할 수 있습니다.');
   }
 
+  const votes: Record<string, string> = {};
   const tally: Record<string, number> = {};
-  Object.values(room.gameData.voteByPlayerId).forEach((selectedVoteId) => {
-    const voteOptionId = resolveFinalVoteOptionId(
-      room,
-      scenario,
-      selectedVoteId
-    );
-    tally[voteOptionId] = (tally[voteOptionId] ?? 0) + 1;
-  });
+  Object.entries(room.gameData.voteByPlayerId).forEach(
+    ([playerId, selectedVoteId]) => {
+      const voteOptionId = resolveFinalVoteOptionId(
+        room,
+        scenario,
+        selectedVoteId
+      );
+      votes[playerId] = voteOptionId;
+      tally[voteOptionId] = (tally[voteOptionId] ?? 0) + 1;
+    }
+  );
 
   const tallyEntries = Object.entries(tally);
   if (tallyEntries.length === 0) {
@@ -3322,6 +3515,7 @@ export const finalizeMurderMysteryVote = (
       tally,
     };
 
+    room.gameData.finalVoteReveal = buildFinalVoteReveal(result, votes, true);
     room.gameData.voteByPlayerId = {};
     room.gameData.finalVoteResult = null;
     room.gameData.endingChoiceById = {};
@@ -3341,6 +3535,7 @@ export const finalizeMurderMysteryVote = (
   };
 
   room.gameData.finalVoteResult = result;
+  room.gameData.finalVoteReveal = buildFinalVoteReveal(result, votes, false);
   room.gameData.endingChoiceById = {};
 
   const endingChoiceStep = getEndingChoiceStep(scenario);
@@ -3598,6 +3793,50 @@ export const buildMurderMysterySnapshot = (
     players: roleReadingPlayers,
   };
   const publicScripts = buildPublicScripts(scenario, room.gameData.phase);
+  const currentStep = getFlowStepByPhase(scenario, room.gameData.phase);
+  const presentationState = ensurePresentationState(room);
+  const presentationActiveSpeakerId = presentationState.activeSpeakerPlayerId;
+  const presentationActiveStartedAt = presentationActiveSpeakerId
+    ? (presentationState.speakerStartedAtByPlayerId[
+        presentationActiveSpeakerId
+      ] ?? null)
+    : null;
+  const presentationActiveRemainingSec = presentationActiveStartedAt
+    ? Math.max(
+        MURDER_MYSTERY_PRESENTATION_DURATION_SEC -
+          Math.floor((Date.now() - presentationActiveStartedAt) / 1000),
+        0
+      )
+    : null;
+  const presentationSpeakers = room.players.map((entry) => {
+    const startedAt =
+      presentationState.speakerStartedAtByPlayerId[entry.id] ?? null;
+    const endedAt =
+      presentationState.speakerEndedAtByPlayerId[entry.id] ?? null;
+    const status: MurderMysteryPresentationSpeakerStatus =
+      presentationActiveSpeakerId === entry.id
+        ? 'speaking'
+        : endedAt
+          ? 'done'
+          : 'waiting';
+
+    return {
+      playerId: entry.id,
+      playerName: entry.name,
+      roleDisplayName:
+        room.gameData.roleDisplayNameByPlayerId[entry.id] ?? null,
+      startedAt,
+      endedAt,
+      status,
+    };
+  });
+  const presentationCompletedCount = presentationSpeakers.filter(
+    (speaker) => speaker.status === 'done'
+  ).length;
+  const presentationYourSpeaker = player
+    ? presentationSpeakers.find((speaker) => speaker.playerId === player.id)
+    : null;
+  const isPresentationPhase = currentStep?.kind === 'presentation';
 
   return {
     roomId: room.roomId,
@@ -3703,6 +3942,31 @@ export const buildMurderMysterySnapshot = (
       ),
       map: mapView,
     },
+    presentation: {
+      durationSec: MURDER_MYSTERY_PRESENTATION_DURATION_SEC,
+      activeSpeakerPlayerId: presentationActiveSpeakerId,
+      activeSpeakerStartedAt: presentationActiveStartedAt,
+      activeSpeakerRemainingSec: presentationActiveRemainingSec,
+      completedCount: presentationCompletedCount,
+      totalCount: room.players.length,
+      allCompleted:
+        room.players.length > 0 &&
+        presentationCompletedCount === room.players.length,
+      yourStatus: presentationYourSpeaker?.status ?? 'waiting',
+      canStart: Boolean(
+        isPresentationPhase &&
+          player &&
+          !presentationActiveSpeakerId &&
+          presentationYourSpeaker?.status === 'waiting' &&
+          !presentationState.speakerStartedAtByPlayerId[player.id]
+      ),
+      canEnd: Boolean(
+        isPresentationPhase &&
+          player &&
+          presentationActiveSpeakerId === player.id
+      ),
+      speakers: presentationSpeakers,
+    },
     finalVote: {
       question: scenario.finalVote.question,
       options: scenario.finalVote.options,
@@ -3716,6 +3980,7 @@ export const buildMurderMysterySnapshot = (
           ? room.gameData.voteByPlayerId
           : {},
       result: room.gameData.finalVoteResult,
+      reveal: room.gameData.finalVoteReveal,
     },
     endingChoices: buildEndingChoicesView(room, scenario, viewerId),
     endbook: buildEndbookView(room, scenario),

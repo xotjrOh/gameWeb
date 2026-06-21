@@ -37,6 +37,7 @@ import {
 import { useTheme } from '@mui/material/styles';
 import {
   AutoStories as AutoStoriesIcon,
+  ArrowForward as ArrowForwardIcon,
   Article as ArticleIcon,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
@@ -105,6 +106,8 @@ interface MurderMysteryTableExperienceProps {
   onClearReservation: () => void;
   pendingReservationBackId: string | null;
   onRevealMyClue: (cardId: string) => void;
+  onStartPresentationTimer: () => void;
+  onEndPresentationTimer: () => void;
   onSubmitVote: (voteOptionId: string) => void;
   onSubmitEndingChoice: (choiceId: string, optionId: string) => void;
   onReportSpecialEvent: (
@@ -6238,6 +6241,271 @@ const VoteOptionButton = ({
   </Button>
 );
 
+type FinalVoteReveal = NonNullable<
+  MurderMysteryStateSnapshot['finalVote']['reveal']
+>;
+
+const FinalVoteParticipantMarker = ({
+  player,
+  fallbackLabel,
+  caption,
+}: {
+  player?: MurderMysteryPublicPlayerView | null;
+  fallbackLabel: string;
+  caption: string;
+}) => {
+  const label = player ? formatParticipantLabel(player) : fallbackLabel;
+
+  return (
+    <Stack
+      spacing={0.45}
+      alignItems="center"
+      sx={{ minWidth: 0, width: '100%' }}
+    >
+      {player ? (
+        <CharacterPortraitFrame
+          src={player.rolePortraitSrc ?? undefined}
+          alt={player.rolePortraitAlt ?? undefined}
+          label={player.roleDisplayName ?? player.name}
+          variant="thumbnail"
+          sx={{
+            width: { xs: 44, sm: 50 },
+            boxShadow: '0 7px 16px rgba(0,0,0,0.28)',
+          }}
+        />
+      ) : (
+        <Box
+          aria-hidden
+          sx={{
+            width: { xs: 44, sm: 50 },
+            aspectRatio: '1 / 1',
+            borderRadius: '50%',
+            display: 'grid',
+            placeItems: 'center',
+            border: '1px solid rgba(255,255,255,0.35)',
+            background:
+              'linear-gradient(180deg, rgba(245,197,66,0.32), rgba(148,84,36,0.48))',
+            color: '#fff7df',
+            boxShadow: '0 7px 16px rgba(0,0,0,0.28)',
+            fontSize: { xs: 16, sm: 18 },
+            fontWeight: 950,
+          }}
+        >
+          {getPlayerInitial(label)}
+        </Box>
+      )}
+      <Typography
+        variant="caption"
+        fontWeight={950}
+        sx={{
+          width: '100%',
+          color: '#f8f1de',
+          lineHeight: 1.15,
+          textAlign: 'center',
+          wordBreak: 'keep-all',
+          overflowWrap: 'break-word',
+        }}
+      >
+        {label}
+      </Typography>
+      <Typography
+        variant="caption"
+        sx={{
+          width: '100%',
+          color: '#cfc5ad',
+          fontSize: 10,
+          lineHeight: 1,
+          textAlign: 'center',
+        }}
+      >
+        {caption}
+      </Typography>
+    </Stack>
+  );
+};
+
+const FinalVoteRevealPanel = ({
+  reveal,
+  players,
+  options,
+}: {
+  reveal: FinalVoteReveal;
+  players: MurderMysteryPublicPlayerView[];
+  options: MurderMysteryFinalVoteOptionScenario[];
+}) => {
+  const optionById = new Map(options.map((option) => [option.id, option]));
+  const voteRows = players
+    .map((voter) => {
+      const voteOptionId = reveal.votes[voter.id];
+      if (!voteOptionId) {
+        return null;
+      }
+      const option = optionById.get(voteOptionId);
+      const targetPlayer =
+        option?.optionType === 'role' && option.roleId
+          ? (players.find((player) => player.roleId === option.roleId) ?? null)
+          : null;
+      const targetLabel =
+        targetPlayer === null
+          ? (option?.label ?? voteOptionId)
+          : formatParticipantLabel(targetPlayer);
+
+      return {
+        voter,
+        targetPlayer,
+        targetLabel,
+        voteOptionId,
+      };
+    })
+    .filter((row): row is NonNullable<typeof row> => Boolean(row));
+  const knownOptionIds = new Set(options.map((option) => option.id));
+  const tallyRows = [
+    ...options
+      .map((option) => ({
+        id: option.id,
+        label: option.label,
+        count: reveal.tally[option.id] ?? 0,
+      }))
+      .filter((row) => row.count > 0),
+    ...Object.entries(reveal.tally)
+      .filter(([optionId]) => !knownOptionIds.has(optionId))
+      .map(([optionId, count]) => ({
+        id: optionId,
+        label: optionId,
+        count,
+      })),
+  ];
+  const topVoteCount = tallyRows.reduce(
+    (max, row) => Math.max(max, row.count),
+    0
+  );
+
+  return (
+    <Box
+      sx={{
+        p: { xs: 1.25, sm: 1.5 },
+        borderRadius: 2,
+        border: reveal.requiresRevote
+          ? '1px solid rgba(245, 158, 11, 0.45)'
+          : '1px solid rgba(255,255,255,0.16)',
+        backgroundColor: reveal.requiresRevote
+          ? 'rgba(120, 53, 15, 0.35)'
+          : 'rgba(15, 19, 24, 0.78)',
+      }}
+    >
+      <Stack spacing={1.25}>
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={0.8}
+          alignItems={{ xs: 'stretch', sm: 'center' }}
+        >
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Typography fontWeight={950}>
+              {reveal.requiresRevote ? '투표 결과: 동률' : '투표 공개 결과'}
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#d8d0bd' }}>
+              각 플레이어가 지목한 대상을 공개합니다.
+            </Typography>
+          </Box>
+          <Chip
+            size="small"
+            color={reveal.requiresRevote ? 'warning' : 'success'}
+            icon={
+              reveal.requiresRevote ? <WarningAmberIcon /> : <TaskAltIcon />
+            }
+            label={reveal.requiresRevote ? '재투표 필요' : '집계 완료'}
+            sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
+          />
+        </Stack>
+
+        {reveal.requiresRevote ? (
+          <Alert
+            severity="warning"
+            variant="outlined"
+            sx={{
+              borderColor: 'rgba(245, 158, 11, 0.52)',
+              backgroundColor: 'rgba(245, 158, 11, 0.1)',
+              color: '#f8f1de',
+              '& .MuiAlert-icon': { color: '#ffcf6a' },
+            }}
+          >
+            동률입니다. 아래 후보 중 다시 지목해주세요.
+          </Alert>
+        ) : null}
+
+        {tallyRows.length > 0 ? (
+          <Stack direction="row" spacing={0.7} flexWrap="wrap" useFlexGap>
+            {tallyRows.map((row) => {
+              const isTop = row.count === topVoteCount;
+              return (
+                <Chip
+                  key={row.id}
+                  size="small"
+                  label={`${row.label} ${row.count}표`}
+                  color={isTop ? 'warning' : 'default'}
+                  variant={isTop ? 'filled' : 'outlined'}
+                  sx={{
+                    color: isTop ? undefined : '#f8f1de',
+                    borderColor: isTop ? undefined : 'rgba(255,255,255,0.28)',
+                    fontWeight: 900,
+                  }}
+                />
+              );
+            })}
+          </Stack>
+        ) : null}
+
+        <Stack spacing={0.8}>
+          {voteRows.map((row) => {
+            const voterLabel = formatParticipantLabel(row.voter);
+            return (
+              <Box
+                key={`${row.voter.id}:${row.voteOptionId}`}
+                aria-label={`${voterLabel} 지목 대상 ${row.targetLabel}`}
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: {
+                    xs: 'minmax(0, 1fr) 34px minmax(0, 1fr)',
+                    sm: 'minmax(0, 1fr) 42px minmax(0, 1fr)',
+                  },
+                  alignItems: 'center',
+                  gap: { xs: 0.75, sm: 1 },
+                  px: { xs: 0.85, sm: 1.1 },
+                  py: { xs: 0.85, sm: 0.95 },
+                  borderRadius: 2,
+                  backgroundColor: 'rgba(255,255,255,0.07)',
+                  border: '1px solid rgba(255,255,255,0.11)',
+                }}
+              >
+                <FinalVoteParticipantMarker
+                  player={row.voter}
+                  fallbackLabel={voterLabel}
+                  caption="투표자"
+                />
+                <Box
+                  aria-hidden
+                  sx={{
+                    display: 'grid',
+                    placeItems: 'center',
+                    color: reveal.requiresRevote ? '#ffcf6a' : '#8bd4a0',
+                  }}
+                >
+                  <ArrowForwardIcon sx={{ fontSize: { xs: 25, sm: 30 } }} />
+                </Box>
+                <FinalVoteParticipantMarker
+                  player={row.targetPlayer}
+                  fallbackLabel={row.targetLabel}
+                  caption="지목"
+                />
+              </Box>
+            );
+          })}
+        </Stack>
+      </Stack>
+    </Box>
+  );
+};
+
 export default function MurderMysteryTableExperience({
   sessionId,
   isHostView,
@@ -6254,6 +6522,8 @@ export default function MurderMysteryTableExperience({
   onClearReservation,
   pendingReservationBackId,
   onRevealMyClue,
+  onStartPresentationTimer,
+  onEndPresentationTimer,
   onSubmitVote,
   onSubmitEndingChoice,
   onReportSpecialEvent,
@@ -6413,6 +6683,33 @@ export default function MurderMysteryTableExperience({
       : null;
   const isPhaseTimerExpired =
     phaseRemainingSec === 0 && snapshot.phaseTimer.durationSec !== null;
+  const presentationRemainingSec = snapshot.presentation.activeSpeakerStartedAt
+    ? Math.max(
+        snapshot.presentation.durationSec -
+          Math.floor(
+            (nowTick - snapshot.presentation.activeSpeakerStartedAt) / 1000
+          ),
+        0
+      )
+    : null;
+  const activePresentationSpeaker =
+    snapshot.presentation.activeSpeakerPlayerId === null
+      ? null
+      : (snapshot.players.find(
+          (player) => player.id === snapshot.presentation.activeSpeakerPlayerId
+        ) ?? null);
+  const activePresentationSpeakerLabel = activePresentationSpeaker
+    ? formatParticipantLabel(activePresentationSpeaker)
+    : null;
+  const headerTimerLabel =
+    phaseKind === 'presentation'
+      ? formatSeconds(presentationRemainingSec)
+      : formatSeconds(phaseRemainingSec);
+  const isHeaderTimerExpired =
+    phaseKind === 'presentation'
+      ? presentationRemainingSec === 0 &&
+        snapshot.presentation.activeSpeakerPlayerId !== null
+      : isPhaseTimerExpired;
   const bgmTrack = getMurderMysteryBgmTrack(snapshot);
   const scenarioTitle = useMemo(
     () => splitScenarioTitle(snapshot.scenario.title),
@@ -6585,13 +6882,16 @@ export default function MurderMysteryTableExperience({
     phaseKind !== 'endbook';
   const canAdvancePhase =
     (phaseKind !== 'role_reading' || snapshot.roleReading.allReady) &&
-    (phaseKind !== 'ending_choice' || snapshot.endingChoices.allSubmitted);
+    (phaseKind !== 'ending_choice' || snapshot.endingChoices.allSubmitted) &&
+    (phaseKind !== 'presentation' || snapshot.presentation.allCompleted);
   const nextPhaseTooltip =
     phaseKind === 'role_reading' && !snapshot.roleReading.allReady
       ? '모든 플레이어가 다 읽었어요를 눌러야 진행할 수 있습니다.'
       : phaseKind === 'ending_choice' && !snapshot.endingChoices.allSubmitted
         ? '모든 엔딩 선택이 제출되어야 진행할 수 있습니다.'
-        : '다음 단계';
+        : phaseKind === 'presentation' && !snapshot.presentation.allCompleted
+          ? '모든 플레이어의 개인 발표가 끝나야 진행할 수 있습니다.'
+          : '다음 단계';
   const canFinalizeVote =
     canUseHostTools &&
     phaseKind === 'final_vote' &&
@@ -6601,6 +6901,7 @@ export default function MurderMysteryTableExperience({
   const isFloatingActionDockPhase =
     phaseKind === 'role_reading' ||
     phaseKind === 'investigate' ||
+    phaseKind === 'presentation' ||
     phaseKind === 'final_vote' ||
     phaseKind === 'ending_choice';
   const openModalCount =
@@ -6634,7 +6935,8 @@ export default function MurderMysteryTableExperience({
   const shouldShowMobileDeskPanel = isSmall && shouldShowDeskPanel;
   const privateCardCount = snapshot.clueVault.myClues.length;
   const canOpenPrivateCards = privateCardCount > 0 && isDeskPanelPhase;
-  const canRevealPrivateCardsPublicly = phaseKind === 'discuss';
+  const canRevealPrivateCardsPublicly =
+    phaseKind === 'discuss' || phaseKind === 'presentation';
   const privateCardRevealNoticeSeverity: 'info' | 'success' | 'warning' =
     canRevealPrivateCardsPublicly
       ? 'success'
@@ -6642,7 +6944,7 @@ export default function MurderMysteryTableExperience({
         ? 'warning'
         : 'info';
   const privateCardRevealNotice = canRevealPrivateCardsPublicly
-    ? '회의 단계입니다. 필요한 개인 카드는 전체공개하기로 테이블에 올려 토론에 사용할 수 있습니다.'
+    ? '회의/발표 단계입니다. 필요한 개인 카드는 전체공개하기로 테이블에 올려 토론에 사용할 수 있습니다.'
     : phaseKind === 'investigate'
       ? '조사 단계에서는 개인 카드를 전체 공개할 수 없습니다. 회의 단계로 넘어가면 전체공개하기 버튼을 사용할 수 있습니다.'
       : '개인 카드 전체공개는 회의 단계에서 사용할 수 있습니다.';
@@ -6659,7 +6961,9 @@ export default function MurderMysteryTableExperience({
     shouldShowFloatingActionDock ||
     shouldShowMobileDeskPanel;
   const shouldUseTightDeskPanelPadding =
-    phaseKind === 'discuss' || phaseKind === 'endbook';
+    phaseKind === 'discuss' ||
+    phaseKind === 'presentation' ||
+    phaseKind === 'endbook';
   const mobileDeskPanelBottomPadding = shouldUseTightDeskPanelPadding
     ? 8.5
     : 22;
@@ -8676,6 +8980,279 @@ export default function MurderMysteryTableExperience({
     );
   };
 
+  const renderPresentationArea = () => {
+    const hasAnyPublicCard = orderedDiscussionPublicClues.length > 0;
+
+    return (
+      <Stack spacing={1.6}>
+        <Box
+          sx={{
+            p: { xs: 1.4, md: 1.8 },
+            borderRadius: 3,
+            border: '1px solid rgba(245, 197, 66, 0.72)',
+            backgroundColor: 'rgba(245, 197, 66, 0.13)',
+            boxShadow: '0 18px 42px rgba(0,0,0,0.28)',
+          }}
+        >
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1}
+            alignItems={{ xs: 'stretch', sm: 'center' }}
+          >
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography
+                variant="h4"
+                fontWeight={950}
+                sx={{
+                  fontSize: { xs: 25, md: 32 },
+                  lineHeight: 1.15,
+                  wordBreak: 'keep-all',
+                }}
+              >
+                {currentStep?.label ?? '개인 발표'}
+              </Typography>
+              <Typography sx={{ mt: 0.6, color: '#f5e7bf', lineHeight: 1.6 }}>
+                {currentStep?.description ??
+                  '원하는 순서대로 본인 발표 타이머를 시작하고, 사건의 전말을 2분 안에 설명하세요.'}
+              </Typography>
+            </Box>
+            <Stack direction="row" spacing={0.7} flexWrap="wrap" useFlexGap>
+              <Chip
+                size="small"
+                color={
+                  snapshot.presentation.allCompleted ? 'success' : 'warning'
+                }
+                label={`발표 ${snapshot.presentation.completedCount}/${snapshot.presentation.totalCount}`}
+                sx={{ fontWeight: 900 }}
+              />
+              {activePresentationSpeakerLabel ? (
+                <Chip
+                  size="small"
+                  color="warning"
+                  icon={<TimerIcon />}
+                  label={`${activePresentationSpeakerLabel} ${formatSeconds(
+                    presentationRemainingSec
+                  )}`}
+                  sx={{ fontWeight: 900 }}
+                />
+              ) : null}
+            </Stack>
+          </Stack>
+        </Box>
+
+        <Stack spacing={0.9}>
+          {snapshot.presentation.speakers.map((speaker) => {
+            const player =
+              snapshot.players.find((entry) => entry.id === speaker.playerId) ??
+              null;
+            const isSelfSpeaker = speaker.playerId === sessionId;
+            const isSpeaking = speaker.status === 'speaking';
+            const isDone = speaker.status === 'done';
+            const statusLabel = isSpeaking
+              ? '발표 중'
+              : isDone
+                ? '완료'
+                : '대기';
+            const statusColor: ChipProps['color'] = isSpeaking
+              ? 'warning'
+              : isDone
+                ? 'success'
+                : 'default';
+
+            return (
+              <Box
+                key={`presentation-speaker:${speaker.playerId}`}
+                sx={{
+                  p: { xs: 1.1, sm: 1.25 },
+                  borderRadius: 2,
+                  border: isSpeaking
+                    ? '1px solid rgba(245, 197, 66, 0.66)'
+                    : '1px solid rgba(255,255,255,0.13)',
+                  backgroundColor: isSpeaking
+                    ? 'rgba(245, 197, 66, 0.13)'
+                    : 'rgba(15, 19, 24, 0.68)',
+                }}
+              >
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={1}
+                  alignItems={{ xs: 'stretch', sm: 'center' }}
+                >
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    alignItems="center"
+                    sx={{ minWidth: 0, flex: 1 }}
+                  >
+                    <CharacterPortraitFrame
+                      src={player?.rolePortraitSrc ?? undefined}
+                      alt={player?.rolePortraitAlt ?? undefined}
+                      label={
+                        player?.roleDisplayName ??
+                        speaker.roleDisplayName ??
+                        speaker.playerName
+                      }
+                      variant="thumbnail"
+                      sx={{
+                        width: { xs: 46, sm: 52 },
+                        boxShadow: '0 8px 20px rgba(0,0,0,0.28)',
+                      }}
+                    />
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Stack
+                        direction="row"
+                        spacing={0.7}
+                        alignItems="center"
+                        flexWrap="wrap"
+                        useFlexGap
+                      >
+                        <Typography fontWeight={950}>
+                          {player
+                            ? formatParticipantLabel(player)
+                            : speaker.playerName}
+                        </Typography>
+                        {isSelfSpeaker ? (
+                          <Chip size="small" label="나" sx={{ height: 22 }} />
+                        ) : null}
+                      </Stack>
+                      <Typography variant="body2" sx={{ color: '#d8d0bd' }}>
+                        {speaker.roleDisplayName ?? '역할 미확정'}
+                      </Typography>
+                    </Box>
+                  </Stack>
+                  <Stack
+                    direction="row"
+                    spacing={0.7}
+                    alignItems="center"
+                    justifyContent={{ xs: 'flex-start', sm: 'flex-end' }}
+                    flexWrap="wrap"
+                    useFlexGap
+                  >
+                    <Chip
+                      size="small"
+                      color={statusColor}
+                      variant={
+                        statusColor === 'default' ? 'outlined' : 'filled'
+                      }
+                      label={statusLabel}
+                      sx={{
+                        color:
+                          statusColor === 'default' ? '#f8f1de' : undefined,
+                        borderColor:
+                          statusColor === 'default'
+                            ? 'rgba(255,255,255,0.28)'
+                            : undefined,
+                        fontWeight: 900,
+                      }}
+                    />
+                    {isSpeaking ? (
+                      <Chip
+                        size="small"
+                        color="warning"
+                        icon={<TimerIcon />}
+                        label={formatSeconds(presentationRemainingSec)}
+                        sx={{ fontWeight: 900 }}
+                      />
+                    ) : null}
+                    {isSelfSpeaker && snapshot.presentation.canStart ? (
+                      <Button
+                        size="small"
+                        variant="contained"
+                        color="warning"
+                        startIcon={<TimerIcon />}
+                        onClick={onStartPresentationTimer}
+                        sx={{ fontWeight: 900 }}
+                      >
+                        2분 발표 시작
+                      </Button>
+                    ) : null}
+                    {isSelfSpeaker && snapshot.presentation.canEnd ? (
+                      <Button
+                        size="small"
+                        variant="contained"
+                        color="success"
+                        startIcon={<TaskAltIcon />}
+                        onClick={onEndPresentationTimer}
+                        sx={{ fontWeight: 900 }}
+                      >
+                        발표 종료
+                      </Button>
+                    ) : null}
+                  </Stack>
+                </Stack>
+              </Box>
+            );
+          })}
+        </Stack>
+
+        <Stack spacing={1.2}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <StyleIcon fontSize="small" />
+            <Typography fontWeight={950}>발표 참고 공개 카드</Typography>
+            <Chip
+              size="small"
+              label={`${orderedDiscussionPublicClues.length}장`}
+              sx={{
+                height: 24,
+                backgroundColor: 'rgba(245, 197, 66, 0.24)',
+                border: '1px solid rgba(245, 197, 66, 0.64)',
+                color: '#f8f1de',
+                fontWeight: 950,
+                '& .MuiChip-label': { px: 0.9 },
+              }}
+            />
+          </Stack>
+
+          {!hasAnyPublicCard ? (
+            <Typography variant="body2" sx={{ color: '#d8d0bd' }}>
+              아직 전체 공개된 단서가 없습니다.
+            </Typography>
+          ) : null}
+
+          {hasAnyPublicCard ? (
+            <SortableClueCardGrid
+              cards={orderedDiscussionPublicClues}
+              onReorder={updatePublicCardOrder}
+              renderCard={(card) => {
+                const specialEventSourceLabel = getSpecialEventSourceLabel(
+                  card,
+                  investigationTargetIds
+                );
+
+                return (
+                  <EvidenceCardFace
+                    key={`presentation:public:${card.id}`}
+                    card={card}
+                    compactPreview
+                    previewLineClamp={1}
+                    previewMaxLength={36}
+                    cardMinHeight={132}
+                    mediaHeight={58}
+                    highlightLabel={
+                      specialEventSourceLabel ? '잠금 증언 공개' : undefined
+                    }
+                    highlightTooltip={
+                      specialEventSourceLabel
+                        ? `${specialEventSourceLabel}로 공개된 카드입니다.`
+                        : undefined
+                    }
+                    onOpen={(openedCard) =>
+                      openCardViewer(
+                        'discussion:public',
+                        orderedDiscussionPublicClues,
+                        openedCard
+                      )
+                    }
+                  />
+                );
+              }}
+            />
+          ) : null}
+        </Stack>
+      </Stack>
+    );
+  };
+
   const renderVoteArea = () => (
     <Stack spacing={1.6}>
       <Box>
@@ -8686,6 +9263,13 @@ export default function MurderMysteryTableExperience({
           {snapshot.finalVote.question}
         </Typography>
       </Box>
+      {snapshot.finalVote.reveal ? (
+        <FinalVoteRevealPanel
+          reveal={snapshot.finalVote.reveal}
+          players={snapshot.players}
+          options={snapshot.finalVote.options}
+        />
+      ) : null}
       <Stack spacing={1}>
         {snapshot.finalVote.options.map((option) => (
           <VoteOptionButton
@@ -8737,6 +9321,13 @@ export default function MurderMysteryTableExperience({
               '최종 지목 결과에 따라 열린 선택입니다. 이 선택은 엔딩에 크게 영향을 줍니다.'}
           </Typography>
         </Box>
+        {snapshot.finalVote.reveal ? (
+          <FinalVoteRevealPanel
+            reveal={snapshot.finalVote.reveal}
+            players={snapshot.players}
+            options={snapshot.finalVote.options}
+          />
+        ) : null}
         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
           <AnimatedProgressChip
             count={endingChoices.submittedCount}
@@ -8954,6 +9545,52 @@ export default function MurderMysteryTableExperience({
           ) : null}
         </>
       );
+    } else if (phaseKind === 'presentation') {
+      if (snapshot.presentation.canEnd) {
+        title = '내 발표 진행 중';
+        description = `${formatSeconds(presentationRemainingSec)} 남았습니다. 발표를 마쳤다면 종료할 수 있습니다.`;
+        chips = <Chip size="small" color="warning" label="발표 중" />;
+        actions = (
+          <Button
+            size="small"
+            variant="contained"
+            color="success"
+            startIcon={<TaskAltIcon />}
+            onClick={onEndPresentationTimer}
+          >
+            발표 종료
+          </Button>
+        );
+      } else if (snapshot.presentation.canStart) {
+        title = '개인 발표를 시작하세요';
+        description = '준비가 되면 2분 타이머를 시작하세요.';
+        chips = <Chip size="small" color="warning" label="내 차례 가능" />;
+        actions = (
+          <Button
+            size="small"
+            variant="contained"
+            color="warning"
+            startIcon={<TimerIcon />}
+            onClick={onStartPresentationTimer}
+          >
+            2분 발표 시작
+          </Button>
+        );
+      } else if (activePresentationSpeakerLabel) {
+        title = `${activePresentationSpeakerLabel} 발표 중`;
+        description = '현재 발표가 끝나면 다른 사람이 시작할 수 있습니다.';
+        chips = (
+          <Chip
+            size="small"
+            color="warning"
+            label={formatSeconds(presentationRemainingSec)}
+          />
+        );
+      } else if (snapshot.presentation.allCompleted) {
+        title = '개인 발표 완료';
+        description = '방장이 다음 단계로 넘기면 최종 투표가 시작됩니다.';
+        chips = <Chip size="small" color="success" label="전원 완료" />;
+      }
     } else if (phaseKind === 'ending_choice') {
       const endingChoices = snapshot.endingChoices;
       const hasPendingChoice = endingChoices.choices.some(
@@ -9277,6 +9914,14 @@ export default function MurderMysteryTableExperience({
           </Typography>
         </Box>
 
+        {snapshot.finalVote.reveal ? (
+          <FinalVoteRevealPanel
+            reveal={snapshot.finalVote.reveal}
+            players={snapshot.players}
+            options={snapshot.finalVote.options}
+          />
+        ) : null}
+
         <EndbookEvidenceQnaPanel
           evidenceQna={endbook.evidenceQna}
           onOpenEvidence={setSelectedEvidenceRef}
@@ -9472,6 +10117,10 @@ export default function MurderMysteryTableExperience({
       return renderDiscussionArea();
     }
 
+    if (phaseKind === 'presentation') {
+      return renderPresentationArea();
+    }
+
     if (phaseKind === 'final_vote') {
       return renderVoteArea();
     }
@@ -9557,8 +10206,8 @@ export default function MurderMysteryTableExperience({
         </Box>
         <Chip
           icon={<TimerIcon />}
-          label={formatSeconds(phaseRemainingSec)}
-          color={isPhaseTimerExpired ? 'warning' : 'default'}
+          label={headerTimerLabel}
+          color={isHeaderTimerExpired ? 'warning' : 'default'}
           size="small"
           sx={{
             position: 'absolute',
@@ -9567,10 +10216,10 @@ export default function MurderMysteryTableExperience({
             transform: 'translate(-50%, -50%)',
             minWidth: { xs: 72, md: 84 },
             height: { xs: 28, md: 32 },
-            backgroundColor: isPhaseTimerExpired
+            backgroundColor: isHeaderTimerExpired
               ? undefined
               : 'rgba(255,255,255,0.12)',
-            color: isPhaseTimerExpired ? undefined : '#f8f1de',
+            color: isHeaderTimerExpired ? undefined : '#f8f1de',
             fontWeight: 900,
             '& .MuiChip-icon': {
               fontSize: { xs: 16, md: 18 },
