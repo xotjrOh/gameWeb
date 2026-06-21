@@ -176,13 +176,13 @@ parts:
     source: '한다정의 소지품'
     note: '오래 접힌 작은 메모다. 경기 중 졸음, 팔 안쪽 이빨 자국, 물병, 오완주 우승이 적혀 있고, 마지막 줄에는 "정말 컨디션 문제였을까."라고 적혀 있다.'
   - id: part_medical_wing_rumor
-    name: '의료동에서 도는 소문1'
+    name: '의료동에서 도는 소문'
     source: '의료동 소문'
     note: '윤유성이 선발전에서 이겼다면 윤슬이 수술을 받을 수 있었을 거라는 의료동 소문이다.'
   - id: part_medical_wing_rumor_2
-    name: '의료동에서 도는 소문2'
-    source: '의료동 소문'
-    note: '본행사 전 조희수가 서기준의 간이책상에 머물렀고, 그 뒤 조희수의 비명까지 네 명 중 의료동 출입자는 없었다는 소문이다.'
+    name: '의료동 목격담'
+    source: '의료동 목격담'
+    note: '본행사 전 조희수가 서기준의 간이책상에 머물렀고, 그 뒤 조희수의 비명까지 네 명 중 의료동 출입자는 없었다는 목격담이다.'
   - id: part_medical_shoe_cabinet_1
     name: '의료동 입구 신발장 1'
     source: '의료동 입구 신발장 1'
@@ -708,7 +708,7 @@ investigations:
           cardPool:
             - card_medical_desk_records
         - id: r1_medical_wing_rumor
-          label: '의료동에서 도는 소문1'
+          label: '의료동에서 도는 소문'
           targetType: item
           entityKey: medical_wing_rumor_1
           sectionId: pre_scene
@@ -717,11 +717,11 @@ investigations:
           repeatable: true
           cardBack:
             imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-wing.svg'
-            shortLabel: '의료동에서 도는 소문1'
+            shortLabel: '의료동에서 도는 소문'
           cardPool:
             - card_medical_wing_rumor
         - id: r1_medical_wing_rumor_2
-          label: '의료동에서 도는 소문2'
+          label: '의료동 목격담'
           targetType: item
           entityKey: medical_wing_rumor_2
           sectionId: pre_scene
@@ -730,7 +730,7 @@ investigations:
           repeatable: true
           cardBack:
             imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-wing.svg'
-            shortLabel: '의료동에서 도는 소문2'
+            shortLabel: '의료동 목격담'
           cardPool:
             - card_medical_wing_rumor_2
         - id: r1_medical_shoe_cabinet_1
@@ -965,7 +965,7 @@ investigations:
           cardPool:
             - card_medical_desk_records
         - id: r1_medical_wing_rumor
-          label: '의료동에서 도는 소문1'
+          label: '의료동에서 도는 소문'
           targetType: item
           entityKey: medical_wing_rumor_1
           sectionId: pre_scene
@@ -974,11 +974,11 @@ investigations:
           repeatable: true
           cardBack:
             imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-wing.svg'
-            shortLabel: '의료동에서 도는 소문1'
+            shortLabel: '의료동에서 도는 소문'
           cardPool:
             - card_medical_wing_rumor
         - id: r1_medical_wing_rumor_2
-          label: '의료동에서 도는 소문2'
+          label: '의료동 목격담'
           targetType: item
           entityKey: medical_wing_rumor_2
           sectionId: pre_scene
@@ -987,7 +987,7 @@ investigations:
           repeatable: true
           cardBack:
             imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-wing.svg'
-            shortLabel: '의료동에서 도는 소문2'
+            shortLabel: '의료동 목격담'
           cardPool:
             - card_medical_wing_rumor_2
         - id: r1_medical_shoe_cabinet_1
