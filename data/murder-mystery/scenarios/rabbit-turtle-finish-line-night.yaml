@@ -544,7 +544,7 @@ investigations:
           heightPct: 17
         - id: map_r2_wet_shoeprints
           targetId: r2_wet_shoeprints
-          label: '젖은 구두 자국'
+          label: '바닥'
           xPct: 62
           yPct: 48
           widthPct: 13
@@ -1138,15 +1138,15 @@ investigations:
           cardPool:
             - card_glass_scratches
         - id: r2_wet_shoeprints
-          label: '젖은 구두 자국'
+          label: '바닥'
           targetType: location
           entityKey: wet_shoeprints
           sectionId: scene_recheck
           order: 180
-          icon: '👞'
+          icon: '▦'
           cardBack:
             imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-rehab-room.svg'
-            shortLabel: '젖은 구두 자국'
+            shortLabel: '바닥'
           cardPool:
             - card_wet_shoeprints
 
