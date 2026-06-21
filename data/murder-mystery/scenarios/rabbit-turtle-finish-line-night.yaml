@@ -94,7 +94,7 @@ flow:
       label: '1라운드 토론'
       kind: discuss
       round: 1
-      durationSec: 600
+      durationSec: 1200
       description: '현장 통제가 풀리기 전까지 각자의 말과 숨긴 행동을 맞춰 보세요. 누가 먼저 기사 제목이 될지 정하는 시간입니다.'
     - id: ROUND2_BRIEFING
       label: '2라운드 조사 전 지문'

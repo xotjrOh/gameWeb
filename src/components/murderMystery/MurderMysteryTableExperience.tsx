@@ -747,6 +747,16 @@ const isCardDragExcludedTarget = (target: EventTarget | null) =>
   target instanceof Element &&
   Boolean(target.closest('[data-card-drag-excluded="true"]'));
 
+const isCardDetailNavigationIgnoredTarget = (target: EventTarget | null) =>
+  target instanceof HTMLElement &&
+  Boolean(
+    target.closest(
+      'button, a, input, textarea, select, [role="button"], [role="slider"], [data-card-detail-navigation-skip="true"]'
+    )
+  );
+
+const CARD_DETAIL_NAVIGATION_REVEAL_MS = 1400;
+
 const TextOnlyClueMedia = ({
   dense = false,
   detail = false,
@@ -5664,9 +5674,17 @@ const CardDetailDialog = ({
   onPrevious: () => void;
   onNext: () => void;
 }) => {
+  const dialogSurfaceRef = useRef<HTMLDivElement | null>(null);
   const mediaRef = useRef<HTMLDivElement | null>(null);
-  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
+  const pointerStartRef = useRef<{
+    x: number;
+    y: number;
+    navigationControlsVisible: boolean;
+  } | null>(null);
+  const navigationRevealTimerRef = useRef<number | null>(null);
   const [zoomImage, setZoomImage] = useState<ClueImageZoomView | null>(null);
+  const [areNavigationControlsVisible, setAreNavigationControlsVisible] =
+    useState(false);
   const canNavigate = totalCount > 1;
   const hasImage = Boolean(card?.imageSrc);
   const sourceDisplayText = card ? getCardSourceDisplayText(card) : '';
@@ -5683,6 +5701,41 @@ const CardDetailDialog = ({
     setZoomImage(null);
   }, [card?.id]);
 
+  const clearNavigationRevealTimer = useCallback(() => {
+    if (navigationRevealTimerRef.current !== null) {
+      window.clearTimeout(navigationRevealTimerRef.current);
+      navigationRevealTimerRef.current = null;
+    }
+  }, []);
+
+  const hideNavigationControls = useCallback(() => {
+    clearNavigationRevealTimer();
+    setAreNavigationControlsVisible(false);
+  }, [clearNavigationRevealTimer]);
+
+  const revealNavigationControls = useCallback(() => {
+    if (!canNavigate) {
+      return;
+    }
+    setAreNavigationControlsVisible(true);
+    clearNavigationRevealTimer();
+    navigationRevealTimerRef.current = window.setTimeout(() => {
+      setAreNavigationControlsVisible(false);
+      navigationRevealTimerRef.current = null;
+    }, CARD_DETAIL_NAVIGATION_REVEAL_MS);
+  }, [canNavigate, clearNavigationRevealTimer]);
+
+  useEffect(
+    () => () => {
+      clearNavigationRevealTimer();
+    },
+    [clearNavigationRevealTimer]
+  );
+
+  useEffect(() => {
+    hideNavigationControls();
+  }, [card?.id, hideNavigationControls]);
+
   useEffect(() => {
     if (!card || !canNavigate) {
       return;
@@ -5691,36 +5744,51 @@ const CardDetailDialog = ({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'ArrowLeft') {
         event.preventDefault();
+        revealNavigationControls();
         onPrevious();
       }
       if (event.key === 'ArrowRight') {
         event.preventDefault();
+        revealNavigationControls();
         onNext();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [canNavigate, card, onNext, onPrevious]);
+  }, [canNavigate, card, onNext, onPrevious, revealNavigationControls]);
 
-  const handleMediaPointerDown = (
+  const handleDialogPointerDown = (
     event: React.PointerEvent<HTMLDivElement>
   ) => {
     if (!canNavigate && !zoomImageView) {
       return;
     }
-    pointerStartRef.current = { x: event.clientX, y: event.clientY };
+    if (isCardDetailNavigationIgnoredTarget(event.target)) {
+      return;
+    }
+    const navigationControlsVisible = areNavigationControlsVisible;
+    if (!navigationControlsVisible) {
+      revealNavigationControls();
+    }
+    pointerStartRef.current = {
+      x: event.clientX,
+      y: event.clientY,
+      navigationControlsVisible,
+    };
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
-  const handleMediaPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+  const handleDialogPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!pointerStartRef.current) {
       return;
     }
 
     const start = pointerStartRef.current;
     pointerStartRef.current = null;
-    event.currentTarget.releasePointerCapture(event.pointerId);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
     const deltaX = event.clientX - start.x;
     const deltaY = event.clientY - start.y;
     const isTap = Math.abs(deltaX) <= 10 && Math.abs(deltaY) <= 10;
@@ -5730,6 +5798,7 @@ const CardDetailDialog = ({
       Math.abs(deltaX) >= 48 &&
       Math.abs(deltaX) > Math.abs(deltaY)
     ) {
+      revealNavigationControls();
       if (deltaX < 0) {
         onNext();
       } else {
@@ -5742,22 +5811,56 @@ const CardDetailDialog = ({
       return;
     }
 
-    const rect = mediaRef.current?.getBoundingClientRect();
-    if (!rect) {
+    const selection = window.getSelection();
+    if (selection && !selection.isCollapsed) {
       return;
     }
-    const edgeTapWidth = Math.min(56, rect.width * 0.14);
-    if (canNavigate && event.clientX <= rect.left + edgeTapWidth) {
+
+    const mediaRect = mediaRef.current?.getBoundingClientRect();
+    const targetNode = event.target instanceof Node ? event.target : null;
+    const isMediaTap = Boolean(
+      targetNode && mediaRef.current?.contains(targetNode)
+    );
+
+    if (isMediaTap && mediaRect) {
+      const edgeTapWidth = Math.min(56, mediaRect.width * 0.14);
+      if (canNavigate && event.clientX <= mediaRect.left + edgeTapWidth) {
+        revealNavigationControls();
+        onPrevious();
+        return;
+      }
+      if (canNavigate && event.clientX >= mediaRect.right - edgeTapWidth) {
+        revealNavigationControls();
+        onNext();
+        return;
+      }
+      if (zoomImageView) {
+        setZoomImage(zoomImageView);
+      }
+      return;
+    }
+
+    const dialogRect = dialogSurfaceRef.current?.getBoundingClientRect();
+    if (!dialogRect || !canNavigate) {
+      return;
+    }
+
+    const xRatio = (event.clientX - dialogRect.left) / dialogRect.width;
+    if (xRatio < 0.42) {
+      revealNavigationControls();
       onPrevious();
       return;
     }
-    if (canNavigate && event.clientX >= rect.right - edgeTapWidth) {
+    if (xRatio > 0.58) {
+      revealNavigationControls();
       onNext();
       return;
     }
-    if (zoomImageView) {
-      setZoomImage(zoomImageView);
+    if (start.navigationControlsVisible) {
+      hideNavigationControls();
+      return;
     }
+    revealNavigationControls();
   };
 
   return (
@@ -5776,7 +5879,21 @@ const CardDetailDialog = ({
           },
         }}
       >
-        <Box sx={{ position: 'relative' }}>
+        <Box
+          ref={dialogSurfaceRef}
+          onPointerDown={handleDialogPointerDown}
+          onPointerUp={handleDialogPointerUp}
+          onPointerCancel={(event) => {
+            pointerStartRef.current = null;
+            if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+              event.currentTarget.releasePointerCapture(event.pointerId);
+            }
+          }}
+          sx={{
+            position: 'relative',
+            touchAction: canNavigate || hasImage ? 'pan-y' : 'auto',
+          }}
+        >
           <Tooltip title={isPinned ? '단서 핀 해제' : '단서 핀 고정'}>
             <span>
               <IconButton
@@ -5823,11 +5940,6 @@ const CardDetailDialog = ({
           </IconButton>
           <Box
             ref={mediaRef}
-            onPointerDown={handleMediaPointerDown}
-            onPointerUp={handleMediaPointerUp}
-            onPointerCancel={() => {
-              pointerStartRef.current = null;
-            }}
             sx={{
               position: 'relative',
               cursor: hasImage ? 'zoom-in' : 'default',
@@ -5867,49 +5979,65 @@ const CardDetailDialog = ({
                     color: '#fff',
                   }}
                 />
-                <IconButton
-                  aria-label="이전 단서"
-                  onPointerDown={(event) => event.stopPropagation()}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onPrevious();
-                  }}
-                  sx={{
-                    position: 'absolute',
-                    left: 10,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    zIndex: 3,
-                    color: '#fff',
-                    backgroundColor: 'rgba(0,0,0,0.46)',
-                    '&:hover': { backgroundColor: 'rgba(0,0,0,0.62)' },
-                  }}
-                >
-                  <ChevronLeftIcon />
-                </IconButton>
-                <IconButton
-                  aria-label="다음 단서"
-                  onPointerDown={(event) => event.stopPropagation()}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onNext();
-                  }}
-                  sx={{
-                    position: 'absolute',
-                    right: 10,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    zIndex: 3,
-                    color: '#fff',
-                    backgroundColor: 'rgba(0,0,0,0.46)',
-                    '&:hover': { backgroundColor: 'rgba(0,0,0,0.62)' },
-                  }}
-                >
-                  <ChevronRightIcon />
-                </IconButton>
               </>
             ) : null}
           </Box>
+          {canNavigate ? (
+            <>
+              <IconButton
+                aria-label="이전 단서"
+                tabIndex={areNavigationControlsVisible ? 0 : -1}
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  revealNavigationControls();
+                  onPrevious();
+                }}
+                sx={{
+                  position: 'absolute',
+                  left: 10,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  zIndex: 5,
+                  color: '#fff',
+                  backgroundColor: 'rgba(0,0,0,0.46)',
+                  opacity: areNavigationControlsVisible ? 1 : 0,
+                  pointerEvents: areNavigationControlsVisible ? 'auto' : 'none',
+                  transition:
+                    'opacity 120ms ease-out, background-color 120ms ease-out',
+                  '&:hover': { backgroundColor: 'rgba(0,0,0,0.62)' },
+                }}
+              >
+                <ChevronLeftIcon />
+              </IconButton>
+              <IconButton
+                aria-label="다음 단서"
+                tabIndex={areNavigationControlsVisible ? 0 : -1}
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  revealNavigationControls();
+                  onNext();
+                }}
+                sx={{
+                  position: 'absolute',
+                  right: 10,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  zIndex: 5,
+                  color: '#fff',
+                  backgroundColor: 'rgba(0,0,0,0.46)',
+                  opacity: areNavigationControlsVisible ? 1 : 0,
+                  pointerEvents: areNavigationControlsVisible ? 'auto' : 'none',
+                  transition:
+                    'opacity 120ms ease-out, background-color 120ms ease-out',
+                  '&:hover': { backgroundColor: 'rgba(0,0,0,0.62)' },
+                }}
+              >
+                <ChevronRightIcon />
+              </IconButton>
+            </>
+          ) : null}
           <Stack spacing={1} sx={{ p: { xs: 1.4, sm: 1.8 } }}>
             <Stack direction="row" spacing={0.8} alignItems="flex-start">
               <Box sx={{ flex: 1, minWidth: 0 }}>
