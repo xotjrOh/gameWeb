@@ -1699,10 +1699,11 @@ const doesEndbookConditionMatch = (
   room: MurderMysteryRoom,
   condition?: MurderMysteryScenario['endbook']['variants'][number]['when'],
   endingChoiceById: MurderMysteryGameData['endingChoiceById'] = room.gameData
-    .endingChoiceById
+    .endingChoiceById,
+  finalVoteResult: MurderMysteryFinalVoteResult | null = room.gameData
+    .finalVoteResult
 ) => {
-  const result = room.gameData.finalVoteResult;
-  if (!doesFinalVoteConditionMatch(result, condition)) {
+  if (!doesFinalVoteConditionMatch(finalVoteResult, condition)) {
     return false;
   }
   return Object.entries(condition?.choices ?? {}).every(
@@ -1714,11 +1715,27 @@ const getMatchedEndbookSections = (
   room: MurderMysteryRoom,
   scenario: MurderMysteryScenario,
   endingChoiceById: MurderMysteryGameData['endingChoiceById'] = room.gameData
-    .endingChoiceById
+    .endingChoiceById,
+  finalVoteResult: MurderMysteryFinalVoteResult | null = room.gameData
+    .finalVoteResult
 ) =>
   scenario.endbook.sections.filter((section) =>
-    doesEndbookConditionMatch(room, section.when, endingChoiceById)
+    doesEndbookConditionMatch(
+      room,
+      section.when,
+      endingChoiceById,
+      finalVoteResult
+    )
   );
+
+const buildCorrectFinalVoteResultForEndbook = (
+  scenario: MurderMysteryScenario
+): MurderMysteryFinalVoteResult => ({
+  voteOptionId: scenario.finalVote.correctOptionId,
+  suspectPlayerId: null,
+  matched: true,
+  tally: {},
+});
 
 const getEndingChoiceRoleDisplayName = (
   room: MurderMysteryRoom,
@@ -1769,7 +1786,10 @@ const buildEndbookAlternateOutcomes = (
     currentSections.map((section) => section.id)
   );
 
-  return getActiveEndingChoices(room, scenario).flatMap((choice) => {
+  const submittedAlternateOutcomes = getActiveEndingChoices(
+    room,
+    scenario
+  ).flatMap((choice) => {
     const selectedOptionId = room.gameData.endingChoiceById[choice.id];
     const selectedOption = choice.options.find(
       (option) => option.id === selectedOptionId
@@ -1825,6 +1845,64 @@ const buildEndbookAlternateOutcomes = (
         ];
       });
   });
+
+  if (submittedAlternateOutcomes.length > 0) {
+    return submittedAlternateOutcomes;
+  }
+
+  const correctVoteResult = buildCorrectFinalVoteResultForEndbook(scenario);
+
+  return scenario.endingChoices
+    .filter((choice) =>
+      doesFinalVoteConditionMatch(correctVoteResult, choice.opensWhen)
+    )
+    .flatMap((choice) =>
+      choice.options.flatMap((option) => {
+        const alternateChoiceById = {
+          [choice.id]: option.id,
+        };
+        const alternateSections = getMatchedEndbookSections(
+          room,
+          scenario,
+          alternateChoiceById,
+          correctVoteResult
+        ).filter(
+          (section) =>
+            !currentSectionIds.has(section.id) &&
+            section.when?.finalVoteMatched !== false &&
+            section.when?.choices?.[choice.id] === option.id
+        );
+
+        if (alternateSections.length === 0) {
+          return [];
+        }
+
+        const title =
+          [...alternateSections].reverse().find((section) => section.title)
+            ?.title ?? option.label;
+
+        return [
+          {
+            choiceId: choice.id,
+            choiceLabel: choice.label,
+            roleDisplayName: getEndingChoiceRoleDisplayName(
+              room,
+              scenario,
+              choice
+            ),
+            selectedOptionId: null,
+            selectedOptionLabel: null,
+            alternateOptionId: option.id,
+            alternateOptionLabel: option.label,
+            title,
+            body: alternateSections
+              .map((section) => section.body)
+              .filter(Boolean)
+              .join('\n\n'),
+          },
+        ];
+      })
+    );
 };
 
 const resolveEndbookVariant = (

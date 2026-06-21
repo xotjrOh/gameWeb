@@ -685,8 +685,8 @@ export interface MurderMysteryEndbookAlternateOutcomeView {
   choiceId: string;
   choiceLabel: string;
   roleDisplayName: string;
-  selectedOptionId: string;
-  selectedOptionLabel: string;
+  selectedOptionId: string | null;
+  selectedOptionLabel: string | null;
   alternateOptionId: string;
   alternateOptionLabel: string;
   title: string;

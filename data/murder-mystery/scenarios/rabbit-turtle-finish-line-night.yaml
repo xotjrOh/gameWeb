@@ -2353,9 +2353,6 @@ endbook:
         윤슬에게는 끝내 늦었지만,
         다른 아이들에게는 늦지 않기를 바라며.
     - id: case_truth
-      when:
-        finalVoteMatched: true
-        finalVoteOptionId: jara
       body: |
         사건의 전말
 

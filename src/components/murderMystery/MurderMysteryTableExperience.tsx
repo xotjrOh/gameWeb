@@ -9157,8 +9157,8 @@ export default function MurderMysteryTableExperience({
                 다른 선택 엔딩
               </Typography>
               <Typography variant="body2" sx={{ color: '#d8d0bd' }}>
-                엔딩 선택지를 다시 확인하고, 다른 선택을 했을 때의 결과를 볼 수
-                있습니다.
+                감상전처럼 정답 루트에서 갈라지는 주요 선택 엔딩을 함께 확인할
+                수 있습니다.
               </Typography>
             </Box>
 
@@ -9179,6 +9179,9 @@ export default function MurderMysteryTableExperience({
               const alternateText = [outcome.title, outcome.body]
                 .filter(Boolean)
                 .join('\n\n');
+              const outcomeSummary = outcome.selectedOptionLabel
+                ? `${outcome.choiceLabel} - 다른 선택: ${outcome.alternateOptionLabel}`
+                : `${outcome.choiceLabel} - 선택 엔딩: ${outcome.alternateOptionLabel}`;
 
               return (
                 <Accordion
@@ -9197,12 +9200,12 @@ export default function MurderMysteryTableExperience({
                     expandIcon={<ExpandMoreIcon sx={{ color: '#f8f1de' }} />}
                   >
                     <Box sx={{ minWidth: 0 }}>
-                      <Typography fontWeight={950}>
-                        {`${outcome.choiceLabel} - 다른 선택: ${outcome.alternateOptionLabel}`}
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
-                        {`실제 선택: ${outcome.selectedOptionLabel}`}
-                      </Typography>
+                      <Typography fontWeight={950}>{outcomeSummary}</Typography>
+                      {outcome.selectedOptionLabel ? (
+                        <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
+                          {`실제 선택: ${outcome.selectedOptionLabel}`}
+                        </Typography>
+                      ) : null}
                     </Box>
                   </AccordionSummary>
                   <AccordionDetails>
