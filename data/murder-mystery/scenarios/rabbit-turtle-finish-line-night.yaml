@@ -691,7 +691,7 @@ investigations:
           order: 75
           icon: '📷'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-desk.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-wing.svg'
             shortLabel: '의료동 간이책상 1'
           cardPool:
             - card_medical_desk_photo
@@ -703,7 +703,7 @@ investigations:
           order: 80
           icon: '🩺'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-desk.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-wing.svg'
             shortLabel: '의료동 간이책상 2'
           cardPool:
             - card_medical_desk_records
@@ -716,7 +716,7 @@ investigations:
           icon: '🏥'
           repeatable: true
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-rumor.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-wing.svg'
             shortLabel: '의료동에서 도는 소문1'
           cardPool:
             - card_medical_wing_rumor
@@ -729,7 +729,7 @@ investigations:
           icon: '🏥'
           repeatable: true
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-rumor.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-wing.svg'
             shortLabel: '의료동에서 도는 소문2'
           cardPool:
             - card_medical_wing_rumor_2
@@ -741,7 +741,7 @@ investigations:
           order: 87
           icon: '👞'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-shoe-cabinet.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-wing.svg'
             shortLabel: '의료동 입구 신발장 1'
           cardPool:
             - card_medical_shoe_cabinet_1
@@ -753,7 +753,7 @@ investigations:
           order: 88
           icon: '👞'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-shoe-cabinet.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-wing.svg'
             shortLabel: '의료동 입구 신발장 2'
           cardPool:
             - card_medical_shoe_cabinet_2
@@ -804,7 +804,7 @@ investigations:
           order: 95
           icon: '📋'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-corridor.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-laundry.svg'
             shortLabel: '세탁실에 붙어있는 안내문'
           cardPool:
             - card_siphon_guide
@@ -948,7 +948,7 @@ investigations:
           order: 75
           icon: '📷'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-desk.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-wing.svg'
             shortLabel: '의료동 간이책상 1'
           cardPool:
             - card_medical_desk_photo
@@ -960,7 +960,7 @@ investigations:
           order: 80
           icon: '🩺'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-desk.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-wing.svg'
             shortLabel: '의료동 간이책상 2'
           cardPool:
             - card_medical_desk_records
@@ -973,7 +973,7 @@ investigations:
           icon: '🏥'
           repeatable: true
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-rumor.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-wing.svg'
             shortLabel: '의료동에서 도는 소문1'
           cardPool:
             - card_medical_wing_rumor
@@ -986,7 +986,7 @@ investigations:
           icon: '🏥'
           repeatable: true
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-rumor.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-wing.svg'
             shortLabel: '의료동에서 도는 소문2'
           cardPool:
             - card_medical_wing_rumor_2
@@ -998,7 +998,7 @@ investigations:
           order: 87
           icon: '👞'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-shoe-cabinet.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-wing.svg'
             shortLabel: '의료동 입구 신발장 1'
           cardPool:
             - card_medical_shoe_cabinet_1
@@ -1010,7 +1010,7 @@ investigations:
           order: 88
           icon: '👞'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-shoe-cabinet.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-medical-wing.svg'
             shortLabel: '의료동 입구 신발장 2'
           cardPool:
             - card_medical_shoe_cabinet_2
@@ -1061,7 +1061,7 @@ investigations:
           order: 95
           icon: '📋'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-corridor.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-laundry.svg'
             shortLabel: '세탁실에 붙어있는 안내문'
           cardPool:
             - card_siphon_guide
@@ -1073,7 +1073,7 @@ investigations:
           order: 100
           icon: '💧'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/silhouettes/turtle.png'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-rehab-room.svg'
             shortLabel: '사체'
           cardPool:
             - card_turtle_body
@@ -1085,7 +1085,7 @@ investigations:
           order: 120
           icon: '📏'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-rehab.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-rehab-room.svg'
             shortLabel: '어린이용 수조'
           cardPool:
             - card_child_tank_waterline
@@ -1097,7 +1097,7 @@ investigations:
           order: 130
           icon: '📐'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-rehab.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-rehab-room.svg'
             shortLabel: '성인용 수조'
           cardPool:
             - card_adult_tank_specs
@@ -1109,7 +1109,7 @@ investigations:
           order: 140
           icon: '🧺'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-corridor.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-rehab-room.svg'
             shortLabel: '파란통'
           cardPool:
             - card_towel_bin
@@ -1121,7 +1121,7 @@ investigations:
           order: 150
           icon: '〰️'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-rehab.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-rehab-room.svg'
             shortLabel: '호스'
           cardPool:
             - card_rubber_hose
@@ -1133,7 +1133,7 @@ investigations:
           order: 110
           icon: '〰️'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-rehab.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-rehab-room.svg'
             shortLabel: '통유리 외벽'
           cardPool:
             - card_glass_scratches
@@ -1145,7 +1145,7 @@ investigations:
           order: 180
           icon: '👞'
           cardBack:
-            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-rehab.svg'
+            imageSrc: '/images/murder-mystery/rabbit-turtle-finish-line-night/back-rehab-room.svg'
             shortLabel: '젖은 구두 자국'
           cardPool:
             - card_wet_shoeprints
@@ -1546,7 +1546,7 @@ endbook:
   title: '토끼와 거북이'
   evidenceQna:
     title: '판단근거 Q&A'
-    description: '단서 칩을 누르면 원문과 판단 연결을 다시 확인할 수 있습니다.'
+    description: '단서 칩을 누르면 실제 게임에서 사용한 원본 단서를 다시 확인할 수 있습니다.'
     items:
       - id: qna_death_method
         question: '오완주는 어떻게 죽었나?'
@@ -1897,20 +1897,41 @@ endbook:
       body: |
         윤유성이 범인으로 지목됐다.
 
-        오완주의 곁에는 약 냄새가 남아 있었고,
-        윤유성의 보온병 안쪽에는 녹다 만 흰 가루 흔적이 있었다.
-        한다정이 재활수조실에서 주운 고무패킹은
-        그 보온병에서 빠진 것으로 보였다.
+        윤유성은 바로 대답하지 못했다.
+        손끝이 테이블 모서리를 더듬다가 멈췄다.
 
-        재활수조실 바닥에는 젖은 구두 자국이 남아 있었다.
-        그런데 지금 윤유성은 운동화를 신고 있었다.
-        의료동 입구 신발장에서는 환자 운동화가 사라졌다는 말도 나왔다.
-        누군가는 윤유성이 현장을 빠져나가며 신발을 갈아 신었다고 보았다.
+        “아니야.”
 
-        오완주의 고백문은 윤유성의 손에 넘어가 있었다.
-        선발전의 진실, 윤슬의 죽음, 오완주를 향한 분노가 한데 묶이자
-        윤유성이 오완주와 함께 재활수조실에 있었고,
-        그곳에서 복수를 끝냈다는 결론이 만들어졌다.
+        너무 늦게 나온 말이었다.
+
+        윤유성은 고개를 들었다.
+        이번에는 방 안을 보지 않고,
+        한다정이 서 있는 쪽만 보았다.
+
+        “내가 그 사람을 따라갔어.
+        다퉜어.
+        하지만 죽이진 않았어.”
+
+        한다정이 윤유성 앞에 섰다.
+
+        “그이는 돌아왔어요.”
+
+        한다정의 목소리는 크지 않았다.
+        교실에서 떠드는 아이를 멈추게 할 때처럼 낮고 단단했다.
+
+        누군가 되물었다.
+        언제, 어디로, 왜.
+
+        윤유성은 대답하려다 입을 다물었다.
+        한다정이 그의 손등 위에 손을 얹었다.
+
+        “그 질문은 제가 받을게요.”
+
+        그 말에 윤유성의 어깨가 내려갔다.
+        한다정은 한 걸음도 물러서지 않았다.
+
+        방 안에서는 윤유성의 항변보다
+        한다정이 대신 막아 선 모습이 더 오래 남았다.
     - id: misvote_fox
       when:
         finalVoteMatched: false
@@ -1918,24 +1939,36 @@ endbook:
       body: |
         조희수가 범인으로 지목됐다.
 
-        한다정은 비품 정리실에서
-        조희수가 품 속에 손을 넣은 채
-        재활수조실 쪽을 보고 있었다고 말했다.
+        조희수는 웃지 않았다.
+        대신 의자 등받이에 걸쳐 둔 외투를 집어 들었다.
 
-        그런데 조희수의 품에서는 주사기와 빈 약병이 나왔다.
-        조희수는 남의 추락을 가장 잘 파는 기자로 통했다.
-        잘난 얼굴이 무너지는 순간 외에는
-        별 관심을 보이지 않는다는 소문도 있었다.
+        “좋아요.
+        그럼 제목은 이렇게 나가겠네요.”
 
-        오완주는 윤유성이 무너진 경기에서
-        승자의 얼굴로 남은 선수였다.
-        잘난 얼굴을 싫어하는 듯 보이는 조희수라면,
-        이번에는 기사로 무너뜨리는 데서 그치지 않고
-        직접 죽였을지도 모른다는 말이 붙었다.
+        그는 빈 수첩을 펼쳤다.
+        펜 끝이 종이 위에서 멈췄다.
 
-        조희수는 서기준이 재활수조실을 벗어난 뒤
-        안으로 들어가 오완주를 살해하고,
-        비명을 질러 스스로를 발견자로 만들려 했다는 결론이 내려졌다.
+        “시신 발견자, 범인으로 지목.
+        목격자는 침묵.
+        재단은 현장을 통제.”
+
+        서기준이 조용히 이름을 불렀다.
+
+        “조희수 기자님.”
+
+        조희수의 펜이 종이를 긁었다.
+        글자는 끝까지 적히지 않았다.
+
+        한다정이 한 발 뒤로 물러섰다.
+        윤유성은 조희수를 보지 않았다.
+
+        조희수는 그제야 수첩을 덮었다.
+
+        “내가 죽였으면,
+        이렇게 재미없는 제목으로는 안 끝내요.”
+
+        아무도 웃지 않았다.
+        그 침묵이 조희수의 말보다 먼저 방을 채웠다.
     - id: misvote_wife_npc
       when:
         finalVoteMatched: false
@@ -1943,46 +1976,83 @@ endbook:
       body: |
         한다정이 범인으로 지목됐다.
 
-        한다정은 고무링에 대한 사실을 숨겼다.
-        쓰러진 오완주를 보고도 바로 신고하지 않았고,
-        비품 정리실에서 만난 조희수와의 일조차 숨기려 했다.
+        한다정은 잠깐 눈을 감았다가 떴다.
+        그리고 천천히 윤유성 앞에 섰다.
 
-        한다정 또한 남편에게 선발전 때의 진실을 들었을 수 있었다.
-        그렇다면 윤슬의 죽음과 남편의 몰락이
-        오완주에게서 시작되었다고 믿었을 것이다.
+        “그 사람은 아니에요.”
 
-        그 믿음 끝에서 한다정이 우발적으로 오완주를 죽였다는 결론은,
-        그날 밤 충분히 그럴듯해 보였다.
+        윤유성이 의자를 밀고 일어났다.
+
+        “다정아.”
+
+        한다정은 돌아보지 않았다.
+
+        “앉아.”
+
+        짧은 말이었다.
+        윤유성은 그 한마디에 멈췄다.
+
+        조희수가 고개를 기울였다.
+
+        “지금도 대신 막아서는군요.”
+
+        한다정은 조희수를 보았다.
+        얼굴에는 울음도 분노도 오래 머물지 않았다.
+
+        “대신이 아니에요.”
+
+        그는 두 손을 앞으로 모았다.
+        손끝이 하얗게 눌렸다.
+
+        “제가 한 일은 제가 말할게요.”
+
+        그 문장은 윤유성을 살리려는 말처럼 들렸고,
+        동시에 한다정 자신을 방 한가운데 세우는 말처럼 들렸다.
+
+        윤유성은 끝내 다시 앉지 못했다.
+        한다정도 끝내 뒤돌아보지 않았다.
     - id: misvote_none
       when:
         finalVoteMatched: false
         finalVoteOptionId: none
       body: |
-        용의자들은 범인이 없다고 결론 내렸다.
+        표는 '범인 없음' 칸에 모였다.
 
-        오완주는 약을 마신 뒤 쓰러졌다.
-        그 약의 부작용으로 죽었을 수도 있었다.
-        살해당했다기에는 시체에 뚜렷한 증거도 남지 않았다.
+        누구도 바로 일어나지 않았다.
 
-        가끔은 가장 쉬운 답이 답인 경우가 있다.
+        윤유성은 두 손으로 얼굴을 덮었다.
+        한다정은 그의 곁에 섰지만,
+        이번에는 아무 말도 하지 않았다.
 
-        이 죽음에 타살의 가능성이 적어 보이는 이유는,
-        애초에 타살이 아니기 때문이라고 결론지었다.
+        조희수는 수첩을 펼쳤다가 닫았다.
+        종이에 한 줄도 남기지 않았다.
+
+        서기준만 자리에서 일어났다.
+
+        “그럼 현장은 더 건드리지 않겠습니다.
+        각자 쉬시는 게 좋겠습니다.”
+
+        그 말은 결론처럼 들리지 않았다.
+        다만 방을 비우라는 안내처럼 들렸다.
+
+        의자들이 하나씩 밀렸다.
+        긴장이 풀린 것이 아니라,
+        더 물을 힘이 사라진 방이었다.
+
+        마지막까지 남은 서기준이
+        테이블 위의 빈 컵들을 한쪽으로 모았다.
     - id: misvote_common
-      title: '가장 쉬운 사실'
+      title: '문이 닫힌 뒤'
       when:
         finalVoteMatched: false
       body: |
-        그러나 그 결론은 눈앞의 것들만 붙잡고 있었다.
+        자라 서기준은 그날 밤에도 허리를 낮춰 말했다.
+        그는 재활수조실 문을 닫고 취재진을 복도 밖에 세웠다.
 
-        오완주의 마지막 숨을 끊은 사람은 따로 있었다.
+        직원들은 그의 손짓에 따라 움직였다.
+        한 명은 강당 쪽 문 앞에 섰고,
+        다른 한 명은 의료동으로 이어지는 복도를 비웠다.
 
-        자라 서기준은 그날 밤에도 정중했다.
-        그는 재활수조실 문을 닫고,
-        취재진을 복도 밖에 세웠다.
-
-        사건이 종결됐다는 말이 나왔지만,
-        현장은 아직 그의 손안에 있었다.
         오완주는 죽었고,
         윤유성은 아직 그 자리에 있었다.
 
@@ -2026,13 +2096,10 @@ endbook:
         윤유성은 잠들어 있었다.
 
         서기준은 침대 곁에 서서 고개를 숙였다.
-        아무 말도 하지 않았다.
+        침대 옆 협탁에는 퇴원 안내문과 물컵이 놓여 있었다.
 
-        한참 뒤 그가 고개를 들었을 때,
-        얼굴에는 평소의 정중함만 남아 있지 않았다.
-
-        미안함인지, 안도인지, 피로인지 알 수 없는 것이
-        아주 잠깐 스쳤다.
+        그는 접힌 일정표의 모서리를 엄지로 눌렀다.
+        종이는 펴지지 않았다.
 
         그리고 서기준은 문을 닫았다.
         소리가 나지 않게.

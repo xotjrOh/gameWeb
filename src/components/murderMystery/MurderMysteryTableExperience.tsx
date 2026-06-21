@@ -2709,7 +2709,7 @@ const HeldCardBackFace = ({
       <Box
         component="img"
         src={back.imageSrc}
-        alt={back.shortLabel ?? CARD_BACK_LABEL}
+        alt={back.shortLabel ?? back.targetLabel ?? CARD_BACK_LABEL}
         sx={{
           width: '100%',
           height: '100%',
@@ -2734,10 +2734,7 @@ const HeldCardBackFace = ({
     >
       <LockIcon fontSize="small" sx={{ color: '#e9dcc2' }} />
       <Typography variant="caption" fontWeight={950} sx={{ lineHeight: 1.18 }}>
-        {back.shortLabel ?? CARD_BACK_LABEL}
-      </Typography>
-      <Typography variant="caption" sx={{ lineHeight: 1.15, opacity: 0.86 }}>
-        {back.targetLabel}
+        {back.shortLabel ?? back.targetLabel ?? CARD_BACK_LABEL}
       </Typography>
     </Stack>
   </Box>
