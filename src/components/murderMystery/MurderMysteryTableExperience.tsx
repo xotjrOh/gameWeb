@@ -5648,7 +5648,8 @@ const splitEndbookEvidenceHighlightSentences = (value: string) =>
   value.match(/[^.!?。！？]+[.!?。！？]?/g) ?? [value];
 
 const getEndbookEvidenceHighlightTerms = (
-  reference: EndbookEvidenceReference
+  reference: EndbookEvidenceReference,
+  sourceText?: string
 ) => {
   const normalized = reference.excerpt.replace(/\r\n/g, '\n').trim();
   if (!normalized) {
@@ -5667,7 +5668,7 @@ const getEndbookEvidenceHighlightTerms = (
       });
     });
 
-  return Array.from(
+  const highlights = Array.from(
     new Set(
       candidates
         .map((candidate) => candidate.trim())
@@ -5678,35 +5679,117 @@ const getEndbookEvidenceHighlightTerms = (
         )
     )
   );
+
+  if (!sourceText) {
+    return highlights;
+  }
+
+  const normalizedSourceText = sourceText.replace(/\r\n/g, '\n');
+  return highlights.filter((highlight) =>
+    normalizedSourceText.includes(highlight.replace(/\r\n/g, '\n'))
+  );
 };
 
-const mergeEndbookEvidenceHighlights = (
-  ...highlightGroups: Array<string[] | undefined>
+const getEndbookRoleSheetSourceText = (
+  roleSheet: MurderMysteryRoleSheetView | null
 ) =>
-  Array.from(
-    new Set(
-      highlightGroups
-        .flatMap((highlights) => highlights ?? [])
-        .map((highlight) => highlight.trim())
+  roleSheet
+    ? [
+        roleSheet.publicText,
+        roleSheet.personalGoal,
+        roleSheet.ruleText,
+        ...(roleSheet.belongingHints?.flatMap((hint) => [
+          hint.label,
+          hint.hint,
+        ]) ?? []),
+        roleSheet.secretText,
+      ]
         .filter(Boolean)
-    )
+        .join('\n\n')
+    : '';
+
+const doesEndbookEvidenceTextContainHighlight = (
+  text: string | undefined,
+  highlights: string[]
+) => {
+  if (!text || highlights.length === 0) {
+    return false;
+  }
+
+  const normalizedText = text.replace(/\r\n/g, '\n');
+  return highlights.some((highlight) =>
+    normalizedText.includes(highlight.replace(/\r\n/g, '\n'))
   );
+};
+
+type EndbookRoleSheetHighlightSection =
+  | 'public'
+  | 'goal'
+  | 'rules'
+  | 'belongings'
+  | 'secret';
+
+const getEndbookRoleSheetHighlightSection = (
+  roleSheet: MurderMysteryRoleSheetView | null,
+  highlights: string[]
+): EndbookRoleSheetHighlightSection | null => {
+  if (!roleSheet || highlights.length === 0) {
+    return null;
+  }
+
+  if (
+    doesEndbookEvidenceTextContainHighlight(roleSheet.publicText, highlights)
+  ) {
+    return 'public';
+  }
+  if (
+    doesEndbookEvidenceTextContainHighlight(roleSheet.personalGoal, highlights)
+  ) {
+    return 'goal';
+  }
+  if (doesEndbookEvidenceTextContainHighlight(roleSheet.ruleText, highlights)) {
+    return 'rules';
+  }
+  if (
+    roleSheet.belongingHints?.some((hint) =>
+      doesEndbookEvidenceTextContainHighlight(
+        [hint.label, hint.hint].join('\n'),
+        highlights
+      )
+    )
+  ) {
+    return 'belongings';
+  }
+  if (
+    doesEndbookEvidenceTextContainHighlight(roleSheet.secretText, highlights)
+  ) {
+    return 'secret';
+  }
+
+  return null;
+};
+
+const isEndbookPlayableRoleSheet = (
+  roleSheet: MurderMysteryRoleSheetView | null
+) => Boolean(roleSheet?.secretText.trim());
 
 const EndbookEvidenceTextSection = ({
   title,
   text,
   highlights,
+  anchorRef,
 }: {
   title: string;
   text?: string;
   highlights?: string[];
+  anchorRef?: RefObject<HTMLDivElement | null>;
 }) => {
   if (!text?.trim()) {
     return null;
   }
 
   return (
-    <Box>
+    <Box ref={anchorRef} sx={anchorRef ? { scrollMarginTop: 16 } : undefined}>
       <Typography variant="subtitle2" fontWeight={950}>
         {title}
       </Typography>
@@ -5726,26 +5809,49 @@ const EndbookEvidenceReferenceDialog = ({
   fullScreen: boolean;
   onClose: () => void;
 }) => {
-  if (!reference) {
-    return null;
-  }
-
-  const source = reference.originalSource;
+  const evidenceAnchorRef = useRef<HTMLDivElement | null>(null);
+  const source = reference?.originalSource;
   const card = source?.kind === 'investigation_card' ? source.card : null;
   const roleSheet = source?.kind === 'role_sheet' ? source.roleSheet : null;
   const script = source?.kind === 'public_script' ? source.script : null;
   const cardSourceDisplayText = card ? getCardSourceDisplayText(card) : '';
   const cardDisplayText = card ? getDisplayCardText(card) : '';
-  const evidenceHighlights = getEndbookEvidenceHighlightTerms(reference);
-  const cardTextHighlights = mergeEndbookEvidenceHighlights(
-    card?.textHighlights,
-    evidenceHighlights
+  const roleSheetSourceText = getEndbookRoleSheetSourceText(roleSheet);
+  const canHighlightRoleSheetRef = Boolean(
+    reference?.sourceType === 'role_sheet' &&
+      isEndbookPlayableRoleSheet(roleSheet)
   );
-  const roleSheetSecretHighlights = mergeEndbookEvidenceHighlights(
-    roleSheet?.secretTextHighlights,
-    evidenceHighlights
+  const roleSheetEvidenceHighlights =
+    reference && canHighlightRoleSheetRef
+      ? getEndbookEvidenceHighlightTerms(reference, roleSheetSourceText)
+      : [];
+  const roleSheetHighlightSection = getEndbookRoleSheetHighlightSection(
+    roleSheet,
+    roleSheetEvidenceHighlights
   );
+  const hasRoleSheetEvidenceHighlight =
+    roleSheetEvidenceHighlights.length > 0 &&
+    Boolean(roleSheetHighlightSection);
   const maxWidth: false | 'md' = card ? false : 'md';
+  const scrollToEvidenceHighlight = useCallback(() => {
+    evidenceAnchorRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!reference || !hasRoleSheetEvidenceHighlight) {
+      return;
+    }
+
+    const timer = window.setTimeout(scrollToEvidenceHighlight, 120);
+    return () => window.clearTimeout(timer);
+  }, [hasRoleSheetEvidenceHighlight, reference, scrollToEvidenceHighlight]);
+
+  if (!reference) {
+    return null;
+  }
 
   return (
     <Dialog
@@ -5791,14 +5897,29 @@ const EndbookEvidenceReferenceDialog = ({
               {getEvidenceDetailLabel(reference.sourceType)}
             </Typography>
             <Typography fontWeight={950}>{reference.label}</Typography>
-            {evidenceHighlights.length > 0 ? (
-              <Typography
-                variant="caption"
-                fontWeight={800}
-                sx={{ color: 'rgba(32,24,15,0.62)' }}
+            {hasRoleSheetEvidenceHighlight ? (
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={0.8}
+                alignItems={{ xs: 'flex-start', sm: 'center' }}
+                sx={{ mt: 0.4 }}
               >
-                노란 표시가 이 답변의 근거로 쓰인 원문입니다.
-              </Typography>
+                <Typography
+                  variant="caption"
+                  fontWeight={800}
+                  sx={{ color: 'rgba(32,24,15,0.62)' }}
+                >
+                  노란 표시가 이 답변의 근거로 쓰인 룰지 원문입니다.
+                </Typography>
+                <Button
+                  size="small"
+                  startIcon={<SearchIcon />}
+                  onClick={scrollToEvidenceHighlight}
+                  sx={{ fontWeight: 900 }}
+                >
+                  근거 위치로 이동
+                </Button>
+              </Stack>
             ) : null}
           </Box>
           <Divider sx={{ borderColor: 'rgba(32,24,15,0.18)' }} />
@@ -5849,10 +5970,7 @@ const EndbookEvidenceReferenceDialog = ({
                     color: '#2d2419',
                   }}
                 >
-                  <RulebookRichText
-                    text={cardDisplayText}
-                    highlights={cardTextHighlights}
-                  />
+                  <RulebookRichText text={cardDisplayText} />
                 </Typography>
               </Stack>
             </Box>
@@ -5872,27 +5990,55 @@ const EndbookEvidenceReferenceDialog = ({
                     {roleSheet.displayName}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    실제 게임에서 배부된 역할 설정서 원문입니다.
+                    {isEndbookPlayableRoleSheet(roleSheet)
+                      ? '실제 게임에서 배부된 역할 설정서 원문입니다.'
+                      : '게임에서 공개된 캐릭터 정보입니다.'}
                   </Typography>
                 </Box>
               </Stack>
               <EndbookEvidenceTextSection
                 title="공개 정보"
                 text={roleSheet.publicText}
-                highlights={evidenceHighlights}
+                highlights={roleSheetEvidenceHighlights}
+                anchorRef={
+                  roleSheetHighlightSection === 'public'
+                    ? evidenceAnchorRef
+                    : undefined
+                }
               />
               <EndbookEvidenceTextSection
                 title="개인 목표"
                 text={roleSheet.personalGoal}
-                highlights={evidenceHighlights}
+                highlights={roleSheetEvidenceHighlights}
+                anchorRef={
+                  roleSheetHighlightSection === 'goal'
+                    ? evidenceAnchorRef
+                    : undefined
+                }
               />
               <EndbookEvidenceTextSection
                 title="운영 규칙"
                 text={roleSheet.ruleText}
-                highlights={evidenceHighlights}
+                highlights={roleSheetEvidenceHighlights}
+                anchorRef={
+                  roleSheetHighlightSection === 'rules'
+                    ? evidenceAnchorRef
+                    : undefined
+                }
               />
               {roleSheet.belongingHints?.length ? (
-                <Box>
+                <Box
+                  ref={
+                    roleSheetHighlightSection === 'belongings'
+                      ? evidenceAnchorRef
+                      : undefined
+                  }
+                  sx={
+                    roleSheetHighlightSection === 'belongings'
+                      ? { scrollMarginTop: 16 }
+                      : undefined
+                  }
+                >
                   <Typography variant="subtitle2" fontWeight={950}>
                     소지품 힌트
                   </Typography>
@@ -5910,7 +6056,7 @@ const EndbookEvidenceReferenceDialog = ({
                         <Typography sx={{ whiteSpace: 'pre-wrap' }}>
                           <RulebookRichText
                             text={hint.hint}
-                            highlights={evidenceHighlights}
+                            highlights={roleSheetEvidenceHighlights}
                           />
                         </Typography>
                       </Box>
@@ -5921,7 +6067,12 @@ const EndbookEvidenceReferenceDialog = ({
               <EndbookEvidenceTextSection
                 title="비공개 룰지"
                 text={roleSheet.secretText}
-                highlights={roleSheetSecretHighlights}
+                highlights={roleSheetEvidenceHighlights}
+                anchorRef={
+                  roleSheetHighlightSection === 'secret'
+                    ? evidenceAnchorRef
+                    : undefined
+                }
               />
             </Stack>
           ) : null}
@@ -5931,10 +6082,7 @@ const EndbookEvidenceReferenceDialog = ({
                 {script.label}
               </Typography>
               <Typography sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.78 }}>
-                <RulebookRichText
-                  text={script.readAloud}
-                  highlights={evidenceHighlights}
-                />
+                <RulebookRichText text={script.readAloud} />
               </Typography>
             </Stack>
           ) : null}

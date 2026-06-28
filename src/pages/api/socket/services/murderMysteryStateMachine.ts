@@ -2032,9 +2032,6 @@ const buildEvidenceRoleSheetSourceView = (
       ...(role.personalGoal ? { personalGoal: role.personalGoal } : {}),
       ...(role.ruleText ? { ruleText: role.ruleText } : {}),
       ...(role.belongingHints ? { belongingHints: role.belongingHints } : {}),
-      ...(role.secretTextHighlights
-        ? { secretTextHighlights: role.secretTextHighlights }
-        : {}),
       ...(role.portraitSrc ? { portraitSrc: role.portraitSrc } : {}),
       ...(role.portraitAlt ? { portraitAlt: role.portraitAlt } : {}),
     };
