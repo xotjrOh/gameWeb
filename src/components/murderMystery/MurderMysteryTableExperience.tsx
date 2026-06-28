@@ -462,6 +462,130 @@ const getRoundCardPoolIds = (
 ) =>
   Array.from(new Set(round.targets.flatMap((target) => target.cardPool ?? [])));
 
+type FlowAdvanceMode = 'timer_auto' | 'completion_auto' | 'host_action';
+
+const FLOW_ADVANCE_MODE_META: Record<
+  FlowAdvanceMode,
+  {
+    label: string;
+    description: string;
+    backgroundColor: string;
+    borderColor: string;
+    iconColor: string;
+  }
+> = {
+  timer_auto: {
+    label: '시간 자동',
+    description: '제한시간이 끝나면 서버가 다음 단계로 자동 전환합니다.',
+    backgroundColor: 'rgba(245, 197, 66, 0.2)',
+    borderColor: 'rgba(245, 197, 66, 0.62)',
+    iconColor: '#f5c542',
+  },
+  completion_auto: {
+    label: '완료 자동',
+    description: '필요한 행동을 모두 끝내면 다음 단계로 자동 전환합니다.',
+    backgroundColor: 'rgba(74, 222, 128, 0.16)',
+    borderColor: 'rgba(74, 222, 128, 0.5)',
+    iconColor: '#4ade80',
+  },
+  host_action: {
+    label: '방장 진행',
+    description: '방장이 다음 단계, 집계, 확정 버튼을 눌러 진행합니다.',
+    backgroundColor: 'rgba(96, 165, 250, 0.16)',
+    borderColor: 'rgba(96, 165, 250, 0.48)',
+    iconColor: '#93c5fd',
+  },
+};
+
+const isMapInvestigationScenario = (snapshot: MurderMysteryStateSnapshot) =>
+  Boolean(
+    snapshot.scenario.investigations.deliveryMode === 'auto' &&
+      snapshot.scenario.investigations.layout.map &&
+      snapshot.scenario.investigations.turnOrder?.roleIds.length
+  );
+
+const getFlowAdvanceMode = (
+  step: MurderMysteryStateSnapshot['scenario']['flow']['steps'][number],
+  snapshot: MurderMysteryStateSnapshot,
+  durationSec: number | null
+): FlowAdvanceMode => {
+  if (step.kind === 'discuss' && durationSec !== null) {
+    return 'timer_auto';
+  }
+
+  if (step.kind === 'role_reading') {
+    return 'completion_auto';
+  }
+
+  if (step.kind === 'investigate' && isMapInvestigationScenario(snapshot)) {
+    return 'completion_auto';
+  }
+
+  return 'host_action';
+};
+
+const getFlowAdvanceModeIcon = (mode: FlowAdvanceMode) => {
+  switch (mode) {
+    case 'timer_auto':
+      return <TimerIcon />;
+    case 'completion_auto':
+      return <TaskAltIcon />;
+    case 'host_action':
+    default:
+      return <SkipNextIcon />;
+  }
+};
+
+const getFlowAdvanceStepDescription = (
+  mode: FlowAdvanceMode,
+  stepKind: MurderMysteryStepKind
+) => {
+  if (mode === 'timer_auto') {
+    return '시간이 0이 되면 자동으로 다음 단계로 넘어갑니다.';
+  }
+  if (mode === 'completion_auto') {
+    return stepKind === 'role_reading'
+      ? '모든 플레이어가 읽음 완료를 누르면 자동으로 넘어갑니다.'
+      : '모든 조사 차례가 끝나면 자동으로 넘어갑니다.';
+  }
+  if (stepKind === 'presentation') {
+    return '발표 타이머는 개인 발표 종료용이며, 다음 단계 이동은 방장이 진행합니다.';
+  }
+  return '타이머가 있어도 자동 전환되지 않으며, 방장이 진행 버튼으로 넘깁니다.';
+};
+
+const FlowAdvanceModeChip = ({
+  mode,
+  title,
+}: {
+  mode: FlowAdvanceMode;
+  title?: string;
+}) => {
+  const meta = FLOW_ADVANCE_MODE_META[mode];
+
+  return (
+    <Tooltip title={title ?? meta.description}>
+      <Chip
+        size="small"
+        icon={getFlowAdvanceModeIcon(mode)}
+        label={meta.label}
+        variant="outlined"
+        sx={{
+          height: 22,
+          backgroundColor: meta.backgroundColor,
+          borderColor: meta.borderColor,
+          color: '#f7f0df',
+          fontWeight: 950,
+          '& .MuiChip-icon': {
+            color: meta.iconColor,
+            fontSize: 16,
+          },
+        }}
+      />
+    </Tooltip>
+  );
+};
+
 const splitScenarioTitle = (title: string) => {
   const normalizedTitle = title.trim();
   const colonIndex = normalizedTitle.indexOf(':');
@@ -4973,6 +5097,73 @@ const FlowOverviewDialog = ({
         }}
       >
         <Stack spacing={1}>
+          <Box
+            sx={{
+              p: { xs: 1, sm: 1.15 },
+              borderRadius: 2,
+              border: '1px solid rgba(255,255,255,0.14)',
+              backgroundColor: 'rgba(255,255,255,0.065)',
+            }}
+          >
+            <Stack spacing={0.85}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: '#d8d0bd',
+                  fontWeight: 850,
+                  lineHeight: 1.5,
+                  wordBreak: 'keep-all',
+                  overflowWrap: 'break-word',
+                }}
+              >
+                타이머는 단계 운영 시간이고, 실제 이동 방식은 진행 방식 칩으로
+                구분됩니다.
+              </Typography>
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={0.9}
+                flexWrap="wrap"
+                useFlexGap
+              >
+                {(
+                  [
+                    'timer_auto',
+                    'completion_auto',
+                    'host_action',
+                  ] as FlowAdvanceMode[]
+                ).map((mode) => {
+                  const meta = FLOW_ADVANCE_MODE_META[mode];
+
+                  return (
+                    <Stack
+                      key={mode}
+                      direction="row"
+                      spacing={0.65}
+                      alignItems="center"
+                      sx={{
+                        minWidth: { xs: '100%', sm: 0 },
+                        flex: { xs: '1 1 auto', sm: '1 1 190px' },
+                      }}
+                    >
+                      <FlowAdvanceModeChip mode={mode} />
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: '#cfc5ad',
+                          lineHeight: 1.45,
+                          wordBreak: 'keep-all',
+                          overflowWrap: 'break-word',
+                        }}
+                      >
+                        {meta.description}
+                      </Typography>
+                    </Stack>
+                  );
+                })}
+              </Stack>
+            </Stack>
+          </Box>
+
           {snapshot.scenario.flow.steps.map((step, index) => {
             const stepPhaseIndex = snapshot.phaseOrder.indexOf(step.id);
             const isCurrent = step.id === snapshot.phase;
@@ -4991,6 +5182,11 @@ const FlowOverviewDialog = ({
                 : step.kind === 'presentation'
                   ? snapshot.presentation.durationSec
                   : null;
+            const advanceMode = getFlowAdvanceMode(step, snapshot, durationSec);
+            const advanceDescription = getFlowAdvanceStepDescription(
+              advanceMode,
+              step.kind
+            );
 
             return (
               <Box
@@ -5083,6 +5279,10 @@ const FlowOverviewDialog = ({
                             }}
                           />
                         ) : null}
+                        <FlowAdvanceModeChip
+                          mode={advanceMode}
+                          title={advanceDescription}
+                        />
                       </Stack>
                     </Box>
                   </Stack>
