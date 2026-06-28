@@ -46,13 +46,11 @@ flow:
       kind: intro
       durationSec: 240
       description: '방장이 프롤로그를 소리 내어 읽고, 낭독이 끝나면 다음 단계로 진행합니다.'
-      enterAnnouncement: '방장이 프롤로그를 낭독합니다. 프롤로그를 들으며 캐릭터를 선택할 수 있습니다.'
     - id: ROLE_READING
       label: '비공개 룰지 읽기'
       kind: role_reading
       durationSec: 1800
       description: '각자 비공개 룰지를 읽고, 준비가 되면 다 읽었어요를 눌러주세요. 권장 시간이 지나도 모두 준비될 때까지 다음 단계로 넘어가지 않습니다.'
-      enterAnnouncement: '방장의 안내에 따라 각자 비공개 룰지를 읽는 시간입니다.'
     - id: ROUND1_BRIEFING
       label: '1라운드 조사 전 지문'
       kind: intro
@@ -82,14 +80,12 @@ flow:
         결국 네 사람은 각자의 소지품과 다른 장소를 먼저 조사하기로 합니다.
 
         1라운드 조사를 시작합니다.
-      enterAnnouncement: '1라운드 조사 전 지문입니다. 방장이 낭독한 뒤 1라운드 조사로 진행합니다.'
     - id: ROUND1_INVESTIGATE
       label: '1라운드 조사'
       kind: investigate
       round: 1
       durationSec: 420
       description: '용의자끼리 대화를 나누고 서로의 소지품을 조사합니다.'
-      enterAnnouncement: '아내토끼가 여우에게 개인 전달 카드를 건넸습니다. 1라운드 조사를 시작합니다.'
     - id: ROUND1_DISCUSS
       label: '1라운드 토론'
       kind: discuss
@@ -107,32 +103,27 @@ flow:
         그 말을 들은 윤유성은 잠시 숨을 삼켰다. 놀란 듯하면서도, 어딘가 납득하지 못한 얼굴이었다. 한다정은 곧바로 그의 옆으로 다가서 한 걸음 앞에 섰고, 윤유성이 무언가 말하려 하자 낮은 목소리로 이름을 불러 멈춰 세웠다.
 
         지금까지 확인한 것은 모두 재활수조실 바깥의 정황뿐이었다. 오완주가 실제로 쓰러져 있던 자리와 방 안에 남은 흔적은 누구도 직접 살피지 못했다. 이제 닫혀 있던 현장을 확인할 차례다. 2라운드 조사를 시작합니다.
-      enterAnnouncement: '2라운드 조사 전 지문입니다. 방장이 낭독한 뒤 2라운드 조사로 진행합니다.'
     - id: ROUND2_INVESTIGATE
       label: '2라운드 조사'
       kind: investigate
       round: 2
       durationSec: 420
       description: '재활수조실과 남은 소지품을 조사합니다.'
-      enterAnnouncement: '2라운드 조사를 시작합니다.'
     - id: ROUND2_DISCUSS
       label: '2라운드 토론'
       kind: discuss
       round: 2
       durationSec: 1800
       description: '윤유성, 조희수, 서기준, 한다정의 거짓말과 실제 사망 원인을 분리하세요. 이 회의가 끝나면 각자 2분 개인 발표로 사건의 전말을 정리하고, 그 뒤 최종 투표로 넘어갑니다.'
-      enterAnnouncement: '2라운드 토론입니다. 다음 단계에서는 각자 2분씩 개인 발표를 진행하고, 모두 발표한 뒤 최종 투표로 넘어갑니다.'
     - id: FINAL_PRESENTATION
       label: '개인 발표'
       kind: presentation
       description: '원하는 순서대로 본인 발표 타이머를 시작하고, 사건의 전말과 최종 지목 근거를 2분 안에 설명하세요. 발표를 일찍 마치면 직접 종료할 수 있습니다.'
-      enterAnnouncement: '개인 발표 단계입니다. 원하는 순서대로 본인 발표 타이머를 시작하고, 사건의 전말을 2분 안에 설명하세요. 모두 발표하면 최종 투표로 진행합니다.'
     - id: FINAL_VOTE
       label: '최종 투표'
       kind: final_vote
       durationSec: 300
       description: '거북 오완주를 최종적으로 죽인 인물을 지목하세요.'
-      enterAnnouncement: '이제 기자단 앞 브리핑이 시작됩니다. 지금 선택한 결론이 용왕재단의 기록, 기사 제목, 각자의 남은 명분을 결정합니다.'
     - id: ENDING_CHOICE
       label: '최종 선택'
       kind: ending_choice
@@ -145,11 +136,9 @@ flow:
 
         이제 남은 것은,
         이 진실을 어디까지 세상에 내놓을 것인가다.
-      enterAnnouncement: '최종 지목은 자라 서기준에게 향했습니다. 남편토끼와 여우에게 마지막 선택지가 열립니다.'
     - id: ENDBOOK
       label: '엔딩'
       kind: endbook
-      enterAnnouncement: '엔딩 단계입니다. 최종 진실을 확인합니다.'
 
 parts:
   - id: part_turtle_body
@@ -410,7 +399,6 @@ specialEvents:
       - jara
     revealCardId: card_locked_wife_accuses_fox
     revealAnnouncement: '아내토끼의 잠금 증언 카드가 전체 공개되었습니다.'
-    sealAnnouncement: '아내토끼 잠금 증언 조건이 실패 처리되었습니다. 이 카드는 더 이상 공개되지 않습니다.'
 
 investigations:
   deliveryMode: auto

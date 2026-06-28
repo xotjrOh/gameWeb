@@ -648,14 +648,26 @@ const grantInitialRoleCards = (
 
   room.players.forEach((player) => {
     const roleId = room.gameData.roleByPlayerId[player.id];
-    const initialCardIds = scenario.initialRoleCards
-      .filter((entry) => entry.roleId === roleId)
-      .map((entry) => entry.cardId);
+    const initialCardEntries = scenario.initialRoleCards.filter(
+      (entry) => entry.roleId === roleId
+    );
+    const initialCardIds = initialCardEntries.map((entry) => entry.cardId);
     const currentCardIds =
       room.gameData.privateCardIdsByPlayerId[player.id] ?? [];
+    const currentCardIdSet = new Set(currentCardIds);
     room.gameData.privateCardIdsByPlayerId[player.id] = [
       ...new Set([...currentCardIds, ...initialCardIds]),
     ];
+    initialCardEntries
+      .filter((entry) => !currentCardIdSet.has(entry.cardId))
+      .forEach((entry) =>
+        appendMurderMysteryInitialRoleCardAnnouncement(
+          room,
+          scenario,
+          player.id,
+          entry
+        )
+      );
   });
 
   room.gameData.initialRoleCardsGranted = true;
@@ -1377,6 +1389,21 @@ const getCardBackStyle = (
     shortLabel:
       card?.back?.shortLabel ?? target.cardBack?.shortLabel ?? target.label,
   };
+};
+
+export const appendMurderMysteryClueTakeAnnouncement = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  playerId: string,
+  target: MurderMysteryInvestigationTarget,
+  cardId: string
+) => {
+  const style = getCardBackStyle(scenario, target, cardId);
+  return appendMurderMysteryAnnouncement(
+    room,
+    'CLUE',
+    `${getPlayerDisplayName(room, playerId)}이 ‘${style.shortLabel}’를 가져갔습니다.`
+  );
 };
 
 const buildBackCardView = (
@@ -2757,6 +2784,22 @@ export const appendMurderMysteryAnnouncement = (
   return announcement;
 };
 
+const appendMurderMysteryInitialRoleCardAnnouncement = (
+  room: MurderMysteryRoom,
+  scenario: MurderMysteryScenario,
+  playerId: string,
+  entry: MurderMysteryScenario['initialRoleCards'][number]
+) => {
+  const card = getCardById(scenario, entry.cardId);
+  const cardLabel =
+    entry.sourceLabel ?? card?.back?.shortLabel ?? '개인 전달 카드';
+  return appendMurderMysteryAnnouncement(
+    room,
+    'CLUE',
+    `${getPlayerDisplayName(room, playerId)}이 ‘${cardLabel}’를 받았습니다.`
+  );
+};
+
 export const resolveAllPendingInvestigations = (
   room: MurderMysteryRoom,
   scenario: MurderMysteryScenario
@@ -2764,6 +2807,7 @@ export const resolveAllPendingInvestigations = (
   const pending = [...room.gameData.pendingInvestigations];
   const outputs: Array<{
     request: MurderMysteryPendingInvestigation;
+    target: MurderMysteryInvestigationTarget;
     cardId: string;
     revealResult: {
       card: MurderMysteryCardScenario;
@@ -2776,6 +2820,7 @@ export const resolveAllPendingInvestigations = (
     const resolved = resolvePendingRequestInternal(room, scenario, request);
     outputs.push({
       request: resolved.request,
+      target: resolved.target,
       cardId: resolved.cardId,
       revealResult: resolved.revealResult,
     });
@@ -3273,11 +3318,6 @@ export const reportMurderMysterySpecialEvent = (
 
   if (outcome === 'seal') {
     room.gameData.specialEventStatusById[event.id] = 'sealed';
-    appendMurderMysteryAnnouncement(
-      room,
-      'SYSTEM',
-      event.sealAnnouncement ?? `${event.label} 조건이 실패 처리되었습니다.`
-    );
     return {
       outcome,
       card: null,
@@ -3290,7 +3330,7 @@ export const reportMurderMysterySpecialEvent = (
   const revealResult = revealPublicCard(room, scenario, event.revealCardId);
   appendMurderMysteryAnnouncement(
     room,
-    'SYSTEM',
+    'CLUE',
     event.revealAnnouncement ?? `${event.label} 카드가 전체 공개되었습니다.`
   );
 

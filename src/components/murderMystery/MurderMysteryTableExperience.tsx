@@ -445,6 +445,8 @@ const getAnnouncementTypeLabel = (
       return '프롤로그';
     case 'ENDBOOK':
       return '엔딩';
+    case 'CLUE':
+      return '단서';
     case 'SYSTEM':
     default:
       return '시스템';
@@ -5402,7 +5404,11 @@ const NotificationLogDialog = ({
                       size="small"
                       label={getAnnouncementTypeLabel(announcement.type)}
                       color={
-                        announcement.type === 'SYSTEM' ? 'warning' : 'default'
+                        announcement.type === 'SYSTEM'
+                          ? 'warning'
+                          : announcement.type === 'CLUE'
+                            ? 'info'
+                            : 'default'
                       }
                       sx={{ height: 22, fontWeight: 900 }}
                     />

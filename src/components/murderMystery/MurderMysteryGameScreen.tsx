@@ -82,6 +82,10 @@ export default function MurderMysteryGameScreen({
       enqueueSnackbar(latestAnnouncement.text, { variant: 'info' });
       return;
     }
+    if (latestAnnouncement.type === 'CLUE') {
+      enqueueSnackbar(latestAnnouncement.text, { variant: 'info' });
+      return;
+    }
     enqueueSnackbar(
       latestAnnouncement.type === 'INTRO'
         ? '프롤로그가 테이블에 공개되었습니다.'

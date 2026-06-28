@@ -4,8 +4,7 @@ import { validatePlayer, validateRoom } from '../utils/validation';
 import {
   advanceExpiredMurderMysteryPresentationIfNeeded,
   advanceExpiredMurderMysteryDiscussionIfNeeded,
-  appendMurderMysteryAnnouncement,
-  buildMurderMysteryEndbookText,
+  appendMurderMysteryClueTakeAnnouncement,
   buildMurderMysteryRoleShareText,
   buildMurderMysterySnapshot,
   clearMurderMysteryRolePreferences,
@@ -49,22 +48,6 @@ import {
   ServerSocketType,
   ServerToClientEvents,
 } from '@/types/socket';
-
-const getFinalVoteAnnouncementText = (
-  result: ReturnType<typeof finalizeMurderMysteryVote>,
-  automatic = false
-) => {
-  if (result.voteOptionId === null) {
-    return '최종 투표가 동률입니다. 재투표를 진행합니다.';
-  }
-
-  const prefix = automatic
-    ? '최종 투표가 자동 집계되었습니다.'
-    : '최종 투표가 집계되었습니다.';
-  return result.matched
-    ? `${prefix} 사건 지목은 정답입니다.`
-    : `${prefix} 사건 지목은 오답입니다.`;
-};
 
 const clearMurderMysteryPhaseTimer = (roomId: string) => {
   if (!timers[roomId]) {
@@ -323,6 +306,13 @@ const murderMysteryGameHandler = (
       const announcementStartIndex = room.gameData.announcements.length;
       const { resolvedPending } = moveMurderMysteryToNextPhase(room, scenario);
       resolvedPending.forEach((resolved) => {
+        appendMurderMysteryClueTakeAnnouncement(
+          room,
+          scenario,
+          resolved.request.playerId,
+          resolved.target,
+          resolved.cardId
+        );
         resolved.revealResult.revealedParts.forEach((part) => {
           emitMurderMysteryPartRevealed(room, io, {
             partId: part.id,
@@ -395,6 +385,7 @@ const murderMysteryGameHandler = (
         validatePlayer(room, sessionId);
         const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
 
+        const announcementStartIndex = room.gameData.announcements.length;
         const result = submitMurderMysteryInvestigation(
           room,
           scenario,
@@ -407,6 +398,13 @@ const murderMysteryGameHandler = (
 
         if (result.mode === 'auto') {
           [result, ...result.automaticResults].forEach((entry) => {
+            appendMurderMysteryClueTakeAnnouncement(
+              room,
+              scenario,
+              entry.playerId,
+              entry.target,
+              entry.cardId
+            );
             entry.revealResult.revealedParts.forEach((part) => {
               emitMurderMysteryPartRevealed(room, io, {
                 partId: part.id,
@@ -420,7 +418,9 @@ const murderMysteryGameHandler = (
           });
         }
 
-        emitMurderMysterySnapshotsWithTimerSync(room, scenario);
+        emitMurderMysterySnapshotsWithTimerSync(room, scenario, {
+          announcementStartIndex,
+        });
         if (result.phaseAdvanced) {
           io.emit('room-updated', rooms);
         }
@@ -598,11 +598,19 @@ const murderMysteryGameHandler = (
         const scenario = getMurderMysteryScenario(room.gameData.scenarioId);
         room.host.socketId = socket.id;
 
+        const announcementStartIndex = room.gameData.announcements.length;
         const resolved = resolveMurderMysteryInvestigation(
           room,
           scenario,
           requestId,
           cardId
+        );
+        appendMurderMysteryClueTakeAnnouncement(
+          room,
+          scenario,
+          resolved.request.playerId,
+          resolved.target,
+          resolved.cardId
         );
         resolved.revealResult.revealedParts.forEach((part) => {
           emitMurderMysteryPartRevealed(room, io, {
@@ -615,7 +623,9 @@ const murderMysteryGameHandler = (
           });
         });
 
-        emitMurderMysterySnapshotsWithTimerSync(room, scenario);
+        emitMurderMysterySnapshotsWithTimerSync(room, scenario, {
+          announcementStartIndex,
+        });
         return callback({ success: true });
       } catch (error) {
         return callback({ success: false, message: (error as Error).message });
@@ -642,12 +652,7 @@ const murderMysteryGameHandler = (
           Object.keys(room.gameData.voteByPlayerId).length ===
             room.players.length
         ) {
-          const result = finalizeMurderMysteryVote(room, scenario);
-          appendMurderMysteryAnnouncement(
-            room,
-            'SYSTEM',
-            getFinalVoteAnnouncementText(result, true)
-          );
+          finalizeMurderMysteryVote(room, scenario);
           io.emit('room-updated', rooms);
         }
 
@@ -691,12 +696,7 @@ const murderMysteryGameHandler = (
       room.host.socketId = socket.id;
 
       const announcementStartIndex = room.gameData.announcements.length;
-      const result = finalizeMurderMysteryVote(room, scenario);
-      appendMurderMysteryAnnouncement(
-        room,
-        'SYSTEM',
-        getFinalVoteAnnouncementText(result)
-      );
+      finalizeMurderMysteryVote(room, scenario);
 
       emitMurderMysterySnapshotsWithTimerSync(room, scenario, {
         announcementStartIndex,
@@ -718,12 +718,6 @@ const murderMysteryGameHandler = (
         throw new Error('오프닝 단계에서만 실행할 수 있습니다.');
       }
 
-      const announcement = appendMurderMysteryAnnouncement(
-        room,
-        'INTRO',
-        currentStep.readAloud ?? scenario.intro.readAloud
-      );
-      emitMurderMysteryAnnouncement(room, io, announcement);
       emitMurderMysterySnapshotsWithTimerSync(room, scenario);
       return callback({ success: true });
     } catch (error) {
@@ -741,12 +735,6 @@ const murderMysteryGameHandler = (
         throw new Error('엔딩 단계에서만 실행할 수 있습니다.');
       }
 
-      const announcement = appendMurderMysteryAnnouncement(
-        room,
-        'ENDBOOK',
-        buildMurderMysteryEndbookText(room, scenario)
-      );
-      emitMurderMysteryAnnouncement(room, io, announcement);
       emitMurderMysterySnapshotsWithTimerSync(room, scenario);
       return callback({ success: true });
     } catch (error) {

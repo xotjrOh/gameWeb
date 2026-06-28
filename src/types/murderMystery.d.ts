@@ -389,7 +389,7 @@ export interface MurderMysteryInvestigationTurnState {
 
 export interface MurderMysteryAnnouncement {
   id: string;
-  type: 'INTRO' | 'ENDBOOK' | 'SYSTEM';
+  type: 'INTRO' | 'ENDBOOK' | 'SYSTEM' | 'CLUE';
   text: string;
   at: number;
 }

@@ -415,6 +415,7 @@ const cleanupRoom = async ({ baseUrl, roomId, hostSessionId, hostSockets }) => {
   }
 };
 
+const MURDER_SNAPSHOT_TIMEOUT_MS = 30000;
 let murderSnapshotRequestCount = 0;
 
 const requestMurderSnapshot = async (socket, roomId, sessionId) => {
@@ -422,6 +423,7 @@ const requestMurderSnapshot = async (socket, roomId, sessionId) => {
   const requestNumber = murderSnapshotRequestCount;
   const snapshotPromise = waitForEvent(socket, 'mm_state_snapshot', {
     label: `murder snapshot #${requestNumber}, session ${sessionId}`,
+    timeoutMs: MURDER_SNAPSHOT_TIMEOUT_MS,
   });
   const response = await emitAck(socket, 'mm_get_state', {
     roomId,
@@ -901,12 +903,14 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
       briefingReadResponse
     );
 
-    const wifePactAnnouncementText =
-      '아내토끼가 여우에게 개인 전달 카드를 건넸습니다. 1라운드 조사를 시작합니다.';
+    const wifePactAnnouncementText = '아내토끼가 건넨 카드';
     const wifePactAnnouncementPromises = sessionOrder.map(async (sessionId) => [
       sessionId,
       await waitForEvent(socketsBySession.get(sessionId), 'mm_announcement', {
-        filter: (event) => event?.type === 'SYSTEM',
+        filter: (event) =>
+          event?.type === 'CLUE' &&
+          typeof event.text === 'string' &&
+          event.text.includes(wifePactAnnouncementText),
       }),
     ]);
 
@@ -929,9 +933,11 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
     assertCondition(
       wifePactAnnouncements.every(
         ([, event]) =>
-          event?.type === 'SYSTEM' && event.text === wifePactAnnouncementText
+          event?.type === 'CLUE' &&
+          event.text.includes(wifePactAnnouncementText) &&
+          event.text.includes('받았습니다')
       ),
-      'wife pact handoff announcement should broadcast to every participant',
+      'wife pact handoff clue announcement should broadcast to every participant',
       wifePactAnnouncements
     );
 
@@ -1942,9 +1948,8 @@ const runMurderMysteryInvestigationSmoke = async (baseUrl) => {
     assertCondition(
       round2DiscussStep?.description?.includes('개인 발표') &&
         round2DiscussStep?.description?.includes('최종 투표') &&
-        round2DiscussStep?.enterAnnouncement?.includes('개인 발표') &&
-        round2DiscussStep?.enterAnnouncement?.includes('최종 투표'),
-      'round 2 discussion should announce presentation before final vote',
+        !round2DiscussStep?.enterAnnouncement,
+      'round 2 discussion should keep guidance on screen without notification announcement',
       round2DiscussStep
     );
 
