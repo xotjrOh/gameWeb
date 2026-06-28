@@ -1619,44 +1619,62 @@ endbook:
       - id: qna_yuseong_drug_not_killer
         question: '윤유성은 왜 최종 살해자가 아닌가?'
         answer: |
-          「윤유성 소지품 1」의 흰 가루·쓴 냄새·빠진 고무패킹과 「아내토끼 소지품 1」의 젖은 고무링은 윤유성이 약을 탄 보온병을 썼다는 쪽으로 이어진다. 윤유성 룰지를 보면 실제로 오완주에게 약을 먹이고 쓰러지는 것까지 보지만, 그는 별똥별을 보고 멈춘 뒤 서류봉투와 보온병만 챙겨 나간다. 한다정 룰지에는 그 뒤 재활수조실에 남은 오완주와 다가오는 딱딱한 발소리가 나오므로, 윤유성은 약을 먹였지만 최종 살해자는 아니라고 정리된다.
+          최종 사망 원인은 윤유성이 먹인 약이 아니라, 「젖은 구두 자국」으로 남은 물 처리 동선이다. 조희수 룰지에서는 서기준을 따라나선 뒤, 방금 서기준이 사라진 방향에서 딱딱한 구두 소리를 듣는다. 그런데 「젖은 구두 자국」 카드의 현재 신발 확인에서는 서기준이 운동화를 신고 있어 그 소리가 날 수 없다. 이어 「의료동 입구 신발장 1/2」의 젖은 구두와 사라진 환자 운동화는 누군가 젖은 구두를 숨기고 운동화로 갈아 신었다는 뜻이다. 「의료동에 대한 소문2」에 따르면 본행사 전 조희수 방문 뒤 비명까지 의료동 출입자는 없었으므로, 젖은 구두는 비명 이후 의료동에 들어온 인물이 넣었어야 한다. 「1라운드 조사 전 지문」에서 그 동선을 가진 인물은 서기준이다. 먼저 사라졌던 윤유성이 의료동에서 신발을 갈아 신었다면 의료동 증언에 남아야 하므로, 윤유성은 최종 살해자에서 빠진다.
         evidenceRefs:
-          - id: black_thermos
+          - id: wet_shoeprints
             sourceType: investigation_card
-            cardId: card_black_thermos
-            label: '윤유성 소지품 1'
-            sourceName: '조사 카드 · 윤유성 소지품 1'
+            cardId: card_wet_shoeprints
+            label: '젖은 구두 자국'
+            sourceName: '조사 카드 · 젖은 구두 자국'
             excerpt: |
-              보온병에 고무패킹이 빠져 있다. 보온병 안쪽에는 씁쓸한 냄새가 희미하게 남아 있다. 바닥에는 녹다 만 흰 가루 흔적이 조금 붙어 있다.
+              재활수조실 바닥 곳곳에 젖은 구두 자국이 흐리게 남아 있다. 지금 딱딱한 구두굽을 신고 있는 사람은 없다. 윤유성·서기준은 운동화, 조희수는 낮은 단화, 한다정은 고무 밑창의 낮은 외출화를 신고 있다.
             inference: |
-              윤유성이 약을 탄 보온병을 사용했다는 직접적인 물증이다.
-          - id: rubber_ring
+              최종 범행은 현재 신발이 아니라, 범행 당시 신었던 딱딱한 구두와 그 뒤의 신발 교체를 설명해야 한다.
+          - id: fox_rule_footsteps
+            sourceType: role_sheet
+            roleId: fox
+            label: '조희수'
+            sourceName: '룰지 · 조희수'
+            excerpt: |
+              조희수는 서기준을 따라나섰고, 비품 정리실 안쪽 문 너머에서 딱딱한 발소리를 듣는다. 발소리는 방금 서기준이 사라진 방향에서 가까워졌고, 문 앞을 지나 재활수조실 쪽으로 향했다.
+            inference: |
+              플레이어가 알 수 있는 구두 소리는 조희수가 따라간 서기준의 동선과 연결된다.
+          - id: medical_shoe_cabinet_1
             sourceType: investigation_card
-            cardId: card_rubber_ring
-            label: '아내토끼 소지품 1'
-            sourceName: '조사 카드 · 아내토끼 소지품 1'
+            cardId: card_medical_shoe_cabinet_1
+            label: '의료동 입구 신발장 1'
+            sourceName: '조사 카드 · 의료동 입구 신발장 1'
             excerpt: |
-              작고 하얀 고무링이 나왔다. 표면이 살짝 젖어 있고, 씁쓸한 냄새가 희미하게 난다. 다른 물건에 들어가는 고무패킹으로 보인다.
+              의료동 입구 신발장 깊숙한 칸 안쪽에 젖은 구두 한 켤레가 놓여 있다.
             inference: |
-              보온병의 빠진 고무패킹과 이어져 윤유성의 약물 행동을 보강한다.
-          - id: rabbit_husband_rule
-            sourceType: role_sheet
-            roleId: rabbit_husband
-            label: '윤유성'
-            sourceName: '룰지 · 윤유성'
+              범행 때 젖은 구두가 의료동 신발장으로 옮겨졌다.
+          - id: medical_shoe_cabinet_2
+            sourceType: investigation_card
+            cardId: card_medical_shoe_cabinet_2
+            label: '의료동 입구 신발장 2'
+            sourceName: '조사 카드 · 의료동 입구 신발장 2'
             excerpt: |
-              오완주가 02:24에 쓰러진 뒤, 윤유성은 목 쪽으로 손을 뻗으려다 별똥별을 보고 멈춘다. 그는 서류봉투를 집고, 수조 턱 아래로 굴러간 보온병과 뚜껑을 주워 방을 나왔다.
+              병원 슬리퍼를 신은 환자 한 명이 의료동 입구에서 본인이 신고 왔던 운동화가 없어졌다고 말한다.
             inference: |
-              윤유성은 약을 먹인 인물이지만, 쓰러진 뒤 숨을 끊는 단계에서 멈췄다.
-          - id: wife_rule_after_yuseong
-            sourceType: role_sheet
-            roleId: wife_npc
-            label: '한다정'
-            sourceName: '룰지 · 한다정'
+              젖은 구두를 숨긴 인물이 환자의 운동화로 갈아 신었다는 정황이다.
+          - id: medical_wing_rumor_2
+            sourceType: investigation_card
+            cardId: card_medical_wing_rumor_2
+            label: '의료동에 대한 소문2'
+            sourceName: '조사 카드 · 의료동에 대한 소문2'
             excerpt: |
-              한다정은 재활수조실에서 오완주가 쓰러져 있고 서류봉투와 보온병이 사라진 것을 본다. 이어 수조 턱 아래의 하얀 고무링을 주운 직후, 안쪽 통로 위편에서 딱딱한 발소리가 내려온다.
+              본행사 전에 조희수가 서기준의 간이책상으로 와 대기하다가 본행사 직전에 돌아갔고, 그 뒤 조희수의 비명까지 네 명 중 출입자는 없었다.
             inference: |
-              윤유성이 나간 뒤에도 현장에 들어오는 다른 인물이 있었음을 보여준다.
+              구두가 한참 전에 숨겨졌다면 아직 오완주가 살아 있던 시점이고, 비명 전 윤유성이 의료동에 다녀갔다는 증언도 없다.
+          - id: round1_briefing
+            sourceType: public_script
+            stepId: ROUND1_BRIEFING
+            label: '1라운드 조사 전 지문'
+            sourceName: '지문 · 1라운드 조사 전 지문'
+            excerpt: |
+              서기준은 곧바로 직원들에게 재활수조실 앞 복도를 막고 윤유성을 찾아오라고 지시한 뒤, 의료동으로 뛰어가 의사들에게 상황을 전했습니다.
+            inference: |
+              비명 이후 의료동에 들어가 젖은 구두를 숨길 공개 동선을 가진 인물은 서기준이다.
       - id: qna_heesu_target
         question: '조희수의 주사기는 누구를 노린 것인가?'
         answer: |
@@ -1701,7 +1719,7 @@ endbook:
       - id: qna_culprit_route
         question: '왜 최종 범인은 서기준으로 좁혀지는가?'
         answer: |
-          「젖은 구두 자국」은 물을 다룬 사람이 딱딱한 구두굽을 신었음을 말하지만, 현재 네 사람 중 그런 신발을 신고 있는 사람은 없었다. 「의료동 입구 신발장 1/2」를 보면 젖은 구두가 숨겨지고 환자 운동화가 사라졌으며, 1라운드 조사 전 지문에서는 비명 직후 서기준이 의료동으로 뛰어가 의사를 데려온다. 한다정 룰지와 조희수 룰지의 딱딱한 발소리도 오완주가 쓰러진 뒤 들어온 제3자를 가리키므로, 구두를 숨기고 운동화로 갈아 신을 동선은 서기준에게 좁혀진다.
+          「젖은 구두 자국」은 물을 다룬 사람이 딱딱한 구두굽을 신었음을 말하지만, 현재 네 사람 중 그런 신발을 신고 있는 사람은 없었다. 조희수 룰지에서는 그가 서기준을 따라나선 직후 방금 서기준이 사라진 방향에서 딱딱한 발소리를 듣는다. 여기에 「의료동 입구 신발장 1/2」의 젖은 구두와 사라진 환자 운동화를 합치면, 범인은 젖은 구두를 벗고 다른 신발로 갈아 신었다. 「의료동에 대한 소문2」상 비명 전 의료동 출입자는 없었고, 「1라운드 조사 전 지문」에서 비명 직후 의료동으로 간 인물은 서기준이다. 따라서 구두를 숨기고 운동화로 갈아 신을 동선은 서기준에게 좁혀진다.
         evidenceRefs:
           - id: wet_shoeprints
             sourceType: investigation_card
@@ -1739,15 +1757,15 @@ endbook:
               서기준은 곧바로 직원들에게 재활수조실 앞 복도를 막고 윤유성을 찾아오라고 지시한 뒤, 의료동으로 뛰어가 의사들에게 상황을 전했습니다.
             inference: |
               서기준은 비명 직후 의료동으로 이동할 명분과 동선을 가진다.
-          - id: wife_rule_footsteps
-            sourceType: role_sheet
-            roleId: wife_npc
-            label: '한다정'
-            sourceName: '룰지 · 한다정'
+          - id: medical_wing_rumor_2
+            sourceType: investigation_card
+            cardId: card_medical_wing_rumor_2
+            label: '의료동에 대한 소문2'
+            sourceName: '조사 카드 · 의료동에 대한 소문2'
             excerpt: |
-              한다정은 고무링을 주운 직후 안쪽 통로 위편에서 딱딱한 발소리가 내려오는 것을 듣고 비품 정리실로 숨는다.
+              본행사 전에 조희수가 서기준의 간이책상으로 와 대기하다가 본행사 직전에 돌아갔고, 그 뒤 조희수의 비명까지 네 명 중 출입자는 없었다.
             inference: |
-              윤유성 이후 재활수조실 쪽으로 들어온 제3자의 존재를 보강한다.
+              윤유성이 먼저 사라졌더라도 비명 전 의료동에서 신발을 갈아 신은 동선은 증언과 맞지 않는다.
           - id: fox_rule_footsteps
             sourceType: role_sheet
             roleId: fox
