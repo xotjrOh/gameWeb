@@ -2053,23 +2053,6 @@ endbook:
 
         그리고 서기준은 문을 닫았다.
         소리가 나지 않게.
-    - id: correct_reveal
-      when:
-        finalVoteMatched: true
-        finalVoteOptionId: jara
-      body: |
-        정답 확인
-
-        오완주를 죽인 범인은 서기준이었다.
-
-        재활수조실의 물, 호스, 수거통, 젖은 구두 자국은
-        마지막 순간 같은 이름을 가리킨다.
-
-        서기준은 오완주의 죽음을 이용해
-        윤유성을 의료동으로 묶어 두려 했다.
-
-        이제 남은 것은,
-        이 진실을 어디까지 세상에 내놓을 것인가다.
     - id: fox_accuse_jara_only
       title: '서기준의 이름에서 멈춘 기사'
       when:

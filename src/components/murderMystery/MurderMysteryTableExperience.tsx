@@ -10532,19 +10532,6 @@ export default function MurderMysteryTableExperience({
               </Typography>
             </Box>
 
-            {endbook.choiceSummaries.length > 0 ? (
-              <Stack direction="row" spacing={0.8} flexWrap="wrap" useFlexGap>
-                {endbook.choiceSummaries.map((summary) => (
-                  <Chip
-                    key={summary.choiceId}
-                    label={`${summary.roleDisplayName}: ${summary.selectedOptionLabel}`}
-                    color="success"
-                    variant="outlined"
-                  />
-                ))}
-              </Stack>
-            ) : null}
-
             {endbook.alternateOutcomes.map((outcome) => {
               const alternateText = [outcome.title, outcome.body]
                 .filter(Boolean)
