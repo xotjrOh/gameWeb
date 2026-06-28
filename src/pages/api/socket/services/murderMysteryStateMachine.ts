@@ -3846,6 +3846,7 @@ export const buildMurderMysterySnapshot = (
       roomDisplayName: scenario.roomDisplayName,
       intro: scenario.intro,
       rules: {
+        investigationsPerRound: scenario.rules.investigationsPerRound,
         partsPublicDetail: scenario.rules.partsPublicDetail,
       },
       flow: scenario.flow,

@@ -783,6 +783,7 @@ export interface MurderMysteryStateSnapshot {
       readAloud: string;
     };
     rules: {
+      investigationsPerRound: number;
       partsPublicDetail: boolean;
     };
     flow: MurderMysteryFlowScenario;

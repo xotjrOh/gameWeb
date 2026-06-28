@@ -17,6 +17,7 @@ import {
   AccordionDetails,
   AccordionSummary,
   Alert,
+  Badge,
   Box,
   Button,
   Chip,
@@ -36,6 +37,7 @@ import {
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import {
+  AccountCircle as AccountCircleIcon,
   AutoStories as AutoStoriesIcon,
   ArrowForward as ArrowForwardIcon,
   Article as ArticleIcon,
@@ -50,6 +52,8 @@ import {
   Logout as LogoutIcon,
   Map as MapIcon,
   MusicNote as MusicNoteIcon,
+  Notifications as NotificationsIcon,
+  Settings as SettingsIcon,
   PushPin as PushPinIcon,
   RadioButtonChecked as RadioButtonCheckedIcon,
   RadioButtonUnchecked as RadioButtonUncheckedIcon,
@@ -59,6 +63,7 @@ import {
   Style as StyleIcon,
   TaskAlt as TaskAltIcon,
   Timer as TimerIcon,
+  Timeline as TimelineIcon,
   VolumeOff as VolumeOffIcon,
   VolumeUp as VolumeUpIcon,
   WarningAmber as WarningAmberIcon,
@@ -277,6 +282,7 @@ const EDGE_PANEL_FAB_DRAG_THRESHOLD = 5;
 const PINNED_CLUE_FAB_STORAGE_KEY = 'murderMystery:pinnedClueFabPosition:v1';
 const MAP_FAB_STORAGE_KEY = 'murderMystery:mapFabPosition:v1';
 const CARD_ORDER_STORAGE_PREFIX = 'murderMystery:cardOrder:v1';
+const ANNOUNCEMENT_READ_STORAGE_PREFIX = 'murderMystery:announcementRead:v1';
 const CARD_ORDER_BUCKETS: CardOrderBucket[] = ['public-clues', 'my-clues'];
 const CARD_SORT_LONG_PRESS_MS = 450;
 const CARD_SORT_CANCEL_DISTANCE = 10;
@@ -405,6 +411,56 @@ const formatSeconds = (seconds: number | null) => {
     .padStart(2, '0');
   return `${minute}:${second}`;
 };
+
+const getStepKindLabel = (kind: MurderMysteryStepKind) => {
+  switch (kind) {
+    case 'intro':
+      return '낭독';
+    case 'role_selection':
+      return '캐릭터 선택';
+    case 'role_reading':
+      return '룰지 확인';
+    case 'investigate':
+      return '조사';
+    case 'discuss':
+      return '회의';
+    case 'presentation':
+      return '개인 발표';
+    case 'final_vote':
+      return '최종 투표';
+    case 'ending_choice':
+      return '엔딩 선택';
+    case 'endbook':
+      return '엔딩';
+    default:
+      return '진행';
+  }
+};
+
+const getAnnouncementTypeLabel = (
+  type: MurderMysteryStateSnapshot['announcements'][number]['type']
+) => {
+  switch (type) {
+    case 'INTRO':
+      return '프롤로그';
+    case 'ENDBOOK':
+      return '엔딩';
+    case 'SYSTEM':
+    default:
+      return '시스템';
+  }
+};
+
+const formatAnnouncementTime = (timestamp: number) =>
+  new Intl.DateTimeFormat('ko-KR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(timestamp));
+
+const getRoundCardPoolIds = (
+  round: MurderMysteryStateSnapshot['scenario']['investigations']['rounds'][number]
+) =>
+  Array.from(new Set(round.targets.flatMap((target) => target.cardPool ?? [])));
 
 const splitScenarioTitle = (title: string) => {
   const normalizedTitle = title.trim();
@@ -4834,6 +4890,452 @@ const PublicScriptsDialog = ({
   );
 };
 
+const FlowOverviewDialog = ({
+  open,
+  snapshot,
+  fullScreen,
+  onClose,
+}: {
+  open: boolean;
+  snapshot: MurderMysteryStateSnapshot;
+  fullScreen: boolean;
+  onClose: () => void;
+}) => {
+  const currentPhaseIndex = snapshot.phaseOrder.indexOf(snapshot.phase);
+  const roundStatsByRound = new Map<
+    number,
+    {
+      perPlayer: number;
+      totalInvestigations: number | null;
+      cardPoolCount: number;
+      additionalCardPoolCount: number;
+    }
+  >();
+  const seenCardIds = new Set<string>();
+
+  [...snapshot.scenario.investigations.rounds]
+    .sort((a, b) => a.round - b.round)
+    .forEach((roundConfig) => {
+      const cardIds = getRoundCardPoolIds(roundConfig);
+      const additionalCardIds = cardIds.filter(
+        (cardId) => !seenCardIds.has(cardId)
+      );
+      cardIds.forEach((cardId) => seenCardIds.add(cardId));
+
+      const perPlayer =
+        roundConfig.investigationsPerPlayer ??
+        snapshot.scenario.rules.investigationsPerRound;
+      roundStatsByRound.set(roundConfig.round, {
+        perPlayer,
+        totalInvestigations:
+          snapshot.players.length > 0
+            ? perPlayer * snapshot.players.length
+            : null,
+        cardPoolCount: cardIds.length,
+        additionalCardPoolCount: additionalCardIds.length,
+      });
+    });
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="md"
+      fullScreen={fullScreen}
+      PaperProps={{ sx: { overflow: 'hidden' } }}
+    >
+      <DialogTitle
+        sx={{
+          backgroundColor: '#211b17',
+          color: '#f7f0df',
+          borderBottom: '1px solid rgba(255,255,255,0.12)',
+        }}
+      >
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <TimelineIcon />
+          <Typography fontWeight={950} sx={{ flex: 1 }}>
+            전체 진행표
+          </Typography>
+          <IconButton onClick={onClose} sx={{ color: '#f7f0df' }}>
+            <CloseIcon />
+          </IconButton>
+        </Stack>
+      </DialogTitle>
+      <DialogContent
+        sx={{
+          p: { xs: 1.25, sm: 1.8 },
+          background:
+            'linear-gradient(145deg, #201b18 0%, #302924 48%, #151b21 100%)',
+          color: '#f7f0df',
+          maxHeight: fullScreen ? 'none' : 'min(76vh, 760px)',
+          overflowY: 'auto',
+        }}
+      >
+        <Stack spacing={1}>
+          {snapshot.scenario.flow.steps.map((step, index) => {
+            const stepPhaseIndex = snapshot.phaseOrder.indexOf(step.id);
+            const isCurrent = step.id === snapshot.phase;
+            const isCompleted =
+              !isCurrent &&
+              stepPhaseIndex >= 0 &&
+              currentPhaseIndex >= 0 &&
+              stepPhaseIndex < currentPhaseIndex;
+            const roundStats =
+              step.kind === 'investigate' && step.round
+                ? roundStatsByRound.get(step.round)
+                : null;
+            const durationSec =
+              typeof step.durationSec === 'number'
+                ? step.durationSec
+                : step.kind === 'presentation'
+                  ? snapshot.presentation.durationSec
+                  : null;
+
+            return (
+              <Box
+                key={step.id}
+                sx={{
+                  p: { xs: 1, sm: 1.15 },
+                  borderRadius: 2,
+                  border: isCurrent
+                    ? '1px solid rgba(245, 197, 66, 0.72)'
+                    : '1px solid rgba(255,255,255,0.12)',
+                  backgroundColor: isCurrent
+                    ? 'rgba(245, 197, 66, 0.12)'
+                    : isCompleted
+                      ? 'rgba(74, 222, 128, 0.08)'
+                      : 'rgba(255,255,255,0.055)',
+                }}
+              >
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={1}
+                  alignItems={{ xs: 'stretch', sm: 'center' }}
+                >
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    alignItems="center"
+                    sx={{ minWidth: 0, flex: 1 }}
+                  >
+                    <Box
+                      aria-hidden
+                      sx={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: '50%',
+                        display: 'grid',
+                        placeItems: 'center',
+                        flex: '0 0 auto',
+                        backgroundColor: isCurrent
+                          ? '#f5c542'
+                          : isCompleted
+                            ? '#4ade80'
+                            : 'rgba(255,255,255,0.12)',
+                        color: isCurrent || isCompleted ? '#1e1607' : '#f7f0df',
+                        fontWeight: 950,
+                      }}
+                    >
+                      {isCompleted ? (
+                        <TaskAltIcon sx={{ fontSize: 18 }} />
+                      ) : isCurrent ? (
+                        <RadioButtonCheckedIcon sx={{ fontSize: 18 }} />
+                      ) : (
+                        index + 1
+                      )}
+                    </Box>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Stack
+                        direction="row"
+                        spacing={0.6}
+                        alignItems="center"
+                        flexWrap="wrap"
+                        useFlexGap
+                      >
+                        <Typography fontWeight={950}>{step.label}</Typography>
+                        <Chip
+                          size="small"
+                          label={getStepKindLabel(step.kind)}
+                          color={isCurrent ? 'warning' : 'default'}
+                          variant={isCurrent ? 'filled' : 'outlined'}
+                          sx={{
+                            height: 22,
+                            color: isCurrent ? undefined : '#f7f0df',
+                            borderColor: isCurrent
+                              ? undefined
+                              : 'rgba(255,255,255,0.26)',
+                            fontWeight: 900,
+                          }}
+                        />
+                        {durationSec !== null ? (
+                          <Chip
+                            size="small"
+                            icon={<TimerIcon />}
+                            label={formatSeconds(durationSec)}
+                            variant="outlined"
+                            sx={{
+                              height: 22,
+                              color: '#f7f0df',
+                              borderColor: 'rgba(255,255,255,0.26)',
+                              fontWeight: 900,
+                              '& .MuiChip-icon': { color: '#f5c542' },
+                            }}
+                          />
+                        ) : null}
+                      </Stack>
+                    </Box>
+                  </Stack>
+
+                  {roundStats ? (
+                    <Stack
+                      direction="row"
+                      spacing={0.6}
+                      justifyContent={{ xs: 'flex-start', sm: 'flex-end' }}
+                      flexWrap="wrap"
+                      useFlexGap
+                    >
+                      <Chip
+                        size="small"
+                        label={`1인 ${roundStats.perPlayer}회`}
+                        sx={{ fontWeight: 900 }}
+                      />
+                      {roundStats.totalInvestigations !== null ? (
+                        <Chip
+                          size="small"
+                          label={`총 ${roundStats.totalInvestigations}회`}
+                          sx={{ fontWeight: 900 }}
+                        />
+                      ) : null}
+                      <Chip
+                        size="small"
+                        color={step.round === 1 ? 'warning' : 'default'}
+                        label={
+                          step.round === 1
+                            ? `1라운드 단서 풀 ${roundStats.cardPoolCount}장`
+                            : `${step.round}라운드 추가 단서 풀 ${roundStats.additionalCardPoolCount}장`
+                        }
+                        sx={{ fontWeight: 900 }}
+                      />
+                    </Stack>
+                  ) : null}
+                </Stack>
+              </Box>
+            );
+          })}
+        </Stack>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const NotificationLogDialog = ({
+  open,
+  announcements,
+  fullScreen,
+  onClose,
+}: {
+  open: boolean;
+  announcements: MurderMysteryStateSnapshot['announcements'];
+  fullScreen: boolean;
+  onClose: () => void;
+}) => {
+  const orderedAnnouncements = [...announcements].sort((a, b) => b.at - a.at);
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="sm"
+      fullScreen={fullScreen}
+      PaperProps={{ sx: { overflow: 'hidden' } }}
+    >
+      <DialogTitle
+        sx={{
+          backgroundColor: '#211b17',
+          color: '#f7f0df',
+          borderBottom: '1px solid rgba(255,255,255,0.12)',
+        }}
+      >
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <NotificationsIcon />
+          <Typography fontWeight={950} sx={{ flex: 1 }}>
+            알림
+          </Typography>
+          <IconButton onClick={onClose} sx={{ color: '#f7f0df' }}>
+            <CloseIcon />
+          </IconButton>
+        </Stack>
+      </DialogTitle>
+      <DialogContent
+        sx={{
+          p: { xs: 1.25, sm: 1.8 },
+          background:
+            'linear-gradient(145deg, #201b18 0%, #302924 48%, #151b21 100%)',
+          color: '#f7f0df',
+          maxHeight: fullScreen ? 'none' : 'min(72vh, 680px)',
+          overflowY: 'auto',
+        }}
+      >
+        {orderedAnnouncements.length > 0 ? (
+          <Stack spacing={0.9}>
+            {orderedAnnouncements.map((announcement) => (
+              <Box
+                key={announcement.id}
+                sx={{
+                  p: 1.1,
+                  borderRadius: 2,
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  backgroundColor: 'rgba(255,255,255,0.06)',
+                }}
+              >
+                <Stack spacing={0.55}>
+                  <Stack
+                    direction="row"
+                    spacing={0.7}
+                    alignItems="center"
+                    flexWrap="wrap"
+                    useFlexGap
+                  >
+                    <Chip
+                      size="small"
+                      label={getAnnouncementTypeLabel(announcement.type)}
+                      color={
+                        announcement.type === 'SYSTEM' ? 'warning' : 'default'
+                      }
+                      sx={{ height: 22, fontWeight: 900 }}
+                    />
+                    <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
+                      {formatAnnouncementTime(announcement.at)}
+                    </Typography>
+                  </Stack>
+                  <Typography sx={{ lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
+                    {announcement.text}
+                  </Typography>
+                </Stack>
+              </Box>
+            ))}
+          </Stack>
+        ) : (
+          <Typography sx={{ color: '#d8d0bd' }}>
+            아직 기록된 알림이 없습니다.
+          </Typography>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const SettingsDialog = ({
+  open,
+  playerName,
+  bgmTrack,
+  fullScreen,
+  onLeaveRoom,
+  onClose,
+}: {
+  open: boolean;
+  playerName: string;
+  bgmTrack: BgmTrack | null;
+  fullScreen: boolean;
+  onLeaveRoom: () => void;
+  onClose: () => void;
+}) => (
+  <Dialog
+    open={open}
+    onClose={onClose}
+    fullWidth
+    maxWidth="xs"
+    fullScreen={fullScreen}
+    keepMounted
+  >
+    <DialogTitle
+      sx={{
+        backgroundColor: '#211b17',
+        color: '#f7f0df',
+        borderBottom: '1px solid rgba(255,255,255,0.12)',
+      }}
+    >
+      <Stack direction="row" alignItems="center" spacing={1}>
+        <SettingsIcon />
+        <Typography fontWeight={950} sx={{ flex: 1 }}>
+          설정
+        </Typography>
+        <IconButton onClick={onClose} sx={{ color: '#f7f0df' }}>
+          <CloseIcon />
+        </IconButton>
+      </Stack>
+    </DialogTitle>
+    <DialogContent
+      sx={{
+        p: { xs: 1.4, sm: 1.8 },
+        background:
+          'linear-gradient(145deg, #201b18 0%, #302924 48%, #151b21 100%)',
+        color: '#f7f0df',
+      }}
+    >
+      <Stack spacing={1.2}>
+        <Box
+          sx={{
+            p: 1.2,
+            borderRadius: 2,
+            border: '1px solid rgba(255,255,255,0.12)',
+            backgroundColor: 'rgba(255,255,255,0.06)',
+          }}
+        >
+          <Stack direction="row" spacing={1} alignItems="center">
+            <AccountCircleIcon sx={{ color: '#f5c542' }} />
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
+                접속 이름
+              </Typography>
+              <Typography fontWeight={950}>{playerName}</Typography>
+            </Box>
+          </Stack>
+        </Box>
+
+        <Box
+          sx={{
+            p: 1.2,
+            borderRadius: 2,
+            border: '1px solid rgba(255,255,255,0.12)',
+            backgroundColor: 'rgba(255,255,255,0.06)',
+          }}
+        >
+          <Stack direction="row" spacing={1} alignItems="center">
+            <MusicNoteIcon sx={{ color: '#f5c542' }} />
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography fontWeight={950}>BGM</Typography>
+              <Typography variant="caption" sx={{ color: '#cfc5ad' }}>
+                {bgmTrack?.label ?? '현재 단계에는 BGM이 없습니다.'}
+              </Typography>
+            </Box>
+            <BgmControl track={bgmTrack} />
+          </Stack>
+        </Box>
+
+        <Button
+          fullWidth
+          variant="outlined"
+          color="warning"
+          startIcon={<LogoutIcon />}
+          onClick={onLeaveRoom}
+          sx={{
+            justifyContent: 'flex-start',
+            py: 1.1,
+            borderColor: 'rgba(245, 197, 66, 0.45)',
+            color: '#f7f0df',
+            fontWeight: 900,
+          }}
+        >
+          방 나가기
+        </Button>
+      </Stack>
+    </DialogContent>
+  </Dialog>
+);
+
 const PublicCoverDialog = ({
   open,
   player,
@@ -6556,7 +7058,11 @@ export default function MurderMysteryTableExperience({
   const [isRulebookCoverLifted, setIsRulebookCoverLifted] = useState(false);
   const [isPublicScriptsOpen, setIsPublicScriptsOpen] = useState(false);
   const [isPrivateCardsOpen, setIsPrivateCardsOpen] = useState(false);
+  const [isFlowOverviewOpen, setIsFlowOverviewOpen] = useState(false);
+  const [isNotificationLogOpen, setIsNotificationLogOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMapDialogOpen, setIsMapDialogOpen] = useState(false);
+  const [lastReadAnnouncementAt, setLastReadAnnouncementAt] = useState(0);
   const [cardViewer, setCardViewer] = useState<CardViewerState | null>(null);
   const [selectedEvidenceRef, setSelectedEvidenceRef] =
     useState<EndbookEvidenceReference | null>(null);
@@ -6580,9 +7086,21 @@ export default function MurderMysteryTableExperience({
       `${CARD_ORDER_STORAGE_PREFIX}:${snapshot.roomId}:${snapshot.scenario.id}:${sessionId}`,
     [sessionId, snapshot.roomId, snapshot.scenario.id]
   );
+  const announcementReadStorageKey = useMemo(
+    () => `${ANNOUNCEMENT_READ_STORAGE_PREFIX}:${snapshot.roomId}:${sessionId}`,
+    [sessionId, snapshot.roomId]
+  );
 
   const selfPlayer =
     snapshot.players.find((player) => player.id === sessionId) ?? null;
+  const selfPlayerName = selfPlayer?.name ?? '접속자';
+  const latestAnnouncementAt = snapshot.announcements.reduce(
+    (latest, announcement) => Math.max(latest, announcement.at),
+    0
+  );
+  const unreadAnnouncementCount = snapshot.announcements.filter(
+    (announcement) => announcement.at > lastReadAnnouncementAt
+  ).length;
   const selectedPlayer =
     snapshot.players.find((player) => player.id === selectedPlayerId) ?? null;
   const selfPrivateOnlyClues = useMemo(
@@ -6901,6 +7419,7 @@ export default function MurderMysteryTableExperience({
   const isFloatingActionDockPhase =
     phaseKind === 'role_reading' ||
     phaseKind === 'investigate' ||
+    (phaseKind === 'discuss' && showNextPhaseTool) ||
     phaseKind === 'presentation' ||
     phaseKind === 'final_vote' ||
     phaseKind === 'ending_choice';
@@ -6908,6 +7427,9 @@ export default function MurderMysteryTableExperience({
     Number(isRulebookOpen) +
     Number(isPrivateCardsOpen) +
     Number(isPublicScriptsOpen) +
+    Number(isFlowOverviewOpen) +
+    Number(isNotificationLogOpen) +
+    Number(isSettingsOpen) +
     Number(isMapDialogOpen) +
     Number(Boolean(pendingSpecialEventAction)) +
     Number(Boolean(selectedCard)) +
@@ -7040,6 +7562,41 @@ export default function MurderMysteryTableExperience({
   useEffect(() => {
     setCardOrder(readStoredCardOrder(cardOrderStorageKey));
   }, [cardOrderStorageKey]);
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const storedValue = window.localStorage.getItem(announcementReadStorageKey);
+    const storedTimestamp = storedValue ? Number(storedValue) : 0;
+    setLastReadAnnouncementAt(
+      Number.isFinite(storedTimestamp) ? storedTimestamp : 0
+    );
+  }, [announcementReadStorageKey]);
+  useEffect(() => {
+    if (
+      !isNotificationLogOpen ||
+      latestAnnouncementAt <= 0 ||
+      latestAnnouncementAt <= lastReadAnnouncementAt
+    ) {
+      return;
+    }
+
+    setLastReadAnnouncementAt(latestAnnouncementAt);
+    try {
+      window.localStorage.setItem(
+        announcementReadStorageKey,
+        String(latestAnnouncementAt)
+      );
+    } catch (error) {
+      // Some browsers block localStorage; unread badges still work in memory.
+    }
+  }, [
+    announcementReadStorageKey,
+    isNotificationLogOpen,
+    lastReadAnnouncementAt,
+    latestAnnouncementAt,
+  ]);
   const updateCardOrder = useCallback(
     (bucket: CardOrderBucket, nextCards: { id: string }[]) => {
       setCardOrder((current) => {
@@ -7234,6 +7791,18 @@ export default function MurderMysteryTableExperience({
       setIsPublicScriptsOpen(false);
       return;
     }
+    if (isSettingsOpen) {
+      setIsSettingsOpen(false);
+      return;
+    }
+    if (isNotificationLogOpen) {
+      setIsNotificationLogOpen(false);
+      return;
+    }
+    if (isFlowOverviewOpen) {
+      setIsFlowOverviewOpen(false);
+      return;
+    }
     if (isRulebookOpen) {
       setIsRulebookOpen(false);
       return;
@@ -7244,8 +7813,11 @@ export default function MurderMysteryTableExperience({
   }, [
     isPrivateCardsOpen,
     isMapDialogOpen,
+    isFlowOverviewOpen,
+    isNotificationLogOpen,
     isPublicScriptsOpen,
     isRulebookOpen,
+    isSettingsOpen,
     pendingSpecialEventAction,
     selectedCard,
     selectedEvidenceRef,
@@ -9453,6 +10025,19 @@ export default function MurderMysteryTableExperience({
     let description = '';
     let chips: React.ReactNode = null;
     let actions: React.ReactNode = null;
+    const hostAdvanceAction = showNextPhaseTool ? (
+      <Button
+        size="small"
+        variant="contained"
+        color="success"
+        startIcon={<SkipNextIcon />}
+        disabled={!canAdvancePhase}
+        title={nextPhaseTooltip}
+        onClick={onNextPhase}
+      >
+        다음 단계
+      </Button>
+    ) : null;
 
     if (phaseKind === 'investigate') {
       title = canActNow
@@ -9503,6 +10088,13 @@ export default function MurderMysteryTableExperience({
           조사하러 가기
         </Button>
       );
+    } else if (phaseKind === 'discuss' && showNextPhaseTool) {
+      title = '회의 진행';
+      description = '회의가 끝났다면 방장이 다음 단계로 진행합니다.';
+      chips = currentStep?.round ? (
+        <Chip size="small" color="warning" label={`${currentStep.round}R`} />
+      ) : null;
+      actions = hostAdvanceAction;
     } else if (phaseKind === 'final_vote') {
       title = snapshot.finalVote.yourVote
         ? '최종 투표 제출 완료'
@@ -9638,6 +10230,7 @@ export default function MurderMysteryTableExperience({
         description={description}
         chips={chips}
         actions={actions}
+        auxiliaryActions={phaseKind === 'discuss' ? null : hostAdvanceAction}
         tone={phaseKind === 'investigate' && canActNow ? 'urgent' : 'default'}
         bottomOffset={{
           xs: isSmall ? 74 : 16,
@@ -10243,30 +10836,34 @@ export default function MurderMysteryTableExperience({
             },
           }}
         >
-          <BgmControl track={bgmTrack} />
-          {showNextPhaseTool ? (
-            <Tooltip title={nextPhaseTooltip}>
-              <span>
-                <IconButton
-                  onClick={onNextPhase}
-                  disabled={!canAdvancePhase}
-                  sx={{ color: '#f8f1de' }}
-                >
-                  <SkipNextIcon />
-                </IconButton>
-              </span>
-            </Tooltip>
-          ) : null}
-          {canFinalizeVote ? (
-            <Tooltip title="투표 집계">
-              <IconButton onClick={onFinalizeVote} sx={{ color: '#f8f1de' }}>
-                <HowToVoteIcon />
-              </IconButton>
-            </Tooltip>
-          ) : null}
-          <Tooltip title="방 나가기">
-            <IconButton onClick={onLeaveRoom} sx={{ color: '#f8f1de' }}>
-              <LogoutIcon />
+          <Tooltip title="전체 진행표">
+            <IconButton
+              onClick={() => setIsFlowOverviewOpen(true)}
+              sx={{ color: '#f8f1de' }}
+            >
+              <TimelineIcon />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="알림">
+            <IconButton
+              onClick={() => setIsNotificationLogOpen(true)}
+              sx={{ color: '#f8f1de' }}
+            >
+              <Badge
+                color="warning"
+                badgeContent={unreadAnnouncementCount}
+                max={99}
+              >
+                <NotificationsIcon />
+              </Badge>
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="설정">
+            <IconButton
+              onClick={() => setIsSettingsOpen(true)}
+              sx={{ color: '#f8f1de' }}
+            >
+              <SettingsIcon />
             </IconButton>
           </Tooltip>
         </Stack>
@@ -10464,6 +11061,26 @@ export default function MurderMysteryTableExperience({
         onOpenSelfPrivateCard={(card) =>
           openCardViewer('my-private-clues', selfPrivateOnlyClues, card)
         }
+      />
+      <FlowOverviewDialog
+        open={isFlowOverviewOpen}
+        snapshot={snapshot}
+        fullScreen={isSmall}
+        onClose={() => setIsFlowOverviewOpen(false)}
+      />
+      <NotificationLogDialog
+        open={isNotificationLogOpen}
+        announcements={snapshot.announcements}
+        fullScreen={isSmall}
+        onClose={() => setIsNotificationLogOpen(false)}
+      />
+      <SettingsDialog
+        open={isSettingsOpen}
+        playerName={selfPlayerName}
+        bgmTrack={bgmTrack}
+        fullScreen={isSmall}
+        onLeaveRoom={onLeaveRoom}
+        onClose={() => setIsSettingsOpen(false)}
       />
       <RulebookModal
         open={isRulebookOpen}
